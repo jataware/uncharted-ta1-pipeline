@@ -2,6 +2,7 @@ import logging
 import cv2
 import numpy as np
 import torch
+import hashlib
 
 from ditod import add_vit_config
 from segmentation_result import SegmentationResult
@@ -30,11 +31,13 @@ class DetectronSegmenter():
         self.model_weights = model_weights
         self.class_labels = class_labels
         self.predictor: DefaultPredictor = None
+        self.model_id: str = ''
         
         # instantiate config
         self.cfg = get_cfg()
         add_vit_config(self.cfg)
         self.cfg.merge_from_file(config_file)   # config yml file
+        self.model_name = self.cfg.MODEL.VIT.get('NAME', '')
         
         # add model weights URL to config
         self.cfg.MODEL.WEIGHTS = model_weights  # path to model weights (e.g., model_final.pth), can be local file path or URL
@@ -67,9 +70,12 @@ class DetectronSegmenter():
         # https://detectron2.readthedocs.io/en/latest/tutorials/models.html
 
         if not self.predictor:
-            logger.info('Loading segmentation model')
+            # load model...
+            logger.info(f'Loading segmentation model {self.model_name}')
             self.predictor = DefaultPredictor(self.cfg)
-
+            self.model_id = self._get_model_id(self.predictor.model)
+            logger.info(f'Model ID: {self.model_id}')
+        
         #--- run inference
         predictions = self.predictor(img)["instances"]
         predictions = predictions.to("cpu")
@@ -105,7 +111,8 @@ class DetectronSegmenter():
                         bbox=list(cv2.boundingRect(contour)),
                         area=cv2.contourArea(contour),
                         confidence=scores[i],
-                        class_label=self.class_labels[classes[i]])
+                        class_label=self.class_labels[classes[i]],
+                        model_id=self.model_id)
                     
                     results.append(seg_result)
 
@@ -120,7 +127,7 @@ class DetectronSegmenter():
         raise NotImplementedError
     
 
-    def _mask_to_contours(self, mask) -> tuple[list, bool]:
+    def _mask_to_contours(self, mask: np.ndarray) -> tuple[list, bool]:
         '''
         Converts segmentation mask to polygon contours
         Adapted from Detectron2 GenericMask code
@@ -135,4 +142,16 @@ class DetectronSegmenter():
         res = res[-2]
 
         return res, has_holes
+    
+
+    def _get_model_id(self, model) -> str:
+        '''
+        Create a unique string ID for this model,
+        based on MD5 hash of the model's state-dict
+        '''
+        
+        state_dict_str = str(model.state_dict())
+        hash_result = hashlib.md5(bytes(state_dict_str, encoding='utf-8'))
+        return hash_result.hexdigest()
+
 

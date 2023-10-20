@@ -13,5 +13,6 @@ class SegmentationResult(BaseModel):
     bbox: List[float]       # bounding box
     class_label: str        #predicted segmentation class label
     confidence: float       # prediction score
+    model_id: str           # model ID
 
         
