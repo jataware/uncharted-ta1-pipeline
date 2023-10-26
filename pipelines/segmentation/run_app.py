@@ -3,8 +3,9 @@ import logging, json
 import numpy as np
 import cv2
 
-from detectron_segmenter import DetectronSegmenter
 import env_vars as env
+from detectron_segmenter import DetectronSegmenter
+
 
 #
 # Flask web app for Legend and Map Segmenter module

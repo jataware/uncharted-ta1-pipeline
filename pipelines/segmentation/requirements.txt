@@ -1,0 +1,7 @@
+# requirements file for legend_and_map segmentation pipeline
+
+# install legend_and_map_segmenter task from its local installation
+-e ../../tasks/segmentation/
+
+Flask==3.0.0
+python-dotenv==1.0.0

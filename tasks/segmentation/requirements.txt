@@ -1,3 +1,4 @@
+# requirements file for legend and map segmentation task
 datasets==1.15.1
 transformers==4.34.0
 seqeval==1.2.2
@@ -12,5 +13,3 @@ textdistance==4.6.0
 shapely==2.0.2
 pydantic==2.4.2
 opencv-python==4.8.1.78
-Flask==3.0.0
-python-dotenv==1.0.0
