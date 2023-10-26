@@ -29,7 +29,7 @@ if not os.environ.get('SEGMENTER_ENV_LOADED'):
 # set environment variables...
 print('\n*** Setting environment variables:')
 
-SEGMENTER_LOCAL_DATA_PATH = set_param('SEGMENTER_LOCAL_DATA_PATH')
+SEGMENTER_DATA_CACHE = set_param('SEGMENTER_DATA_CACHE')
 MODEL_WEIGHTS = set_param('MODEL_WEIGHTS')
 MODEL_CONFIG_YML = set_param('MODEL_CONFIG_YML')
 MODEL_CONFIDENCE_THRES = float(set_param('MODEL_CONFIDENCE_THRES'))

@@ -3,7 +3,7 @@ import logging, json
 import numpy as np
 import cv2
 
-from detectron_segmenter import DetectronSegmenter
+from tasks.detectron_segmenter import DetectronSegmenter
 import env_vars as env
 
 #
