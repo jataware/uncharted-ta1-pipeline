@@ -6,9 +6,6 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-DOTENV_PATH_DEFAULT = '.env'
-
-
 def set_param(param_name, default_val=None, verbose=True):
 
     param_value = os.environ.get(param_name) if default_val is None else os.environ.get(param_name, default_val)
@@ -19,11 +16,11 @@ def set_param(param_name, default_val=None, verbose=True):
 
 if not os.environ.get('SEGMENTER_ENV_LOADED'):
     # load environment variables from .env file
-    print('\nLoading environment variables from ' + DOTENV_PATH_DEFAULT)
-    load_dotenv(dotenv_path=DOTENV_PATH_DEFAULT, verbose=True)
+    print('\nLoading environment variables from .env')
+    load_dotenv(verbose=True)
     if not os.environ.get('SEGMENTER_ENV_LOADED'):
         # .env still not loaded properly!
-        raise Exception('Unable to load environment variables from ' + DOTENV_PATH_DEFAULT)
+        raise Exception('Unable to load environment variables from .env')
 
 
 # set environment variables...
