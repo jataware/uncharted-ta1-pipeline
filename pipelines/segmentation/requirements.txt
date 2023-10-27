@@ -1,7 +1,8 @@
 # requirements file for legend_and_map segmentation pipeline
 
-# install legend_and_map_segmenter task from its local installation
+# install lara_segmentation 'task' from its local installation
 -e ../../tasks/segmentation/
 
+boto3==1.28.71
 Flask==3.0.0
 python-dotenv==1.0.0

@@ -1,0 +1,45 @@
+#
+# Segmentation Pipeline -- Environment values and constants
+#
+
+# TODO move some of this to a common dir?
+
+import os
+from dotenv import load_dotenv
+
+
+def set_param(param_name, default_val=None, verbose=True):
+    param_value = os.environ.get(param_name) if default_val is None else os.environ.get(param_name, default_val)
+    if verbose:
+        print('{}\t:\t{}'.format(param_name, param_value))
+    return param_value
+
+
+if not os.environ.get('ENV_LOADED'):
+    # load environment variables from .env file
+    print('\nLoading environment variables from .env')
+    load_dotenv(verbose=True)
+    if not os.environ.get('ENV_LOADED'):
+        # .env still not loaded properly!
+        raise Exception('Unable to load environment variables from .env')
+
+
+#---- Set environment variables...
+print('\n*** Setting environment variables:')
+
+# Model config
+MODEL_WEIGHTS_PATH = set_param('MODEL_WEIGHTS_PATH')
+MODEL_CONFIG_YML = set_param('MODEL_CONFIG_YML', 'cascade_layoutlmv3_lara.yaml')
+MODEL_CONFIDENCE_THRES = float(set_param('MODEL_CONFIDENCE_THRES', '0.25'))
+
+# Data caching
+# (ie for storing downloaded model in a docker volume)
+LOCAL_DATA_CACHE = set_param('LOCAL_DATA_CACHE', 'data_cache/')
+
+# S3 params
+S3_HOST = set_param('S3_HOST','https://s3.t1.uncharted.software')
+AWS_ACCESS_KEY_ID = set_param('AWS_ACCESS_KEY_ID', default_val=None, verbose=False)   # don't print s3 credentials
+AWS_SECRET_ACCESS_KEY = set_param('AWS_SECRET_ACCESS_KEY', default_val=None, verbose=False)
+
+
+
