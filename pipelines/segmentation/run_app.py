@@ -33,7 +33,7 @@ def process_image():
         results = segmenter.run_inference(img)
 
         # convert result to a JSON array
-        result_json = json.dumps([dict(res) for res in results])
+        result_json = json.dumps([res.model_dump() for res in results])
 
         return Response(result_json, status=200, mimetype="application/json")
 
