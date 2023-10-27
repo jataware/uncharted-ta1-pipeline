@@ -30,7 +30,7 @@ def process_image():
         # decode image
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        results = segmenter.run_inference(img)
+        results = segmenter.run_inference(img, ta1_schema_out=env.USE_TA1_SCHEMA)
 
         # convert result to a JSON array
         result_json = json.dumps([res.model_dump() for res in results])
