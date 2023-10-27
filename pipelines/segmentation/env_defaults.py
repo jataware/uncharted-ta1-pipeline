@@ -41,5 +41,8 @@ S3_HOST = set_param('S3_HOST','https://s3.t1.uncharted.software')
 AWS_ACCESS_KEY_ID = set_param('AWS_ACCESS_KEY_ID', default_val=None, verbose=False)   # don't print s3 credentials
 AWS_SECRET_ACCESS_KEY = set_param('AWS_SECRET_ACCESS_KEY', default_val=None, verbose=False)
 
+# Output results in TA1 schema?
+USE_TA1_SCHEMA = set_param('USE_TA1_SCHEMA', 'true').lower() == 'true'
+
 
 

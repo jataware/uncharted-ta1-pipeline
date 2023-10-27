@@ -3,9 +3,12 @@ import cv2
 import numpy as np
 import torch
 import hashlib
+from typing import Union
 
 from ditod import add_vit_config
-from segmentation_result import SegmentationResult
+from schema.segmentation_result import SegmentationResult
+from schema.page_extraction import PageExtraction
+from schema.extraction_identifier import ExtractionIdentifier
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
 
@@ -53,16 +56,18 @@ class DetectronSegmenter():
         logger.info(f'torch device: {device}')
         
 
-    def run_inference(self, img: np.ndarray) -> list[SegmentationResult]:
+    def run_inference(self, img: np.ndarray, ta1_schema_out: bool=False) -> list[Union[SegmentationResult, PageExtraction]]:
         '''
         Run legend and map segmentation inference on a single input image
         Note: model is lazily loaded into memory the first time this func is called
 
         Args:
             img (np.ndarray): an image of shape (H, W, C) (in BGR order -- opencv format)
+            ta1_schema_out: =False, output results in TA1 schema format?
 
         Returns:
-            List of SegmentationResult objects
+            List of SegmentationResult objects, or
+            List of PageExtraction objects (if ta1_schema_out=True)
         ''' 
         
         # using Detectron2 DefaultPredictor class for model inference
@@ -106,13 +111,23 @@ class DetectronSegmenter():
                         
                     poly = contour.reshape(-1, 2)
 
-                    seg_result = SegmentationResult(
-                        poly_bounds=poly.tolist(),
-                        bbox=list(cv2.boundingRect(contour)),
-                        area=cv2.contourArea(contour),
-                        confidence=scores[i],
-                        class_label=self.class_labels[classes[i]],
-                        model_id=self.model_id)
+                    if ta1_schema_out:
+                        
+                        seg_result = PageExtraction(
+                            name=self.class_labels[classes[i]],
+                            bounds=poly.tolist(),
+                            confidence=scores[i],
+                            model=ExtractionIdentifier(model=self.model_id, field=self.model_name))
+                        
+                    else:
+
+                        seg_result = SegmentationResult(
+                            poly_bounds=poly.tolist(),
+                            bbox=list(cv2.boundingRect(contour)),
+                            area=cv2.contourArea(contour),
+                            confidence=scores[i],
+                            class_label=self.class_labels[classes[i]],
+                            model_id=self.model_id)
                     
                     results.append(seg_result)
 

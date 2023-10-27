@@ -13,3 +13,4 @@ textdistance==4.6.0
 shapely==2.0.2
 pydantic==2.4.2
 opencv-python==4.8.1.78
+detectron2 @ git+https://github.com/facebookresearch/detectron2.git
