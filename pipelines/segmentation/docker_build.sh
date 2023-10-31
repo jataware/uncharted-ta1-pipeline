@@ -18,7 +18,7 @@ echo "Building segmenter-tasks -- "${DOCKER_IMAGE_TASKS}":"${SEGMENTER_VERSION_T
 echo ""
 
 # Build segmenter 'tasks' image first
-docker buildx build --platform=linux/amd64 -t ${DOCKER_IMAGE_TASK}:${SEGMENTER_VERSION_TAG} -f ${DOCKER_FILE_TASK} ${TASKS_CONTEXT}
+docker buildx build --platform=linux/amd64 -t ${DOCKER_IMAGE_TASKS}:${SEGMENTER_VERSION_TAG} -f ${DOCKER_FILE_TASKS} ${TASKS_CONTEXT}
 
 echo ""
 echo "Building segmenter -- "${DOCKER_IMAGE}":"${SEGMENTER_VERSION_TAG}" from docker file: "${DOCKER_FILE}
