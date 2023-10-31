@@ -58,7 +58,7 @@ class S3DataCache():
             return ''
 
         # local path to store file
-        filepath_local = os.path.join(self.local_cache_path.lstrip('/'), s3_obj_key)
+        filepath_local = os.path.join(self.local_cache_path, s3_obj_key)
         if Path(filepath_local).exists() and not overwrite:
             logger.info(f'Data already exists on local path {filepath_local}. Skipping data download from S3.')
             return filepath_local
