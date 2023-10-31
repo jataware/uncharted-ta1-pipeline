@@ -28,6 +28,8 @@ pip install -r requirements.txt
 * Input is a map image (ie as numpy array)
 * Ouput is segmentation polygon results as a JSON object, either as a `SegmentationResults` object or a `PageExtraction` object (the latter being part of the CMA TA1 schema)
 
+`inference_example.py` is an example script to process a single image
+
 ### REST API
 * ```POST:  /api/process_image``` - Sends an image (as numpy array) to the segmenter pipeline for analysis. Results are JSON string.
 * ```GET /healthcheck``` - Healthcheck endpoint  
