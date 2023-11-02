@@ -61,6 +61,7 @@ class ResizeTextExtractor(TextExtractor):
     def run(self, im: Image.Image, to_blocks: bool=True, document_ocr: bool=False) -> list[PageExtraction]:
         '''
         Run OCR-based text extractor
+        Image may be internally scaled prior to OCR, if needed
 
         Args:
             im: input image (PIL image format)
@@ -68,6 +69,7 @@ class ResizeTextExtractor(TextExtractor):
             document_ocr: =False; use 'document level' OCR, meant for images with dense paragraphs/columns of text
         Returns:
             List of PageExtraction objects
+            (in pixel coords of full-sized image, not resized pixel coords)
         ''' 
         #im_orig_size = im.size   #(width, height)
         im_resized, im_resize_ratio = self._resize_image(im)
