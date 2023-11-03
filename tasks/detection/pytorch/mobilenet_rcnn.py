@@ -23,7 +23,9 @@ class MobileNetRCNN(FasterRCNN):
         assert config['roi_output_size'] > 0 and isinstance(config['roi_output_size'], int)
         assert config['samping_ratio'] > 0 and isinstance(config['samping_ratio'], int)
 
-        # Always load model from random initialization, or from our own pretrained checkpoint. Loading directly from third party hosted checkpoints is not supported.
+        # Always load model from random initialization, or from our own pretrained checkpoint.
+        # Loading directly from third party hosted checkpoints is not supported.
+
         backbone = torchvision.models.mobilenet_v2().features
         backbone.out_channels = 1280
 
