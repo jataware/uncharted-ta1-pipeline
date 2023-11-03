@@ -20,13 +20,13 @@
 * The full point detection pipeline is run via the CLI tool `run_pipeline.py`
 * Supply the CLI script with the following arguments:
   * `--input_path`, the path to an untiled, raw map in `.tif` format
-  * `--ckpt_name`, a named checkpoint of a pretrained object detector located under `https://s3.t1.uncharted.software/lara/models/points/`
+  * `--model_ckpt`, a named checkpoint of a pretrained object detector located under `https://s3.t1.uncharted.software/lara/models/points/`
   * `--output_path`, the output location of the point detection JSON
 
 _Example Useage_
 
 ```
-python detection/run_pipeline.py --input_path path/to/GEO_0454.tif --ckpt yolov8.pt --output_path path/to/pipeline_output.json
+python detection/run_pipeline.py --input_path path/to/GEO_0454.tif --model_ckpt yolov8.pt --output_path path/to/pipeline_output.json
 ```
 
 ## Schema Formatting
