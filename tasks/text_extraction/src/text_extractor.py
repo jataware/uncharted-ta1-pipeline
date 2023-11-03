@@ -7,6 +7,7 @@ from PIL import Image
 from ocr.google_vision_ocr import GoogleVisionOCR
 from schema.page_extraction import PageExtraction
 from schema.extraction_identifier import ExtractionIdentifier
+from tile import Tile
 
 
 # ENV VARIABLE -- needed for google-vision API
@@ -54,13 +55,15 @@ class ResizeTextExtractor(TextExtractor):
     '''
 
     def __init__(self, pixel_lim: int=PIXEL_LIM_DEFAULT):
-        self.pixel_lim = pixel_lim
         super().__init__()
+        self.pixel_lim = pixel_lim
+        self.model_id += f'-resize{pixel_lim}'
 
-    
+
     def run(self, im: Image.Image, to_blocks: bool=True, document_ocr: bool=False) -> list[PageExtraction]:
         '''
         Run OCR-based text extractor
+        Image may be internally scaled prior to OCR, if needed
 
         Args:
             im: input image (PIL image format)
@@ -68,6 +71,7 @@ class ResizeTextExtractor(TextExtractor):
             document_ocr: =False; use 'document level' OCR, meant for images with dense paragraphs/columns of text
         Returns:
             List of PageExtraction objects
+            (in pixel coords of full-sized image, not resized pixel coords)
         ''' 
         #im_orig_size = im.size   #(width, height)
         im_resized, im_resize_ratio = self._resize_image(im)
@@ -109,4 +113,93 @@ class ResizeTextExtractor(TextExtractor):
             reduced_size = int(im_orig_size[0] * im_resize_ratio), int(im_orig_size[1] * im_resize_ratio)   
             im = im.resize(reduced_size, Image.Resampling.LANCZOS)
         
-        return im, im_resize_ratio
+        return im, im_resize_ratio    
+
+
+class TileTextExtractor(TextExtractor):
+    '''
+    OCR-based text extraction with image tiling prior to OCR
+    '''
+    
+    def __init__(self, split_lim: int=PIXEL_LIM_DEFAULT):
+        super().__init__()
+        self.split_lim = split_lim
+        self.model_id += f'-tile{split_lim}'
+    
+
+    def run(self, im: Image.Image, to_blocks: bool=True, document_ocr: bool=False) -> list[PageExtraction]:
+        '''
+        Run OCR-based text extractor
+        Image may be internally tiled prior to OCR, if needed
+
+        Args:
+            im: input image (PIL image format)
+            to_blocks: =True; group OCR results into blocks/lines of text related text
+            document_ocr: =False; use 'document level' OCR, meant for images with dense paragraphs/columns of text
+        Returns:
+            List of PageExtraction objects
+            (in pixel coords of full-sized image, not resized pixel coords)
+        ''' 
+
+        # TODO -- this code could be modified to include overlap/stride len, etc.
+        # (then, any overlapping OCR results need to be de-dup'd)
+
+        im_tiles = self._split_image(im, self.split_lim)
+        logger.info(f'Image split into {len(im_tiles)} tiles. Extracting OCR text from each...')
+
+        ocr_blocks = [] # list for OCR results across all tiles (whole image)
+        for tile in im_tiles:
+            # get OCR results for this tile
+            tile_ocr_blocks = self._extract_text(tile.image, to_blocks, document_ocr)
+            # convert OCR poly-bounds to global pixel coords and add to results
+            ocr_blocks.extend(GoogleVisionOCR.offset_ocr_coords(tile_ocr_blocks, tile.coordinates))
+
+        # convert OCR results to TA1 schema
+        # TODO -- could add in confidence per ocr block? (google vision seems to return score=0.0?)
+        model_field_name = 'document_ocr' if document_ocr else 'ocr'
+
+        results = []
+        for ocr_block in ocr_blocks:
+            ocr_result = PageExtraction(
+                name='ocr',
+                bounds=GoogleVisionOCR.bounding_polygon_to_list(ocr_block['bounding_poly']),
+                ocr_text = ocr_block['text'],
+                model=ExtractionIdentifier(model=self.model_id, field=model_field_name))
+            results.append(ocr_result)
+
+        return results
+
+
+    def _split_image(self, image: Image.Image, size_limit: int) -> list[Tile]:
+        '''
+        split an image as needed to fit under the image size limit for x and y
+        '''
+
+        image_size = image.size
+        splits_x = self._get_splits(image_size[0], size_limit)
+        splits_y = self._get_splits(image_size[1], size_limit)
+        images = []
+        for split_y in splits_y:
+            for split_x in splits_x:
+                ims = Image.new(mode="RGB", size=(split_x[1] - split_x[0], split_y[1] - split_y[0]))
+                cropping = image.crop((split_x[0], split_y[0], split_x[1], split_y[1]))
+                ims.paste(cropping, (0, 0))
+                images.append(Tile(ims, (split_x[0], split_y[0])))
+        return images
+
+
+    def _get_splits(self, size: int, limit: int) -> list[tuple]:
+        '''
+        get the pixel intervals for image tiling 
+        note, currently the tile stride == limit (0% overlap)
+        '''
+        splits = ceil(float(size) / limit)
+        split_inc = ceil(float(size) / splits)
+        split_vals = []
+        current = 0
+        while current < size:
+            next_inc = min(current + split_inc, size)
+            split_vals.append((current, next_inc))
+            current = next_inc
+        return split_vals
+    

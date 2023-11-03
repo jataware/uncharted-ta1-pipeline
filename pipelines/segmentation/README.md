@@ -25,13 +25,13 @@ pip install -r requirements.txt
 ```
 * Data i/o is done via REST (see below)
 * Model weights can be input from S3 or local drive
-* Input is a map image (ie as numpy array)
+* Input is an image (ie binary image file buffer)
 * Ouput is segmentation polygon results as a JSON object, either as a `SegmentationResults` object or a `PageExtraction` object (the latter being part of the CMA TA1 schema)
 
 `inference_example.py` is an example script to process a single image
 
 ### REST API
-* ```POST:  /api/process_image``` - Sends an image (as numpy array) to the segmenter pipeline for analysis. Results are JSON string.
+* ```POST:  /api/process_image``` - Sends an image (as binary file buffer) to the segmenter pipeline for analysis. Results are JSON string.
 * ```GET /healthcheck``` - Healthcheck endpoint  
 
 ### Dockerized deployment

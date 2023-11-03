@@ -212,6 +212,22 @@ class GoogleVisionOCR():
     
 
     @staticmethod
+    def offset_ocr_coords(text_blocks: list[dict[str, any]], offset: tuple) -> list[dict[str, any]]:
+        '''
+        offset ocr pixel coords by (x,y) co-ords 
+        '''
+
+        if not text_blocks or not offset:
+            return text_blocks
+        for blk in text_blocks:
+            for v in blk['bounding_poly'].vertices:
+                v.x = int(v.x + offset[0])
+                v.y = int(v.y + offset[0])  
+
+        return text_blocks
+    
+
+    @staticmethod
     def bounding_polygon_to_list(bounding_poly: BoundingPoly) -> list[tuple]:
         '''
         convert google vision BoundingPoly object to list of x,y points

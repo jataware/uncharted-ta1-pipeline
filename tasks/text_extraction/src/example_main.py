@@ -3,7 +3,7 @@ import os
 import logging, json
 
 from ocr.google_vision_ocr import GoogleVisionOCR
-from text_extractor import ResizeTextExtractor
+from text_extractor import ResizeTextExtractor, TileTextExtractor
 from image_io import load_pil_image, normalize_image_format
 
 # ENV VARIABLE -- needed for google-vision API
@@ -19,8 +19,11 @@ def run():
     im = load_pil_image(image_path)
     im = normalize_image_format(im)
 
-    text_extractor = ResizeTextExtractor()
-    
+    # text-extraction with image scaling...
+    text_extractor = ResizeTextExtractor() 
+    # OR, text-extraction with image tiling...
+    #text_extractor = TileTextExtractor()
+
     ocr_results = text_extractor.run(im)
 
     # convert result to a JSON array
