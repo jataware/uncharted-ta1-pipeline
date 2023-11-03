@@ -17,7 +17,6 @@ class MobileNetRCNN(FasterRCNN):
                  config: dict,
                  state_dict: Union[None, Dict[str, torch.Tensor]] = None,
                  ) -> None:
-        # TODO: Make Pydantic Pytorch model config object.
         assert config['num_classes'] > 0 and isinstance(config['num_classes'], int)
         assert all(i > 0 for i in config['anchor_sizes']) and isinstance(config['anchor_sizes'], Iterable)
         assert all(i > 0 for i in config['aspect_ratios']) and isinstance(config['aspect_ratios'], Iterable)
