@@ -45,8 +45,6 @@ class CompetitionCOCOLoader:
             flat_values = [i for j in out_dict.values() for i in j]
             for match in match_candidates:
                 if match in flat_values:
-                    # This is really bad, but its temporary. We ought to just preprocess and store the training/validation data somewhere.
-                    # The logic here is that since we are matching longer maps first, we can remove any matches already in the output dict since we know that the longest match is the most specific.
                     print(f'Removing duplicate match: {match} from map: {map_name}, since it is already in the output dict.')
                     match_candidates.remove(match)
             out_dict[map_name] = match_candidates
@@ -66,7 +64,6 @@ class CompetitionCOCOLoader:
     def construct_bounding_boxes(bitmask: Union[str, np.array],
                                  bounding_box_size: List[int] = [50, 50]) -> List[List[int]]:
     # this is slow, due to massive size of bitmask files.. the points labeled in the .json files are the legend icons.
-    # not sure what to do about this.
 
         if isinstance(bitmask, str):
             bitmask = np.array(Image.open(bitmask))
