@@ -9,12 +9,6 @@ setup(
     keywords=["metadata", "extraction", "pipeline"],
     license="Apache-2.0",
     install_requires=[
-        "numpy",
-        "tqdm",
-        "pydantic",
-        "tiktoken",
-        "openai",
-        "google-cloud-vision",
-        "grpcio",
+        lara_modelling_tasks
     ],
 )
