@@ -275,19 +275,23 @@ def process_images(
                     results.append((doc_id, pickle.load(f)))
                     continue
 
-            if os.path.isfile(file):
-                image = load_pil_image(file)
-                conditioned_image = condition_pil_image(image)
-                vision_image = pil_to_vision_image(conditioned_image)
-                if document_ocr:
-                    texts = detect_document_text(vision_image)
-                else:
-                    texts = detect_text(vision_image)
-                    if to_blocks:
-                        texts = text_to_blocks(texts)
+            try:
+                if os.path.isfile(file):
+                    image = load_pil_image(file)
+                    conditioned_image = condition_pil_image(image)
+                    vision_image = pil_to_vision_image(conditioned_image)
+                    if document_ocr:
+                        texts = detect_document_text(vision_image)
+                    else:
+                        texts = detect_text(vision_image)
+                        if to_blocks:
+                            texts = text_to_blocks(texts)
 
-                write_texts(texts, output_file)
-                results.append((doc_id, texts))
+                    write_texts(texts, output_file)
+                    results.append((doc_id, texts))
+            except Exception as e:
+                print(f"Error processing file: {file} - {e}")
+                continue
     return results
 
 

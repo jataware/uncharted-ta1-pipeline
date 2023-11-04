@@ -201,9 +201,8 @@ class MetadataFileWriter:
         else:
             self._write_to_file(self._metadata, self._output_path)
 
-    def _write_to_file(
-        self, metadata: List[MetadataExtraction], output_path: str
-    ) -> None:
+    @staticmethod
+    def _write_to_file(metadata: List[MetadataExtraction], output_path: str) -> None:
         """Writes metadata to a json file"""
 
         # if the output dir doesn't exist, create it
@@ -216,8 +215,9 @@ class MetadataFileWriter:
             with open(os.path.join(output_path, m.map_id + ".json"), "w") as outfile:
                 outfile.write(json_model)
 
+    @staticmethod
     def _write_to_s3(
-        self, metadata: List[MetadataExtraction], output_path: str, client
+        metadata: List[MetadataExtraction], output_path: str, client
     ) -> None:
         """Writes metadata to an s3 bucket"""
 
@@ -257,24 +257,23 @@ class TA1SchemaFileWriter:  # TODO: factor out common code with MetadataFileWrit
         else:
             self._write_to_file(self._metadata, self._output_path)
 
-    def _write_to_file(
-        self, metadata: List[MetadataExtraction], output_path: str
-    ) -> None:
+    @staticmethod
+    def _write_to_file(metadata: List[MetadataExtraction], output_path: str) -> None:
         """Writes metadata to a json file"""
 
         # if the output dir doesn't exist, create it
         if not os.path.exists(output_path):
-            output_dir = os.path.dirname(self._output_path)
-            os.makedirs(output_dir)
+            os.makedirs(output_path)
 
         for m in metadata:
-            map = self._metadata_to_map(m)
+            map = TA1SchemaFileWriter._metadata_to_map(m)
             json_model = map.model_dump_json()
             with open(os.path.join(output_path, m.map_id + ".json"), "w") as outfile:
                 outfile.write(json_model)
 
+    @staticmethod
     def _write_to_s3(
-        self, metadata: List[MetadataExtraction], output_path: str, client
+        metadata: List[MetadataExtraction], output_path: str, client
     ) -> None:
         """Writes metadata to an s3 bucket"""
 
@@ -283,7 +282,7 @@ class TA1SchemaFileWriter:  # TODO: factor out common code with MetadataFileWrit
 
         # write data to the bucket
         for m in metadata:
-            map = self._metadata_to_map(m)
+            map = TA1SchemaFileWriter._metadata_to_map(m)
             json_model = map.model_dump_json()
             client.put_object(
                 Body=json_model,
@@ -291,7 +290,8 @@ class TA1SchemaFileWriter:  # TODO: factor out common code with MetadataFileWrit
                 Key=f"{m.map_id}_metadata.json",
             )
 
-    def _metadata_to_map(self, metadata: MetadataExtraction) -> Map:
+    @staticmethod
+    def _metadata_to_map(metadata: MetadataExtraction) -> Map:
         """Converts metadata to a Map object"""
         return Map(
             name=metadata.title,
