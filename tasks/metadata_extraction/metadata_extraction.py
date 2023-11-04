@@ -1,15 +1,16 @@
 import re
-import openai
 import os
 import pprint
 import json
+import os
+import openai
 import tiktoken
 from tqdm import tqdm
-import os
-from pathlib import Path
 from typing import List, Optional
-from entities import MetadataExtraction
+import boto3
+from tasks.metadata_extraction.entities import MetadataExtraction
 from tasks.text_extraction_2.entities import DocTextExtraction
+from schema.ta1_schema import Map, MapFeatureExtractions, ProjectionMeta
 
 # env var for openai api key
 openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -52,7 +53,7 @@ class MetadataExtractor:
     def __init__(
         self,
         doc_text_extractions: List[DocTextExtraction],
-        output_path: Path,
+        output_path: str,
         verbose=False,
     ):
         self._doc_text_extractions = doc_text_extractions
@@ -60,22 +61,13 @@ class MetadataExtractor:
         self._verbose = verbose
 
     def process(self) -> List[MetadataExtraction]:
-        """Extracts metadata from OCR output"""
-        # if the output dir doesn't exist, create it
-        if not self._output_path.exists():
-            os.makedirs(self._output_path)
-        return self._process_maps(self._doc_text_extractions, self._verbose)
-
-    def _process_maps(
-        self,
-        doc_text_extractions: List[DocTextExtraction],
-        verbose=False,
-    ) -> List[MetadataExtraction]:
         """Processes a directory of OCR files and writes the metadata to a json file"""
         metadata_list: List[MetadataExtraction] = []
-        for doc_text in tqdm(doc_text_extractions):
+        for doc_text in tqdm(self._doc_text_extractions):
             # extract metadata from ocr output
-            map_metadata = self._process_doc_text_extractions(doc_text, verbose=verbose)
+            map_metadata = self._process_doc_text_extractions(
+                doc_text, verbose=self._verbose
+            )
             if map_metadata:
                 # normalize scale
                 if map_metadata:
@@ -190,21 +182,130 @@ class MetadataExtractor:
 
 
 class MetadataFileWriter:
-    def __init__(self, metadata: List[MetadataExtraction], output_path: Path):
+    _S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.-]+$")
+
+    def __init__(self, metadata: List[MetadataExtraction], output_path: str):
         self._metadata = metadata
         self._output_path = output_path
 
     def process(self) -> None:
+        """Writes metadata to a json file on the local file system or to an s3 bucket"""
+
+        # check to see if path is an s3 uri - otherwise treat it as a file path
+        if self._S3_URI_MATCHER.match(str(self._output_path)):
+            self._write_to_s3(
+                self._metadata,
+                self._output_path,
+                boto3.client("s3"),
+            )
+        else:
+            self._write_to_file(self._metadata, self._output_path)
+
+    def _write_to_file(
+        self, metadata: List[MetadataExtraction], output_path: str
+    ) -> None:
         """Writes metadata to a json file"""
+
         # if the output dir doesn't exist, create it
-        if not self._output_path.exists():
+        if not os.path.exists(output_path):
             output_dir = os.path.dirname(self._output_path)
             os.makedirs(output_dir)
 
-        # write metadata to json file
-        for metadata in self._metadata:
-            json_model = metadata.model_dump_json()
-            with open(
-                os.path.join(self._output_path, metadata.map_id + ".json"), "w"
-            ) as outfile:
+        for m in metadata:
+            json_model = m.model_dump_json()
+            with open(os.path.join(output_path, m.map_id + ".json"), "w") as outfile:
                 outfile.write(json_model)
+
+    def _write_to_s3(
+        self, metadata: List[MetadataExtraction], output_path: str, client
+    ) -> None:
+        """Writes metadata to an s3 bucket"""
+
+        # extract bucket from s3 uri
+        bucket = output_path.split("/")[2]
+
+        # write data to the bucket
+        for m in metadata:
+            json_model = m.model_dump_json()
+            client.put_object(
+                Body=json_model,
+                Bucket=bucket,
+                Key=f"{m.map_id}_metadata.json",
+            )
+
+
+class TA1SchemaFileWriter:  # TODO: factor out common code with MetadataFileWriter
+    """Converts metadata to a schema objects, and writes them as a json
+    file on the local file system or to an s3 bucket"""
+
+    _S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.-]+$")
+
+    def __init__(self, metadata: List[MetadataExtraction], output_path: str):
+        self._metadata = metadata
+        self._output_path = output_path
+
+    def process(self) -> None:
+        """Writes metadata to a json file on the local file system or to an s3 bucket"""
+
+        # check to see if path is an s3 uri - otherwise treat it as a file path
+        if self._S3_URI_MATCHER.match(str(self._output_path)):
+            self._write_to_s3(
+                self._metadata,
+                self._output_path,
+                boto3.client("s3"),
+            )
+        else:
+            self._write_to_file(self._metadata, self._output_path)
+
+    def _write_to_file(
+        self, metadata: List[MetadataExtraction], output_path: str
+    ) -> None:
+        """Writes metadata to a json file"""
+
+        # if the output dir doesn't exist, create it
+        if not os.path.exists(output_path):
+            output_dir = os.path.dirname(self._output_path)
+            os.makedirs(output_dir)
+
+        for m in metadata:
+            map = self._metadata_to_map(m)
+            json_model = map.model_dump_json()
+            with open(os.path.join(output_path, m.map_id + ".json"), "w") as outfile:
+                outfile.write(json_model)
+
+    def _write_to_s3(
+        self, metadata: List[MetadataExtraction], output_path: str, client
+    ) -> None:
+        """Writes metadata to an s3 bucket"""
+
+        # extract bucket from s3 uri
+        bucket = output_path.split("/")[2]
+
+        # write data to the bucket
+        for m in metadata:
+            map = self._metadata_to_map(m)
+            json_model = map.model_dump_json()
+            client.put_object(
+                Body=json_model,
+                Bucket=bucket,
+                Key=f"{m.map_id}_metadata.json",
+            )
+
+    def _metadata_to_map(self, metadata: MetadataExtraction) -> Map:
+        """Converts metadata to a Map object"""
+        return Map(
+            name=metadata.title,
+            source_url="",
+            image_url="",
+            image_size=[],
+            authors=", ".join(metadata.authors),
+            publisher="",
+            year=int(metadata.year),
+            organization="",
+            scale=metadata.scale,
+            bounds="",
+            features=MapFeatureExtractions(lines=[], points=[], polygons=[]),
+            cross_sections=None,
+            pipelines=[],
+            projection_info=ProjectionMeta(gcps=[], projection=""),
+        )

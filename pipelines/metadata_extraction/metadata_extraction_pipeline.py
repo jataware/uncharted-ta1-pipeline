@@ -3,13 +3,14 @@ from pathlib import Path
 from tasks.metadata_extraction.metadata_extraction import (
     MetadataExtractor,
     MetadataFileWriter,
+    TA1SchemaFileWriter,
 )
-from tasks.text_extraction.gva_ocr import GoogleVisionOCR
+from tasks.text_extraction_2.gva_ocr import GoogleVisionOCR
 
 
 class MetadataExtractorPipeline:
     def __init__(
-        self, input: Path, output: Path, work_dir: Path, verbose=False, append=False
+        self, input: Path, output: str, work_dir: Path, verbose=False, append=False
     ):
         self._pipeline_input = input
         self._ocr_output = Path(os.path.join(work_dir, "ocr_output"))
@@ -35,5 +36,5 @@ class MetadataExtractorPipeline:
 
         # serialize output
         print(f"Serializing output to {self._pipeline_output}")
-        metadata_serializer = MetadataFileWriter(metadata, self._pipeline_output)
+        metadata_serializer = TA1SchemaFileWriter(metadata, str(self._pipeline_output))
         metadata_serializer.process()
