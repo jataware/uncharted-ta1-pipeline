@@ -8,7 +8,5 @@ setup(
     packages=find_packages(),
     keywords=["metadata", "extraction", "pipeline"],
     license="Apache-2.0",
-    install_requires=[
-        lara_modelling_tasks
-    ],
+    install_requires=["lara_modelling_tasks"],
 )

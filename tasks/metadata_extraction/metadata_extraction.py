@@ -207,7 +207,7 @@ class MetadataFileWriter:
 
         # if the output dir doesn't exist, create it
         if not os.path.exists(output_path):
-            output_dir = os.path.dirname(self._output_path)
+            output_dir = os.path.dirname(output_path)
             os.makedirs(output_dir)
 
         for m in metadata:

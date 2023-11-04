@@ -162,3 +162,5 @@ cython_debug/
 .vscode
 
 pipelines/metadata_extraction/working/
+pipelines/metadata_extraction/deploy/**/
+
