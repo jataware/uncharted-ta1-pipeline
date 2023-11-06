@@ -252,64 +252,17 @@ def display_ocr_results(texts: List[Dict[str, Any]], pil_image: PILImage, color=
     pil_image.show()
 
 
-def process_images(
-    input_path: Path, output_path: Path, to_blocks=False, document_ocr=False
-) -> List[Tuple[str, List[Dict[str, Any]]]]:
-    """Processes all images in a directory and writes the text annotations out as pkl files"""
-
-    results: List[Tuple[str, List[Dict[str, Any]]]] = []
-    for _, _, filenames in os.walk(input_path):
-        for filename in tqdm(filenames):
-            file = os.path.join(input_path, filename)
-
-            # determine the output file name
-            output_file = os.path.join(
-                output_path, os.path.splitext(filename)[0] + ".pkl"
-            )
-
-            doc_id = Path(file).with_suffix("").stem
-
-            # skip if the output file already exists
-            if os.path.isfile(output_file):
-                with open(output_file, "rb") as f:
-                    results.append((doc_id, pickle.load(f)))
-                    continue
-
-            try:
-                if os.path.isfile(file):
-                    image = load_pil_image(file)
-                    conditioned_image = condition_pil_image(image)
-                    vision_image = pil_to_vision_image(conditioned_image)
-                    if document_ocr:
-                        texts = detect_document_text(vision_image)
-                    else:
-                        texts = detect_text(vision_image)
-                        if to_blocks:
-                            texts = text_to_blocks(texts)
-
-                    write_texts(texts, output_file)
-                    results.append((doc_id, texts))
-            except Exception as e:
-                print(f"Error processing file: {file} - {e}")
-                continue
-    return results
-
-
 def process_image(
-    input_path: Path, output_path: Path, to_blocks=False, document_ocr=False
-) -> Tuple[str, List[Dict[str, Any]]]:
+    doc_id: str, image: PILImage, cache_dir: Path, to_blocks=False, document_ocr=False
+) -> List[Dict[str, Any]]:
     """Processes a single image and writes the text annotations to a json file"""
-    # determine the output file name
-    output_file = os.path.join(output_path, input_path.with_suffix("").stem + ".pkl")
-
-    doc_id = input_path.with_suffix("").stem
 
     # skip if the output file already exists
+    output_file = os.path.join(cache_dir, doc_id + ".pkl")
     if os.path.isfile(output_file):
         with open(output_file, "rb") as f:
-            return (doc_id, pickle.load(f))
+            return pickle.load(f)
 
-    image = load_pil_image(str(input_path))
     conditioned_image = condition_pil_image(image)
     vision_image = pil_to_vision_image(conditioned_image)
     if document_ocr:
@@ -319,4 +272,12 @@ def process_image(
         if to_blocks:
             texts = text_to_blocks(texts)
     write_texts(texts, str(output_file))
-    return (doc_id, texts)
+
+    return texts
+
+
+def process_image_file(
+    doc_id: str, input_path: Path, cache_dir: Path, to_blocks=False, document_ocr=False
+) -> List[Dict[str, Any]]:
+    image = load_pil_image(str(input_path))
+    return process_image(doc_id, image, cache_dir, to_blocks, document_ocr)

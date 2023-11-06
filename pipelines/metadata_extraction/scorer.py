@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 from nltk.translate.meteor_score import single_meteor_score
 import os
-from tasks.entities.entities import MetadataExtraction
+from tasks.metadata_extraction.entities import MetadataExtraction
 
 MetadataScore = Dict[str, float]
 MetadataScores = Dict[str, MetadataScore]

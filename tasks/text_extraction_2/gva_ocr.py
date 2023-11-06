@@ -3,37 +3,25 @@ import os
 from . import ocr_util
 from .entities import DocTextExtraction, TextExtraction, Point
 from typing import List, Dict, Any
+from PIL.Image import Image
 
 
 class GoogleVisionOCR:
-    def __init__(
-        self, input: Path, output: Path, blocks: bool, document_ocr: bool, show: bool
-    ):
-        self._input = input
-        self._output = output
+    def __init__(self, cache_path: Path, blocks: bool, document_ocr: bool):
         self._blocks = blocks
         self._document_ocr = document_ocr
+        self._cache_path = cache_path
 
-    def process(self) -> List[DocTextExtraction]:
-        """Runs OCR on a single image or a directory of images and writes the output to a json file"""
+    def process(self, doc_id: str, input: Image) -> DocTextExtraction:
+        """Runs OCR on and writes the output to a json file"""
         # if the output dir doesn't exist, create it
-        if not self._output.exists():
-            os.makedirs(self._output)
+        if not self._cache_path.exists():
+            os.makedirs(self._cache_path)
 
-        if self._input.is_file():
-            doc_id, texts = ocr_util.process_image(
-                self._input, self._output, self._blocks, self._document_ocr
-            )
-            return [self._from_legacy_text(doc_id, texts)]
-
-        else:
-            ocr_results = ocr_util.process_images(
-                self._input, self._output, self._blocks, self._document_ocr
-            )
-            doc_extractions: List[DocTextExtraction] = []
-            for doc_id, texts in ocr_results:
-                doc_extractions.append(self._from_legacy_text(doc_id, texts))
-            return doc_extractions
+        texts = ocr_util.process_image(
+            doc_id, input, self._cache_path, self._blocks, self._document_ocr
+        )
+        return self._from_legacy_text(doc_id, texts)
 
     def _from_legacy_text(
         self, doc_id: str, texts: List[Dict[str, Any]]

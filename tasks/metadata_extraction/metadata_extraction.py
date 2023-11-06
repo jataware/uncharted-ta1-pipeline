@@ -6,7 +6,7 @@ import os
 import openai
 import tiktoken
 from tqdm import tqdm
-from typing import List, Optional
+from typing import List, Optional, Any
 import boto3
 from tasks.metadata_extraction.entities import MetadataExtraction
 from tasks.text_extraction_2.entities import DocTextExtraction
@@ -52,31 +52,20 @@ class MetadataExtractor:
 
     def __init__(
         self,
-        doc_text_extractions: List[DocTextExtraction],
-        output_path: str,
         verbose=False,
     ):
-        self._doc_text_extractions = doc_text_extractions
-        self._output_path = output_path
         self._verbose = verbose
 
-    def process(self) -> List[MetadataExtraction]:
+    def process(self, doc_text: DocTextExtraction) -> Optional[MetadataExtraction]:
         """Processes a directory of OCR files and writes the metadata to a json file"""
-        metadata_list: List[MetadataExtraction] = []
-        for doc_text in tqdm(self._doc_text_extractions):
-            # extract metadata from ocr output
-            map_metadata = self._process_doc_text_extractions(
-                doc_text, verbose=self._verbose
-            )
-            if map_metadata:
-                # normalize scale
-                if map_metadata:
-                    map_metadata.scale = self._normalize_scale(map_metadata.scale)
-                metadata_list.append(map_metadata)
+        # extract metadata from ocr output
+        metadata = self._process_doc_text_extraction(doc_text, verbose=self._verbose)
+        if metadata:
+            # normalize scale
+            metadata.scale = self._normalize_scale(metadata.scale)
+        return metadata
 
-        return metadata_list
-
-    def _process_doc_text_extractions(
+    def _process_doc_text_extraction(
         self, doc_text_extraction: DocTextExtraction, verbose=False
     ) -> Optional[MetadataExtraction]:
         """Extracts metadata from a single OCR file"""
@@ -212,7 +201,9 @@ class MetadataFileWriter:
 
         for m in metadata:
             json_model = m.model_dump_json()
-            with open(os.path.join(output_path, m.map_id + ".json"), "w") as outfile:
+            with open(
+                os.path.join(output_path, f"{m.map_id}_metadata.json"), "w"
+            ) as outfile:
                 outfile.write(json_model)
 
     @staticmethod
@@ -234,46 +225,46 @@ class MetadataFileWriter:
             )
 
 
-class TA1SchemaFileWriter:  # TODO: factor out common code with MetadataFileWriter
+class SchemaFileWriter:  # TODO: factor out common code with MetadataFileWriter
     """Converts metadata to a schema objects, and writes them as a json
     file on the local file system or to an s3 bucket"""
 
     _S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.-]+$")
 
-    def __init__(self, metadata: List[MetadataExtraction], output_path: str):
-        self._metadata = metadata
+    def __init__(self, output_path: str):
         self._output_path = output_path
 
-    def process(self) -> None:
+    def process(self, metadata: MetadataExtraction) -> None:
         """Writes metadata to a json file on the local file system or to an s3 bucket"""
 
         # check to see if path is an s3 uri - otherwise treat it as a file path
         if self._S3_URI_MATCHER.match(str(self._output_path)):
             self._write_to_s3(
-                self._metadata,
+                metadata,
                 self._output_path,
                 boto3.client("s3"),
             )
         else:
-            self._write_to_file(self._metadata, self._output_path)
+            self._write_to_file(metadata, self._output_path)
 
     @staticmethod
-    def _write_to_file(metadata: List[MetadataExtraction], output_path: str) -> None:
+    def _write_to_file(metadata: MetadataExtraction, output_path: str) -> None:
         """Writes metadata to a json file"""
 
         # if the output dir doesn't exist, create it
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-        for m in metadata:
-            map = TA1SchemaFileWriter._metadata_to_map(m)
-            json_model = map.model_dump_json()
-            with open(os.path.join(output_path, m.map_id + ".json"), "w") as outfile:
-                outfile.write(json_model)
+        map = SchemaTransformer().process(metadata)
+        json_model = map.model_dump_json()
+        with open(
+            os.path.join(output_path, f"{metadata.map_id}_map.json"), "w"
+        ) as outfile:
+            outfile.write(json_model)
 
     @staticmethod
     def _write_to_s3(
-        metadata: List[MetadataExtraction], output_path: str, client
+        metadata: MetadataExtraction, output_path: str, client: Any
     ) -> None:
         """Writes metadata to an s3 bucket"""
 
@@ -281,18 +272,20 @@ class TA1SchemaFileWriter:  # TODO: factor out common code with MetadataFileWrit
         bucket = output_path.split("/")[2]
 
         # write data to the bucket
-        for m in metadata:
-            map = TA1SchemaFileWriter._metadata_to_map(m)
-            json_model = map.model_dump_json()
-            client.put_object(
-                Body=json_model,
-                Bucket=bucket,
-                Key=f"{m.map_id}_metadata.json",
-            )
+        schema_map = SchemaTransformer().process(metadata)
+        json_model = schema_map.model_dump_json()
+        client.put_object(
+            Body=json_model,
+            Bucket=bucket,
+            Key=f"{metadata.map_id}_map.json",
+        )
 
-    @staticmethod
-    def _metadata_to_map(metadata: MetadataExtraction) -> Map:
-        """Converts metadata to a Map object"""
+
+class SchemaTransformer:
+    """Converts metadata to a schema object"""
+
+    def process(self, metadata: MetadataExtraction) -> Map:
+        """Converts metadata to a schema object"""
         return Map(
             name=metadata.title,
             source_url="",

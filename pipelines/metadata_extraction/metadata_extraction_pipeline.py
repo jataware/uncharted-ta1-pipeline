@@ -2,39 +2,41 @@ import os
 from pathlib import Path
 from tasks.metadata_extraction.metadata_extraction import (
     MetadataExtractor,
-    MetadataFileWriter,
-    TA1SchemaFileWriter,
+    SchemaFileWriter,
 )
 from tasks.text_extraction_2.gva_ocr import GoogleVisionOCR
+from tasks.metadata_extraction.entities import MetadataExtraction
+from typing import Iterator, Tuple, List
+from PIL.Image import Image as PILImage
 
 
 class MetadataExtractorPipeline:
     def __init__(
-        self, input: Path, output: str, work_dir: Path, verbose=False, append=False
+        self,
+        work_dir: Path,
+        verbose=False,
     ):
-        self._pipeline_input = input
         self._ocr_output = Path(os.path.join(work_dir, "ocr_output"))
-        self._metadata_input = self._ocr_output
-        self._metadata_processed = Path(os.path.join(work_dir, "metadata_processed"))
-        self._pipeline_output = output
         self._verbose = verbose
 
-    def run(self):
-        # run google vision ocr
-        print(f"Running OCR on {self._pipeline_input}")
-        ocr_task = GoogleVisionOCR(
-            self._pipeline_input, self._ocr_output, True, True, False
-        )
-        ocr_results = ocr_task.process()
+    def run(self, input: Iterator[Tuple[str, PILImage]]) -> List[MetadataExtraction]:
+        # instantiate the loader
+        ocr_task = GoogleVisionOCR(self._ocr_output, True, True)
+        metadata_extractor = MetadataExtractor(self._verbose)
 
-        # run metadata extraction
-        print(f"Running metadata extraction on {self._ocr_output}")
-        metadata_extractor = MetadataExtractor(
-            ocr_results, self._pipeline_output, self._verbose
-        )
-        metadata = metadata_extractor.process()
+        result: List[MetadataExtraction] = []
+        for doc_id, image in input:
+            print(f"Processing image: {doc_id}")
 
-        # serialize output
-        print(f"Serializing output to {self._pipeline_output}")
-        metadata_serializer = TA1SchemaFileWriter(metadata, str(self._pipeline_output))
-        metadata_serializer.process()
+            # run google vision ocr
+            ocr_results = ocr_task.process(doc_id, image)
+            if ocr_results is None:
+                continue
+
+            # run metadata extraction
+            metadata = metadata_extractor.process(ocr_results)
+            if metadata is None:
+                continue
+
+            result.append(metadata)
+        return result
