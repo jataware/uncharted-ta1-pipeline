@@ -1,7 +1,6 @@
 import argparse
-import os
 from pathlib import Path
-import metadata_extraction.task.ocr_util as ocr_util
+from . import ocr_util
 
 
 def main():
