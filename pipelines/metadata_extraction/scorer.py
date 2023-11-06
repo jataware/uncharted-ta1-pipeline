@@ -104,10 +104,18 @@ class Scorer:
                 if isinstance(field_prediction, list) and isinstance(field_truth, list):
                     score = self._score_list(field_prediction, field_truth)
                 elif isinstance(field_prediction, str) and isinstance(field_truth, str):
-                    if field_key == "title":
-                        score = self._score_meteor(field_prediction, field_truth)
-                    else:
-                        score = self._score_string(field_prediction, field_truth)
+                    # if field_key[0] == "title":
+                    #     score = self._score_meteor(field_prediction, field_truth)
+                    if (
+                        field_key[0] == "quadrangle"
+                    ):  # normalization is now in the pipeline but this is here for legacy data
+                        # remove quadrangle from prediction and truth
+                        field_prediction = field_prediction.lower().replace(
+                            "quadrangle", ""
+                        )
+                        field_truth = field_truth.lower().replace("quadrangle", "")
+                    # else:
+                    score = self._score_string(field_prediction, field_truth)
                 else:
                     score = self._score_string(str(field_prediction), str(field_truth))
 
@@ -127,8 +135,14 @@ class Scorer:
     def _score_list(self, predicted: List[str], truth: List[str]) -> float:
         """Scores a predicted list of strings against a ground truth list of strings"""
         # lower case all strings
-        predictions = [prediction.lower() for prediction in predicted]
-        truth_list = [truth_val.lower() for truth_val in truth if truth_val != "NULL"]
+        predictions = [
+            self._clean_string(prediction)
+            for prediction in predicted
+            if prediction != "NULL"
+        ]
+        truth_list = [
+            self._clean_string(truth_val) for truth_val in truth if truth_val != "NULL"
+        ]
 
         # compare two lists of strings ignoring order
         pred_set = set(predictions)
@@ -137,10 +151,27 @@ class Scorer:
 
     def _score_meteor(self, predicted: str, truth: str) -> float:
         """Scores a predicted string against a ground truth string"""
+        # remove any characters that are not alphanumeric
+        predicted = self._clean_string(predicted)
+        truth = self._clean_string(truth)
+
         prediction_list = predicted.split(" ")
         truth_list = truth.split(" ")
         return single_meteor_score(prediction_list, truth_list)  # type: ignore
 
     def _score_string(self, predicted: str, truth: str) -> float:
         """Scores a predicted string against a ground truth string"""
-        return 1.0 if predicted.lower() == truth.lower() else 0.0
+        # remove any characters that are not alphanumeric
+        predicted = self._clean_string(predicted)
+        truth = self._clean_string(truth)
+        return 1.0 if predicted == truth else 0.0
+
+    def _clean_string(self, s: str) -> str:
+        """retain characters that are alphanumeric or whitespace"""
+        s = s.lower()
+        s = "".join([c for c in s if c.isalnum() or c.isspace()])
+
+        # allow a maximum of one space between words
+        s = " ".join(s.split())
+
+        return s

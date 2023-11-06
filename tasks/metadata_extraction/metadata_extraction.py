@@ -24,6 +24,9 @@ class MetadataExtractor:
     SCALE_PATTERN = re.compile(r"[,\. a-zA-z]+")
     SCALE_PREPEND = re.compile(r"\d+:")
 
+    # quadrangle normalization
+    QUADRANGLE_PATTERN = re.compile(re.escape("quadrangle"), re.IGNORECASE)
+
     # max number of tokens allowed by openai api
     TOKEN_LIMIT = 4096
 
@@ -45,7 +48,6 @@ class MetadataExtractor:
             "publisher": "<publisher>",
             "base_map": "<base map>",
             "quadrangle": "<quadrangle>",
-            "lat_lon": "<latitude and longitude point on map>",
         },
         indent=4,
     )
@@ -63,6 +65,9 @@ class MetadataExtractor:
         if metadata:
             # normalize scale
             metadata.scale = self._normalize_scale(metadata.scale)
+
+            # normalize quadrangle
+            metadata.quadrangle = self._normalize_quadrangle(metadata.quadrangle)
         return metadata
 
     def _process_doc_text_extraction(
@@ -157,7 +162,7 @@ class MetadataExtractor:
             + "References and citations should be ignored when extracting authors.\n"
             + "Authors, title and year are normally grouped together.\n"
             + "The year should be the most recent value and should be a single 4 digit number.\n"
-            + 'The term "grid ticks" is not part of the coordinate system.\n'
+            + "The term grid ticks should not be included in coordinate system output.\n"
         )
 
     def _normalize_scale(self, scale_str: str) -> str:
@@ -168,6 +173,10 @@ class MetadataExtractor:
                 normalized_scale = "1:" + normalized_scale
             return normalized_scale
         return scale_str
+
+    def _normalize_quadrangle(self, quadrangle_str: str) -> str:
+        """Normalizes the quadrangle string by removing the word quadrangle"""
+        return re.sub(self.QUADRANGLE_PATTERN, "", quadrangle_str).strip()
 
 
 class MetadataFileWriter:
@@ -293,7 +302,7 @@ class SchemaTransformer:
             image_size=[],
             authors=", ".join(metadata.authors),
             publisher="",
-            year=int(metadata.year),
+            year=int(metadata.year) if metadata.year.isdigit() else -1,
             organization="",
             scale=metadata.scale,
             bounds="",
