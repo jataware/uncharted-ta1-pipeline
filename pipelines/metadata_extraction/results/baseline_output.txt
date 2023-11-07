@@ -1,0 +1,582 @@
+map: GEO_0033
+key: year
+truth: 1974
+prediction: NULL
+
+map: GEO_0056
+key: year
+truth: 1981
+prediction: NULL
+
+map: GEO_0073
+key: year
+truth: 1979
+prediction: NULL
+
+map: GEO_0081
+key: year
+truth: 1981
+prediction: NULL
+
+map: GEO_0091
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0103
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0103
+key: authors
+truth: wallace r. hansen
+prediction: Wallace R. Hansen, Manuel G. Bonilla
+
+map: GEO_0103
+key: year
+truth: 1961
+prediction: 1953-54
+
+map: GEO_0120
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0120
+key: coordinate_system
+truth: utm grid and 1967 magnetic north declination
+prediction: NULL
+
+map: GEO_0120
+key: authors
+truth: john n. batchelder and wayne e. hall
+prediction: John N. Mizer
+
+map: GEO_0120
+key: year
+truth: 1978
+prediction: 1971
+
+map: GEO_0131
+key: title
+truth: photogeologic map of the white canyon- 2 quadrangle san juan and garfield counties, utah
+prediction: PHOTOGEOLOGIC MAP OF THE WHITE CANYON- 2 QUADRANGLE
+
+map: GEO_0131
+key: scale
+truth: scale 1:24000
+prediction: 1:24000
+
+map: GEO_0136
+key: year
+truth: 1968
+prediction: NULL
+
+map: GEO_0139
+key: scale
+truth: 1.24 000
+prediction: 1:124000
+
+map: GEO_0139
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0139
+key: year
+truth: 1986
+prediction: NULL
+
+map: GEO_0142
+key: scale
+truth: 1:62500
+prediction: 1:24000
+
+map: GEO_0146
+key: year
+truth: 1994
+prediction: NULL
+
+map: GEO_0154
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0154
+key: authors
+truth: harry mcandrews
+prediction: NULL
+
+map: GEO_0179
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0185
+key: authors
+truth: james gilluly
+prediction: James Gilluly, G. C. Cone
+
+map: GEO_0191
+key: title
+truth: map of earthquake features of the new madrid district in parts of missouri, arkansas, illinois, kentucky and tennessee
+prediction: MAP OF THE ALLUVIAL VALLEY OF MISSISSIPPI RIVER
+
+map: GEO_0191
+key: authors
+truth: myron l. fuller
+prediction: MISSISSIPPI RIVER COMMISSION
+
+map: GEO_0191
+key: year
+truth: 1905
+prediction: 1887
+
+map: GEO_0196
+key: scale
+truth: 1:25000
+prediction: NULL
+
+map: GEO_0196
+key: year
+truth: 1932
+prediction: NULL
+
+map: GEO_0219
+key: scale
+truth: 1:24000
+prediction: 1:62500
+
+map: GEO_0219
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0225
+key: authors
+truth: charles r. warren
+prediction: Prepared in cooperation with the State of Connecticut Geological and Natural History Survey
+
+map: GEO_0226
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0226
+key: coordinate_system
+truth: carter coordinate system
+prediction: NULL
+
+map: GEO_0230
+key: zone
+truth: east zone
+prediction: NULL
+
+map: GEO_0230
+key: coordinate_system
+truth: new mexico coordinate system
+prediction: New Mexico coordinate system, east zone
+
+map: GEO_0248
+key: title
+truth: topography
+prediction: ANOKA QUADRANGLE
+
+map: GEO_0251
+key: title
+truth: areal geology
+prediction: HENING QUADRANGLE
+
+map: GEO_0251
+key: authors
+truth: jno. h. renshawe, geographer in charge. control by geo. t. hawkins. topography by wm. h. griffin.
+prediction: F. W. Sardeson, Frank Leverett
+
+map: GEO_0251
+key: year
+truth: 1915
+prediction: 1911
+
+map: GEO_0264
+key: title
+truth: topographic sheet
+prediction: LITTLE BELT MTS QUADRANGLE
+
+map: GEO_0266
+key: title
+truth: economic geology sheet
+prediction: LITTLE BELT MTS. QUADRANGLE
+
+map: GEO_0266
+key: authors
+truth: e.m.douglas, topographer in charge
+prediction: Walter Harvey Weed, Louis V. Pirsson
+
+map: GEO_0272
+key: scale
+truth: scale 125,000
+prediction: 1:125000
+
+map: GEO_0272
+key: year
+truth: 1942
+prediction: 1928-29
+
+map: GEO_0282
+key: year
+truth: 1958
+prediction: 1954-1956
+
+map: GEO_0300
+key: vertical_datum
+truth: national geodetic vertical datum of 1929
+prediction: NULL
+
+map: GEO_0303
+key: title
+truth: topography
+prediction: TAMALPAIS QUADRANGLE
+
+map: GEO_0303
+key: authors
+truth: henry gannett, r.u.goode, r.b.marshall
+prediction: George Otis Smith, Henry Gannett, R.U.Goode, R.B.Marshall
+
+map: GEO_0308
+key: title
+truth: areal geology
+prediction: HAYWARDS QUADRANGLE
+
+map: GEO_0308
+key: scale
+truth: 1:62500
+prediction: 1:€2500
+
+map: GEO_0308
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0308
+key: authors
+truth: r.u.goode, l.c.fletcher, r.b.marshall
+prediction: Andrew C. Lawson, students of the University of California
+
+map: GEO_0309
+key: title
+truth: structure sections
+prediction: HAYWARDS QUADRANGLE
+
+map: GEO_0309
+key: scale
+truth: 1:62500
+prediction: 1:623
+
+map: GEO_0309
+key: authors
+truth: r.u.goode, l.c.fletcher, r.b.marshall
+prediction: Andrew C.Lawson, students of the University of California
+
+map: GEO_0311
+key: title
+truth: topography
+prediction: SAN FRANCISCO QUADRANGLE
+
+map: GEO_0311
+key: authors
+truth: a.h.thompson, willard d. johnson, r.h.chapman, r.b.marshall, w.h.otis
+prediction: A.H.Thompson, Willard D. Johnson, R.H.Chapman, R.B.Marshall, W. H.Otis
+
+map: GEO_0312
+key: title
+truth: areal geology
+prediction: SAN FRANCISCO QUADRANGLE
+
+map: GEO_0312
+key: scale
+truth: 1:62500
+prediction: 1:62300
+
+map: GEO_0312
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0312
+key: authors
+truth: a.h.thompson, willard d. johnson, r.h.chapman, r.b.marshall, w.h.otis
+prediction: Andrew C.Lawson
+
+map: GEO_0312
+key: year
+truth: 1913
+prediction: 1891-1895, 1899, 1905, and 1911
+
+map: GEO_0314
+key: title
+truth: topography
+prediction: CONCORD QUADRANGLE
+
+map: GEO_0314
+key: scale
+truth: 1:62500
+prediction: 1:62300
+
+map: GEO_0314
+key: authors
+truth: henry gannett, r.u.goode, w.d.johnson, w.h.otis
+prediction: George Otis Smith, W. D. Johnson, W. H. Otis
+
+map: GEO_0321
+key: year
+truth: 2001
+prediction: NULL
+
+map: GEO_0323
+key: year
+truth: 1974
+prediction: 1964-74
+
+map: GEO_0325
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0326
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0331
+key: title
+truth: preliminary map of greasewood gulch quadrangle, rio blanco county, colorado
+prediction: MAP OF GREASEWOOD GULCH QUADRANGLE, RIO BLANCO COUNTY, COLORADO
+
+map: GEO_0331
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0336
+key: projection
+truth: universal transverse mercator
+prediction: NULL
+
+map: GEO_0336
+key: zone
+truth: zone 11
+prediction: NULL
+
+map: GEO_0336
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0336
+key: coordinate_system
+truth: arizona coordinate system, west zone
+prediction: NULL
+
+map: GEO_0339
+key: scale
+truth: 1:20000
+prediction: 1:130000
+
+map: GEO_0339
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0340
+key: authors
+truth: watson h. monroe
+prediction: Geological Survey
+
+map: GEO_0362
+key: year
+truth: 1996
+prediction: 1995
+
+map: GEO_0370
+key: authors
+truth: keith b. ketner
+prediction: Topographic Division, U.S. Geological Survey, Commonwealth of Kentucky, University of Kentucky, Kentucky Geological Survey
+
+map: GEO_0370
+key: year
+truth: 1962
+prediction: 1961
+
+map: GEO_0373
+key: authors
+truth: benjamin gildersleeve
+prediction: U. S. Geological Survey, Commonwealth of Kentucky, University of Kentucky
+
+map: GEO_0377
+key: year
+truth: 1979
+prediction: 1978
+
+map: GEO_0387
+key: coordinate_system
+truth: massachusetts coordinate system, mainland zone
+prediction: NULL
+
+map: GEO_0396
+key: scale
+truth: 1:2000 000
+prediction: 1:2000000
+
+map: GEO_0404
+key: year
+truth: 1895
+prediction: NULL
+
+map: GEO_0406
+key: year
+truth: 1899
+prediction: NULL
+
+map: GEO_0407
+key: authors
+truth: s.w. beyer
+prediction: S.W. BEYER, GARY MORAINE, ALTAMONT MORAINE, IOWAN LOESS, OVERLYING KANSAN DRIFT
+
+map: GEO_0407
+key: year
+truth: 1899
+prediction: NULL
+
+map: GEO_0413
+key: year
+truth: 1905
+prediction: NULL
+
+map: GEO_0441
+key: year
+truth: 1986
+prediction: 1962
+
+map: GEO_0446
+key: scale
+truth: 1:24000
+prediction: NULL
+
+map: GEO_0458
+key: year
+truth: 1967
+prediction: 1964-65
+
+map: GEO_0461
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0461
+key: coordinate_system
+truth: carter coordinate system
+prediction: NULL
+
+map: GEO_0475
+key: year
+truth: 2008
+prediction: 2002
+
+map: GEO_0481
+key: scale
+truth: 1:200000
+prediction: NULL
+
+map: GEO_0481
+key: year
+truth: 1971
+prediction: 1969-1970
+
+map: GEO_0488
+key: scale
+truth: 1:36000
+prediction: 1:30-60-
+
+map: GEO_0491
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0493
+key: vertical_datum
+truth: mean sea level
+prediction: NULL
+
+map: GEO_0493
+key: coordinate_system
+truth: carter coordinate system
+prediction: NULL
+
+map: GEO_0501
+key: title
+truth: reconnaissance geologic map of the wellington quadrangle, carbon county, utah
+prediction: RECONNAISSANCE GEOLOGIC MAP OF THE WELLINGTON QUADRANGLE
+
+map: GEO_0501
+key: coordinate_system
+truth: utah coordinate system, central zone
+prediction: 1000-meter Universal Transverse Mercator grid ticks
+
+map: GEO_0501
+key: authors
+truth: irving j. witkind
+prediction: Irving J. Witkind, Mark D. Williams
+
+map: GEO_0501
+key: year
+truth: 1979
+prediction: 1978
+
+Results:
+====================
+title
+Correct: 70
+Incorrect: 14
+Percent correct: 0.8333333333333334
+
+projection
+Correct: 13
+Incorrect: 1
+Percent correct: 0.9285714285714286
+
+scale
+Correct: 66
+Incorrect: 15
+Percent correct: 0.8148148148148148
+
+zone
+Correct: 8
+Incorrect: 2
+Percent correct: 0.8
+
+datum
+Correct: 14
+Incorrect: 0
+Percent correct: 1.0
+
+vertical_datum
+Correct: 38
+Incorrect: 19
+Percent correct: 0.6666666666666666
+
+coordinate_system
+Correct: 11
+Incorrect: 8
+Percent correct: 0.5789473684210527
+
+authors
+Correct: 63
+Incorrect: 19
+Percent correct: 0.7682926829268293
+
+year
+Correct: 49
+Incorrect: 29
+Percent correct: 0.6282051282051282
+

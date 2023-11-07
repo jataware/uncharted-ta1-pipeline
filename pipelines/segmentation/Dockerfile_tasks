@@ -1,0 +1,24 @@
+# Dockerfile for legend and map segmentation TASKS
+
+# NOTE: must be run with build context ../../tasks/segmentation
+
+FROM  docker-hub.uncharted.software/python:3.9-slim 
+
+RUN apt-get update && apt-get install -y --no-install-recommends gcc g++ python3-dev git ffmpeg libsm6 libxext6 
+
+# Create needed directories for segmentation task(s)
+ARG TASKS_DIR=/app/tasks/segmentation/
+RUN mkdir -p ${TASKS_DIR}
+WORKDIR ${TASKS_DIR}
+
+COPY requirements.txt setup.cfg pyproject.toml ./
+
+# install requirements
+RUN pip install --upgrade pip --no-cache-dir
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy over segmentation tasks code
+COPY src/ ./src/
+
+CMD ["bash"]
+

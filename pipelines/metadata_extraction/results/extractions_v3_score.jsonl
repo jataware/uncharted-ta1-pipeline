@@ -1,0 +1,7261 @@
+map: 81
+key: title
+truth: Geologic map of the El Paso Mountains Wilderness Study Area, Kern County, California
+prediction: GEOLOGIC MAP OF THE EL PASO MOUNTAINS WILDERNESS STUDY AREA, KERN COUNTY, CALIFORNIA
+meteor score: 0.9997724169321802
+
+map: 81
+key: year
+truth: 1986
+prediction: 1986
+meteor score: 1.0
+
+map: 81
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Cox, B.F.; Diggles, M.F.
+map: 81
+key: authors
+truth: Cox, B.F.; Diggles, M.F.
+prediction: ['Cox, B. F.', 'Diggles, M. F.']
+meteor score: 0.9921875
+
+map: 235
+key: title
+truth: Geologic map of the Owens Peak Wilderness Study Area, Tulare and Kern Counties, California
+prediction: GEOLOGIC MAP OF THE OWENS PEAK WILDERNESS STUDY AREA, TULARE AND KERN COUNTIES, CALIFORNIA
+meteor score: 0.9998177842565598
+
+map: 235
+key: year
+truth: 1986
+prediction: 1986
+meteor score: 1.0
+
+map: 235
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Diggles, M.F.; Clemens, D.E.
+map: 235
+key: authors
+truth: Diggles, M.F.; Clemens, D.E.
+prediction: ['Diggles, M.F.', 'Clemens, D.E.']
+meteor score: 0.9921875
+
+map: 236
+key: title
+truth: Geologic map of the Owens Peak and Little Lake Canyon Wilderness Study Areas, Inyo and Kern Counties, California
+prediction: GEOLOGIC MAP OF THE OWENS PEAK AND LITTLE LAKE CANYON WILDERNESS STUDY AREAS
+meteor score: 0.8819444444444445
+
+map: 236
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 236
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Conrad, J.E.; Dellinger, D.A.; Diggles, M.F.
+map: 236
+key: authors
+truth: Diggles, M.F.; Dellinger, D.A.; Conrad, J.E.
+prediction: ['Conrad, J.E.', 'Dellinger, D.A.', 'Diggles, M.F.']
+meteor score: 0.5260416666666666
+
+map: 237
+key: title
+truth: Geologic and geochemical-anomaly map of the Tunnel Ridge Wilderness Study Area, Klamath Mountains, California
+prediction: GEOLOGIC AND GEOCHEMICAL - ANOMALY MAP OF THE TUNNEL RIDGE WILDERNESS STUDY AREA, KLAMATH MOUNTAINS, CALIFORNIA
+meteor score: 0.8212867949966295
+
+map: 237
+key: year
+truth: 1986
+prediction: 1986
+meteor score: 1.0
+
+map: 237
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Diggles, M.F.; Kennedy, G.L.
+map: 237
+key: authors
+truth: Diggles, M.F.; Kennedy, G.L.
+prediction: ['Diggles, M. F.', 'Kennedy, G. L.']
+meteor score: 0.9921875
+
+map: 313
+key: title
+truth: Mineral resources of the Turtle Mountains Wilderness Study Area, San Bernardino County, California
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE TURTLE MOUNTAINS WILDERNESS STUDY AREA, SAN BERNARDINO COUNTY, CALIFORNIA
+meteor score: 0.8767791460099152
+
+map: 313
+key: year
+truth: 1988
+prediction: 1984
+meteor score: 0.0
+
+map: 313
+key: scale
+truth: 48000
+prediction: 1:62500
+meteor score: 0.0
+
+Howard, K.A.; Stone, P.; Hazlett, R.W.; Wilshire, H.G.; Nakata, J.K.; Nielson-Pike, J.E.; Allen, C.M.; Fitzgibbon, T.T.; Turner, Ryan; Carr, and others
+map: 313
+key: authors
+truth: Howard, K.A.; Nielson, J.E.; Simpson, R.W.; Hazlett, R.W.; Alminas, H.V.; Nakata, J.K.; McDonnell, J.R.
+prediction: ['Howard, K.A.', 'Stone, P.', 'Hazlett, R.W.', 'Wilshire, H.G.', 'Nakata, J.K.', 'Nielson-Pike, J.E.', 'Allen, C.M.', 'Fitzgibbon, T.T.', 'Turner, Ryan', 'Carr, and others']
+meteor score: 0.31265708253744845
+
+map: 5478
+key: title
+truth: Geologic map of the Barbours Creek and Shawvers Run Wilderness Study Areas, Craig County, Virginia
+prediction: GEOLOGIC MAP OF THE BARBOURS CREEK AND SHAWVERS RUN WILDERNESS STUDY AREAS, CRAIG COUNTY, VIRGINIA
+meteor score: 0.9998518518518519
+
+map: 5478
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 5478
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Lesure, F.G.; Estabrook, J.R.; Linden, M.A.
+map: 5478
+key: authors
+truth: Lesure, F.G.; Estabrook, J.R.; Linden, M.A.
+prediction: ['Lesure, F. G.', 'Estabrook, J. R.', 'Linden, M. A.']
+meteor score: 0.9976851851851852
+
+map: 5479
+key: title
+truth: Geochemical survey of Barbours Creek and Shawvers Run Wilderness Study Areas, Craig County, Virginia
+prediction: Geologic map of the Barbours Creek and Shawvers Run Wilderness Study Areas, Craig County, Virginia
+meteor score: 0.8035048471290084
+
+map: 5479
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 5479
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Lesure, F.G.; Estabrook, J.R.; Linden, M.A.
+map: 5479
+key: authors
+truth: Lesure, F.G.
+prediction: ['Lesure, F.G.', 'Estabrook, J.R.', 'Linden, M.A.']
+meteor score: 0.08928571428571427
+
+map: 5483
+key: title
+truth: Geologic map of the Black Rock Wilderness Study Area, Graham County, Arizona
+prediction: GEOLOGIC MAP OF THE BLACK ROCK WILDERNESS STUDY AREA, GRAHAM COUNTY, ARIZONA
+meteor score: 0.9997106481481481
+
+map: 5483
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 5483
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Simons, F.S.
+map: 5483
+key: authors
+truth: Simons, F.S.
+prediction: ['Simons, F. S.']
+meteor score: 0.9375
+
+map: 5484
+key: title
+truth: Geologic map of the Fishhooks Wilderness Study Area, Graham County, Arizona
+prediction: GEOLOGIC MAP OF THE FISHHOOKS WILDERNESS STUDY AREA, GRAHAM COUNTY, ARIZONA
+meteor score: 0.9996243425995492
+
+map: 5484
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 5484
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Simons, F.S.
+map: 5484
+key: authors
+truth: Simons, F.S.
+prediction: ['Simons, F. S.']
+meteor score: 0.9375
+
+map: 5489
+key: title
+truth: Geologic map of the Weepah Spring Wilderness Study Area, Lincoln and Nye Counties, Nevada
+prediction: GEOLOGIC MAP OF THE WEEPAH SPRING WILDERNESS STUDY AREA, LINCOLN AND NYE COUNTIES, NEVADA
+meteor score: 0.9998177842565598
+
+map: 5489
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 5489
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+du Bray, E.A.; Hurtubise, D.O.; Bannister, C.A.
+map: 5489
+key: authors
+truth: DuBray, E.A.; Hurtubise, D.O.; Bannister, C.A.
+prediction: ['du Bray, E. A.', 'Hurtubise, D. O.', 'Bannister, C. A.']
+meteor score: 0.7217391304347825
+
+map: 5492
+key: title
+truth: Geologic map of the Owyhee Canyon Wilderness Study Area, Malheur County, Oregon
+prediction: OWYHEE CANYON WILDERNESS STUDY AREA
+meteor score: 0.6962719298245613
+
+map: 5492
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 5492
+key: scale
+truth: 62500
+prediction: 1:62500
+meteor score: 1.0
+
+Evans, J.G.
+map: 5492
+key: authors
+truth: Evans, J.G.
+prediction: ['Evans, J. G.']
+meteor score: 0.9375
+
+map: 5498
+key: title
+truth: Geologic map of the Bluebell and Goshute Peak Wilderness Study Areas, Elko County, Nevada
+prediction: GEOLOGIC MAP OF THE BLUEBELL AND GOSHUTE PEAK WILDERNESS STUDY AREAS, ELKO COUNTY, NEVADA
+meteor score: 0.9998177842565598
+
+map: 5498
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 5498
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Day, W.C.; Elrick, M.; Ketner, K.B.; Vaag, M.K.
+map: 5498
+key: authors
+truth: Day, W.C.; Elrick, Maya; Ketner, K.B.; Vaag, M.K.
+prediction: ['Day, W. C.', 'Elrick, M.', 'Ketner, K. B.', 'Vaag, M. K.']
+meteor score: 0.864795918367347
+
+map: 5503
+key: title
+truth: Geologic map of the Mount Grafton Wilderness Study Area, Lincoln and White Pine Counties, Nevada
+prediction: GEOLOGIC MAP OF THE MOUNT GRAFTON WILDERNESS STUDY AREA, LINCOLN AND WHITE PINE COUNTIES, NEVADA
+meteor score: 0.9998518518518519
+
+map: 5503
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 5503
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Van Loenen, R.E.; Lundin, E.; Briggs, P.
+map: 5503
+key: authors
+truth: Van Loenen, R.E.
+prediction: ['Van Loenen, R. E.', 'Lundin, E.', 'Briggs, P.']
+meteor score: 0.2840909090909091
+
+map: 5519
+key: title
+truth: Geologic, alteration, and vein maps of the Redcloud Peak (Lake City caldera) and Handies Peak Wilderness Study Areas, Hinsdale County, Colorado
+prediction: GEOLOGIC, ALTERATION, AND VEIN MAPS OF THE REDCLOUD PEAK (LAKE CITY CALDERA) AND HANDIES PEAK WILDERNESS STUDY AREAS, HINSDALE COUNTY, COLORADO
+meteor score: 0.9999460101500918
+
+map: 5519
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 5519
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Hon, K.
+map: 5519
+key: authors
+truth: Hon, Ken
+prediction: ['Hon, K.']
+meteor score: 0.25
+
+map: 5521
+key: title
+truth: Geologic map of the Table Top Mountain Wilderness Study Area, Pinal and Maricopa Counties, Arizona
+prediction: GEOLOGIC MAP OF THE TABLE TOP MOUNTAIN WILDERNESS STUDY AREA, PINAL AND MARICOPA COUNTIES, ARIZONA
+meteor score: 0.9998518518518519
+
+map: 5521
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 5521
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Peterson, J.A.; Tosdal, R.M.; Hornberger, M.I.
+map: 5521
+key: authors
+truth: Peterson, J.A.; Tosdal, R.M.; Hornberger, M.I.
+prediction: ['Peterson, J. A.', 'Tosdal, R. M.', 'Hornberger, M. I.']
+meteor score: 0.9976851851851852
+
+map: 5596
+key: title
+truth: Geologic map of the Skedaddle Mountain Wilderness Study Area, Lassen County, California, and Washoe County, Nevada
+prediction: GEOLOGIC MAP OF THE SKEDADDLE MOUNTAIN WILDERNESS STUDY AREA
+meteor score: 0.823936855670103
+
+map: 5596
+key: year
+truth: 1989
+prediction: 1989
+meteor score: 1.0
+
+map: 5596
+key: scale
+truth: 48000
+prediction: 1:62500
+meteor score: 0.0
+
+Diggles, M.F.; Dellinger, D.A.; Batatian, L.D.
+map: 5596
+key: authors
+truth: Diggles, M.F.; Dellinger, D.A.; Batatian, L.D.
+prediction: ['Diggles, M.F.', 'Dellinger, D.A.', 'Batatian, L.D.']
+meteor score: 0.9976851851851852
+
+map: 5642
+key: title
+truth: Geologic map of the Woolsey Peak Wilderness Study Area, Maricopa County, Arizona
+prediction: GEOLOGIC MAP OF THE WOOLSEY PEAK WILDERNESS STUDY AREA, MARICOPA COUNTY, ARIZONA
+meteor score: 0.9997106481481481
+
+map: 5642
+key: year
+truth: 1989
+prediction: 1988
+meteor score: 0.0
+
+map: 5642
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Peterson, J.A.; Miller, R.J.; Jones, S.L.
+map: 5642
+key: authors
+truth: Peterson, J.A.; Miller, R.J.; Jones, S.L.
+prediction: ['Peterson, J. A.', 'Miller, R. J.', 'Jones, S. L.']
+meteor score: 0.9976851851851852
+
+map: 5649
+key: title
+truth: Geologic map of the Little Humboldt River Wilderness Study Area, Elko County, Nevada
+prediction: NULL
+meteor score: 0.0
+
+map: 5649
+key: year
+truth: 1988
+prediction: 1988
+meteor score: 1.0
+
+map: 5649
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Wallace, A.R.; Luessen, M.J.; Wolde Michael, B.
+map: 5649
+key: authors
+truth: Wallace, A.R.
+prediction: ['Wallace, A. R.', 'Luessen, M. J.', 'Wolde Michael, B.']
+meteor score: 0.07692307692307691
+
+map: 5659
+key: title
+truth: Geologic map of the north Stansbury Mountains Wilderness Study Area, Tooele County, Utah
+prediction: GEOLOGIC MAP OF THE NORTH STANSBURY MOUNTAINS WILDERNESS STUDY AREA, TOOELE COUNTY, UTAH
+meteor score: 0.9997724169321802
+
+map: 5659
+key: year
+truth: 1989
+prediction: 1989
+meteor score: 1.0
+
+map: 5659
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Foose, M.P.; Lopez, R.; Moore, W.J.
+map: 5659
+key: authors
+truth: Foose, M.P.
+prediction: ['Foose, M. P.', 'Lopez, R.', 'Moore, W. J.']
+meteor score: 0.08928571428571427
+
+map: 5699
+key: title
+truth: Geologic map of the Deep Creek Mountains Wilderness Study Area, Tooele and Juab Counties, Utah
+prediction: GEOLOGIC MAP OF THE DEEP CREEK MOUNTAINS WILDERNESS STUDY AREA, TOOELE AND JUAB COUNTIES, UTAH
+meteor score: 0.9998518518518519
+
+map: 5699
+key: year
+truth: 1989
+prediction: 1989
+meteor score: 1.0
+
+map: 5699
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Rodgers, D.W.
+map: 5699
+key: authors
+truth: Rodgers, D.W.
+prediction: ['Rodgers, D. W.']
+meteor score: 0.9375
+
+map: 5721
+key: title
+truth: Geologic map of the Diablo Mountain Wilderness Study Area, Lake County, Oregon
+prediction: GEOLOGIC MAP OF THE DIABLO MOUNTAIN WILDERNESS STUDY AREA, LAKE COUNTY, OREGON
+meteor score: 0.9997106481481481
+
+map: 5721
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 5721
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Diggles, M.F.; Conrad, J.E.; Soreghan, G.A.
+map: 5721
+key: authors
+truth: Diggles, M.F.; Conrad, J.E.; Soreghan, G.A.
+prediction: ['Diggles, M. F.', 'Conrad, J. E.', 'Soreghan, G. A.']
+meteor score: 0.9976851851851852
+
+map: 5730
+key: title
+truth: Geologic map of the Sheep Creek West Wilderness Study Area, Owyhee County, Idaho
+prediction: GEOLOGIC MAP OF THE SHEEP CREEK WEST WILDERNESS STUDY AREA, OWYHEE COUNTY, IDAHO
+meteor score: 0.9997724169321802
+
+map: 5730
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 5730
+key: scale
+truth: 50000
+prediction: 1:24000
+meteor score: 0.0
+
+Bonnichsen, B.; Bernt, J.; Jenks, M.D.
+map: 5730
+key: authors
+truth: Bonnichsen, Bill; Bernt, John; Jenks, M.D.
+prediction: ['Bonnichsen, B.', 'Bernt, J.', 'Jenks, M. D.']
+meteor score: 0.5260416666666666
+
+map: 5731
+key: title
+truth: Geologic map of the Jarbidge River Wilderness Study Area, Owyhee County, Idaho
+prediction: GEOLOGIC MAP OF THE JARBIDGE RIVER WILDERNESS STUDY AREA
+meteor score: 0.859375
+
+map: 5731
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 5731
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Bonnichsen, B.; Jenks, M.D.
+map: 5731
+key: authors
+truth: Bonnichsen, Bill; Jenks, M.D.
+prediction: ['Bonnichsen, B.', 'Jenks, M. D.']
+meteor score: 0.6388888888888888
+
+map: 5732
+key: title
+truth: Geologic map of the Bruneau River Wilderness Study Area, Owyhee County, Idaho
+prediction: GEOLOGIC MAP OF THE BRUNEAU RIVER WILDERNESS STUDY AREA, OWYHEE COUNTY, IDAHO
+meteor score: 0.9997106481481481
+
+map: 5732
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 5732
+key: scale
+truth: 50000
+prediction: 1:24000
+meteor score: 0.0
+
+Jenks, M.D.; Bonnichsen, B.
+map: 5732
+key: authors
+truth: Jenks, M.D.; Bonnichsen, Bill
+prediction: ['Jenks, M. D.', 'Bonnichsen, B.']
+meteor score: 0.7361111111111112
+
+map: 5759
+key: title
+truth: Geologic map of the Little Jacks Creek, Big Jacks Creek, and Duncan Creek Wilderness Study Areas, Owyhee County, Idaho
+prediction: GEOLOGIC MAP OF THE LITTLE JACKS CREEK, BIG JACKS CREEK, AND DUNCAN CREEK WILDERNESS STUDY AREAS, OWYHEE COUNTY, IDAHO
+meteor score: 0.9999271030762502
+
+map: 5759
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 5759
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Kauffman, D.F.; Bonnichsen, B.
+map: 5759
+key: authors
+truth: Kauffman, D.F.; Bonnichsen, Bill
+prediction: ['Kauffman, D. F.', 'Bonnichsen, B.']
+meteor score: 0.7361111111111112
+
+map: 6586
+key: title
+truth: Geologic, geochemical, and geophysical maps of the Bell Mountain Wilderness Study area, Iron County, Missouri
+prediction: GEOLOGIC, GEOCHEMICAL, AND GEOPHYSICAL MAPS OF THE BELL MOUNTAIN WILDERNESS STUDY AREA, IRON COUNTY, MISSOURI
+meteor score: 0.9998518518518519
+
+map: 6586
+key: year
+truth: 1982
+prediction: 1982
+meteor score: 1.0
+
+map: 6586
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Pratt, W.P.; Erickson, R.L.
+map: 6586
+key: authors
+truth: Pratt, W.P.; Erickson, R.L.
+prediction: ['Pratt, W. P.', 'Erickson, R. L.']
+meteor score: 0.9921875
+
+map: 6614
+key: title
+truth: Geologic map of Salmo-Priest Wilderness Study Area (RARE E6-981 A1-981) Pend Oreille County, Washington, and Boundary County, Idaho
+prediction: GEOLOGICAL MAP OF SALMO - PRIEST WILDERNESS STUDY AREA
+meteor score: 0.5948372615039282
+
+map: 6614
+key: year
+truth: 1982
+prediction: 1982
+meteor score: 1.0
+
+map: 6614
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Miller, F.K.; McKee, E.H.; Yates, R.G.
+map: 6614
+key: authors
+truth: Miller, F.K.
+prediction: ['Miller, F. K.', 'McKee, E. H.', 'Yates, R. G.']
+meteor score: 0.08928571428571427
+
+map: 6616
+key: title
+truth: Mineral resource potential map of the Salmo-Priest Wilderness Study Area (RARE E6-981 A1-981) Pend Oreille County, Washington, and Boundary County, Idaho
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE SALMO - PRIEST WILDERNESS STUDY AREA (RARE E6-981 A1-981), PEND OREILLE COUNTY, WASHINGTON, AND BOUNDARY COUNTY, IDAHO
+meteor score: 0.8316931525489625
+
+map: 6616
+key: year
+truth: 1982
+prediction: 1982
+meteor score: 1.0
+
+map: 6616
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Miller, F.K.; Schmauch, S.W.; Rodriguez, E.A.
+map: 6616
+key: authors
+truth: Miller, F.K.; Schmauch, S.W.; Rodriguez, E.A.
+prediction: ['Miller, F. K.', 'Schmauch, S. W.', 'Rodriguez, E. A.']
+meteor score: 0.9976851851851852
+
+map: 6905
+key: title
+truth: Geology and mineral resource potential of the Paddy Creek Wilderness Study Area, Texas County, Missouri
+prediction: GEOLOGY AND MINERAL RESOURCE POTENTIAL OF THE PADDY CREEK WILDERNESS STUDY AREA, TEXAS COUNTY, MISSOURI
+meteor score: 0.9998518518518519
+
+map: 6905
+key: year
+truth: 1981
+prediction: 1981
+meteor score: 1.0
+
+map: 6905
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Pratt, W.P.; Mosier, E.L.; Ellis, Clarence
+map: 6905
+key: authors
+truth: Pratt, W.P.; Mosier, E.L.; Ellis, Clarence
+prediction: ['Pratt, W. P.', 'Mosier, E. L.', 'Ellis, Clarence']
+meteor score: 0.9976851851851852
+
+map: 6980
+key: title
+truth: Geologic, geochemical, and geophysical maps of the Rock Pile Mountain Wilderness Study Area, Madison County, Missouri
+prediction: GEOLOGIC MAP OF THE ROCK PILE MOUNTAIN WILDERNESS STUDY AREA, MADISON COUNTY, MISSOURI
+meteor score: 0.9019945697577276
+
+map: 6980
+key: year
+truth: 1982
+prediction: 1980
+meteor score: 0.0
+
+map: 6980
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Erickson, R.L.; Mosier, E.L.; Viets, J.G.; Odland, S.K.
+map: 6980
+key: authors
+truth: Pratt, W.P.; Erickson, R.L.
+prediction: ['Erickson, R. L.', 'Mosier, E. L.', 'Viets, J. G.', 'Odland, S. K.']
+meteor score: 0.06578947368421052
+
+map: 7229
+key: title
+truth: Geologic map of the Jerry Peak Wilderness Study Area, Custer County, Idaho
+prediction: GEOLOGIC MAP OF THE JERRY PEAK WILDERNESS STUDY AREA, CUSTER COUNTY, IDAHO
+meteor score: 0.9997106481481481
+
+map: 7229
+key: year
+truth: 1982
+prediction: 1982
+meteor score: 1.0
+
+map: 7229
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+McIntyre, D.H.
+map: 7229
+key: authors
+truth: McIntyre, D.H.
+prediction: ['McIntyre, D. H.']
+meteor score: 0.9375
+
+map: 7300
+key: title
+truth: Geologic and isopach maps of the Bisti, De-Na-Zin, and Ah-She-Sle-Pah Wilderness Study Areas, San Juan County, New Mexico
+prediction: GEOLOGIC AND ISOPACH MAPS OF THE BISTI, DE-NA-ZIN, AND AH-SHE-SLE-PAH WILDERNESS STUDY AREAS, SAN JUAN COUNTY, NEW MEXICO
+meteor score: 0.9999142661179699
+
+map: 7300
+key: year
+truth: 1983
+prediction: 1983
+meteor score: 1.0
+
+map: 7300
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Brown, J.L.
+map: 7300
+key: authors
+truth: Brown, J.L.
+prediction: ['Brown, J.L.']
+meteor score: 0.9375
+
+map: 7342
+key: title
+truth: Aeromagnetic and isostatic gravity maps of the Crossman Peak Wilderness Study Area, Mohave County, Arizona
+prediction: AEROMAGNETIC MAP
+meteor score: 0.30303030303030304
+
+map: 7342
+key: year
+truth: 1986
+prediction: 1986
+meteor score: 1.0
+
+map: 7342
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Simpson, R.W.; Gage, T.B.; Bracken, R.E.
+map: 7342
+key: authors
+truth: Simpson, R.W.; Gage, T.B.; Bracken, R.E.
+prediction: ['Simpson, R. W.', 'Gage, T. B.', 'Bracken, R. E.']
+meteor score: 0.9976851851851852
+
+map: 7378
+key: title
+truth: Generalized geologic map of the Vasquez Peak Wilderness Study Area and the Williams Fork and St. Louis Peak Roadless Areas, Clear Creek, Grand, and Summit Counties, Colorado
+prediction: GENERALIZED GEOLOGIC MAP OF THE VASQUEZ PEAK WILDERNESS STUDY AREA AND THE WILLIAMS FORK AND ST . LOUIS PEAK ROADLESS AREAS , CLEAR CREEK , GRAND , AND SUMMIT COUNTIES , COLORADO
+meteor score: 0.6943132624950806
+
+map: 7378
+key: year
+truth: 1985
+prediction: 1985
+meteor score: 1.0
+
+map: 7378
+key: scale
+truth: 50000
+prediction: 1:62500
+meteor score: 0.0
+
+Eppinger, R.G.; Theobald, P.K.; Carlson, R.R.
+map: 7378
+key: authors
+truth: Eppinger, R.G.; Theobald, P.K.; Carlson, R.R.
+prediction: ['Eppinger, R. G.', 'Theobald, P. K.', 'Carlson, R. R.']
+meteor score: 0.9976851851851852
+
+map: 7390
+key: title
+truth: Geochemical map of the Spanish Peaks Wilderness Study Area, Huerfano and Las Animas Counties, Colorado
+prediction: GEOCHEMICAL MAP OF THE SPANISH PEAKS WILDERNESS STUDY AREA
+meteor score: 0.8325195312499999
+
+map: 7390
+key: year
+truth: 1983
+prediction: 1983
+meteor score: 1.0
+
+map: 7390
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Budding, K.E.; Lawrence, V.A.
+map: 7390
+key: authors
+truth: Budding, K.E.; Lawrence, V.A.
+prediction: ['Budding, K. E.', 'Lawrence, V. A.']
+meteor score: 0.9921875
+
+map: 7404
+key: title
+truth: Geochemical maps of the Ten Lakes Wilderness Study Area, Lincoln County, Montana
+prediction: GEOCHEMICAL MAPS OF THE TEN LAKES WILDERNESS STUDY AREA, LINCOLN COUNTY, MONTANA
+meteor score: 0.9997106481481481
+
+map: 7404
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 7404
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Leinz, R.W.; Siems, D.F.; Whipple, J.W.
+map: 7404
+key: authors
+truth: Leinz, R.W.; Siems, D.F.; Whipple, J.W.
+prediction: ['Leinz, R. W.', 'Siems, D. F.', 'Whipple, J. W.']
+meteor score: 0.9976851851851852
+
+map: 7447
+key: title
+truth: Geologic map of the Dirty Devil, French Spring-Happy Canyon, and Horseshoe Canyon Wilderness Study Areas, Wayne and Garfield Counties, Utah
+prediction: GEOLOGIC MAP OF THE DIRTY DEVIL, FRENCH SPRING - HAPPY CANYON, AND HORSESHOE CANYON WILDERNESS STUDY AREAS, WAYNE AND GARFIELD COUNTIES, UTAH
+meteor score: 0.8710513608986251
+
+map: 7447
+key: year
+truth: 1985
+prediction: 1985
+meteor score: 1.0
+
+map: 7447
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Dubiel, R.F.; Bromfield, C.S.; Larson, M.J.; Patterson, C.G.; Peterson, Fred
+map: 7447
+key: authors
+truth: Dubiel, R.F.; Bromfield, C.S.; Larson, M.J.; Patterson, C.G.; Peterson, Fred
+prediction: ['Dubiel, R. F.', 'Bromfield, C. S.', 'Larson, M. J.', 'Patterson, C. G.', 'Peterson, Fred']
+meteor score: 0.9995
+
+map: 7460
+key: title
+truth: Geologic map of the High Steens and Little Blitzen Gorge Wilderness Study areas, Harney County, Oregon
+prediction: GEOLOGIC MAP OF THE HIGH STEENS AND LITTLE BLITZEN GORGE WILDERNESS STUDY AREAS, HARNEY COUNTY, OREGON
+meteor score: 0.9998779296875
+
+map: 7460
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 7460
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Minor, S.A.; Rytuba, J.J.; Grubensky, M.J.; Vander Meulen, D.B.; Goeldner, C.A.; Tegtmeyer, K.J.
+map: 7460
+key: authors
+truth: Minor, S.A.; Rytuba, J.J.; Grubensky, M.J.; Meulen, D.B.V.; Goeldner, C.A.; Tegtmeyer, K.J.
+prediction: ['Minor, S. A.', 'Rytuba, J. J.', 'Grubensky, M. J.', 'Vander Meulen, D. B.', 'Goeldner, C. A.', 'Tegtmeyer, K. J.']
+meteor score: 0.8440643218655903
+
+map: 7487
+key: title
+truth: Geologic map of the North Fork of the Little Humboldt River Wilderness Study Area, Humboldt County, Nevada
+prediction: GEOLOGIC MAP OF THE NORTH FORK OF THE LITTLE HUMBOLDT RIVER WILDERNESS STUDY AREA
+meteor score: 0.9035047792444243
+
+map: 7487
+key: year
+truth: 1985
+prediction: 1986
+meteor score: 0.0
+
+map: 7487
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Peterson, J.A.; Wong, G.
+map: 7487
+key: authors
+truth: Peterson, J.A.; Wong, George
+prediction: ['Peterson, J. A.', 'Wong, G.']
+meteor score: 0.7361111111111112
+
+map: 7490
+key: title
+truth: Geologic map of the Piedra Wilderness Study Area, Archuleta and Hinsdale Counties, Colorado
+prediction: GEOLOGIC MAP OF THE PIEDRA WILDERNESS STUDY AREA, ARCHULETA AND HINSDALE COUNTIES, COLORADO
+meteor score: 0.9997724169321802
+
+map: 7490
+key: year
+truth: 1984
+prediction: 1984
+meteor score: 1.0
+
+map: 7490
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Condon, S.M.; Franczyk, K.J.; Bush, A.L.
+map: 7490
+key: authors
+truth: Condon, S.M.; Franczyk, K.J.; Bush, A.L.
+prediction: ['Condon, S. M.', 'Franczyk, K. J.', 'Bush, A. L.']
+meteor score: 0.9976851851851852
+
+map: 7495
+key: title
+truth: Geologic map of the Roberts Wilderness Study Area, Eureka County, Nevada
+prediction: GEOLOGIC MAP OF THE ROBERTS WILDERNESS STUDY AREA, EUREKA COUNTY, NEVADA
+meteor score: 0.9996243425995492
+
+map: 7495
+key: year
+truth: 1986
+prediction: 1986
+meteor score: 1.0
+
+map: 7495
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+McKee, E.H.
+map: 7495
+key: authors
+truth: McKee, E.H.
+prediction: ['McKee, E. H.']
+meteor score: 0.9375
+
+map: 7501
+key: title
+truth: Geologic map of the South Jackson Mountains Wilderness Study Area, Humboldt County, Nevada
+prediction: SOUTH JACKSON MOUNTAINS WILDERNESS STUDY AREA
+meteor score: 0.7432835820895523
+
+map: 7501
+key: year
+truth: 1986
+prediction: 1986
+meteor score: 1.0
+
+map: 7501
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Willden, R.; Russell, R.
+map: 7501
+key: authors
+truth: Sorensen, M.L.
+prediction: ['Willden, R.', 'Russell, R.']
+meteor score: 0.0
+
+map: 7507
+key: title
+truth: Geologic map of the Ten Lakes Wilderness Study Area, Lincoln County, Montana
+prediction: GEOLOGIC MAP OF THE TEN LAKES WILDERNESS STUDY AREA, LINCOLN COUNTY, MONTANA
+meteor score: 0.9997106481481481
+
+map: 7507
+key: year
+truth: 1984
+prediction: 1984
+meteor score: 1.0
+
+map: 7507
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Whipple, J.W.; Sample, J.C.; Lefkowitz, L.A.
+map: 7507
+key: authors
+truth: Whipple, J.W.
+prediction: ['Whipple, J. W.', 'Sample, J. C.', 'Lefkowitz, L. A.']
+meteor score: 0.08928571428571427
+
+map: 7522
+key: title
+truth: Geologic map of the parts of the Morey and Fandango Wilderness Study Areas, Nye County, Nevada
+prediction: GEOLOGIC MAP OF PART OF THE MOREY AND FANDANGO WILDERNESS STUDY AREAS, NYE COUNTY, NEVADA
+meteor score: 0.9922001471670346
+
+map: 7522
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 7522
+key: scale
+truth: 62500
+prediction: 1:62500
+meteor score: 1.0
+
+John, D.A.; Carr, W.J.; Dodge, H.W., Jr.; Byers, F.W., Jr.
+map: 7522
+key: authors
+truth: John, D.A.
+prediction: ['John, D. A.', 'Carr, W. J.', 'Dodge, H. W., Jr.', 'Byers, F. W., Jr.']
+meteor score: 0.05434782608695652
+
+map: 7541
+key: title
+truth: Geophysical maps of the Ten Lakes Wilderness Study Area, Lincoln County, Montana
+prediction: GEOPHYSICAL MAPS OF THE TEN LAKES WILDERNESS STUDY AREA
+meteor score: 0.859375
+
+map: 7541
+key: year
+truth: 1985
+prediction: 1985
+meteor score: 1.0
+
+map: 7541
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Bankey, V.; Hoover, D.B.; Kleinkopf, M.D.
+map: 7541
+key: authors
+truth: Bankey, Viki; Hoover, D.B.; Kleinkopf, M.D.
+prediction: ['Bankey, V.', 'Hoover, D. B.', 'Kleinkopf, M. D.']
+meteor score: 0.8066666666666668
+
+map: 7573
+key: title
+truth: Map showing geology and mineral resource potential of the Oh-Be-Joyful Wilderness Study Area, Gunnison County, Colorado
+prediction: MAP SHOWING GEOLOGY AND MINERAL RESOURCE POTENTIAL OF THE OH - BE - JOYFUL WILDERNESS STUDY AREA, GUNNISON COUNTY, COLORADO
+meteor score: 0.7643990929705217
+
+map: 7573
+key: year
+truth: 1983
+prediction: 1983
+meteor score: 1.0
+
+map: 7573
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Ludington, S.; Ellis, C.E.
+map: 7573
+key: authors
+truth: Ludington, Steve; Ellis, C.E.
+prediction: ['Ludington, S.', 'Ellis, C. E.']
+meteor score: 0.6388888888888888
+
+map: 7598
+key: title
+truth: Maps showing geology and mineral resource potential of the Wheeler Wilderness Study Area, Mineral County, Colorado
+prediction: MAP A - GEOLOGIC MAP OF THE WHEELER WILDERNESS STUDY AREA
+meteor score: 0.5847382431233363
+
+map: 7598
+key: year
+truth: 1983
+prediction: 1983
+meteor score: 1.0
+
+map: 7598
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Steven, T.A.; Ratté, J.C.; Bieniewski, C.L.
+map: 7598
+key: authors
+truth: Raymond, W.H.; Crock, J.G.; Bieniewski, C.L.
+prediction: ['Steven, T. A.', 'Ratté, J. C.', 'Bieniewski, C. L.']
+meteor score: 0.3125
+
+map: 7630
+key: title
+truth: Mineral resource potential and geologic map of the Guadalupe Escarpment Wilderness Study Area, Eddy County, New Mexico
+prediction: MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF GUADALUPE ESCARPMENT WILDERNESS STUDY AREA, EDDY COUNTY, NEW MEXICO
+meteor score: 0.9928183229813664
+
+map: 7630
+key: year
+truth: 1983
+prediction: 1983
+meteor score: 1.0
+
+map: 7630
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Hayes, P.T.; Light, T.D.; Thompson, J.R.
+map: 7630
+key: authors
+truth: Hayes, P.T.; Light, T.D.; Thompson, J.R.
+prediction: ['Hayes, P. T.', 'Light, T. D.', 'Thompson, J. R.']
+meteor score: 0.9976851851851852
+
+map: 7648
+key: title
+truth: Mineral resource potential map of the Chemehuevi Mountains Wilderness Study Area (CDCA-310), San Bernardino County, California
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE CHEMEHUEVI MOUNTAINS WILDERNESS STUDY AREA (CDCA-310), SAN BERNARDINO COUNTY, CALIFORNIA
+meteor score: 0.9998779296875
+
+map: 7648
+key: year
+truth: 1983
+prediction: 1983
+meteor score: 1.0
+
+map: 7648
+key: scale
+truth: 48000
+prediction: 1:24000
+meteor score: 0.0
+
+Miller, D.M.; John, B.E.; Antweiler, J.C.; Simpson, R.W.; Hoover, D.B.; Raines, G.L.; Kreidler, T.J.
+map: 7648
+key: authors
+truth: Miller, D.M.; John, B.E.; Antweiler, J.C.; Simpson, R.W.; Hoover, D.B.; Raines, G.L.; Kreidler, T.J.
+prediction: ['Miller, D. M.', 'John, B. E.', 'Antweiler, J. C.', 'Simpson, R. W.', 'Hoover, D. B.', 'Raines, G. L.', 'Kreidler, T. J.']
+meteor score: 0.9998177842565598
+
+map: 7698
+key: title
+truth: Mineral resource potential map of the Ten Lakes Wilderness Study Area, Lincoln County, Montana
+prediction: Geologic map of the Ten Lakes Wilderness Study Area
+meteor score: 0.735767991407089
+
+map: 7698
+key: year
+truth: 1983
+prediction: 1984
+meteor score: 0.0
+
+map: 7698
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Whipple, J.W.; Sample, J.C.; Lefkowitz, L.A.
+map: 7698
+key: authors
+truth: Whipple, J.W.; Perry, W.J.; Leinz, R.W.; Hamilton, M.M.; Avery, D.W.
+prediction: ['Whipple, J. W.', 'Sample, J. C.', 'Lefkowitz, L. A.']
+meteor score: 0.29296875
+
+map: 7706
+key: title
+truth: Mineral resource potential map of the West Pioneer Wilderness Study Area, Beaverhead County, Montana
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE WEST PIONEER WILDERNESS STUDY AREA, BEAVERHEAD COUNTY, MONTANA
+meteor score: 0.9998177842565598
+
+map: 7706
+key: year
+truth: 1983
+prediction: 1983
+meteor score: 1.0
+
+map: 7706
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Berger, B.R.; Snee, L.W.; Hanna, William; Benham, J.R.
+map: 7706
+key: authors
+truth: Berger, B.R.; Snee, L.W.; Hanna, William; Benham, J.R.
+prediction: ['Berger, B. R.', 'Snee, L. W.', 'Hanna, William', 'Benham, J. R.']
+meteor score: 0.9990234375
+
+map: 7801
+key: title
+truth: Reconnaissance geologic map of the Spanish Peaks Wilderness Study Area, Huerfano and Las Animas Counties, Colorado
+prediction: APPROXIMATE BOUNDARY OF SPANISH PEAKS WILDERNESS STUDY AREA
+meteor score: 0.55
+
+map: 7801
+key: year
+truth: 1983
+prediction: 1983
+meteor score: 1.0
+
+map: 7801
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Budding, K.E.; Lawrence, V.A.
+map: 7801
+key: authors
+truth: Budding, K.E.; Lawrence, V.A.
+prediction: ['Budding, K. E.', 'Lawrence, V. A.']
+meteor score: 0.9921875
+
+map: 8950
+key: title
+truth: Map showing geology, structure, and oil and gas fields in the Sterling 1 degree x 2 degrees quadrangle, Colorado, Nebraska, and Kansas
+prediction: MAP SHOWING GEOLOGY, STRUCTURE, AND OIL AND GAS FIELDS IN THE STERLING 1° × 2° QUADRANGLE, COLORADO, NEBRASKA, AND KANSAS
+meteor score: 0.8408989687896125
+
+map: 8950
+key: year
+truth: 1978
+prediction: 1978
+meteor score: 1.0
+
+map: 8950
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Scott, G.R.
+map: 8950
+key: authors
+truth: Scott, G.R.
+prediction: ['Scott, G. R.']
+meteor score: 0.9375
+
+map: 9063
+key: title
+truth: Geologic map of the Limon 1 degree x 2 degrees quadrangle, Colorado and Kansas
+prediction: GEOLOGIC MAP OF THE LIMON 1° x 2° QUADRANGLE, COLORADO AND KANSAS
+meteor score: 0.8086065573770491
+
+map: 9063
+key: year
+truth: 1980
+prediction: 1980
+meteor score: 1.0
+
+map: 9063
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Sharps, J.A.
+map: 9063
+key: authors
+truth: Sharps, J.A.
+prediction: ['Sharps, J. A.']
+meteor score: 0.9375
+
+map: 9346
+key: title
+truth: Geologic map of the Trinidad quadrangle, south-central Colorado
+prediction: GEOLOGIC MAP OF THE TRINIDAD QUADRANGLE SOUTH - CENTRAL COLORADO
+meteor score: 0.600907029478458
+
+map: 9346
+key: year
+truth: 1969
+prediction: 1969
+meteor score: 1.0
+
+map: 9346
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Johnson, R.B.; Wood, G.H., Jr.; Dixon, G.H.
+map: 9346
+key: authors
+truth: Johnson, R.B.
+prediction: ['Johnson, R. B.', 'Wood, G. H., Jr.', 'Dixon, G. H.']
+meteor score: 0.07692307692307691
+
+map: 9348
+key: title
+truth: Geologic and structure contour map of the La Junta quadrangle, Colorado and Kansas
+prediction: GEOLOGIC AND STRUCTURE CONTOUR MAP OF THE LA JUNTA QUADRANGLE, COLORADO AND KANSAS
+meteor score: 0.9997724169321802
+
+map: 9348
+key: year
+truth: 1968
+prediction: 1968
+meteor score: 1.0
+
+map: 9348
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Scott, G.R.
+map: 9348
+key: authors
+truth: Scott, G.R.
+prediction: ['Scott, G. R.']
+meteor score: 0.9375
+
+map: 9487
+key: title
+truth: Bedrock geologic map showing thickness of overlying Quaternary deposits, Lincoln quadrangle and part of Nebraska City quadrangle, Nebraska and Kansas
+prediction: BEDROCK GEOLOGIC MAP SHOWING THICKNESS CF OVERLYING QUATERNARY DEPOSITS , LINCOLN QUADRANGLE AND PART OF NEBRASKA CITY QUADRANGLE , NEBRASKA AND KANSAS
+meteor score: 0.7626742008190215
+
+map: 9487
+key: year
+truth: 1972
+prediction: 1972
+meteor score: 1.0
+
+map: 9487
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Burchett, R.R.; Dreezen, V.H.; Reed, E.C.; Prichard, G.E.
+map: 9487
+key: authors
+truth: Burchett, R.R.; Dreeszen, V.H.; Reed, E.C.; Prichard, G.E.
+prediction: ['Burchett, R. R.', 'Dreezen, V. H.', 'Reed, E. C.', 'Prichard, G. E.']
+meteor score: 0.864795918367347
+
+map: 9648
+key: title
+truth: Bedrock geologic map showing thickness of overlying Quaternary deposits, Grand Island quadrangle, Nebraska and Kansas
+prediction: BEDROCK GEOLOGIC MAP SHOWING THICKNESS OF OVERLYING QUATERNARY DEPOSITS, GRAND ISLAND QUADRANGLE, NEBRASKA AND KANSAS
+meteor score: 0.9998518518518519
+
+map: 9648
+key: year
+truth: 1973
+prediction: 1973
+meteor score: 1.0
+
+map: 9648
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Dreeszen, V.H.; Reed, E.C.; Burchett, R.R.; Prichard, G.E.
+map: 9648
+key: authors
+truth: Dreeszen, V.H.; Reed, E.C.; Burchett, R.R.; Prichard, G.E.
+prediction: ['Dreeszen, V. H.', 'Reed, E. C.', 'Burchett, R. R.', 'Prichard, G. E.']
+meteor score: 0.9990234375
+
+map: 9797
+key: title
+truth: Bedrock geologic map showing thickness of overlying Quaternary deposits, Fremont quadrangle and part of Omaha quadrangle, Nebraska
+prediction: BEDROCK GEOLOGIC MAP SHOWING THICKNESS OF OVERLYING QUATERNARY DEPOSITS, FREMONT QUADRANGLE AND PART OF OMAHA QUADRANGLE, NEBRASKA
+meteor score: 0.999898229187869
+
+map: 9797
+key: year
+truth: 1975
+prediction: 1975
+meteor score: 1.0
+
+map: 9797
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Burchett, R.R.; Reed, E.C.; Dreeszen, V.H.; Prichard, G.E.
+map: 9797
+key: authors
+truth: Burchett, R.R.; Reed, E.C.; Dreeszen, V.H.; Prichard, G.E.
+prediction: ['Burchett, R. R.', 'Reed, E. C.', 'Dreeszen, V. H.', 'Prichard, G. E.']
+meteor score: 0.9990234375
+
+map: 9832
+key: title
+truth: Geologic map of the Lamar quadrangle, Colorado and Kansas
+prediction: GEOLOGIC MAP OF THE LAMAR QUADRANGLE, COLORADO AND KANSAS
+meteor score: 0.9993141289437586
+
+map: 9832
+key: year
+truth: 1976
+prediction: 1976
+meteor score: 1.0
+
+map: 9832
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Sharps, J.A.
+map: 9832
+key: authors
+truth: Sharps, J.A.
+prediction: ['Sharps, J. A.']
+meteor score: 0.9375
+
+map: 9861
+key: title
+truth: Geologic map of the Kinney Rim 30 x 60 minute quadrangle, Wyoming and Colorado
+prediction: GEOLOGIC MAP OF THE KINNEY RIM 30 x 60 MINUTE QUADRANGLE, WYOMING AND COLORADO
+meteor score: 0.9998177842565598
+
+map: 9861
+key: year
+truth: 1985
+prediction: 1985
+meteor score: 1.0
+
+map: 9861
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Roehler, H.W.
+map: 9861
+key: authors
+truth: Roehler, H.W.
+prediction: ['Roehler, H. W.']
+meteor score: 0.9375
+
+map: 9866
+key: title
+truth: Geologic map of the Manti 30' x 60' quadrangle, Carbon, Emery, Juab, Sanpete, and Sevier Counties, Utah
+prediction: GEOLOGIC MAP OF THE MANTI 30 ' x 60 ' QUADRANGLE
+meteor score: 0.5076628352490422
+
+map: 9866
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 9866
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Witkind, I.J.; Weiss, M.P.; Brown, T.L.
+map: 9866
+key: authors
+truth: Witkind, I.J.; Weiss, M.P.; Brown, T.L.
+prediction: ['Witkind, I. J.', 'Weiss, M. P.', 'Brown, T. L.']
+meteor score: 0.9976851851851852
+
+map: 9899
+key: title
+truth: Geologic map of the Aztec 1 degree x 2 degrees quadrangle, northwestern New Mexico and southern Colorado
+prediction: Aztec Quadrangle
+meteor score: 0.14285714285714285
+
+map: 9899
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 9899
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Manley, K.; Scott, G.R.; Wobus, R.A.
+map: 9899
+key: authors
+truth: Manley, Kim; Scott, G.R.; Wobus, R.A.
+prediction: ['Manley, K.', 'Scott, G. R.', 'Wobus, R. A.']
+meteor score: 0.8066666666666668
+
+map: 9903
+key: title
+truth: Geologic map of the Huntington 30' X 60' quadrangle, Carbon, Emery, Grand, and Uintah Counties, Utah
+prediction: HUNTINGTON, UTAH, 30' x 60' (1:100,000-SCALE) QUADRANGLE
+meteor score: 0.37271448663853723
+
+map: 9903
+key: year
+truth: 1988
+prediction: 1988
+meteor score: 1.0
+
+map: 9903
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Witkind, I.J.
+map: 9903
+key: authors
+truth: Witkind, I.J.
+prediction: ['Witkind, I. J.']
+meteor score: 0.9375
+
+map: 9904
+key: title
+truth: Geologic map of the Westwater 30' X 60' quadrangle, Grand and Uintah Counties, Utah and Garfield and Mesa Counties, Colorado
+prediction: GEOLOGIC MAP OF THE WESTWATER 30 ' x 60 ' QUADRANGLE, GRAND AND UINTAH COUNTIES, UTAH AND GARFIELD AND MESA COUNTIES, COLORADO
+meteor score: 0.823776758409786
+
+map: 9904
+key: year
+truth: 1988
+prediction: 1988
+meteor score: 1.0
+
+map: 9904
+key: scale
+truth: 100000
+prediction: 1:62500
+meteor score: 0.0
+
+Gualtieri, J.L.
+map: 9904
+key: authors
+truth: Gualtieri, J.L.
+prediction: ['Gualtieri, J. L.']
+meteor score: 0.9375
+
+map: 9964
+key: title
+truth: Bedrock geologic map showing the configuration of the bedrock surface, McCook 1 degree x 2 degrees quadrangle, Nebraska and Kansas, and part of the Sterling 1 degree x 2 degrees quadrangle, Nebraska and Colorado
+prediction: BEDROCK GEOLOGIC MAP SHOWING THE CONFIGURATION OF THE BEDROCK SURFACE
+meteor score: 0.6635802469135803
+
+map: 9964
+key: year
+truth: 1988
+prediction: 1988
+meteor score: 1.0
+
+map: 9964
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Eversoll, D.A.; Dreeszen, V.H.; Burchett, R.R.; Prichard, G.E.
+map: 9964
+key: authors
+truth: Eversoll, D.A.; Dreeszen, V.H.; Burchett, R.R.; Prichard, G.E.
+prediction: ['Eversoll, D.A.', 'Dreeszen, V.H.', 'Burchett, R.R.', 'Prichard, G.E.']
+meteor score: 0.9990234375
+
+map: 9965
+key: title
+truth: Bedrock geologic map showing configuration of the bedrock surface in the Nebraska part of the Sioux City 1 degree x 2 degrees quadrangle
+prediction: BEDROCK GEOLOGIC MAP SHOWING CONFIGURATION OF THE BEDROCK SURFACE IN THE NEBRASKA PART OF THE SIOUX CITY 1 ° × 2 ° QUADRANGLE
+meteor score: 0.8680978260869565
+
+map: 9965
+key: year
+truth: 1988
+prediction: 1988
+meteor score: 1.0
+
+map: 9965
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Burchett, R.R.; Dreeszen, V.H.; Souders, V.L.; Prichard, G.E.
+map: 9965
+key: authors
+truth: Burchett, R.R.; Dreeszen, V.H.; Souders, V.L.; Prichard, G.E.
+prediction: ['Burchett, R. R.', 'Dreeszen, V. H.', 'Souders, V. L.', 'Prichard, G. E.']
+meteor score: 0.9990234375
+
+map: 10013
+key: title
+truth: Geologic map of the Montrose 30' X 60' quadrangle, southwestern Colorado
+prediction: GEOLOGIC MAP OF THE MONTROSE 30' × 60' QUADRANGLE, SOUTHWESTERN COLORADO
+meteor score: 0.9054545454545455
+
+map: 10013
+key: year
+truth: 1989
+prediction: 1989
+meteor score: 1.0
+
+map: 10013
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Steven, T.A.; Hail, W.J., Jr.
+map: 10013
+key: authors
+truth: Steven, T.A.; Hail, W.J., Jr.
+prediction: ['Steven, T. A.', 'Hail, W. J., Jr.']
+meteor score: 0.996
+
+map: 10056
+key: title
+truth: Geologic map emphasizing the surficial deposits of the Farmington 30' X 60' quadrangle, New Mexico and Colorado
+prediction: GEOLOGIC MAP EMPHASIZING THE SURFICIAL DEPOSITS OF THE FARMINGTON 30 ′ × 60 ' QUADRANGLE, NEW MEXICO AND COLORADO
+meteor score: 0.7435953104646112
+
+map: 10056
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 10056
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Ward, A.W.
+map: 10056
+key: authors
+truth: Ward, A.W.
+prediction: ['Ward, A. W.']
+meteor score: 0.9375
+
+map: 10058
+key: title
+truth: Geologic map of the Price 30' X 60' quadrangle, Carbon, Duchesne, Uintah, Utah, and Wasatch Counties, Utah
+prediction: Price 30' x 60' Quadrangle
+meteor score: 0.6401209677419355
+
+map: 10058
+key: year
+truth: 1990
+prediction: 1988
+meteor score: 0.0
+
+map: 10058
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Weiss, M.P.; Cashion, W.B.; Witkind, I.J.
+map: 10058
+key: authors
+truth: Weiss, M.P.; Witkind, I.J.; Cashion, W.B.
+prediction: ['Weiss, M. P.', 'Cashion, W. B.', 'Witkind, I. J.']
+meteor score: 0.5260416666666666
+
+map: 10078
+key: title
+truth: Geologic map and structure contour maps of the Gallup 30' X 60' quadrangle, McKinley County, New Mexico
+prediction: GEOLOGIC AND STRUCTURE CONTOUR MAPS OF THE GALLUP 30 ' x 60 ' QUADRANGLE, MCKINLEY COUNTY, NEW MEXICO
+meteor score: 0.7730019382054498
+
+map: 10078
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 10078
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Dillinger, J.K.; Green, R.C.; Jackson, M.L.
+map: 10078
+key: authors
+truth: Dillinger, J.K.
+prediction: ['Dillinger, J.K.', 'Green, R.C.', 'Jackson, M.L.']
+meteor score: 0.08928571428571427
+
+map: 10203
+key: title
+truth: Geologic and structure-contour map of the Raton 30' X 60' quadrangle, Colfax and Union Counties, New Mexico, and Las Animas County, Colorado
+prediction: GEOLOGIC AND STRUCTURE - CONTOUR MAP OF THE RATON 30' × 60' QUADRANGLE
+meteor score: 0.5395683453237411
+
+map: 10203
+key: year
+truth: 1993
+prediction: 1993
+meteor score: 1.0
+
+map: 10203
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Scott, G.R.; Pillmore, C.L.
+map: 10203
+key: authors
+truth: Scott, G.R.; Pillmore, C.L.
+prediction: ['Scott, G. R.', 'Pillmore, C. L.']
+meteor score: 0.9921875
+
+map: 11229
+key: title
+truth: Mineral resources of the Wambaw Swamp Wilderness Study Area, Charleston County, South Carolina, with a section on oil and gas
+prediction: MAP SHOWING SCARPS, DISTRIBUTION OF PHOSPHATE, LIMESTONE QUARRIES, PEAT MINE, CLAY PIT, AND SAND AND GRAVEL PITS IN THE FRANCIS MARION FOREST AND VICINITY, SOUTH CAROLINA
+meteor score: 0.07874015748031496
+
+map: 11229
+key: year
+truth: 1979
+prediction: 1979
+meteor score: 1.0
+
+map: 11229
+key: scale
+truth: 48000
+prediction: NULL
+meteor score: 0.0
+
+Cameron, C.C.; Force, E.R.; Gazdik, G.
+map: 11229
+key: authors
+truth: Cameron, C.C.; Force, E.R.; Gazdik, G.C.; Rodehamel, E.C.
+prediction: ['Cameron, C. C.', 'Force, E. R.', 'Gazdik, G.']
+meteor score: 0.8032258064516131
+
+map: 11976
+key: title
+truth: Map showing bedrock geochemical station locations, western Chichagof and Yakobi Islands Wilderness Study Area, southeastern Alaska
+prediction: MAP SHOWING BEDROCK GEOCHEMICAL STATION LOCATIONS, WESTERN CHICHAGOF AND YAKOBI ISLANDS WILDERNESS STUDY AREA, SOUTHEASTERN ALASKA
+meteor score: 0.9998779296875
+
+map: 11976
+key: year
+truth: 1984
+prediction: 1984
+meteor score: 1.0
+
+map: 11976
+key: scale
+truth: 125000
+prediction: 1:125000
+meteor score: 1.0
+
+Johnson, B.R.; Elliott, G.S.
+map: 11976
+key: authors
+truth: Johnson, B.R.; Elliott, G.S.
+prediction: ['Johnson, B. R.', 'Elliott, G. S.']
+meteor score: 0.9921875
+
+map: 11978
+key: title
+truth: Map showing the distribution and abundance of boron and beryllium in bedrock samples, western Chichagof and Yakobi Islands Wilderness Study Area, southeastern Alaska
+prediction: MAP SHOWING THE DISTRIBUTION AND ABUNDANCE OF BORON AND BERYLLIUM IN BEDROCK SAMPLES, WESTERN CHICHAGOF AND YAKOBI ISLANDS WILDERNESS STUDY AREA, SOUTHEASTERN ALASKA
+meteor score: 0.999958905235473
+
+map: 11978
+key: year
+truth: 1984
+prediction: 1984
+meteor score: 1.0
+
+map: 11978
+key: scale
+truth: 125000
+prediction: 1:125000
+meteor score: 1.0
+
+Johnson, B.R.; Elliott, G.S.
+map: 11978
+key: authors
+truth: Johnson, B.R.; Elliott, G.S.
+prediction: ['Johnson, B. R.', 'Elliott, G. S.']
+meteor score: 0.9921875
+
+map: 11980
+key: title
+truth: Map showing the distribution and abundance of cobalt in bedrock samples, western Chichagof and Yakobi Islands Wilderness Study Area, southeastern Alaska
+prediction: MAP SHOWING THE DISTRIBUTION AND ABUNDANCE OF COBALT IN BEDROCK SAMPLES, WESTERN CHICHAGOF AND YAKOBI ISLANDS WILDERNESS STUDY AREA, SOUTHEASTERN ALASKA
+meteor score: 0.9999460101500918
+
+map: 11980
+key: year
+truth: 1984
+prediction: 1984
+meteor score: 1.0
+
+map: 11980
+key: scale
+truth: 125000
+prediction: 1:125000
+meteor score: 1.0
+
+Johnson, B.R.; Elliott, G.S.
+map: 11980
+key: authors
+truth: Johnson, B.R.; Elliott, G.S.
+prediction: ['Johnson, B. R.', 'Elliott, G. S.']
+meteor score: 0.9921875
+
+map: 11991
+key: title
+truth: Geochemical map showing the distribution and abundance of copper, lead, and barium in stream-sediment samples in the west Chichagof - Yakobi Wilderness Study Area, Sitka quadrangle, southeastern Alaska
+prediction: GEOCHEMICAL MAP SHOWING THE DISTRIBUTION AND ABUNDANCE OF COPPER, LEAD, AND BARIUM IN STREAM-SEDIMENT SAMPLES IN THE WEST CHICHAGOF-YAKOBI WILDERNESS STUDY AREA, SITKA QUADRANGLE, SOUTHEASTERN ALASKA
+meteor score: 0.9539541984732824
+
+map: 11991
+key: year
+truth: 1981
+prediction: 1981
+meteor score: 1.0
+
+map: 11991
+key: scale
+truth: 125000
+prediction: 1:125000
+meteor score: 1.0
+
+Hessin, T.D.; Maslowski, M.G.; Day, G.W.
+map: 11991
+key: authors
+truth: Hessin, T.D.; Maslowski, M.G.; Day, G.W.
+prediction: ['Hessin, T.D.', 'Maslowski, M.G.', 'Day, G.W.']
+meteor score: 0.9976851851851852
+
+map: 11992
+key: title
+truth: Geochemical map showing the distribution and abundance of cobalt, chromium, and nickel in stream-sediment samples in the west Chichagof - Yakobi Wilderness Study Area, Sitka quadrangle, southeastern Alaska
+prediction: GEOCHEMICAL MAP SHOWING THE DISTRIBUTION AND ABUNDANCE OF COBALT, CHROMIUM, AND NICKEL IN STREAM-SEDIMENT SAMPLES IN THE WEST CHICHAGOF-YAKOBI WILDERNESS STUDY AREA, SITKA QUADRANGLE, ALASKA
+meteor score: 0.9476902173913043
+
+map: 11992
+key: year
+truth: 1981
+prediction: 1981
+meteor score: 1.0
+
+map: 11992
+key: scale
+truth: 125000
+prediction: 1:125000
+meteor score: 1.0
+
+Hessin, T.D.; Hoffman, J.D.
+map: 11992
+key: authors
+truth: Hessin, T.D.; Hoffman, J.D.
+prediction: ['Hessin, T. D.', 'Hoffman, J. D.']
+meteor score: 0.9921875
+
+map: 11993
+key: title
+truth: Geochemical map showing the distribution and abundance of copper, lead, zinc, and barium in the nonmagnetic, heavy-mineral concentrate samples in the west Chichagof - Yakobi Wilderness Study Area, Sitka quadrangle, southeastern Alaska
+prediction: GEOCHEMICAL MAP SHOWING DISTRIBUTION AND ABUNDANCE OF COPPER, LEAD, ZINC, AND BARIUM IN THE NONMAGNETIC, HEAVY-MINERAL CONCENTRATE SAMPLES IN THE WEST CHICHAGOF-YAKOBI WILDERNESS STUDY AREA, SITKA QUADRANGLE, SOUTHEASTERN ALASKA
+meteor score: 0.9550437069025564
+
+map: 11993
+key: year
+truth: 1981
+prediction: 1981
+meteor score: 1.0
+
+map: 11993
+key: scale
+truth: 125000
+prediction: 1:125000
+meteor score: 1.0
+
+Hessin, T.D.; Maslowski, M.G.; Cooley, E.F.
+map: 11993
+key: authors
+truth: Hessin, T.D.; Maslowski, M.G.; Cooley, E.F.
+prediction: ['Hessin, T. D.', 'Maslowski, M. G.', 'Cooley, E. F.']
+meteor score: 0.9976851851851852
+
+map: 11995
+key: title
+truth: Geochemical map showing the distribution and abundance of silver, arsenic, gold, tin, and tungsten in the nonmagnetic, heavy-mineral concentrate samples in the west Chichagof - Yakobi Wilderness Study Area, Sitka quadrangle, southeastern Alaska
+prediction: GEOCHEMICAL MAP SHOWING THE DISTRIBUTION AND ABUNDANCE OF SILVER, ARSENIC, GOLD, TIN, AND TUNGSTEN IN THE NONMAGNETIC, HEAVY-MINERAL CONCENTRATE SAMPLES IN THE WEST CHICHAGOF-YAKOBI WILDERNESS STUDY AREA, SITKA QUADRANGLE, SOUTHEASTERN ALASKA
+meteor score: 0.9613960113960115
+
+map: 11995
+key: year
+truth: 1981
+prediction: 1981
+meteor score: 1.0
+
+map: 11995
+key: scale
+truth: 125000
+prediction: 1:125000
+meteor score: 1.0
+
+Hessin, T.D.; Maslowski, M.G.; Day, G.W.
+map: 11995
+key: authors
+truth: Hessin, T.D.; Maslowski, M.G.; Day, G.W.
+prediction: ['Hessin, T. D.', 'Maslowski, M. G.', 'Day, G. W.']
+meteor score: 0.9976851851851852
+
+map: 13461
+key: title
+truth: Analytical results and sample locality map of stream-sediment, heavy-mineral-concentrate, and rock samples from the Little Rockies, Mount Pennell, and Mount Hillers Wilderness Study Areas (UT-050-247,248,249), Garfield County, Utah
+prediction: NULL
+meteor score: 0.0
+
+map: 13461
+key: year
+truth: 1984
+prediction: NULL
+meteor score: 0.0
+
+map: 13461
+key: scale
+truth: 50000
+prediction: NULL
+meteor score: 0.0
+
+
+map: 13461
+key: authors
+truth: Detra, D.E.; Erickson, M.S.; Kemp, W.M.; Willson, W.R.
+prediction: ['NULL', 'NULL', 'NULL']
+meteor score: 0.0
+
+map: 14221
+key: title
+truth: Geology and mineral resource potential of the Black Ridge Canyon Wilderness Study Area, Mesa County, Colorado
+prediction: GEOLOGIC MAP OF BLACK RIDGE CANYON WILDERNESS STUDY AREA, MESA COUNTY, COLORADO
+meteor score: 0.8780991735537188
+
+map: 14221
+key: year
+truth: 1983
+prediction: 1984
+meteor score: 0.0
+
+map: 14221
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+
+map: 14221
+key: authors
+truth: Toth, M.I.; Stoneman, R.J.; Patterson, C.G.; Jackson, L.L.
+prediction: ['NULL']
+meteor score: 0.0
+
+map: 14224
+key: title
+truth: Geology and mineral resource potential of the Dominguez Canyon Wilderness Study Area, Delta, Mesa, and Montrose Counties, Colorado
+prediction: GEOLOGIC MAP OF THE DOMINGUEZ CANYON WILDERNESS STUDY AREA, DELTA, MESA, AND MONTROSE COUNTIES, COLORADO
+meteor score: 0.9136988128584768
+
+map: 14224
+key: year
+truth: 1983
+prediction: 1983
+meteor score: 1.0
+
+map: 14224
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+
+map: 14224
+key: authors
+truth: Toth, M.I.; Davis, L.L.; Patterson, C.G.; Seeley, J.L.
+prediction: ['NULL']
+meteor score: 0.0
+
+map: 14225
+key: title
+truth: Geology and mineral resource potential of the Bennett Mountains Wilderness Study Area, Carbon County, Wyoming
+prediction: GEOLOGIC MAP OF THE BENNETT MOUNTAINS WILDERNESS STUDY AREA, CARBON COUNTY, WYOMING
+meteor score: 0.8916213129073439
+
+map: 14225
+key: year
+truth: 1983
+prediction: 1978
+meteor score: 0.0
+
+map: 14225
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Dixon, H.R.
+map: 14225
+key: authors
+truth: Walker, R.J.; Dixon, H.R.; Toth, M.I.
+prediction: ['Dixon, H. R.']
+meteor score: 0.20833333333333334
+
+map: 14261
+key: title
+truth: Geology and mineral resource potential of the Narrows (AZ-010-135), Lime Hills (AZ-010-134), and Sand Cove (AZ-010-128) Wilderness Study Areas, Mohave County, Arizona
+prediction: GEOLOGIC AND MINERAL RESOURCE POTENTIAL MAP OF THE NARROWS
+meteor score: 0.7281553398058253
+
+map: 14261
+key: year
+truth: 1983
+prediction: 1982
+meteor score: 0.0
+
+map: 14261
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Bohannon, R.G.; Lucchitta, I.; Anderson, R.E.; Beard, L.S.; Rieck, H.J.
+map: 14261
+key: authors
+truth: Bohannon, R.G.; Antweiler, J.C.; Lucchitta, Ivo; Anderson, R.E.; Beard, L.S.; Hovorka, D.S.; Briggs, J.P.
+prediction: ['Bohannon, R. G.', 'Lucchitta, I.', 'Anderson, R. E.', 'Beard, L. S.', 'Rieck, H. J.']
+meteor score: 0.6465855572998429
+
+map: 14392
+key: title
+truth: Mineral resources of the Chama - southern San Juan Mountains wilderness study area, Mineral, Rio Grande, Archuleta, and Conejos Counties, Colorado
+prediction: NULL
+meteor score: 0.0
+
+map: 14392
+key: year
+truth: 1977
+prediction: NULL
+meteor score: 0.0
+
+map: 14392
+key: scale
+truth: 48000
+prediction: NULL
+meteor score: 0.0
+
+
+map: 14392
+key: authors
+truth: Brock, M.R.; Gaskill, D.L.; Wynn, J.C.; Neuerburg, G.J.; Botinelly, Theodore; Ryder, R.T.; Lindquist, A.E.
+prediction: ['NULL', 'NULL', 'NULL']
+meteor score: 0.0
+
+map: 14672
+key: title
+truth: Mineral resources of the Snow Mountain Wilderness Study Area, California with a section on aeromagnetic data
+prediction: GEOLOGIC MAP OF THE SNOW MOUNTAIN WILDERNESS
+meteor score: 0.6303797468354431
+
+map: 14672
+key: year
+truth: 1978
+prediction: 1977
+meteor score: 0.0
+
+map: 14672
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Brown, R.
+map: 14672
+key: authors
+truth: Brown, R.D.; Grimes, D.J.; Leinz, Reinhardt; Federspiel, F.E.; Leszcykowski, A.M.; Griscom, Andrew
+prediction: ['Brown, R.']
+meteor score: 0.16666666666666669
+
+map: 16930
+key: title
+truth: Geologic map of the Dry Valley Rim Wilderness Study Area, Lassen County, California, and Washoe County, Nevada
+prediction: GEOLOGIC MAP OF THE DRY VALLEY RIM WILDERNESS STUDY AREA
+meteor score: 0.8405445944386755
+
+map: 16930
+key: year
+truth: 1986
+prediction: 1986
+meteor score: 1.0
+
+map: 16930
+key: scale
+truth: 48000
+prediction: 1:250000
+meteor score: 0.0
+
+Diggles, M.F.; Batatian, L.D.; Dellinger, D.A.
+map: 16930
+key: authors
+truth: Diggles, M.F.; Batatian, L.D.; Dellinger, D.A.
+prediction: ['Diggles, M.F.', 'Batatian, L.D.', 'Dellinger, D.A.']
+meteor score: 0.9976851851851852
+
+map: 17044
+key: title
+truth: Geology and mineral deposits of the region surrounding the American Flats Wilderness Study Area, western San Juan Mountains, Colorado
+prediction: GEOLOGIC MAP OF THE AMERICAN FLATS WILDERNESS STUDY AREA, OURAY AND HINSDALE COUNTIES, COLORADO
+meteor score: 0.6465517241379309
+
+map: 17044
+key: year
+truth: 1987
+prediction: 1976
+meteor score: 0.0
+
+map: 17044
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Lipman, C.B.
+map: 17044
+key: authors
+truth: Hon, Ken; Bove, D.J.; Grauch, V.J.S.
+prediction: ['Lipman, C. B.']
+meteor score: 0.0
+
+map: 19665
+key: title
+truth: Geologic map and cross-sections of the Carbondale 30' x 60' quadrangle, west-central Colorado
+prediction: GEOLOGIC MAP AND CROSS SECTIONS OF THE CARBONDALE 30 ' X 60 ' QUADRANGLE, WEST-CENTRAL COLORADO
+meteor score: 0.6165605095541401
+
+map: 19665
+key: year
+truth: 1984
+prediction: 1984
+meteor score: 1.0
+
+map: 19665
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Ellis, M.S.; Freeman, V.L.
+map: 19665
+key: authors
+truth: Ellis, M.S.; Freeman, V.L.
+prediction: ['Ellis, M. S.', 'Freeman, V. L.']
+meteor score: 0.9921875
+
+map: 21518
+key: title
+truth: Mineral resources of the Ramseys Draft Wilderness Study Area, Augusta County, Virginia
+prediction: GEOLOGIC MAP AND SECTION OF THE RAMSEYS DRAFT WILDERNESS STUDY AREA AND VICINITY, AUGUSTA COUNTY, VIRGINIA
+meteor score: 0.5737575182019625
+
+map: 21518
+key: year
+truth: 1977
+prediction: 1977
+meteor score: 1.0
+
+map: 21518
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Geological Survey, Reston, Va.- 1977 - G76398
+map: 21518
+key: authors
+truth: Lesure, F.G.; Geraci, P.J.; Mory, P.C.; Williams, B.B.
+prediction: ['Geological Survey, Reston, Va.- 1977 - G76398']
+meteor score: 0.0
+
+map: 21523
+key: title
+truth: Mineral resources of the Granite Fiords wilderness study area, Alaska
+prediction: GENERALIZED GEOLOGIC AND MAGNETIC INTENSITY MAP OF THE GRANITE FIORDS WILDERNESS STUDY AREA, ALASKA
+meteor score: 0.5876608455882352
+
+map: 21523
+key: year
+truth: 1977
+prediction: 1976
+meteor score: 0.0
+
+map: 21523
+key: scale
+truth: 125000
+prediction: 1:125000
+meteor score: 1.0
+
+Interior - Geological Survey, Menlo Park, CA.
+map: 21523
+key: authors
+truth: Berg, H.C.; Elliott, R.L.; Smith, J.G.; Pittman, T.L.; Kimball, A.L.
+prediction: ['Interior - Geological Survey, Menlo Park, CA.']
+meteor score: 0.0
+
+map: 21581
+key: title
+truth: Mineral resources of the Lone Peak Wilderness study area, Utah and Salt Lake Counties, Utah, with a section on interpretation of aeromagnetic data
+prediction: GEOLOGIC MAP AND CROSS SECTION OF THE LONE PEAK WILDERNESS STUDY AREA, UTAH
+meteor score: 0.6914285714285714
+
+map: 21581
+key: year
+truth: 1981
+prediction: 1981
+meteor score: 1.0
+
+map: 21581
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Bromfield, C.S.; Baker, NULL; Crittenden, NULL; Bullock, NULL
+map: 21581
+key: authors
+truth: Bromfield, C.S.; Patten, L.L.; Mabey, D.R.
+prediction: ['Bromfield, C. S.', 'Baker, NULL', 'Crittenden, NULL', 'Bullock, NULL']
+meteor score: 0.24038461538461542
+
+map: 21583
+key: title
+truth: Mineral resources of the Cranberry Wilderness study area, Webster and Pocahontas counties, West Virginia, with sections on peat resources, oil and gas potential, and geochemical survey
+prediction: GEOLOGIC MAP, CROSS SECTION, AND GENERALIZED STRATIGRAPHIC COLUMN, CRANBERRY WILDERNESS STUDY AREA, WEBSTER AND POCAHONTAS COUNTIES, WEST VIRGINIA
+meteor score: 0.5148936170212766
+
+map: 21583
+key: year
+truth: 1981
+prediction: 1980
+meteor score: 0.0
+
+map: 21583
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Meissner, C.R.; Windolp, J.F.
+map: 21583
+key: authors
+truth: Meissner, C.R.; Windolph, J.F.; Mory, P.C.; Harrison, D.K.; Cameron, C.C.; Grosz, A.E.; Perry, W.J.; Lesure, F.G.
+prediction: ['Meissner, C. R.', 'Windolp, J. F.']
+meteor score: 0.36057692307692313
+
+map: 21584
+key: title
+truth: Mineral resources of the Snow Mountain Wilderness Study Area, California, with a section on aeromagnetic interpretation
+prediction: GEOLOGIC MAP OF THE SNOW MOUNTAIN WILDERNESS STUDY AREA, CALIFORNIA
+meteor score: 0.6594147092799383
+
+map: 21584
+key: year
+truth: 1981
+prediction: 1981
+meteor score: 1.0
+
+map: 21584
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Brown, R.D., Jr.
+map: 21584
+key: authors
+truth: Brown, R.D.; Grimes, D.J.; Leinz, Reinhard; Federspiel, F.E.; Leszcykowsky, A.M.; Griscom, Andrew
+prediction: ['Brown, R. D., Jr.']
+meteor score: 0.12820512820512822
+
+map: 21594
+key: title
+truth: Mineral resources of the Sheep Mountain Wilderness study area and the Cucamonga Wilderness and additions, Los Angeles and San Bernardino Counties, California
+prediction: GEOLOGIC AND AEROMAGNETIC MAP AND CROSS SECTIONS OF THE SHEEP MOUNTAIN WILDERNESS STUDY AREA AND THE CUCAMONGA WILDERNESS AND ADDITIONS, LOS ANGELES AND SAN BERNARDINO COUNTIES, CALIFORNIA
+meteor score: 0.7546698113207547
+
+map: 21594
+key: year
+truth: 1982
+prediction: 1981
+meteor score: 0.0
+
+map: 21594
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+
+map: 21594
+key: authors
+truth: Evans, J.G.; Pankratz, Leroy; Ridenour, James; Schmauch, S.W.; Zilka, N.T.
+prediction: ['NULL']
+meteor score: 0.0
+
+map: 21601
+key: title
+truth: Mineral resources of the Craggy Mountain Wilderness Study Area and extension, Buncombe County, North Carolina
+prediction: GEOLOGIC MAP OF MOUNT MITCHELL 30 - MINUTE QUADRANGLE
+meteor score: 0.10416666666666666
+
+map: 21601
+key: year
+truth: 1982
+prediction: 1982
+meteor score: 1.0
+
+map: 21601
+key: scale
+truth: 24000
+prediction: 1:250000
+meteor score: 0.0
+
+Hadley, J.B.; Nelson, A.E.; Lesure, F.G.; Grosz, A.E.; Matooka, K.; Bailey, D.K.
+map: 21601
+key: authors
+truth: Lesure, F.G.; Grosz, A.E.; Williams, B.B.; Gazdik, G.C.
+prediction: ['Hadley, J.B.', 'Nelson, A.E.', 'Lesure, F.G.', 'Grosz, A.E.', 'Matooka, K.', 'Bailey, D.K.']
+meteor score: 0.34213362068965514
+
+map: 21604
+key: title
+truth: Mineral resources of the Chama - southern San Juan Mountains wilderness study area, Mineral, Rio Grande, Archuleta, and Conejos Counties, Colorado
+prediction: GEOLOGIC AND AEROMAGNETIC MAP OF THE CHAMA - SOUTHERN SAN JUAN MOUNTAINS WILDERNESS STUDY AREA AND VICINITY , MINERAL , RIO GRANDE , CONEJOS , AND ARCHULETA COUNTIES , COLORADO
+meteor score: 0.4989690721649485
+
+map: 21604
+key: year
+truth: 1985
+prediction: 1975
+meteor score: 0.0
+
+map: 21604
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Lipman, C.B.; Hail, W.J.; Brock, M.R.; Gaskill, D.L.; Jones, D.P.; Schuiling, W.T.; Wynn, J.C.
+map: 21604
+key: authors
+truth: Brock, M.R.; Gaskill, D.L.; Wynn, J.C.; Neuerberg, G.J.; Botinelly, Theodore; Ryder, R.T.; Lindquist, A.E.
+prediction: ['Lipman, C. B.', 'Hail, W. J.', 'Brock, M. R.', 'Gaskill, D. L.', 'Jones, D. P.', 'Schuiling, W. T.', 'Wynn, J. C.']
+meteor score: 0.3457142857142857
+
+map: 21605
+key: title
+truth: Mineral resources of the Tracy Arm - Fords Terror Wilderness Study Area and vicinity, Alaska
+prediction: GEOLOGIC AND AEROMAGNETIC MAP OF THE TRACY ARM - FORDS TERROR WILDERNESS STUDY AREA AND VICINITY, ALASKA
+meteor score: 0.773633417864187
+
+map: 21605
+key: year
+truth: 1984
+prediction: 1975
+meteor score: 0.0
+
+map: 21605
+key: scale
+truth: 125000
+prediction: 1:125000
+meteor score: 1.0
+
+
+map: 21605
+key: authors
+truth: Brew, D.A.; Kimball, A.L.; Grybeck, Donald; Still, J.C.; Jachens, R.C.; Barnes, D.F.; Johnson, B.R.; Rataj, J.L.
+prediction: ['NULL', 'NULL', 'NULL']
+meteor score: 0.0
+
+map: 21632
+key: title
+truth: Mineral resources of the Ruby Mountains Wilderness Study Area, Madison County, Montana, with a section on talc
+prediction: MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF THE RUBY MOUNTAINS WILDERNESS STUDY AREA, MADISON COUNTY, MONTANA
+meteor score: 0.6811765309789026
+
+map: 21632
+key: year
+truth: 1987
+prediction: 1981
+meteor score: 0.0
+
+map: 21632
+key: scale
+truth: 24000
+prediction: 1:240000
+meteor score: 0.0
+
+
+map: 21632
+key: authors
+truth: Tysdal, R.G.; Lee, G.K.; Hassemer, J.H.; Hanna, W.F.; Schmauch, S.W.; Berg, R.B.
+prediction: ['NULL']
+meteor score: 0.0
+
+map: 21633
+key: title
+truth: Mineral resources of the Blacktail Mountains Wilderness Study Area, Beaverhead County, Montana
+prediction: MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF THE BLACKTAIL MOUNTAINS WILDERNESS STUDY AREA, BEAVERHEAD COUNTY, MONTANA
+meteor score: 0.7674501424501425
+
+map: 21633
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 21633
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Pecora, NULL; Tysdal, NULL
+map: 21633
+key: authors
+truth: Tysdal, R.G.; Lee, G.K.; Hassemer, J.H.; Hanna, W.F.; Benham, J.R.
+prediction: ['Pecora, NULL', 'Tysdal, NULL']
+meteor score: 0.10869565217391304
+
+map: 21634
+key: title
+truth: Mineral resources of the Farlin Creek Wilderness Study Area, Beaverhead County, Montana
+prediction: MAPS SHOWING MINERAL RESOURCE POTENTIAL, GEOLOGY, GEOCHEMICAL SAMPLE LOCALITIES, AND GEOPHYSICAL DATA FOR THE FARLIN CREEK WILDERNESS STUDY AREA, BEAVERHEAD COUNTY, MONTANA
+meteor score: 0.5222353404171587
+
+map: 21634
+key: year
+truth: 1987
+prediction: 1984
+meteor score: 0.0
+
+map: 21634
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Pearson, R.C.; Zimbelman, D.R.
+map: 21634
+key: authors
+truth: Pearson, R.C.; Hassemer, J.H.; Hanna, W.F.; Hoover, D.B.; Pierce, H.A.; Schmauch, S.W.
+prediction: ['Pearson, R.C.', 'Zimbelman, D.R.']
+meteor score: 0.390625
+
+map: 21637
+key: title
+truth: Mineral resources of the Bad Lands Wilderness Study Area, Elko County, Nevada
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL, GEOLOGY, AND GEOCHEMICAL SAMPLE LOCALITIES FOR THE BAD LANDS WILDERNESS STUDY AREA AND VICINITY, ELKO COUNTY, NEVADA
+meteor score: 0.4697619047619048
+
+map: 21637
+key: year
+truth: 1987
+prediction: 1985
+meteor score: 0.0
+
+map: 21637
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Richter, D.H.; Johnson, B.R.
+map: 21637
+key: authors
+truth: Johnson, B.R.; Richter, D.H.; Grauch, V.J.S.; Kriedler, T.J.
+prediction: ['Richter, D.H.', 'Johnson, B.R.']
+meteor score: 0.5808080808080809
+
+map: 21641
+key: title
+truth: Mineral resources of the Goshute Canyon Wilderness Study Area, Elko and White Pine Counties, Nevada
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL AND GEOLOGY OF THE GOSHUTE CANYON WILDERNESS STUDY AREA, ELKO AND WHITE PINE COUNTIES, NEVADA
+meteor score: 0.7683190883190884
+
+map: 21641
+key: year
+truth: 1988
+prediction: 1986
+meteor score: 0.0
+
+map: 21641
+key: scale
+truth: 31680
+prediction: 1:31680
+meteor score: 1.0
+
+Poole, F.G.; Elrick, Maya
+map: 21641
+key: authors
+truth: Poole, F.G.; Elrick, Maya; Tucker, R.E.; Harris, R.N.; Oliver, H.W.; Johnson, F.L.
+prediction: ['Poole, F.G.', 'Elrick, Maya']
+meteor score: 0.6134259259259259
+
+map: 21662
+key: title
+truth: Mineral resources of the South McCullough Mountains, Wilderness Study Area, Clark County, Nevada
+prediction: MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF THE SOUTH MCCULLOUGH MOUNTAINS WILDERNESS STUDY AREA, CLARK COUNTY, NEVADA
+meteor score: 0.7172439759036146
+
+map: 21662
+key: year
+truth: 1989
+prediction: 1985
+meteor score: 0.0
+
+map: 21662
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Anderson, J.L.; Young, E.D.; Clarke, H.S.; Orrell, S.E.; Winn, Michael; Schmidt, C.S.; Smith, E.I.; Weber, M.E.
+map: 21662
+key: authors
+truth: De Witt, Ed; Anderson, J.L.; Barton, H.N.; Jachens, R.C.; Podwysocki, M.H.; Brickey, D.W.; Close, T.J.
+prediction: ['Anderson, J.L.', 'Young, E.D.', 'Clarke, H.S.', 'Orrell, S.E.', 'Winn, Michael', 'Schmidt, C.S.', 'Smith, E.I.', 'Weber, M.E.']
+meteor score: 0.1179245283018868
+
+map: 21670
+key: title
+truth: Mineral resources of the Park Range Wilderness Study Area, Nye County, Nevada
+prediction: NULL
+meteor score: 0.0
+
+map: 21670
+key: year
+truth: 1987
+prediction: 1985
+meteor score: 0.0
+
+map: 21670
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Brooks, W.E.; Manley, W.
+map: 21670
+key: authors
+truth: Brooks, W.E.; Tucker, R.E.; Goodhue, Christopher; Day, G.W.; Plouff, Donald; Duval, J.S.; Johnson, F.L.; Benjamin, D.A.
+prediction: ['Brooks, W.E.', 'Manley, W.']
+meteor score: 0.36057692307692313
+
+map: 21673
+key: title
+truth: Mineral resources of the Roberts Wilderness Study Area, Eureka County, Nevada
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE ROBERTS WILDERNESS STUDY AREA, EUREKA COUNTY, NEVADA
+meteor score: 0.8567923553719008
+
+map: 21673
+key: year
+truth: 1986
+prediction: 1978
+meteor score: 0.0
+
+map: 21673
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Murphy, J.M.
+map: 21673
+key: authors
+truth: McKee, E.H.; Barton, H.N.; Ponce, D.A.; Benjamin, D.A.; Johnson, F.L.
+prediction: ['Murphy, J. M.', 'NULL', 'NULL']
+meteor score: 0.0
+
+map: 21684
+key: title
+truth: Mineral resources of the Sierra de las Canas Wilderness Study Area, Socorro County, New Mexico
+prediction: Sierra de las Cañas Wilderness Study Area
+meteor score: 0.6205128205128205
+
+map: 21684
+key: year
+truth: 1988
+prediction: 1985
+meteor score: 0.0
+
+map: 21684
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Moore, S.L.
+map: 21684
+key: authors
+truth: Moore, S.L.; Turner, R.L.; Blank, H.R.; Korzeb, S.L.
+prediction: ['Moore, S.L.']
+meteor score: 0.3846153846153847
+
+map: 21691
+key: title
+truth: Mineral resources of the Big Hatchet Mountains Wilderness Study Area, Hidalgo County, New Mexico
+prediction: MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF THE BIG HATCHET MOUNTAINS WILDERNESS STUDY AREA, HIDALGO COUNTY, NEW MEXICO
+meteor score: 0.7942949907235621
+
+map: 21691
+key: year
+truth: 1988
+prediction: 1985
+meteor score: 0.0
+
+map: 21691
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Drewes, H.; Bannister, C.A.; Johnson, T.
+map: 21691
+key: authors
+truth: Drewes, Harald; Barton, H.N.; Hanna, W.F.; Scott, D.C.
+prediction: ['Drewes, H.', 'Bannister, C. A.', 'Johnson, T.']
+meteor score: 0.08064516129032259
+
+map: 21693
+key: title
+truth: Mineral resources of the Brokeoff Mountains Wilderness Study Area, Otero County, New Mexico
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL, GEOLOGY, AND GEOCHEMICAL SAMPLE LOCALITIES, BROKEOFF MOUNTAINS WILDERNESS STUDY AREA, OTERO COUNTY, NEW MEXICO
+meteor score: 0.5960294646065398
+
+map: 21693
+key: year
+truth: 1989
+prediction: 1958
+meteor score: 0.0
+
+map: 21693
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Boyd, E.
+map: 21693
+key: authors
+truth: Moore, S.L.; Kleinkopf, M.D.; Nowlan, G.A.; Corbetta, P.A.
+prediction: ['Boyd, E.']
+meteor score: 0.0
+
+map: 21697
+key: title
+truth: Mineral resources of the Black Ridge Canyons Wilderness Study Area, Mesa County, Colorado, and Grand County, Utah, and Westwater Canyon Wilderness Study Area, Grand County, Utah
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL AND GEOLOGY OF THE BLACK RIDGE CANYONS AND WESTWATER CANYON WILDERNESS STUDY AREAS, GRAND COUNTY, UTAH, AND MESA COUNTY, COLORADO
+meteor score: 0.6856524519207122
+
+map: 21697
+key: year
+truth: 1988
+prediction: 1987
+meteor score: 0.0
+
+map: 21697
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Dickerson, R.P.; Toth, M.I.; Case, J.E.
+map: 21697
+key: authors
+truth: Dickerson, R.P.; Case, J.E.; Barton, H.N.; Chatman, M.L.
+prediction: ['Dickerson, R. P.', 'Toth, M. I.', 'Case, J. E.']
+meteor score: 0.41218637992831536
+
+map: 21712
+key: title
+truth: Mineral resources of the Pueblo Mountains Wilderness Study Area, Harney County, Oregon, and Humboldt County, Nevada
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE PUEBLO MOUNTAINS WILDERNESS STUDY AREA, HARNEY COUNTY, OREGON, AND HUMBOLDT COUNTY, NEVADA
+meteor score: 0.8979985955056179
+
+map: 21712
+key: year
+truth: 1987
+prediction: 1984
+meteor score: 0.0
+
+map: 21712
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Vander Meulen, D.B.; Roback, R.C.; Rytuba, J.J.; Grubensky, M.J.; Tegtmeyer, K.J.
+map: 21712
+key: authors
+truth: Roback, R.C.; Vander Meulen, D.B.; King, H.D.; Plouff, Donald; Munts, S.R.; Willett, S.L.
+prediction: ['Vander Meulen, D. B.', 'Roback, R. C.', 'Rytuba, J. J.', 'Grubensky, M. J.', 'Tegtmeyer, K. J.']
+meteor score: 0.43214285714285705
+
+map: 21738
+key: title
+truth: Mineral resources of the Cottonwood Canyon Wilderness Study Area, Washington County, Utah
+prediction: MAP SHOWING MINERAL AND ENERGY RESOURCE POTENTIAL, GEOLOGY, AND SAMPLE LOCALITIES FOR THE COTTONWOOD CANYON WILDERNESS STUDY AREA, WASHINGTON COUNTY, UTAH
+meteor score: 0.541712922988364
+
+map: 21738
+key: year
+truth: 1988
+prediction: 1986
+meteor score: 0.0
+
+map: 21738
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Houser, B.B.; Houser, F.N.
+map: 21738
+key: authors
+truth: Houser, B.B.; Jones, J.L.; Kilburn, J.E.; Blank, H.R.; Wood, R.H.; Cook, K.L.
+prediction: ['Houser, B. B.', 'Houser, F. N.']
+meteor score: 0.20833333333333334
+
+map: 21739
+key: title
+truth: Mineral resources of the Red Mountain Wilderness Study Area, Washington County, Utah
+prediction: MAP SHOWING MINERAL AND ENERGY RESOURCE POTENTIAL, GEOLOGY, AND SAMPLE LOCALITIES FOR THE RED MOUNTAIN WILDERNESS STUDY AREA, WASHINGTON COUNTY, UTAH
+meteor score: 0.541712922988364
+
+map: 21739
+key: year
+truth: 1988
+prediction: 1986
+meteor score: 0.0
+
+map: 21739
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Houser, B.B.; Houser, F.N.
+map: 21739
+key: authors
+truth: Houser, B.B.; Jones, J.L.; Kilburn, J.E.; Blank, H.R.; Wood, R.H.; Cook, K.L.
+prediction: ['Houser, B. B.', 'Houser, F. N.']
+meteor score: 0.20833333333333334
+
+map: 21740
+key: title
+truth: Mineral resources of the eight wilderness study areas bordering Zion National Park, Washington and Kane Counties, Utah
+prediction: MAPS SHOWING IDENTIFIED RESOURCES, MINERAL AND ENERGY RESOURCE POTENTIAL, AND GEOLOGY OF THE EIGHT WILDERNESS STUDY AREAS, WASHINGTON AND KANE COUNTIES, UTAH
+meteor score: 0.5478036175710593
+
+map: 21740
+key: year
+truth: 1989
+prediction: 1987
+meteor score: 0.0
+
+map: 21740
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Van Loenen, R.E.; Sable, E.G.
+map: 21740
+key: authors
+truth: Van Loenen, R.E.; Sable, E.G.; Blank, H.R.; Barton, H.N.; Briggs, P.H.; Zelten, J.E.; Cook, K.L.
+prediction: ['Van Loenen, R.E.', 'Sable, E.G.']
+meteor score: 0.6614583333333335
+
+map: 21741
+key: title
+truth: Mineral resources of the Spring Creek Canyon Wilderness Study Area, Iron County, Utah
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL AND GEOLOGY OF THE SPRING CREEK CANYON WILDERNESS STUDY AREA, IRON COUNTY, UTAH
+meteor score: 0.7415046491969569
+
+map: 21741
+key: year
+truth: 1989
+prediction: 1987
+meteor score: 0.0
+
+map: 21741
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Averitt, R.E.; Van Loenen, R.E.; Sable, E.G.
+map: 21741
+key: authors
+truth: Van Loenen, R.E.; Blank, H.R.; Sable, E.G.; Lee, G.K.; Cook, K.L.; Zelten, J.E.
+prediction: ['Averitt, R. E.', 'Van Loenen, R. E.', 'Sable, E. G.']
+meteor score: 0.49342105263157904
+
+map: 21742
+key: title
+truth: Mineral resources of the Fifty Mile Mountain Wilderness Study Area, Kane County, Utah
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL AND GENERALIZED BEDROCK GEOLOGY OF THE FIFTY MILE MOUNTAIN WILDERNESS STUDY AREA
+meteor score: 0.5391938122861817
+
+map: 21742
+key: year
+truth: 1988
+prediction: 1982
+meteor score: 0.0
+
+map: 21742
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Sargent, Hansen
+map: 21742
+key: authors
+truth: Bartsch-Winkler, Susan; Barton, H.N.; Cady, J.W.; Cook, K.L.; Martin, C.M.
+prediction: ['Sargent, Hansen']
+meteor score: 0.0
+
+map: 21743
+key: title
+truth: Mineral resources of the Steep Creek Wilderness Study Area, Garfield County, Utah, and the Escalante Canyons Tract V, Kane County, Utah
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL AND GENERALIZED GEOLOGY OF THE STEEP CREEK WILDERNESS STUDY AREA, GARFIELD COUNTY, UTAH, AND THE ESCALANTE CANYONS TRACT V, KANE COUNTY, UTAH
+meteor score: 0.7951109736824024
+
+map: 21743
+key: year
+truth: 1988
+prediction: 1982
+meteor score: 0.0
+
+map: 21743
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Davidson, 1967; Sargent, 1982; Hansen, 1982
+map: 21743
+key: authors
+truth: Bartsch-Winkler, Susan; Goldfarb, R.J.; Cady, J.W.; Duval, J.S.; Kness, R.F.; Corbetta, P.A.; Cook, K.L.
+prediction: ['Davidson, 1967', 'Sargent, 1982', 'Hansen, 1982']
+meteor score: 0.0
+
+map: 21744
+key: title
+truth: Mineral resources of the Scorpion Wilderness Study Area, Garfield and Kane Counties, Utah
+prediction: NULL
+meteor score: 0.0
+
+map: 21744
+key: year
+truth: 1989
+prediction: NULL
+meteor score: 0.0
+
+map: 21744
+key: scale
+truth: 50000
+prediction: NULL
+meteor score: 0.0
+
+
+map: 21744
+key: authors
+truth: Bartsch-Winkler, Susan; Jones, J.L.; Kilburn, J.E.; Cady, J.W.; Duval, J.S.; Cook, K.L.; Lane, M.E.; Corbetta, P.A.
+prediction: ['NULL', 'NULL', 'NULL']
+meteor score: 0.0
+
+map: 21748
+key: title
+truth: Mineral resources of the Wah Wah Mountains Wilderness Study Area, Beaver and Millard Counties, Utah
+prediction: NULL
+meteor score: 0.0
+
+map: 21748
+key: year
+truth: 1989
+prediction: NULL
+meteor score: 0.0
+
+map: 21748
+key: scale
+truth: 50000
+prediction: NULL
+meteor score: 0.0
+
+
+map: 21748
+key: authors
+truth: Cox, L.J.; Duttweiler, K.A.; Campbell, D.L.; Duval, J.S.; Podwysocki, M.H.; Bankey, Viki; Cook, K.L.; Brown, S.D.
+prediction: ['NULL', 'NULL', 'NULL']
+meteor score: 0.0
+
+map: 21752
+key: title
+truth: Mineral resources of the Bull Mountain Wilderness Study Area, Garfield and Wayne Counties, Utah
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL AND GEOLOGY OF THE BULL MOUNTAIN WILDERNESS STUDY AREA, GARFIELD AND WAYNE COUNTIES, UTAH
+meteor score: 0.7556536127964698
+
+map: 21752
+key: year
+truth: 1988
+prediction: 1985
+meteor score: 0.0
+
+map: 21752
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Patterson, R.L.
+map: 21752
+key: authors
+truth: Dubiel, R.F.; Bromfield, C.S.; Church, S.E.; Kemp, W.M.; Larson, M.J.; Peterson, Fred; Neubert, J.T.
+prediction: ['Patterson, R. L.', 'NULL', 'NULL']
+meteor score: 0.0
+
+map: 21761
+key: title
+truth: Mineral resources of the Negro Bill Canyon Wilderness Study Area, Grand County, Utah
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL AND GENERALIZED GEOLOGY OF THE NEGRO BILL CANYON WILDERNESS STUDY AREA, GRAND COUNTY, UTAH
+meteor score: 0.7052354000514536
+
+map: 21761
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 21761
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bartsch-Winkler, S.
+map: 21761
+key: authors
+truth: Bartsch-Winkler, Susan; Case, J.E.; Barton, H.N.; Duval, J.S.; Lane, M.E.
+prediction: ['Bartsch-Winkler, S.']
+meteor score: 0.17857142857142858
+
+map: 21765
+key: title
+truth: Mineral resources of the Medicine Lodge, Alkali Creek, and Trapper Creek Wilderness Study Areas, Big Horn County, Wyoming
+prediction: MINERAL RESOURCE POTENTIAL, GEOLOGIC, AND SAMPLE LOCALITY MAP OF THE TRAPPER CREEK, ALKALI CREEK, AND MEDICINE LODGE WILDERNESS STUDY AREAS, BIG HORN COUNTY, WYOMING
+meteor score: 0.6657318376068376
+
+map: 21765
+key: year
+truth: 1989
+prediction: NULL
+meteor score: 0.0
+
+map: 21765
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Hosterman, J.W.; Edwards, C.A.
+map: 21765
+key: authors
+truth: Hosterman, J.W.; Hill, R.H.; Kulik, D.M.; Gese, D.D.
+prediction: ['Hosterman, J. W.', 'Edwards, C. A.']
+meteor score: 0.42613636363636365
+
+map: 21770
+key: title
+truth: Mineral resources of the McCullough Peak Wilderness Study Area, Park County, Wyoming
+prediction: MINERAL RESOURCE POTENTIAL, GEOLOGIC, AND SAMPLE LOCALITY MAP OF THE MCCULLOUGH PEAKS WILDERNESS STUDY AREA, PARK COUNTY, WYOMING
+meteor score: 0.688058748403576
+
+map: 21770
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 21770
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Hadley, D.G.; McLeod, K.E.
+map: 21770
+key: authors
+truth: Hadley, D.G.; Ryder, R.T.; Hill, R.H.; Kulik, D.M.; McLeod, K.E.; Jeske, R.E.
+prediction: ['Hadley, D. G.', 'McLeod, K. E.']
+meteor score: 0.5324074074074074
+
+map: 21771
+key: title
+truth: Mineral resources of the Sand Dunes Wilderness Study Area, Sweetwater County, Wyoming
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE SAND DUNES WILDERNESS STUDY AREA
+meteor score: 0.7150900900900901
+
+map: 21771
+key: year
+truth: 1987
+prediction: 1985
+meteor score: 0.0
+
+map: 21771
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+
+map: 21771
+key: authors
+truth: Merewether, E.A.; Kulik, D.M.; Ryan, G.S.
+prediction: ['NULL']
+meteor score: 0.0
+
+map: 21774
+key: title
+truth: Mineral resources of the Sweetwater Canyon Wilderness Study Area, Fremont County, Wyoming
+prediction: MINERAL RESOURCE POTENTIAL, GEOLOGIC, AND SAMPLE LOCALITY MAP OF THE SWEETWATER CANYON WILDERNESS STUDY AREA, FREMONT COUNTY, WYOMING
+meteor score: 0.688058748403576
+
+map: 21774
+key: year
+truth: 1988
+prediction: 1986
+meteor score: 0.0
+
+map: 21774
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Hausel, W.D.; Day, W.C.; Dickerson, R.P.
+map: 21774
+key: authors
+truth: Day, W.C.; Hill, R.H.; Kulik, D.M.; Scott, D.C.; Hausel, W.D.
+prediction: ['Hausel, W.D.', 'Day, W.C.', 'Dickerson, R.P.']
+meteor score: 0.3993055555555556
+
+map: 21778
+key: title
+truth: Mineral resources of the Adobe Town Wilderness Study Area, Sweetwater County, Wyoming
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL AND GEOLOGY OF THE ADOBE TOWN WILDERNESS STUDY AREA, SWEETWATER COUNTY, WYOMING
+meteor score: 0.7255892255892257
+
+map: 21778
+key: year
+truth: 1990
+prediction: 1988
+meteor score: 0.0
+
+map: 21778
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Van Loenen, R.E.; Bryant, W.A.
+map: 21778
+key: authors
+truth: Van Loenen, R.E.; Hill, R.H.; Bankey, Viki; Bryant, W.A.; Kness, R.F.
+prediction: ['Van Loenen, R.E.', 'Bryant, W.A.']
+meteor score: 0.6696428571428572
+
+map: 21781
+key: title
+truth: Mineral resources of the Barbours Creek and Shawvers Run Wilderness Study Areas, Craig County, Virginia
+prediction: NULL
+meteor score: 0.0
+
+map: 21781
+key: year
+truth: 1988
+prediction: 1987
+meteor score: 0.0
+
+map: 21781
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Lesure, F.G.; Estabrook, J.R.; Linden, M.A.
+map: 21781
+key: authors
+truth: Lesure, F.G.
+prediction: ['Lesure, F.G.', 'Estabrook, J.R.', 'Linden, M.A.']
+meteor score: 0.08928571428571427
+
+map: 21809
+key: title
+truth: Mineral resources of the Gros Ventre Wilderness Study Area, Teton and Sublette counties, Wyoming
+prediction: GEOLOGIC MAP AND CROSS SECTIONS OF THE GROS VENTRE WILDERNESS STUDY AREA, TETON AND SUBLETTE COUNTIES, WYOMING
+meteor score: 0.7183549567531603
+
+map: 21809
+key: year
+truth: 1988
+prediction: 1977
+meteor score: 0.0
+
+map: 21809
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Simons, F.S.; Keefer, W.R.; Harwood, D.S.; Love, J.D.
+map: 21809
+key: authors
+truth: Simons, F.S.; Love, J.D.; Keefer, W.R.; Harwood, D.S.; Kulik, D.M.; Bieniewski, C.L.
+prediction: ['Simons, F. S.', 'Keefer, W. R.', 'Harwood, D. S.', 'Love, J. D.']
+meteor score: 0.8005344995140914
+
+map: 21838
+key: title
+truth: Mineral resources of the Harquahala Mountains Wilderness Study Area, La Paz and Maricopa Counties, Arizona
+prediction: MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF THE HARQUAHALA MOUNTAINS WILDERNESS STUDY AREA, LA PAZ AND MARICOPA COUNTIES, ARIZONA
+meteor score: 0.8054958183990442
+
+map: 21838
+key: year
+truth: 1988
+prediction: 1985
+meteor score: 0.0
+
+map: 21838
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Richard, S.M.; DeWitt, E.; Reynolds, S.J.; Spencer, J.E.; Hassemer, J.R.; Thompson, J.R.
+map: 21838
+key: authors
+truth: DeWitt, Ed; Richard, S.M.; Hassemer, J.R.; Hanna, W.F.; Thompson, J.R.
+prediction: ['Richard, S. M.', 'DeWitt, E.', 'Reynolds, S. J.', 'Spencer, J. E.', 'Hassemer, J. R.', 'Thompson, J. R.']
+meteor score: 0.537876167416119
+
+map: 21840
+key: title
+truth: Mineral resources of the Harcuvar Mountains Wilderness Study Area, La Paz County, Arizona
+prediction: Map of the Harcuvar Mountains Wilderness Study Area
+meteor score: 0.7042483660130718
+
+map: 21840
+key: year
+truth: 1990
+prediction: 1987
+meteor score: 0.0
+
+map: 21840
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Drewes, H.; DeWitt, E.; Bryant, B.; Hinrichs, E.N.
+map: 21840
+key: authors
+truth: Drewes, Harald; DeWitt, Ed; Hill, R.H.; Hanna, W.F.; Knepper, D.H., Jr.; Tuftin, S.E.; Reynolds, S.J.; Spencer, J.E.; Azam, Sarwar
+prediction: ['Drewes, H.', 'DeWitt, E.', 'Bryant, B.', 'Hinrichs, E.N.']
+meteor score: 0.10989010989010989
+
+map: 21844
+key: title
+truth: Mineral resources of the Needles Eye Wilderness Study Area, Gila County, Arizona
+prediction: APPROXIMATE BOUNDARY OF THE NEEDLES EYE STUDY AREA
+meteor score: 0.5761904761904761
+
+map: 21844
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 21844
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+
+map: 21844
+key: authors
+truth: Simons, F.S.; Theobald, P.K.; Tidball, R.R.; Erdman, J.A.; Harms, T.F.; Griscom, Andrew; Ryan, G.S.
+prediction: ['NULL']
+meteor score: 0.0
+
+map: 21845
+key: title
+truth: Mineral resources of the Black Rock Wilderness Study Area, Graham County, Arizona
+prediction: NULL
+meteor score: 0.0
+
+map: 21845
+key: year
+truth: 1987
+prediction: 1984
+meteor score: 0.0
+
+map: 21845
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blacet, J.M.; Miller, R.J.; Simons, F.S.
+map: 21845
+key: authors
+truth: Simons, F.S.; Theobald, P.K.; Tidball, R.R.; Erdman, J.A.; Harms, T.F.; Griscom, Andrew; Ryan, G.S.
+prediction: ['Blacet, J. M.', 'Miller, R. J.', 'Simons, F. S.']
+meteor score: 0.07352941176470588
+
+map: 21846
+key: title
+truth: Mineral resources of the Dos Cabezas Mountains Wilderness Study Area, Cochise County, Arizona
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE DOS CABEZAS MOUNTAINS WILDERNESS STUDY AREA AND VICINITY, COCHISE COUNTY, ARIZONA
+meteor score: 0.7172439759036146
+
+map: 21846
+key: year
+truth: 1986
+prediction: 1987
+meteor score: 0.0
+
+map: 21846
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Drewes, H.; Langford, R.P.; Davies, R.C.
+map: 21846
+key: authors
+truth: Drewes, Harald; Abrams, G.A.; Hassemer, J.R.; Zelten, J.E.
+prediction: ['Drewes, H.', 'Langford, R.P.', 'Davies, R.C.']
+meteor score: 0.08064516129032259
+
+map: 21849
+key: title
+truth: Mineral resources of the Skedaddle Mountain Wilderness Study Area, Lassen County, California, and Washoe County, Nevada
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE SKEDADDLE MOUNTAIN WILDERNESS STUDY AREA, LASSEN COUNTY, CALIFORNIA, AND WASHOE COUNTY, NEVADA
+meteor score: 0.8979985955056179
+
+map: 21849
+key: year
+truth: 1988
+prediction: 1988
+meteor score: 1.0
+
+map: 21849
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Diggles, J.
+map: 21849
+key: authors
+truth: Diggles, M.F.; Frisken, J.G.; Plouff, Donald; Munts, S.R.; Peters, T.J.
+prediction: ['Diggles, J.', 'NULL', 'NULL']
+meteor score: 0.17857142857142858
+
+map: 21855
+key: title
+truth: Mineral resources of the El Paso Mountains Wilderness Study Area, Kern County, California
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE EL PASO MOUNTAINS WILDERNESS STUDY AREA, KERN COUNTY, CALIFORNIA
+meteor score: 0.8767791460099152
+
+map: 21855
+key: year
+truth: 1985
+prediction: 1985
+meteor score: 1.0
+
+map: 21855
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+
+map: 21855
+key: authors
+truth: Diggles, M.F.; Cox, B.F.; Tucker, R.E.; Gaps, R.S.
+prediction: ['NULL']
+meteor score: 0.0
+
+map: 21856
+key: title
+truth: Mineral resources of the Golden Valley Wilderness Study Area, San Bernardino County, California
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE GOLDEN VALLEY WILDERNESS STUDY AREA, SAN BERNARDINO COUNTY, CALIFORNIA
+meteor score: 0.8767791460099152
+
+map: 21856
+key: year
+truth: 1985
+prediction: 1985
+meteor score: 1.0
+
+map: 21856
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+
+map: 21856
+key: authors
+truth: Diggles, M.F.; Tucker, R.E.; Clemens, D.E.; Gaps, R.S.
+prediction: ['NULL', 'NULL', 'NULL']
+meteor score: 0.0
+
+map: 21859
+key: title
+truth: Mineral resources of the Palen-McCoy Wilderness Study Area, Riverside County, California
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE PALEN - MCCOY WILDERNESS STUDY AREA, RIVERSIDE COUNTY, CALIFORNIA
+meteor score: 0.6756849315068493
+
+map: 21859
+key: year
+truth: 1985
+prediction: 1985
+meteor score: 1.0
+
+map: 21859
+key: scale
+truth: 62500
+prediction: 1:62500
+meteor score: 1.0
+
+Stone, P.; Yeend, W.E.; Brownfield, K.; Kelly, M.
+map: 21859
+key: authors
+truth: Stone, Paul; Light, T.D.; Grauch, V.J.; Yeend, W.E.; Schreiner, R.A.
+prediction: ['Stone, P.', 'Yeend, W. E.', 'Brownfield, K.', 'Kelly, M.']
+meteor score: 0.3116531165311653
+
+map: 21861
+key: title
+truth: Mineral resources of the Indian Pass and Picacho Peak Wilderness Study Areas, Imperial County, California
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE INDIAN PASS AND PICACHO PEAK WILDERNESS STUDY AREAS, IMPERIAL COUNTY, CALIFORNIA
+meteor score: 0.8917989417989417
+
+map: 21861
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 21861
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Tosdal, R.M.; Sherrod, D.R.; Haxel, G.B.
+map: 21861
+key: authors
+truth: Smith, D.B.; Berger, B.R.; Tosdal, R.M.; Sherrod, D.R.; Raines, G.L.; Griscom, Andrew; Helferty, M.G.; Rumsey, C.M.; McMahan, A.B.
+prediction: ['Tosdal, R.M.', 'Sherrod, D.R.', 'Haxel, G.B.']
+meteor score: 0.5512152777777779
+
+map: 21867
+key: title
+truth: Mineral resources of the Whipple Mountains and Whipple Mountains Addition Wilderness Study Areas, San Bernardino County, California
+prediction: MINERAL RESOURCE POTENTIAL MAP OF THE WHIPPLE MOUNTAINS AND WHIPPLE MOUNTAINS ADDITION WILDERNESS STUDY AREAS, SAN BERNARDINO COUNTY, CALIFORNIA
+meteor score: 0.9035191047633071
+
+map: 21867
+key: year
+truth: 1988
+prediction: 1982
+meteor score: 0.0
+
+map: 21867
+key: scale
+truth: 48000
+prediction: 1:48000
+meteor score: 1.0
+
+Allen, C.M.; Bailey, D.K.; Carr, W.J.
+map: 21867
+key: authors
+truth: Marsh, S.P.; Raines, G.L.; Diggles, M.F.; Howard, K.A.; Simpson, R.W.; Hoover, D.B.; Ridenour, James; Moyle, P.R.; Willett, S.L.
+prediction: ['Allen, C.M.', 'Bailey, D.K.', 'Carr, W.J.']
+meteor score: 0.0
+
+map: 21868
+key: title
+truth: Mineral resources of the Bull Canyon Wilderness Study Area, Moffat County, Colorado, and Uintah County, Utah
+prediction: MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF THE BULL CANYON WILDERNESS STUDY AREA, MOFFAT COUNTY, COLORADO, AND UINTAH COUNTY, UTAH
+meteor score: 0.8155293367346939
+
+map: 21868
+key: year
+truth: 1987
+prediction: 1987
+meteor score: 1.0
+
+map: 21868
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Rowley, P.D.
+map: 21868
+key: authors
+truth: Soulliere, S.J.; Arnold, M.A.; Kulik, D.M.; Kreidler, T.J.
+prediction: ['Rowley, P. D.', 'NULL', 'NULL']
+meteor score: 0.0
+
+map: 21869
+key: title
+truth: Mineral resources of the Diamond Breaks Wilderness Study Area, Moffat County, Colorado, and Daggett County, Utah
+prediction: MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF THE DIAMOND BREAKS WILDERNESS STUDY AREA, MOFFAT COUNTY, COLORADO, AND DAGGETT COUNTY, UTAH
+meteor score: 0.8155293367346939
+
+map: 21869
+key: year
+truth: 1988
+prediction: 1986
+meteor score: 0.0
+
+map: 21869
+key: scale
+truth: 50000
+prediction: 1:50000
+meteor score: 1.0
+
+Connor, J.J.; Whipple, J.W.
+map: 21869
+key: authors
+truth: Connor, J.J.; Delaney, T.A.; Kulik, D.M.; Sawatzky, D.L.; Whipple, J.W.; Ryan, G.S.
+prediction: ['Connor, J.J.', 'Whipple, J.W.']
+meteor score: 0.5324074074074074
+
+map: 21870
+key: title
+truth: Mineral resources of the Redcloud Peak and Handies Peak Wilderness Study Areas, Hinsdale County, Colorado
+prediction: MAP SHOWING GENERALIZED MINERAL RESOURCE POTENTIAL, MINES, AND PROSPECTS, AND SIMPLIFIED GEOLOGY, ALTERATION, AND VEINS OF THE REDCLOUD PEAK WILDERNESS STUDY AREA, HINSDALE COUNTY, COLORADO
+meteor score: 0.48191550925925924
+
+map: 21870
+key: year
+truth: 1987
+prediction: 1999
+meteor score: 0.0
+
+map: 21870
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Station Eleven
+map: 21870
+key: authors
+truth: Sanford, R.F.; Grauch, R.I.; Hon, Ken; Bove, D.J.; Grauch, V.J.; Korzeb, S.L.
+prediction: ['Station Eleven']
+meteor score: 0.0
+
+map: 21872
+key: title
+truth: Mineral resources of the Gunnison Gorge Wilderness Study Area, Montrose and Delta Counties, Colorado
+prediction: NULL
+meteor score: 0.0
+
+map: 21872
+key: year
+truth: 1989
+prediction: NULL
+meteor score: 0.0
+
+map: 21872
+key: scale
+truth: 24000
+prediction: NULL
+meteor score: 0.0
+
+
+map: 21872
+key: authors
+truth: Armbrustmacher, T.J.; Barton, H.N.; Kulik, D.M.; Lee, Keenan; Brown, S.D.
+prediction: ['NULL', 'NULL', 'NULL']
+meteor score: 0.0
+
+map: 21873
+key: title
+truth: Mineral resources of the Tabeguache Creek Wilderness Study Area, Montrose County, Colorado
+prediction: MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF THE TABEGUACHE CREEK WILDERNESS STUDY AREA, MONTROSE COUNTY, COLORADO
+meteor score: 0.7674501424501425
+
+map: 21873
+key: year
+truth: 1990
+prediction: 1987
+meteor score: 0.0
+
+map: 21873
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Dickerson, R.P.; Williams, P.L.
+map: 21873
+key: authors
+truth: Dickerson, R.P.; Barton, H.N.; Blank, H.R., Jr.; Scott, D.C.
+prediction: ['Dickerson, R.P.', 'Williams, P.L.']
+meteor score: 0.4166666666666667
+
+map: 21874
+key: title
+truth: Mineral resources of the Black Canyon and South Piney Creek Wilderness Study Areas, Saguache County, Colorado
+prediction: GEOLOGIC AND MINERAL RESOURCE POTENTIAL MAPS OF THE BLACK CANYON AND SOUTH PINEY CREEK WILDERNESS STUDY AREAS, SAGUACHE COUNTY, COLORADO
+meteor score: 0.8155293367346939
+
+map: 21874
+key: year
+truth: 1985
+prediction: 1986
+meteor score: 0.0
+
+map: 21874
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Lindsey, D.A.; Lindsey, T.J.; Hannigan; Adrian; Hassemer, J.R.
+map: 21874
+key: authors
+truth: Lindsey, D.A.; Hassemer, J.R.; Abrams, G.A.; Taylor, R.B.; Hannigan, B.J.
+prediction: ['Lindsey, D. A.', 'Lindsey, T. J.', 'Hannigan', 'Adrian', 'Hassemer, J. R.']
+meteor score: 0.18292682926829268
+
+map: 21876
+key: title
+truth: Mineral resources of the Browns Canyon Wilderness Study Area, Chaffee County, Colorado
+prediction: BROWNS CANYON FLUORSPAR DISTRICT
+meteor score: 0.390625
+
+map: 21876
+key: year
+truth: 1986
+prediction: 1986
+meteor score: 1.0
+
+map: 21876
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Van Alstine, NULL; Scott, NULL
+map: 21876
+key: authors
+truth: Leibold, A.M.; Worl, R.G.; Martin, R.A.; Zelten, J.E.
+prediction: ['Van Alstine, NULL', 'Scott, NULL']
+meteor score: 0.0
+
+map: 21877
+key: title
+truth: Mineral resources of the Bull Gulch Wilderness Study Area, Eagle County, Colorado
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL, GEOLOGY, AND SAMPLE SITES FOR THE BULL GULCH WILDERNESS STUDY AREA, EAGLE COUNTY, COLORADO
+meteor score: 0.5992864562164115
+
+map: 21877
+key: year
+truth: 1986
+prediction: 1987
+meteor score: 0.0
+
+map: 21877
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Soulliere, S.J.; Arnold, M.A.
+map: 21877
+key: authors
+truth: Soulliere, S.J.; Arnold, M.A.; Hassemer, J.R.; Martin, R.A.; Kluender, S.E.; Zelten, J.E.
+prediction: ['Soulliere, S. J.', 'Arnold, M. A.', 'NULL']
+meteor score: 0.6134259259259259
+
+map: 21878
+key: title
+truth: Mineral resources of the Willow Creek and Skull Creek Wilderness Study Areas, Moffat County, Colorado
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL AND GEOLOGY OF THE WILLOW CREEK AND SKULL CREEK WILDERNESS STUDY AREAS, MOFFAT COUNTY, COLORADO
+meteor score: 0.7683190883190884
+
+map: 21878
+key: year
+truth: 1990
+prediction: 1988
+meteor score: 0.0
+
+map: 21878
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Van Loenen, R.E.; Bryant, W.A.; Rowley, P.D.; Hansen, W.R.
+map: 21878
+key: authors
+truth: Van Loenen, R.E.; Folger, H.W.; Kulik, D.M.; Bryant, W.A.; Korzeb, S.L.
+prediction: ['Van Loenen, R.E.', 'Bryant, W.A.', 'Rowley, P.D.', 'Hansen, W.R.']
+meteor score: 0.5260869565217392
+
+map: 21881
+key: title
+truth: Mineral resources of the Burnt Creek Wilderness Study Area, Custer County, Idaho
+prediction: MAP SHOWING MINERAL RESOURCE POTENTIAL, GEOLOGY, AND SAMPLE LOCALITIES, BURNT CREEK WILDERNESS STUDY AREA, CUSTER COUNTY, IDAHO
+meteor score: 0.6036363636363636
+
+map: 21881
+key: year
+truth: 1988
+prediction: 1986
+meteor score: 0.0
+
+map: 21881
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Skipp, B.; McIntyre, D.H.; LaDue, J.M.
+map: 21881
+key: authors
+truth: Dkipp, Betty; King, H.D.; McIntyre, D.H.; Sawatzky, D.L.; Gabby, P.N.
+prediction: ['Skipp, B.', 'McIntyre, D. H.', 'LaDue, J. M.']
+meteor score: 0.29296875
+
+map: 21882
+key: title
+truth: Mineral resources of the Borah Peak Wilderness Study Area, Custer County, Idaho
+prediction: BORAH PEAK WILDERNESS STUDY AREA
+meteor score: 0.6962719298245613
+
+map: 21882
+key: year
+truth: 1990
+prediction: 1988
+meteor score: 0.0
+
+map: 21882
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Skipp, B.; Janecke, S.U.; Wilson, A.B.
+map: 21882
+key: authors
+truth: Wilson, A.B.; Janecke, S.U.; Skipp, Betty; Kleinkopf, M.D.; McCafferty, A.E.; Barton, H.N.; Miller, M.S.
+prediction: ['Skipp, B.', 'Janecke, S.U.', 'Wilson, A.B.']
+meteor score: 0.4641544117647059
+
+map: 21888
+key: title
+truth: Mineral resources of the Little Wood River Wilderness Study Area, Blaine County, Idaho
+prediction: NULL
+meteor score: 0.0
+
+map: 21888
+key: year
+truth: 1989
+prediction: 1987
+meteor score: 0.0
+
+map: 21888
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Sanford, R.F.
+map: 21888
+key: authors
+truth: Sanford, R.F.; Whitney, H.A.; McCafferty, A.E.; Gese, D.D.
+prediction: ['Sanford, R. F.']
+meteor score: 0.19230769230769235
+
+map: 21889
+key: title
+truth: Mineral resources of the Burnt Lodge Wilderness Study Area, Phillips and Valley Counties, Montana
+prediction: MAP SHOWING MINERAL AND ENERGY RESOURCE POTENTIAL AND GEOLOGY OF THE BURNT LODGE WILDERNESS STUDY AREA AND VICINITY, PHILLIPS AND VALLEY COUNTIES, MONTANA
+meteor score: 0.5796674609761974
+
+map: 21889
+key: year
+truth: 1987
+prediction: 1984
+meteor score: 0.0
+
+map: 21889
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Hettinger, R.D.
+map: 21889
+key: authors
+truth: Hettinger, R.D.; Bankey, Viki; Causey, J.D.
+prediction: ['Hettinger, R. D.']
+meteor score: 0.20833333333333334
+
+map: 21892
+key: title
+truth: Mineral resources of the Seven Blackfoot Wilderness Study Area, Garfield County, Montana
+prediction: MAP SHOWING MINERAL AND ENERGY RESOURCE POTENTIAL AND GEOLOGY OF THE SEVEN BLACKFOOT WILDERNESS STUDY AREA AND VICINITY
+meteor score: 0.4476472701149426
+
+map: 21892
+key: year
+truth: 1988
+prediction: 1984
+meteor score: 0.0
+
+map: 21892
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Hettinger, R.D.
+map: 21892
+key: authors
+truth: Hettinger, R.D.; Bankey, Viki; Miller, M.S.
+prediction: ['Hettinger, R. D.']
+meteor score: 0.20833333333333334
+
+map: 28120
+key: title
+truth: Geologic map and cross sections showing configurations of bedrock surfaces, Broken Bow 1 degree X 2 degree quadrangle, east-central Nebraska
+prediction: GEOLOGIC MAPS AND CROSS SECTIONS SHOWING CONFIGURATIONS OF BEDROCK SURFACES, BROKEN BOW 1° x 2° QUADRANGLE, EAST-CENTRAL NEBRASKA
+meteor score: 0.8762233859890108
+
+map: 28120
+key: year
+truth: 2000
+prediction: 2000
+meteor score: 1.0
+
+map: 28120
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Souders, V.L.; Springfield, A.; Springfield, S.
+map: 28120
+key: authors
+truth: Souders, V.L.
+prediction: ['Souders, V.L.', 'Springfield, A.', 'Springfield, S.']
+meteor score: 0.08928571428571427
+
+map: 30333
+key: title
+truth: Geologic map of the Littlefield 30' X 60' quadrangle, Mohave County, northwestern Arizona
+prediction: GEOLOGIC MAP OF THE LITTLEFIELD 30' x 60' QUADRANGLE, MOHAVE COUNTY, NORTHWESTERN ARIZONA
+meteor score: 0.9997724169321802
+
+map: 30333
+key: year
+truth: 2000
+prediction: 2000
+meteor score: 1.0
+
+map: 30333
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Billingsley, G.H.; Workman, J.B.
+map: 30333
+key: authors
+truth: Billingsley, G.H.; Workman, J.B.
+prediction: ['Billingsley, G. H.', 'Workman, J. B.', 'NULL']
+meteor score: 0.9921875
+
+map: 34067
+key: title
+truth: Geologic map of the Ennis 30' X 60' quadrangle, Madison and Gallatin Counties, Montana, and Park County, Wyoming
+prediction: GEOLOGIC MAP OF THE ENNIS 30' x 60' QUADRANGLE
+meteor score: 0.8072916666666667
+
+map: 34067
+key: year
+truth: 2000
+prediction: 2000
+meteor score: 1.0
+
+map: 34067
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Kellogg, K.S.; Williams, V.S.
+map: 34067
+key: authors
+truth: Kellogg, K.S.; Williams, V.S.
+prediction: ['Kellogg, K. S.', 'Williams, V. S.']
+meteor score: 0.9921875
+
+map: 34288
+key: title
+truth: Geologic map of the Grand Canyon 30' X 60' quadrangle, Coconino and Mohave Counties, northwestern Arizona
+prediction: Geologic Map of the Grand Canyon 30 ' x 60 ' Quadrangle, Coconino and Mohave Counties, Northwestern Arizona
+meteor score: 0.7826473285943591
+
+map: 34288
+key: year
+truth: 2000
+prediction: 2000
+meteor score: 1.0
+
+map: 34288
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Billingsley, G.H.; Hampton, H.M.
+map: 34288
+key: authors
+truth: Billingsley, G.H.; Hampton, H.M.
+prediction: ['Billingsley, G. H.', 'Hampton, H. M.']
+meteor score: 0.9921875
+
+map: 34795
+key: title
+truth: Surficial geologic map of the Denver 1 degree X 2 degree quadrangle, Colorado
+prediction: GENERALIZED SURFICIAL GEOLOGIC MAP OF THE DENVER 1 ° x 2 ° QUADRANGLE, COLORADO
+meteor score: 0.7833402699328141
+
+map: 34795
+key: year
+truth: 2001
+prediction: 2001
+meteor score: 1.0
+
+map: 34795
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Moore, D.W.; Straub, A.W.; Berry, M.E.; Baker, M.L.; Brandt, T.R.
+map: 34795
+key: authors
+truth: Moore, D.W.; Straub, A.W.; Berry, M.E.; Baker, M.L.; Brandt, T.R.
+prediction: ['Moore, D. W.', 'Straub, A. W.', 'Berry, M. E.', 'Baker, M. L.', 'Brandt, T. R.']
+meteor score: 0.9995
+
+map: 51522
+key: title
+truth: Generalized surficial geologic map of the Pueblo 1 degree X 2 degree quadrangle, Colorado
+prediction: GENERALIZED SURFICIAL GEOLOGIC MAP OF THE PUEBLO 1° x 2° QUADRANGLE, COLORADO
+meteor score: 0.8086065573770491
+
+map: 51522
+key: year
+truth: 2002
+prediction: 2002
+meteor score: 1.0
+
+map: 51522
+key: scale
+truth: 250000
+prediction: 1:250000
+meteor score: 1.0
+
+Moore, D.W.; Straub, A.W.; Berry, M.E.; Baker, M.L.; Brandt, T.R.
+map: 51522
+key: authors
+truth: Moore, D.W.; Straub, A.W.; Berry, M.E.; Baker, M.L.; Brandt, T.R.
+prediction: ['Moore, D. W.', 'Straub, A. W.', 'Berry, M. E.', 'Baker, M. L.', 'Brandt, T. R.']
+meteor score: 0.9995
+
+map: 81495
+key: title
+truth: Geologic map of the Albuquerque 30' x 60' quadrangle, north-central New Mexico
+prediction: GEOLOGIC MAP OF THE ALBUQUERQUE 30 ' x 60 ' QUADRANGLE, NORTH - CENTRAL NEW MEXICO
+meteor score: 0.5515986071541626
+
+map: 81495
+key: year
+truth: 2007
+prediction: 2007
+meteor score: 1.0
+
+map: 81495
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Williams, P.L.; Cole, J.C.
+map: 81495
+key: authors
+truth: Williams, P.L.; Cole, J.C.
+prediction: ['Williams, P. L.', 'Cole, J. C.']
+meteor score: 0.9921875
+
+map: 93280
+key: title
+truth: Geologic map of the Cameron 30' x 60' quadrangle, Coconino County, northern Arizona
+prediction: Geologic Map of the Cameron 30' x 60' Quadrangle, Coconino County, Northern Arizona
+meteor score: 0.9997724169321802
+
+map: 93280
+key: year
+truth: 2007
+prediction: 2007
+meteor score: 1.0
+
+map: 93280
+key: scale
+truth: 100000
+prediction: 1:100000
+meteor score: 1.0
+
+Billingsley, G.H.; Priest, S.S.; Felger, T.J.
+map: 93280
+key: authors
+truth: Billingsley, G.H.; Priest, S.S.; Felger, T.J.
+prediction: ['Billingsley, G. H.', 'Priest, S. S.', 'Felger, T. J.']
+meteor score: 0.9976851851851852
+
+map: 10858
+key: title
+truth: Geologic map of the Big Narrows quadrangle, Larimer County, Colorado
+prediction: GEOLOGIC MAP OF THE BIG NARROWS QUADRANGLE, LARIMER COUNTY, COLORADO
+meteor score: 0.9995
+
+map: 10858
+key: year
+truth: 1976
+prediction: 1976
+meteor score: 1.0
+
+map: 10858
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Abbott, J.T.
+map: 10858
+key: authors
+truth: Abbott, J.T.
+prediction: ['Abbott, J. T.']
+meteor score: 0.9375
+
+map: 5627
+key: title
+truth: Geologic map of the Yellow Hills West quadrangle, Washoe County, Nevada
+prediction: GEOLOGIC MAP OF THE YELLOW HILLS WEST QUADRANGLE, WASHOE COUNTY, NEVADA
+meteor score: 0.9996243425995492
+
+map: 5627
+key: year
+truth: 1988
+prediction: 1988
+meteor score: 1.0
+
+map: 5627
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Ach, J.A.
+map: 5627
+key: authors
+truth: Ach, J.A.
+prediction: ['Ach, J. A.']
+meteor score: 0.9375
+
+map: 5628
+key: title
+truth: Geologic map of the Yellow Hills East quadrangle, Washoe and Humboldt Counties, Nevada
+prediction: GEOLOGIC MAP OF THE YELLOW HILLS EAST QUADRANGLE, WASHOE AND HUMBOLDT COUNTIES, NEVADA
+meteor score: 0.9997724169321802
+
+map: 5628
+key: year
+truth: 1988
+prediction: 1988
+meteor score: 1.0
+
+map: 5628
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Ach, J.A.
+map: 5628
+key: authors
+truth: Ach, J.A.
+prediction: ['Ach, J. A.']
+meteor score: 0.9375
+
+map: 7502
+key: title
+truth: Geologic map of the Spring Creek Basin quadrangle, Owyhee County, Idaho
+prediction: GEOLOGIC MAP OF THE SPRING CREEK BASIN QUADRANGLE, OWYHEE COUNTY, IDAHO
+meteor score: 0.9996243425995492
+
+map: 7502
+key: year
+truth: 1986
+prediction: 1986
+meteor score: 1.0
+
+map: 7502
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Ach, J.A.
+map: 7502
+key: authors
+truth: Ach, J.A.
+prediction: ['Ach, J. A.']
+meteor score: 0.9375
+
+map: 20658
+key: title
+truth: Geology and coal resources of the Salyersville North quadrangle, Magoffin, Morgan, and Johnson Counties, Kentucky
+prediction: GEOLOGIC MAP OF THE SALYERSVILLE NORTH QUADRANGLE MAGOFFIN, MORGAN, AND JOHNSON COUNTIES, KENTUCKY
+meteor score: 0.8248810418231906
+
+map: 20658
+key: year
+truth: 1963
+prediction: 1958
+meteor score: 0.0
+
+map: 20658
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Adkison, W.L.; Johnston, J.E.
+map: 20658
+key: authors
+truth: Adkison, W.L.; Johnston, J.E.
+prediction: ['Adkison, W. L.', 'Johnston, J. E.']
+meteor score: 0.9921875
+
+map: 5637
+key: title
+truth: Preliminary geologic map of the Yellowtail Dam quadrangle, Big Horn County, Montana
+prediction: PRELIMINARY GEOLOGIC MAP OF THE YELLOWTAIL DAM QUADRANGLE, BIG HORN COUNTY, MONTANA
+meteor score: 0.9997106481481481
+
+map: 5637
+key: year
+truth: 1988
+prediction: 1988
+meteor score: 1.0
+
+map: 5637
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Agard, S.S.; Roberts, G.R.; Council, L.C.; Shields, C.L.; Niemi, T.M.
+map: 5637
+key: authors
+truth: Agard, S.S.
+prediction: ['Agard, S. S.', 'Roberts, G. R.', 'Council, L. C.', 'Shields, C. L.', 'Niemi, T. M.']
+meteor score: 0.05434782608695652
+
+map: 7766
+key: title
+truth: Preliminary geologic map of the Bear Hole quadrangle, Big Horn County, Montana, and Big Horn and Sheridan Counties, Wyoming
+prediction: PRELIMINARY GEOLOGIC MAP OF THE BEAR HOLE QUADRANGLE, BIG HORN COUNTY, MONTANA, AND BIG HORN AND SHERIDAN COUNTIES, WYOMING
+meteor score: 0.9999271030762502
+
+map: 7766
+key: year
+truth: 1986
+prediction: 1986
+meteor score: 1.0
+
+map: 7766
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Agard, S.S.
+map: 7766
+key: authors
+truth: Agard, S.S.
+prediction: ['Agard, S. S.']
+meteor score: 0.9375
+
+map: 2013
+key: title
+truth: Geologic map of the Munger Mountain quadrangle, Teton and Lincoln Counties, Wyoming
+prediction: GEOLOGIC MAP OF THE MUNGER MOUNTAIN QUADRANGLE, TETON AND LINCOLN COUNTIES, WYOMING
+meteor score: 0.9997106481481481
+
+map: 2013
+key: year
+truth: 1968
+prediction: 1968
+meteor score: 1.0
+
+map: 2013
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Albee, H.F.
+map: 2013
+key: authors
+truth: Albee, H.F.
+prediction: ['Albee, H. F.']
+meteor score: 0.9375
+
+map: 8681
+key: title
+truth: Preliminary geologic map of the Observation Peak quadrangle, Teton and Lincoln Counties, Wyoming
+prediction: PRELIMINARY GEOLOGIC MAP OF THE OBSERVATION PEAK QUADRANGLE, TETON AND LINCOLN
+meteor score: 0.9817739079102716
+
+map: 8681
+key: year
+truth: 1972
+prediction: 1972
+meteor score: 1.0
+
+map: 8681
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Albee, H.F.
+map: 8681
+key: authors
+truth: Albee, H.F.
+prediction: ['Albee, H. F.']
+meteor score: 0.9375
+
+map: 10625
+key: title
+truth: Geologic map of the Observation Peak quadrangle, Teton and Lincoln Counties, Wyoming
+prediction: GEOLOGIC MAP OF THE OBSERVATION PEAK QUADRANGLE, TETON AND LINCOLN COUNTIES, WYOMING
+meteor score: 0.9997106481481481
+
+map: 10625
+key: year
+truth: 1973
+prediction: 1973
+meteor score: 1.0
+
+map: 10625
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Albee, H.F.
+map: 10625
+key: authors
+truth: Albee, H.F.
+prediction: ['Albee, H. F.']
+meteor score: 0.9375
+
+map: 8100
+key: title
+truth: Preliminary geologic map of the Poker Peak and Palisades Reservoir quadrangles, Bonneville County, Idaho and Lincoln County, Wyoming
+prediction: MAP OF THE POKER PEAK AND PALISADES RESERVOIR QUADRANGLES, BONNEVILLE COUNTY, IDAHO, AND LINCOLN COUNTY, WYOMING
+meteor score: 0.9248285322359396
+
+map: 8100
+key: year
+truth: 1965
+prediction: 1965
+meteor score: 1.0
+
+map: 8100
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Albee, H.E.; Cullins, H.L.
+map: 8100
+key: authors
+truth: Albee, H.F.; Cullins, H.L.
+prediction: ['Albee, H. E.', 'Cullins, H. L.']
+meteor score: 0.6388888888888888
+
+map: 10796
+key: title
+truth: Geologic map of the Poker Peak quadrangle, Bonneville County, Idaho
+prediction: GEOLOGIC MAP OF THE POKER PEAK QUADRANGLE, BONNEVILLE COUNTY, IDAHO
+meteor score: 0.9995
+
+map: 10796
+key: year
+truth: 1975
+prediction: 1975
+meteor score: 1.0
+
+map: 10796
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Albee, H.F.; Cullins, H.L.
+map: 10796
+key: authors
+truth: Albee, H.F.; Cullins, H.L.
+prediction: ['Albee, H. F.', 'Cullins, H. L.']
+meteor score: 0.9921875
+
+map: 10565
+key: title
+truth: Geologic map of the Harrodsburg quadrangle, Mercer and Woodford Counties, Kentucky
+prediction: GEOLOGIC MAP OF THE HARRODSBURG QUADRANGLE, MERCER AND WOODFORD COUNTIES, KENTUCKY
+meteor score: 0.9996243425995492
+
+map: 10565
+key: year
+truth: 1972
+prediction: 1972
+meteor score: 1.0
+
+map: 10565
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Allingham, J.W.
+map: 10565
+key: authors
+truth: Allingham, J.W.
+prediction: ['Allingham, J. W.']
+meteor score: 0.9375
+
+map: 20833
+key: title
+truth: Geology of the Dodgeville and Mineral Point quadrangles, Wisconsin
+prediction: LITHOLOGIC SYMBOLS USED IN COLUMNAR SECTION
+meteor score: 0.0
+
+map: 20833
+key: year
+truth: 1963
+prediction: NULL
+meteor score: 0.0
+
+map: 20833
+key: scale
+truth: 24000
+prediction: NULL
+meteor score: 0.0
+
+
+map: 20833
+key: authors
+truth: Allingham, J.W.
+prediction: ['NULL', 'NULL', 'NULL']
+meteor score: 0.0
+
+map: 6869
+key: title
+truth: Geologic map of the south half of the Ammon quadrangle, Bingham and Bonneville Counties, Idaho
+prediction: GEOLOGIC MAP OF THE SOUTH HALF OF THE AMMON QUADRANGLE, BINGHAM AND BONNEVILLE COUNTIES, IDAHO
+meteor score: 0.9998518518518519
+
+map: 6869
+key: year
+truth: 1980
+prediction: 1980
+meteor score: 1.0
+
+map: 6869
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Allmendinger, R.W.
+map: 6869
+key: authors
+truth: Allmendinger, R.W.
+prediction: ['Allmendinger, R. W.']
+meteor score: 0.9375
+
+map: 103473
+key: title
+truth: Interim surficial geologic map of the Shirley quadrangle, Massachusetts
+prediction: INTERIM SURFICIAL GEOLOGIC MAP OF THE SHIRLEY QUADRANGLE, MASSACHUSETTS
+meteor score: 0.9993141289437586
+
+map: 103473
+key: year
+truth: 1976
+prediction: 1976
+meteor score: 1.0
+
+map: 103473
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Allmendinger, R.W.; Schneider, W.D.
+map: 103473
+key: authors
+truth: Allmendinger, R.W.; Schneider, W.D.
+prediction: ['Allmendinger, R.W.', 'Schneider, W.D.']
+meteor score: 0.9921875
+
+map: 910
+key: title
+truth: Geologic map of the Broad Bottom quadrangle, eastern Kentucky
+prediction: GEOLOGIC MAP OF THE BROAD BOTTOM QUADRANGLE, EASTERN KENTUCKY
+meteor score: 0.9993141289437586
+
+map: 910
+key: year
+truth: 1965
+prediction: 1965
+meteor score: 1.0
+
+map: 910
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Alvord, D.C.; Holbrook, C.E.
+map: 910
+key: authors
+truth: Alvord, D.C.
+prediction: ['Alvord, D. C.', 'Holbrook, C. E.', 'NULL']
+meteor score: 0.13157894736842105
+
+map: 2209
+key: title
+truth: Geologic map of the Bushkill quadrangle, Pennsylvania-New Jersey
+prediction: GEOLOGIC QUADRANGLE MAP BUSHKILL QUADRANGLE, PA - N.J.
+meteor score: 0.39453125
+
+map: 2209
+key: year
+truth: 1971
+prediction: 1971
+meteor score: 1.0
+
+map: 2209
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Alvord, D.C.; Drake, A.A.
+map: 2209
+key: authors
+truth: Alvord, D.C.; Drake, A.A.
+prediction: ['Alvord, D. C.', 'Drake, A. A.']
+meteor score: 0.9921875
+
+map: 949
+key: title
+truth: Geologic map of the Pikeville quadrangle, Pike and Floyd Counties, Kentucky
+prediction: GEOLOGIC MAP OF THE PIKEVILLE QUADRANGLE, PIKE AND FLOYD COUNTIES, KENTUCKY
+meteor score: 0.9996243425995492
+
+map: 949
+key: year
+truth: 1965
+prediction: 1965
+meteor score: 1.0
+
+map: 949
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Alvord, D.C.; Holbrook, C.E.
+map: 949
+key: authors
+truth: Alvord, D.C.; Holbrook, C.E.
+prediction: ['Alvord, D. C.', 'Holbrook, C. E.']
+meteor score: 0.9921875
+
+map: 2175
+key: title
+truth: Geologic map of the Blackford quadrangle, western Kentucky
+prediction: GEOLOGIC MAP OF THE BLACKFORD QUADRANGLE, WESTERN KENTUCKY
+meteor score: 0.9990234375
+
+map: 2175
+key: year
+truth: 1970
+prediction: 1970
+meteor score: 1.0
+
+map: 2175
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Amos, D.H.
+map: 2175
+key: authors
+truth: Amos, D.H.
+prediction: ['Amos, D. H.']
+meteor score: 0.9375
+
+map: 2241
+key: title
+truth: Geologic map of part of the Leavenworth quadrangle, Meade County, Kentucky
+prediction: NULL
+meteor score: 0.0
+
+map: 2241
+key: year
+truth: 1971
+prediction: NULL
+meteor score: 0.0
+
+map: 2241
+key: scale
+truth: 24000
+prediction: NULL
+meteor score: 0.0
+
+
+map: 2241
+key: authors
+truth: Amos, D.H.
+prediction: ['NULL']
+meteor score: 0.0
+
+map: 2288
+key: title
+truth: Geologic map of the New Amsterdam quadrangle, Kentucky-Indiana and part of the Mauckport quadrangle, Kentucky
+prediction: GEOLOGIC MAP OF THE NEW AMSTERDAM QUADRANGLE, KENTUCKY - INDIANA AND PART OF THE MAUCKPORT QUADRANGLE, KENTUCKY
+meteor score: 0.8321185617103983
+
+map: 2288
+key: year
+truth: 1972
+prediction: 1972
+meteor score: 1.0
+
+map: 2288
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Amos, D.H.
+map: 2288
+key: authors
+truth: Amos, D.H.
+prediction: ['Amos, D. H.']
+meteor score: 0.9375
+
+map: 1868
+key: title
+truth: Geologic map of the Little Cypress quadrangle, Kentucky-Illinois
+prediction: GEOLOGIC MAP OF THE LITTLE CYPRESS QUADRANGLE, KENTUCKY - ILLINOIS
+meteor score: 0.7132444814660558
+
+map: 1868
+key: year
+truth: 1966
+prediction: 1966
+meteor score: 1.0
+
+map: 1868
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Amos, D.H.; Wolfe, E.W.
+map: 1868
+key: authors
+truth: Amos, D.H.; Wolfe, E.W.
+prediction: ['Amos, D. H.', 'Wolfe, E. W.']
+meteor score: 0.9921875
+
+map: 2645
+key: title
+truth: Preliminary geologic map of the NW 1/4 Mayer quadrangle, Yavapai County, Arizona
+prediction: PRELIMINARY GEOLOGIC MAP OF THE NW 4 MAYER QUADRANGLE, YAVA PAI COUNTY, ARIZONA
+meteor score: 0.7647286821705428
+
+map: 2645
+key: year
+truth: 1959
+prediction: 1959
+meteor score: 1.0
+
+map: 2645
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Anderson, C.A.; Blacet, P.M.
+map: 2645
+key: authors
+truth: Anderson, C.A.
+prediction: ['Anderson, C. A.', 'Blacet, P. M.']
+meteor score: 0.13157894736842105
+
+map: 8222
+key: title
+truth: Preliminary geologic map of the SW 1/4 Mayer quadrangle, Yavapai County, Arizona
+prediction: PRELIMINARY GEOLOGIC MAP OF THE SW 1/4 MAYER QUADRANGLE, YAVAPAI COUNTY, ARIZONA
+meteor score: 0.9997106481481481
+
+map: 8222
+key: year
+truth: 1967
+prediction: 1967
+meteor score: 1.0
+
+map: 8222
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+ANDERSON, C.A.
+map: 8222
+key: authors
+truth: Anderson, C.A.
+prediction: ['ANDERSON, C. A.']
+meteor score: 0.9375
+
+map: 6893
+key: title
+truth: Geologic map of the Beaver SE quadrangle, Beaver County, Utah
+prediction: GEOLOGIC MAP OF THE BEAVER SE QUADRANGLE, BEAVER COUNTY, UTAH
+meteor score: 0.9995
+
+map: 6893
+key: year
+truth: 1981
+prediction: 1981
+meteor score: 1.0
+
+map: 6893
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Anderson, J.J.; Lanigan, J.C.; Cunningham, C.G.; Naeser, C.W.
+map: 6893
+key: authors
+truth: Anderson, J.J.; Lanigan, J.C.; Cunningham, C.G.; Naeser, C.W.
+prediction: ['Anderson, J. J.', 'Lanigan, J. C.', 'Cunningham, C. G.', 'Naeser, C. W.']
+meteor score: 0.9990234375
+
+map: 6865
+key: title
+truth: Geologic map of the Delano Peak SW quadrangle, Beaver County, Utah
+prediction: GEOLOGIC MAP OF THE DELANO PEAK SW QUADRANGLE, BEAVER COUNTY, UTAH
+meteor score: 0.9996243425995492
+
+map: 6865
+key: year
+truth: 1980
+prediction: 1980
+meteor score: 1.0
+
+map: 6865
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Anderson, J.J.; Sigmund, J.M.; Cunningham, C.G.; Steven, T.A.; Lanigan, J.C.; Rowley, P.D.
+map: 6865
+key: authors
+truth: Anderson, J.J.; Sigmund, J.M.; Cunningham, C.G.; Steven, T.A.; Lanigan, J.C.; Rowley, P.D.
+prediction: ['Anderson, J. J.', 'Sigmund, J. M.', 'Cunningham, C. G.', 'Steven, T. A.', 'Lanigan, J. C.', 'Rowley, P. D.']
+meteor score: 0.9997106481481481
+
+map: 693
+key: title
+truth: Geology of the Aspen Grove quadrangle, Utah
+prediction: GEOLOGY OF THE ASPEN GROVE QUADRANGLE, UTAH
+meteor score: 0.9985422740524781
+
+map: 693
+key: year
+truth: 1964
+prediction: 1964
+meteor score: 1.0
+
+map: 693
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Baker, A.A.
+map: 693
+key: authors
+truth: Baker, A.A.
+prediction: ['Baker, A. A.']
+meteor score: 0.9375
+
+map: 695
+key: title
+truth: Geology of the Orem quadrangle, Utah
+prediction: GEOLOGY OF THE OREM QUADRANGLE, UTAH
+meteor score: 0.9976851851851852
+
+map: 695
+key: year
+truth: 1964
+prediction: 1964
+meteor score: 1.0
+
+map: 695
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Baker, A.A.
+map: 695
+key: authors
+truth: Baker, A.A.
+prediction: ['Baker, A. A.']
+meteor score: 0.9375
+
+map: 8006
+key: title
+truth: Geologic map of the Aspen Grove quadrangle, Utah
+prediction: GEOLOGIC MAP OF THE ASPEN GROVE QUADRANGLE, UTAH
+meteor score: 0.9990234375
+
+map: 8006
+key: year
+truth: 1961
+prediction: 1961
+meteor score: 1.0
+
+map: 8006
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Baker, A.A.
+map: 8006
+key: authors
+truth: Baker, A.A.
+prediction: ['Baker, A. A.']
+meteor score: 0.9375
+
+map: 8008
+key: title
+truth: Geologic map of the southeastern part of the Brighton quadrangle, Utah
+prediction: Geologic Map of Southeastern Part of Brighton Quadrangle, Utah
+meteor score: 0.9601449275362319
+
+map: 8008
+key: year
+truth: 1961
+prediction: 1961
+meteor score: 1.0
+
+map: 8008
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Baker, A.A.
+map: 8008
+key: authors
+truth: Baker, A.A.
+prediction: ['Baker, A. A.']
+meteor score: 0.9375
+
+map: 8753
+key: title
+truth: Geologic map of NE part of Spanish Fork Peak quadrangle, Utah
+prediction: GEOLOGIC MAP OF NE PART OF SPANISH FORK PEAK QUADRANGLE, UTAH
+meteor score: 0.9996243425995492
+
+map: 8753
+key: year
+truth: 1972
+prediction: 1972
+meteor score: 1.0
+
+map: 8753
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Baker, A.A.
+map: 8753
+key: authors
+truth: Baker, A.A.
+prediction: ['Baker, A. A.', 'NULL', 'NULL']
+meteor score: 0.9375
+
+map: 4965
+key: title
+truth: Geology and magnetite deposits of the Franklin quadrangle and part of the Hamburg quadrangle, New Jersey
+prediction: GEOLOGIC MAP OF THE FRANKLIN QUADRANGLE AND PART OF THE HAMBURG QUADRANGLE , NEW JERSEY
+meteor score: 0.76595842531273
+
+map: 4965
+key: year
+truth: 1970
+prediction: 1954
+meteor score: 0.0
+
+map: 4965
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Baker, D.R.; Buddington, A.F.
+map: 4965
+key: authors
+truth: Baker, D.R.; Buddington, A.F.
+prediction: ['Baker, D. R.', 'Buddington, A. F.']
+meteor score: 0.9921875
+
+map: 750
+key: title
+truth: Geology of the New Madrid S.E. and Hubbard Lake quadrangles in Kentucky
+prediction: GEOLOGY OF THE NEW MADRID S.E. AND HUBBARD LAKE QUADRANGLES
+meteor score: 0.9799019607843138
+
+map: 750
+key: year
+truth: 1963
+prediction: 1963
+meteor score: 1.0
+
+map: 750
+key: scale
+truth: 24000
+prediction: 1:62500
+meteor score: 0.0
+
+Baker, L.N.
+map: 750
+key: authors
+truth: Baker, L.N.
+prediction: ['Baker, L. N.']
+meteor score: 0.9375
+
+map: 10926
+key: title
+truth: Geologic map of the Hayden quadrangle, Pinal and Gila Counties, Arizona
+prediction: GEOLOGIC MAP OF THE HAYDEN QUADRANGLE, PINAL AND GILA COUNTIES, ARIZONA
+meteor score: 0.9996243425995492
+
+map: 10926
+key: year
+truth: 1977
+prediction: 1977
+meteor score: 1.0
+
+map: 10926
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Krieger, M.H.; ks
+map: 10926
+key: authors
+truth: Banks, N.G.; Krieger, M.H.
+prediction: ['Krieger, M. H.', 'ks']
+meteor score: 0.16129032258064518
+
+map: 19611
+key: title
+truth: Geologic map and lignite deposits of the Glen Ullin quadrangle, Morton County, North Dakota
+prediction: GEOLOGIC MAP AND LIGNITE DEPOSITS OF THE GLEN ULLIN QUADRANGLE, MORTON COUNTY, NORTH DAKOTA
+meteor score: 0.9998177842565598
+
+map: 19611
+key: year
+truth: 1973
+prediction: 1973
+meteor score: 1.0
+
+map: 19611
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Venable, C.S.; Barclay, NULL
+map: 19611
+key: authors
+truth: Barclay, C.S.
+prediction: ['Venable, C. S.', 'Barclay, NULL', 'NULL']
+meteor score: 0.13157894736842105
+
+map: 15426
+key: title
+truth: Preliminary geologic map of the Tullis quadrangle, Carbon County, Wyoming
+prediction: GEOLOGIC MAP OF THE
+meteor score: 0.8627717391304348
+
+map: 15426
+key: year
+truth: 1976
+prediction: 1976
+meteor score: 1.0
+
+map: 15426
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Barclay, C.S.V.
+map: 15426
+key: authors
+truth: Barclay, C.S.V.
+prediction: ['Barclay, C. S. V.', 'NULL', 'NULL']
+meteor score: 0.9375
+
+map: 19624
+key: title
+truth: Geologic map and lignite deposits of the Dengate quadrangle, Morton County, North Dakota
+prediction: GEOLOGIC MAP AND LIGNITE DEPOSITS OF THE DENGATE QUADRANGLE, MORTON COUNTY, NORTH DAKOTA
+meteor score: 0.9997724169321802
+
+map: 19624
+key: year
+truth: 1974
+prediction: 1974
+meteor score: 1.0
+
+map: 19624
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Venable, C.S.; Barclay, NULL
+map: 19624
+key: authors
+truth: Barclay, C.S.V.
+prediction: ['Venable, C. S.', 'Barclay, NULL', 'NULL']
+meteor score: 0.13157894736842105
+
+map: 19
+key: title
+truth: Geologic map of the Lake Helen quadrangle, Big Horn and Johnson counties, Wyoming
+prediction: GEOLOGIC MAP OF THE LAKE HELEN QUADRANGLE, BIG HORN AND JOHNSON COUNTIES, WYOMING
+meteor score: 0.9997724169321802
+
+map: 19
+key: year
+truth: 1982
+prediction: 1982
+meteor score: 1.0
+
+map: 19
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Barker, F.
+map: 19
+key: authors
+truth: Barker, Fred
+prediction: ['Barker, F.']
+meteor score: 0.25
+
+map: 10880
+key: title
+truth: Geologic map of the Jefferson quadrangle, Park and Summit Counties, Colorado
+prediction: GEOLOGIC MAP OF THE JEFFERSON QUADRANGLE, PARK AND SUMMIT COUNTIES, COLORADO
+meteor score: 0.9996243425995492
+
+map: 10880
+key: year
+truth: 1976
+prediction: 1976
+meteor score: 1.0
+
+map: 10880
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Barker, F.; Wyant, D.G.
+map: 10880
+key: authors
+truth: Barker, Fred; Wyant, D.G.
+prediction: ['Barker, F.', 'Wyant, D. G.']
+meteor score: 0.6388888888888888
+
+map: 825
+key: title
+truth: Geologic map of the Jangle Ridge quadrangle, Nye and Lincoln Counties, Nevada
+prediction: GEOLOGIC MAP OF THE JANGLE RIDGE QUADRANGLE
+meteor score: 0.7981481481481482
+
+map: 825
+key: year
+truth: 1965
+prediction: 1965
+meteor score: 1.0
+
+map: 825
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Barnes, H.; Christiansen, R.L.; Byers, F.M.Jr.
+map: 825
+key: authors
+truth: Barnes, Harley; Christiansen, R.L.; Byers, F.M., Jr.
+prediction: ['Barnes, H.', 'Christiansen, R. L.', 'Byers, F. M. Jr.']
+meteor score: 0.6147540983606558
+
+map: 9023
+key: title
+truth: Geologic and tectonic maps of the Mercury quadrangle, Nye and Clark Counties, Nevada
+prediction: GEOLOGIC MAP
+meteor score: 0.32258064516129037
+
+map: 9023
+key: year
+truth: 1982
+prediction: 1982
+meteor score: 1.0
+
+map: 9023
+key: scale
+truth: 24000
+prediction: 1:62500
+meteor score: 0.0
+
+Barnes, H.; Ekren, E.B.; Rodgers, C.L.; Hedlund, D.C.
+map: 9023
+key: authors
+truth: Barnes, Harley; Ekren, E.B.; Rodgers, C.L.; Hedlund, D.C.
+prediction: ['Barnes, H.', 'Ekren, E. B.', 'Rodgers, C. L.', 'Hedlund, D. C.']
+meteor score: 0.864795918367347
+
+map: 667
+key: title
+truth: Geologic map of the Oak Spring quadrangle, Nye County, Nevada
+prediction: GEOLOGY OF THE OAK SPRING QUADRANGLE
+meteor score: 0.75625
+
+map: 667
+key: year
+truth: 1963
+prediction: 1963
+meteor score: 1.0
+
+map: 667
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Barnes, H.; Houser, F.N.; Poole, F.G.
+map: 667
+key: authors
+truth: Barnes, Harley; Houser, F.N.; Poole, F.G.
+prediction: ['Barnes, H.', 'Houser, F. N.', 'Poole, F. G.']
+meteor score: 0.8066666666666668
+
+map: 8000
+key: title
+truth: Geologic map of the Oak Spring quadrangle, Nye County, Nevada
+prediction: GEOLOGIC MAP OF THE OAK SPRING QUADRANGLE, NYE COUNTY, NEVADA
+meteor score: 0.9995
+
+map: 8000
+key: year
+truth: 1961
+prediction: 1961
+meteor score: 1.0
+
+map: 8000
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Barnes, H.; Houser, E.N.; Poole, F.G.
+map: 8000
+key: authors
+truth: Barnes, Harley; Houser, F.N.; Poole, F.G.
+prediction: ['Barnes, H.', 'Houser, E. N.', 'Poole, F. G.']
+meteor score: 0.5260416666666666
+
+map: 7312
+key: title
+truth: Geologic and structure maps of the Monarch quadrangle, Sheridan County, Wyoming, and Big Horn County, Montana
+prediction: GEOLOGIC AND STRUCTURE MAPS OF THE MONARCH QUADRANGLE, SHERIDAN COUNTY, WYOMING, AND BIG HORN COUNTY, MONTANA
+meteor score: 0.9998779296875
+
+map: 7312
+key: year
+truth: 1983
+prediction: 1983
+meteor score: 1.0
+
+map: 7312
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Barnum, B.E.
+map: 7312
+key: authors
+truth: Barnum, B.E.
+prediction: ['Barnum, B. E.']
+meteor score: 0.9375
+
+map: 15052
+key: title
+truth: Preliminary geologic map and coal resources of the Ranchester quadrangle, Sheridan County, Wyoming, and Big Horn County, Montana
+prediction: PRELIMINARY GEOLOGIC MAP AND COAL RESOURCES OF THE RANCHESTER QUADRANGLE, SHERIDAN COUNTY, WYOMING AND BIG HORN COUNTY, MONTANA
+meteor score: 0.943675509419454
+
+map: 15052
+key: year
+truth: 1974
+prediction: 1974
+meteor score: 1.0
+
+map: 15052
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Barnum, B.E.
+map: 15052
+key: authors
+truth: Barnum, B.E.
+prediction: ['Barnum, B. E.']
+meteor score: 0.9375
+
+map: 19632
+key: title
+truth: Geologic map and coal resources of the Ranchester quadrangle, Sheridan County, Wyoming, and Big Horn County, Montana
+prediction: GEOLOGIC MAP AND COAL RESOURCES OF THE RANCHESTER QUADRANGLE, SHERIDAN COUNTY, WYOMING, AND BIG HORN COUNTY, MONTANA
+meteor score: 0.999898229187869
+
+map: 19632
+key: year
+truth: 1975
+prediction: 1975
+meteor score: 1.0
+
+map: 19632
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Barnum, B.E.
+map: 19632
+key: authors
+truth: Barnum, B.E.
+prediction: ['Barnum, B. E.']
+meteor score: 0.9375
+
+map: 6588
+key: title
+truth: Geologic map and coal sections of the Cactus Reservoir quadrangle, Rio Blanco and Moffat Counties, Colorado
+prediction: GEOLOGIC MAP AND COAL SECTIONS OF THE CACTUS RESERVOIR QUADRANGLE, RIO BLANCO AND MOFFAT COUNTIES, COLORADO
+meteor score: 0.9998779296875
+
+map: 6588
+key: year
+truth: 1980
+prediction: 1980
+meteor score: 1.0
+
+map: 6588
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Barnum, B.E.; Garrigues, R.S.
+map: 6588
+key: authors
+truth: Barnum, B.E.; Garrigues, R.S.
+prediction: ['Barnum, B. E.', 'Garrigues, R. S.']
+meteor score: 0.9921875
+
+map: 2021
+key: title
+truth: Geologic map of the Dorton quadrangle, Pike County, Kentucky
+prediction: GEOLOGIC QUADRANGLE MAP DORTON QUADRANGLE, KENTUCKY GQ-713
+meteor score: 0.5166666666666667
+
+map: 2021
+key: year
+truth: 1968
+prediction: 1968
+meteor score: 1.0
+
+map: 2021
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Barr, J.L.; Arndt, H.H.
+map: 2021
+key: authors
+truth: Barr, J.L.; Arndt, H.H.
+prediction: ['Barr, J. L.', 'Arndt, H. H.', 'NULL']
+meteor score: 0.9921875
+
+map: 23
+key: title
+truth: Preliminary geologic map of the Lillis Ranch quadrangle, California
+prediction: PRELIMINARY GEOLOGIC MAP OF THE LILLIS RANCH QUADRANGLE, CALIFORNIA
+meteor score: 0.9993141289437586
+
+map: 23
+key: year
+truth: 1988
+prediction: 1988
+meteor score: 1.0
+
+map: 23
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bartow, J.A.
+map: 23
+key: authors
+truth: Bartow, J.A.
+prediction: ['Bartow, J. A.', 'NULL', 'NULL']
+meteor score: 0.9375
+
+map: 11950
+key: title
+truth: Geologic map of the Rio Bravo Ranch quadrangle, California
+prediction: GEOLOGIC MAP OF THE RIO BRAVO RANCH QUADRANGLE, CALIFORNIA
+meteor score: 0.9993141289437586
+
+map: 11950
+key: year
+truth: 1981
+prediction: 1981
+meteor score: 1.0
+
+map: 11950
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bartow, J.A.
+map: 11950
+key: authors
+truth: Bartow, J.A.
+prediction: ['Bartow, J. A.', 'NULL', 'NULL']
+meteor score: 0.9375
+
+map: 17468
+key: title
+truth: Preliminary geologic map of the Monocline Ridge quadrangle, California
+prediction: PRELIMINARY GEOLOGIC MAP OF THE MONOCLINE RIDGE QUADRANGLE, CALIFORNIA
+meteor score: 0.9993141289437586
+
+map: 17468
+key: year
+truth: 1988
+prediction: 1988
+meteor score: 1.0
+
+map: 17468
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bartow, J.A.
+map: 17468
+key: authors
+truth: Bartow, J.A.
+prediction: ['Bartow, J. A.', 'NULL', 'NULL']
+meteor score: 0.9375
+
+map: 25
+key: title
+truth: Geology of the Tejon Hills area - Arvin and Tejon Hills quadrangles, Kern County, California
+prediction: GEOLOGIC MAP OF ARVIN QUADRANGLE, KERN COUNTY, CALIFORNIA
+meteor score: 0.5874840357598978
+
+map: 25
+key: year
+truth: 1981
+prediction: 1961
+meteor score: 0.0
+
+map: 25
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bartow, J.A.; Dibblee, T.W.Jr.
+map: 25
+key: authors
+truth: Bartow, J.A.; Dibblee, T.W.
+prediction: ['Bartow, J.A.', 'Dibblee, T.W. Jr.']
+meteor score: 0.7361111111111112
+
+map: 17895
+key: title
+truth: Preliminary geologic map of the Chounet Ranch quadrangle, California
+prediction: PRELIMINARY GEOLOGIC MAP OF THE CHOUNET RANCH QUADRANGLE, CALIFORNIA
+meteor score: 0.9993141289437586
+
+map: 17895
+key: year
+truth: 1990
+prediction: 1989
+meteor score: 0.0
+
+map: 17895
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bartow, J.A.; Lettis, W.R.
+map: 17895
+key: authors
+truth: Bartow, J.A.; Lettis, W.R.
+prediction: ['Bartow, J.A.', 'Lettis, W.R.']
+meteor score: 0.9921875
+
+map: 14782
+key: title
+truth: Preliminary geologic map of the Hailey 7 1/2-minute quadrangle, Idaho
+prediction: NULL
+meteor score: 0.0
+
+map: 14782
+key: year
+truth: 1978
+prediction: 1978
+meteor score: 1.0
+
+map: 14782
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Batchelder, J.N.; Hall, W.E.
+map: 14782
+key: authors
+truth: Batchelder, J.N.; Hall, W.E.
+prediction: ['Batchelder, J. N.', 'Hall, W. E.', 'NULL']
+meteor score: 0.9921875
+
+map: 1438
+key: title
+truth: Photogeologic map of the Carlisle-3 quadrangle, San Juan County, Utah
+prediction: MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I - 68
+meteor score: 0.0684931506849315
+
+map: 1438
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1438
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bates, C.E.
+map: 1438
+key: authors
+truth: Bates, C.E.
+prediction: ['Bates, C. E.']
+meteor score: 0.9375
+
+map: 1441
+key: title
+truth: Photogeologic map of the Carlisle-6 quadrangle, San Juan County, Utah
+prediction: MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I - 71
+meteor score: 0.0684931506849315
+
+map: 1441
+key: year
+truth: 1955
+prediction: 1951
+meteor score: 0.0
+
+map: 1441
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bates, C.E.
+map: 1441
+key: authors
+truth: Bates, C.E.
+prediction: ['Bates, C. E.']
+meteor score: 0.9375
+
+map: 1542
+key: title
+truth: Photogeologic map of the Moab-10 quadrangle, Grand County, Utah
+prediction: PHOTOGEOLOGIC MAP OF THE MOAB - 10 QUADRANGLE GRAND COUNTY, UTAH
+meteor score: 0.6405895691609977
+
+map: 1542
+key: year
+truth: 1955
+prediction: 1951
+meteor score: 0.0
+
+map: 1542
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bates, C.E.
+map: 1542
+key: authors
+truth: Bates, C.E.
+prediction: ['Bates, C. E.']
+meteor score: 0.9375
+
+map: 1543
+key: title
+truth: Photogeologic map of the Moab-11 quadrangle, Grand County, Utah
+prediction: PHOTOGEOLOGIC MAP OF THE MOAB - 11 QUADRANGLE GRAND COUNTY, UTAH
+meteor score: 0.6405895691609977
+
+map: 1543
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1543
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bates, C.E.
+map: 1543
+key: authors
+truth: Bates, C.E.
+prediction: ['Bates, C. E.']
+meteor score: 0.9375
+
+map: 1633
+key: title
+truth: Photogeologic map of the Tidwell-9 quadrangle, Emery and Grand Counties, Utah
+prediction: MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I - 114
+meteor score: 0.06756756756756757
+
+map: 1633
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1633
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bates, C.E.; Sable, V.H.
+map: 1633
+key: authors
+truth: Bates, C.E.; Sable, V.H.
+prediction: ['Bates, C. E.', 'Sable, V. H.']
+meteor score: 0.9921875
+
+map: 926
+key: title
+truth: Geologic map of the South Pass City quadrangle, Fremont County, Wyoming
+prediction: GEOLOGIC MAP OF THE SOUTH PASS CITY QUADRANGLE, FREMONT COUNTY, WYOMING
+meteor score: 0.9996243425995492
+
+map: 926
+key: year
+truth: 1965
+prediction: 1965
+meteor score: 1.0
+
+map: 926
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bayley, R.W.
+map: 926
+key: authors
+truth: Bayley, R.W.
+prediction: ['Bayley, R. W.']
+meteor score: 0.9375
+
+map: 927
+key: title
+truth: Geologic map of the Atlantic City quadrangle, Fremont County, Wyoming
+prediction: GEOLOGIC MAP OF THE ATLANTIC CITY QUADRANGLE, FREMONT COUNTY, WYOMING
+meteor score: 0.9995
+
+map: 927
+key: year
+truth: 1965
+prediction: 1965
+meteor score: 1.0
+
+map: 927
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bayley, R.W.
+map: 927
+key: authors
+truth: Bayley, R.W.
+prediction: ['Bayley, R. W.']
+meteor score: 0.9375
+
+map: 929
+key: title
+truth: Geologic map of the Miners Delight quadrangle, Fremont County, Wyoming
+prediction: GEOLOGIC MAP OF THE MINERS DELIGHT QUADRANGLE, FREMONT COUNTY, WYOMING
+meteor score: 0.9995
+
+map: 929
+key: year
+truth: 1965
+prediction: 1965
+meteor score: 1.0
+
+map: 929
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bayley, R.W.
+map: 929
+key: authors
+truth: Bayley, R.W.
+prediction: ['Bayley, R. W.']
+meteor score: 0.9375
+
+map: 930
+key: title
+truth: Geologic map of the Louis Lake quadrangle, Fremont County, Wyoming
+prediction: GEOLOGIC MAP OF THE LOUIS LAKE QUADRANGLE, FREMONT COUNTY, WYOMING
+meteor score: 0.9995
+
+map: 930
+key: year
+truth: 1965
+prediction: 1965
+meteor score: 1.0
+
+map: 930
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bayley, R.W.
+map: 930
+key: authors
+truth: Bayley, R.W.
+prediction: ['Bayley, R. W.']
+meteor score: 0.9375
+
+map: 2077
+key: title
+truth: Geologic map of the Bradley Peak quadrangle, Carbon County, Wyoming
+prediction: GEOLOGIC MAP OF THE BRADLEY PEAK QUADRANGLE, CARBON COUNTY, WYOMING
+meteor score: 0.9995
+
+map: 2077
+key: year
+truth: 1968
+prediction: 1968
+meteor score: 1.0
+
+map: 2077
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bayley, R.W.
+map: 2077
+key: authors
+truth: Bayley, R.W.
+prediction: ['Bayley, R. W.']
+meteor score: 0.9375
+
+map: 17876
+key: title
+truth: Geologic map of the Valentine SE quadrangle, Mohave County, Arizona
+prediction: GEOLOGIC MAP OF THE VALENTINE SE QUADRANGLE, MOHAVE COUNTY, ARIZONA
+meteor score: 0.9995
+
+map: 17876
+key: year
+truth: 1990
+prediction: 1986
+meteor score: 0.0
+
+map: 17876
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Beard, S.; Lucchitta, I.
+map: 17876
+key: authors
+truth: Beard, Sue; Lucchitta, Ivo
+prediction: ['Beard, S.', 'Lucchitta, I.']
+meteor score: 0.25
+
+map: 2587
+key: title
+truth: Preliminary geologic map of the southern half of the Jefferson City quadrangle, Jefferson County, Montana
+prediction: PRELIMINARY GEOLOGIC MAP OF THE SOUTHERN HALF OF THE JEFFERSON CITY QUADRANGLE JEFFERSON COUNTY, MONTANA
+meteor score: 0.9319727891156462
+
+map: 2587
+key: year
+truth: 1960
+prediction: 1953
+meteor score: 0.0
+
+map: 2587
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Becraft, G.E.; Meschter, D.Y.; Weeks, R.A.; Klepper, M.R.; Rosenblum, Sam; Pinckney, D.M.; Gross, E.B.; Roberts, W.A.
+map: 2587
+key: authors
+truth: Becraft, G.E.
+prediction: ['Becraft, G. E.', 'Meschter, D. Y.', 'Weeks, R. A.', 'Klepper, M. R.', 'Rosenblum, Sam', 'Pinckney, D. M.', 'Gross, E. B.', 'Roberts, W. A.']
+meteor score: 0.03424657534246575
+
+map: 2599
+key: title
+truth: Preliminary geologic map of the northwest quarter of the Boulder quadrangle, Montana
+prediction: PRELIMINARY GEOLOGIC MAP OF THE NORTHWEST QUARTER OF THE BOULDER QUADRANGLE, MONTANA
+meteor score: 0.9997106481481481
+
+map: 2599
+key: year
+truth: 1961
+prediction: 1961
+meteor score: 1.0
+
+map: 2599
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Becraft, G.E.; Pinckney, D.M.
+map: 2599
+key: authors
+truth: Becraft, G.E.; Pinckney, D.M.
+prediction: ['Becraft, G. E.', 'Pinckney, D. M.']
+meteor score: 0.9921875
+
+map: 75227
+key: title
+truth: Preliminary geologic map and section of the Kershaw quadrangle, Kershaw and Lancaster Counties, South Carolina
+prediction: PRELIMINARY GEOLOGIC MAP AND SECTION OF THE KERSHAW QUADRANGLE, KERSHAW AND LANCASTER COUNTIES, SOUTH CAROLINA
+meteor score: 0.9998518518518519
+
+map: 75227
+key: year
+truth: 1980
+prediction: 1980
+meteor score: 1.0
+
+map: 75227
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bell, H.III
+map: 75227
+key: authors
+truth: Bell, Henry
+prediction: ['Bell, H. III']
+meteor score: 0.25
+
+map: 1489
+key: title
+truth: Photogeologic map of the Elk Ridge-10 quadrangle, San Juan County, Utah
+prediction: ELK RIDGE QUADRANGLE
+meteor score: 0.13157894736842107
+
+map: 1489
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1489
+key: scale
+truth: 24000
+prediction: 1:125000
+meteor score: 0.0
+
+Bennett, H.S.
+map: 1489
+key: authors
+truth: Bennett, H.S.
+prediction: ['Bennett, H. S.']
+meteor score: 0.9375
+
+map: 1503
+key: title
+truth: Photogeologic map of the Emery-10 quadrangle, Emery County, Utah
+prediction: MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I - 11
+meteor score: 0.06944444444444445
+
+map: 1503
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1503
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bennett, H.S.
+map: 1503
+key: authors
+truth: Bennett, H.S.
+prediction: ['Bennett, H. S.']
+meteor score: 0.9375
+
+map: 1506
+key: title
+truth: Photogeologic map of the Emery-7 quadrangle, Emery County, Utah
+prediction: PHOTOGEOLOGIC MAP OF THE EMERY - 7 QUADRANGLE EMERY COUNTY, UTAH
+meteor score: 0.6405895691609977
+
+map: 1506
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1506
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bennett, H.S.
+map: 1506
+key: authors
+truth: Bennett, H.S.
+prediction: ['Bennett, H. S.']
+meteor score: 0.9375
+
+map: 1572
+key: title
+truth: Photogeologic map of the Navajo Mountain-12 quadrangle, Kane and San Juan Counties, Utah
+prediction: MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I- 45
+meteor score: 0.07462686567164178
+
+map: 1572
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1572
+key: scale
+truth: 24000
+prediction: 1:240000
+meteor score: 0.0
+
+Bennett, H.S.
+map: 1572
+key: authors
+truth: Bennett, H.S.
+prediction: ['Bennett, H. S.']
+meteor score: 0.9375
+
+map: 1576
+key: title
+truth: Photogeologic map of the Navajo Mountain-2 quadrangle, Kane and San Juan Counties, Utah
+prediction: PHOTOGEOLOGIC MAP OF THE NAVAJO MOUNTAIN - 2 QUADRANGLE
+meteor score: 0.5297872340425532
+
+map: 1576
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1576
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bennett, H.S.
+map: 1576
+key: authors
+truth: Bennett, H.S.
+prediction: ['Bennett, H. S.']
+meteor score: 0.9375
+
+map: 1579
+key: title
+truth: Photogeologic map of the Navajo Mountain-5 quadrangle, Kane and San Juan Counties, Utah
+prediction: PHOTOGEOLOGIC MAP OF THE NAVAJO MOUNTAIN - 5 QUADRANGLE KANE AND SAN JUAN COUNTIES , UTAH
+meteor score: 0.628343949044586
+
+map: 1579
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1579
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+
+map: 1579
+key: authors
+truth: Bennett, H.S.
+prediction: ['NULL']
+meteor score: 0.0
+
+map: 1581
+key: title
+truth: Photogeologic map of the Navajo Mountain-7 quadrangle, Kane and San Juan Counties, Utah
+prediction: NAVAJO MOUNTAIN - 7 QUADRANGLE
+meteor score: 0.08620689655172414
+
+map: 1581
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1581
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bennett, H.S.
+map: 1581
+key: authors
+truth: Bennett, H.S.
+prediction: ['Bennett, H. S.']
+meteor score: 0.9375
+
+map: 1630
+key: title
+truth: Photogeologic map of the Tidwell-6 quadrangle, Emery County, Utah
+prediction: TIDWELL - 6 QUADRANGLE
+meteor score: 0.0
+
+map: 1630
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1630
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bennett, H.S.
+map: 1630
+key: authors
+truth: Bennett, H.S.
+prediction: ['Bennett, H. S.']
+meteor score: 0.9375
+
+map: 729
+key: title
+truth: Geology of the Cloverport quadrangle, Kentucky-Indiana and the Kentucky part of the Cannelton quadrangle
+prediction: GEOLOGY OF THE CLOVERPORT QUADRANGLE
+meteor score: 0.6305084745762711
+
+map: 729
+key: year
+truth: 1965
+prediction: 1965
+meteor score: 1.0
+
+map: 729
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bergendahl, M.H.; Gray, H.H.
+map: 729
+key: authors
+truth: Bergendahl, M.H.
+prediction: ['Bergendahl, M. H.', 'Gray, H. H.']
+meteor score: 0.13157894736842105
+
+map: 9350
+key: title
+truth: Geologic map and sections of the southwest quarter of the Dillon quadrangle, Eagle and Summit Counties, Colorado
+prediction: GEOLOGIC MAP AND SECTIONS OF THE SOUTHWEST QUARTER OF THE DILLON QUADRANGLE EAGLE AND SUMMIT COUNTIES, COLORADO
+meteor score: 0.9402573529411764
+
+map: 9350
+key: year
+truth: 1969
+prediction: 1969
+meteor score: 1.0
+
+map: 9350
+key: scale
+truth: 24000
+prediction: 1:62500
+meteor score: 0.0
+
+Bergendahl, M.H.; Shearer, J.E.; Gardner, M.E.; Smith, R.P.
+map: 9350
+key: authors
+truth: Bergendahl, M.H.
+prediction: ['Bergendahl, M. H.', 'Shearer, J. E.', 'Gardner, M. E.', 'Smith, R. P.']
+meteor score: 0.06756756756756756
+
+map: 20751
+key: title
+truth: Geology and mineral deposits of the Carlile quadrangle, Crook County, Wyoming
+prediction: GEOLOGIC AND STRUCTURE CONTOUR MAP AND SECTIONS OF THE CARLILE QUADRANGLE, CROOK COUNTY, WYOMING
+meteor score: 0.6447688564476887
+
+map: 20751
+key: year
+truth: 1961
+prediction: 1955-56
+meteor score: 0.0
+
+map: 20751
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bergendahl, M.H.; Davis, R.E.; Izett, G.A.
+map: 20751
+key: authors
+truth: Bergendahl, M.H.; Davis, R.E.; Izett, G.A.
+prediction: ['Bergendahl, M. H.', 'Davis, R. E.', 'Izett, G. A.']
+meteor score: 0.9976851851851852
+
+map: 753
+key: title
+truth: Geology of the Fordsville quadrangle, Kentucky
+prediction: GEOLOGY OF THE FORDSVILLE QUADRANGLE
+meteor score: 0.778186274509804
+
+map: 753
+key: year
+truth: 1964
+prediction: 1964
+meteor score: 1.0
+
+map: 753
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bergendahl, M.H.; Smith, Avery E.
+map: 753
+key: authors
+truth: Bergendahl, M.H.; Smith, A.E.
+prediction: ['Bergendahl, M. H.', 'Smith, Avery E.', 'NULL']
+meteor score: 0.600907029478458
+
+map: 5324
+key: title
+truth: Structure and stratigraphy of the Pennsylvania rocks exposed in the Seitz quadrangle, Breathitt, Magoffin, Morgan, and Wolfe Counties, Kentucky
+prediction: STRUCTURE AND STRATIGRAPHY OF THE PENNSYLVANIAN ROCKS EXPOSED IN THE SEITZ QUADRANGLE BREATHITT, MAGOFFIN, MORGAN, AND WOLFE COUNTIES, KENTUCKY
+meteor score: 0.8922782735385176
+
+map: 5324
+key: year
+truth: 1956
+prediction: 1956
+meteor score: 1.0
+
+map: 5324
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bergin, M.J.
+map: 5324
+key: authors
+truth: Bergin, M.J.
+prediction: ['Bergin, M. J.']
+meteor score: 0.9375
+
+map: 11263
+key: title
+truth: Preliminary reconnaissance bedrock geologic map of the Casa Grande West quadrangle, Pinal County, Arizona
+prediction: CASA GRANDE WEST QUADRANGLE
+meteor score: 0.588888888888889
+
+map: 11263
+key: year
+truth: 1979
+prediction: 1967
+meteor score: 0.0
+
+map: 11263
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bergquist, J.R.; Blacet, P.M.
+map: 11263
+key: authors
+truth: Bergquist, J.R.; Blacet, P.M.
+prediction: ['Bergquist, J. R.', 'Blacet, P. M.']
+meteor score: 0.9921875
+
+map: 11264
+key: title
+truth: Preliminary reconnaissance bedrock geologic map of the Casa Grande East quadrangle, Pinal County, Arizona
+prediction: PRELIMINARY RECONNAISSANCE BEDROCK GEOLOGIC MAP OF THE CASA GRANDE EAST QUADRANGLE, PINAL COUNTY, ARIZONA
+meteor score: 0.9998177842565598
+
+map: 11264
+key: year
+truth: 1979
+prediction: 1979
+meteor score: 1.0
+
+map: 11264
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bergquist, J.R.; Blacet, P.M.
+map: 11264
+key: authors
+truth: Bergquist, J.R.; Blacet, P.M.
+prediction: ['Bergquist, J. R.', 'Blacet, P. M.', 'NULL']
+meteor score: 0.9921875
+
+map: 14783
+key: title
+truth: Preliminary reconnaissance bedrock geologic map of part of the Casa Grande Mountains quadrangle, Pinal County, Arizona
+prediction: PRELIMINARY RECONNAISSANCE BEDROCK GEOLOGIC MAP OF PART OF THE CASA GRANDE MOUNTAINS QUADRANGLE, PINAL COUNTY, ARIZONA
+meteor score: 0.9998779296875
+
+map: 14783
+key: year
+truth: 1978
+prediction: 1978
+meteor score: 1.0
+
+map: 14783
+key: scale
+truth: 24000
+prediction: 1:62500
+meteor score: 0.0
+
+Bergquist, J.R.; Blacet, P.M.
+map: 14783
+key: authors
+truth: Bergquist, J.R.; Blacet, P.M.
+prediction: ['Bergquist, J. R.', 'Blacet, P. M.']
+meteor score: 0.9921875
+
+map: 1545
+key: title
+truth: Photogeologic map of the Moab-13 quadrangle, Grand and Emery Counties, Utah
+prediction: MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I - 118
+meteor score: 0.06756756756756757
+
+map: 1545
+key: year
+truth: 1955
+prediction: 1955
+meteor score: 1.0
+
+map: 1545
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bergquist, W.E.
+map: 1545
+key: authors
+truth: Bergquist, W.E.
+prediction: ['Bergquist, W. E.']
+meteor score: 0.9375
+
+map: 754
+key: title
+truth: Geology of the Amity quadrangle, Pennsylvania
+prediction: GEOLOGY OF THE AMITY QUADRANGLE, PENNSYLVANIA
+meteor score: 0.9976851851851852
+
+map: 754
+key: year
+truth: 1964
+prediction: 1964
+meteor score: 1.0
+
+map: 754
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Berryhill, H.L.
+map: 754
+key: authors
+truth: Berryhill, H.L.
+prediction: ['Berryhill, H. L.']
+meteor score: 0.9375
+
+map: 796
+key: title
+truth: Geology of the Ellsworth quadrangle, Pennsylvania
+prediction: GEOLOGY OF THE ELLSWORTH QUADRANGLE
+meteor score: 0.778186274509804
+
+map: 796
+key: year
+truth: 1964
+prediction: 1964
+meteor score: 1.0
+
+map: 796
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Berryhill, H.L., Jr.; Schweinfurth, Stanley P.
+map: 796
+key: authors
+truth: Berryhill, H.L.; Schweinfurth, S.P.
+prediction: ['Berryhill, H. L., Jr.', 'Schweinfurth, Stanley P.']
+meteor score: 0.17241379310344826
+
+map: 740
+key: title
+truth: Geology of the Washington West quadrangle, Pennsylvania
+prediction: GEOLOGY OF THE WASHINGTON WEST QUADRANGLE PENNSYLVANIA - WASHINGTON CO. GQ - 283
+meteor score: 0.41218637992831547
+
+map: 740
+key: year
+truth: 1964
+prediction: 1964
+meteor score: 1.0
+
+map: 740
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Berryhill, H.L., Jr.; Swanson, V.E.
+map: 740
+key: authors
+truth: Berryhill, H.L.; Swanson, V.E.
+prediction: ['Berryhill, H. L., Jr.', 'Swanson, V. E.']
+meteor score: 0.5215419501133786
+
+map: 3876
+key: title
+truth: Geologic map of the Lopers Spring quadrangle, Beaver County, Utah
+prediction: GEOLOGIC MAP OF THE LOPERS SPRING QUADRANGLE, BEAVER COUNTY, UTAH
+meteor score: 0.9995
+
+map: 3876
+key: year
+truth: 1976
+prediction: 1976
+meteor score: 1.0
+
+map: 3876
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Best, M.G.
+map: 3876
+key: authors
+truth: Best, M.G.
+prediction: ['Best, M. G.']
+meteor score: 0.9375
+
+map: 11919
+key: title
+truth: Geologic map of the Steamboat Mountain and Bible Spring quadrangles, western Iron County, Utah
+prediction: GEOLOGIC MAP OF TH STEAMBOAT MOUNTAIN AND BIBLE SPRING QUADRANGLES, WESTERN IRON COUNTY, UTAH
+meteor score: 0.9268808114961962
+
+map: 11919
+key: year
+truth: 1981
+prediction: 1981
+meteor score: 1.0
+
+map: 11919
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Best, M.G.; Davis, R.L.
+map: 11919
+key: authors
+truth: Best, M.G.; Davis, R.L.
+prediction: ['Best, M. G.', 'Davis, R. L.']
+meteor score: 0.9921875
+
+map: 11193
+key: title
+truth: Geologic map of the Miners Cabin Wash and Buckhorn Springs quadrangles, Beaver County, Utah
+prediction: GEOLOGIC MAP OF THE MINERS CABIN WASH AND BUCKHORN SPRING QUADRANGLES, BEAVER COUNTY, UTAH
+meteor score: 0.9998177842565598
+
+map: 11193
+key: year
+truth: 1979
+prediction: 1979
+meteor score: 1.0
+
+map: 11193
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Best, M.G.; Grant, S.K.; Holmes, R.D.
+map: 11193
+key: authors
+truth: Best, M.G.; Grant, S.K.; Holmes, R.D.
+prediction: ['Best, M. G.', 'Grant, S. K.', 'Holmes, R. D.']
+meteor score: 0.9976851851851852
+
+map: 6538
+key: title
+truth: Geologic map of the Sawtooth Peak quadrangle, Beaver County, Utah
+prediction: GEOLOGIC MAP OF THE SAWTOOTH PEAK QUADRANGLE, BEAVER COUNTY, UTAH
+meteor score: 0.9995
+
+map: 6538
+key: year
+truth: 1980
+prediction: 1980
+meteor score: 1.0
+
+map: 6538
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Best, M.G.; Hintze, L.F.
+map: 6538
+key: authors
+truth: Best, M.G.; Hintze, L.F.
+prediction: ['Best, M. G.', 'Hintze, L. F.']
+meteor score: 0.9921875
+
+map: 6539
+key: title
+truth: Preliminary geologic map of the Halfway Summit quadrangle, Millard and Beaver Counties, Utah
+prediction: PRELIMINARY GEOLOGIC MAP OF THE HALFWAY SUMMIT QUADRANGLE, MILLARD AND BEAVER COUNTIES, UTAH
+meteor score: 0.9997724169321802
+
+map: 6539
+key: year
+truth: 1980
+prediction: 1980
+meteor score: 1.0
+
+map: 6539
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Best, M.G.; Hintze, L.F.
+map: 6539
+key: authors
+truth: Best, M.G.; Hintze, L.F.
+prediction: ['Best, M. G.', 'Hintze, L. F.']
+meteor score: 0.9921875
+
+map: 17964
+key: title
+truth: Geologic map of the Purgatory Canyon quadrangle, northern Mohave County, Arizona
+prediction: GEOLOGIC MAP OF THE PURGATORY CANYON QUADRANGLE, NORTHERN MOHAVE COUNTY, ARIZONA
+meteor score: 0.9996243425995492
+
+map: 17964
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 17964
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Billingsley, G.H.
+map: 17964
+key: authors
+truth: Billingsley, G.H.
+prediction: ['Billingsley, G. H.']
+meteor score: 0.9375
+
+map: 17965
+key: title
+truth: Geologic map of the Wolf Hole Mountain West quadrangle, northern Mohave County, Arizona
+prediction: GEOLOGIC MAP OF THE WOLF HOLE MOUNTAIN WEST QUADRANGLE, NORTHERN MOHAVE COUNTY, ARIZONA
+meteor score: 0.9997724169321802
+
+map: 17965
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 17965
+key: scale
+truth: 24000
+prediction: 1:1240000
+meteor score: 0.0
+
+Billingsley, G.H.
+map: 17965
+key: authors
+truth: Billingsley, G.H.
+prediction: ['Billingsley, G. H.']
+meteor score: 0.9375
+
+map: 18003
+key: title
+truth: Geologic map of the Lizard Point quadrangle, northern Mohave County, Arizona
+prediction: GEOLOGIC MAP OF THE LIZARD POINT QUADRANGLE, NORTHERN MOHAVE COUNTY, ARIZONA
+meteor score: 0.9996243425995492
+
+map: 18003
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 18003
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Billingsley, G.H.
+map: 18003
+key: authors
+truth: Billingsley, G.H.
+prediction: ['Billingsley, G. H.']
+meteor score: 0.9375
+
+map: 18005
+key: title
+truth: Geologic map of the Wolf Hole Mountain East quadrangle, northern Mohave County, Arizona
+prediction: GEOLOGIC MAP OF THE WOLF HOLE MOUNTAIN EAST QUADRANGLE, NORTHERN MOHAVE COUNTY, ARIZONA
+meteor score: 0.9997724169321802
+
+map: 18005
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 18005
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Billingsley, G.H.
+map: 18005
+key: authors
+truth: Billingsley, G.H.
+prediction: ['Billingsley, G. H.']
+meteor score: 0.9375
+
+map: 8252
+key: title
+truth: Geologic map of the SE 1/4 Mount Union quadrangle, Yavapai County, Arizona
+prediction: GEOLOGIC MAP OF THE SE 1/4 MOUNT UNION QUADRANGLE, YAVAPA! COUNTY, ARIZONA
+meteor score: 0.9139118457300276
+
+map: 8252
+key: year
+truth: 1968
+prediction: 1968
+meteor score: 1.0
+
+map: 8252
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+BLACET, P.M.
+map: 8252
+key: authors
+truth: Blacet, P.M.
+prediction: ['BLACET, P. M.']
+meteor score: 0.9375
+
+map: 787
+key: title
+truth: Geology of the Versailles quadrangle, Kentucky
+prediction: GEOLOGY OF THE VERSAILLES QUADRANGLE, KENTUCKY
+meteor score: 0.9976851851851852
+
+map: 787
+key: year
+truth: 1964
+prediction: 1964
+meteor score: 1.0
+
+map: 787
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Black, D.F.B.
+map: 787
+key: authors
+truth: Black, D.F.B.
+prediction: ['Black, D. F. B.']
+meteor score: 0.9375
+
+map: 1954
+key: title
+truth: Geologic map of the Coletown quadrangle, east-central Kentucky
+prediction: GEOLOGIC MAP OF THE COLETOWN QUADRANGLE, EAST-CENTRAL KENTUCKY
+meteor score: 0.9990234375
+
+map: 1954
+key: year
+truth: 1967
+prediction: 1967
+meteor score: 1.0
+
+map: 1954
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Black, D.F.B.; Cressman, E.R.; Mac Quown, W.C., Jr.
+map: 1954
+key: authors
+truth: Black, D.F.B.
+prediction: ['Black, D. F. B.', 'Cressman, E. R.', 'Mac Quown, W. C., Jr.']
+meteor score: 0.06756756756756756
+
+map: 2070
+key: title
+truth: Geologic map of the Ford quadrangle, central Kentucky
+prediction: GEOLOGIC QUADRANGLE MAP FORD QUADRANGLE, KENTUCKY GQ-764
+meteor score: 0.5239436619718311
+
+map: 2070
+key: year
+truth: 1968
+prediction: 1968
+meteor score: 1.0
+
+map: 2070
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Black, D.F.B.
+map: 2070
+key: authors
+truth: Black, D.F.B.
+prediction: ['Black, D. F. B.']
+meteor score: 0.9375
+
+map: 10698
+key: title
+truth: Geologic map of the Winchester quadrangle, Clark and Madison Counties, Kentucky
+prediction: GEOLOGIC MAP OF THE WINCHESTER QUADRANGLE, CLARK AND MADISON COUNTIES, KENTUCKY
+meteor score: 0.9996243425995492
+
+map: 10698
+key: year
+truth: 1974
+prediction: 1974
+meteor score: 1.0
+
+map: 10698
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Black, D.F.B.
+map: 10698
+key: authors
+truth: Black, D.F.B.
+prediction: ['Black, D. F. B.']
+meteor score: 0.9375
+
+map: 10772
+key: title
+truth: Geologic map of the Hedges quadrangle, east-central Kentucky
+prediction: GEOLOGIC MAP OF THE HEDGES QUADRANGLE, EAST-CENTRAL KENTUCKY
+meteor score: 0.9990234375
+
+map: 10772
+key: year
+truth: 1975
+prediction: 1975
+meteor score: 1.0
+
+map: 10772
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Black, D.F.B.
+map: 10772
+key: authors
+truth: Black, D.F.B.
+prediction: ['Black, D. F. B.']
+meteor score: 0.9375
+
+map: 655
+key: title
+truth: Geology of the Hazel quadrangle in Kentucky
+prediction: GEOLOGY OF THE HAZEL QUADRANGLE IN KENTUCKY
+meteor score: 0.9985422740524781
+
+map: 655
+key: year
+truth: 1963
+prediction: 1963
+meteor score: 1.0
+
+map: 655
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blade, L.V.
+map: 655
+key: authors
+truth: Blade, L.V.
+prediction: ['Blade, L. V.', 'NULL', 'NULL']
+meteor score: 0.9375
+
+map: 784
+key: title
+truth: Geology of the Cuba quadrangle in Kentucky
+prediction: GEOLOGY OF THE CUBA QUADRANGLE IN KENTUCKY
+meteor score: 0.9985422740524781
+
+map: 784
+key: year
+truth: 1964
+prediction: 1964
+meteor score: 1.0
+
+map: 784
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blade, L.V.
+map: 784
+key: authors
+truth: Blade, L.V.
+prediction: ['Blade, L. V.', 'NULL', 'NULL']
+meteor score: 0.9375
+
+map: 925
+key: title
+truth: Geologic map of the Hickory quadrangle, Graves County, Kentucky
+prediction: GEOLOGIC MAP OF THE HICKORY QUADRANGLE, GRAVES COUNTY, KENTUCKY
+meteor score: 0.9993141289437586
+
+map: 925
+key: year
+truth: 1965
+prediction: 1965
+meteor score: 1.0
+
+map: 925
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blade, L.V.
+map: 925
+key: authors
+truth: Blade, L.V.
+prediction: ['Blade, L. V.']
+meteor score: 0.9375
+
+map: 968
+key: title
+truth: Geologic map of parts of the Hamlin and Paris Landing quadrangles, western Kentucky
+prediction: GEOLOGIC QUADRANGLE MAP HAMLIN AND PARIS LANDING QUADRANGLES, KENTUCKY
+meteor score: 0.7978723404255319
+
+map: 968
+key: year
+truth: 1966
+prediction: 1966
+meteor score: 1.0
+
+map: 968
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blade, L.V.; MacCary, L.M.
+map: 968
+key: authors
+truth: Blade, L.V.
+prediction: ['Blade, L. V.', 'MacCary, L. M.', 'NULL']
+meteor score: 0.13157894736842105
+
+map: 10891
+key: title
+truth: Geologic map of the Sideview quadrangle, east-central Kentucky
+prediction: GEOLOGIC MAP OF THE SIDEVIEW QUADRANGLE, EAST-CENTRAL KENTUCKY
+meteor score: 0.9990234375
+
+map: 10891
+key: year
+truth: 1976
+prediction: 1976
+meteor score: 1.0
+
+map: 10891
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blade, L.V.; Cressman, J.O.; Smith, M.O.
+map: 10891
+key: authors
+truth: Blade, L.V.
+prediction: ['Blade, L. V.', 'Cressman, J. O.', 'Smith, M. O.']
+meteor score: 0.08928571428571427
+
+map: 10953
+key: title
+truth: Geologic map of the Sharpsburg quadrangle, east-central Kentucky
+prediction: GEOLOGIC MAP OF THE SHARPSBURG QUADRANGLE, EAST-CENTRAL KENTUCKY
+meteor score: 0.9990234375
+
+map: 10953
+key: year
+truth: 1977
+prediction: 1977
+meteor score: 1.0
+
+map: 10953
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blade, L.V.
+map: 10953
+key: authors
+truth: Blade, L.V.
+prediction: ['Blade, L. V.']
+meteor score: 0.9375
+
+map: 10984
+key: title
+truth: Geologic map of the Carlisle quadrangle, Nicholas and Bourbon Counties, Kentucky
+prediction: GEOLOGIC MAP OF THE CARLISLE QUADRANGLE, NICHOLAS AND BOURBON COUNTIES, KENTUCKY
+meteor score: 0.9996243425995492
+
+map: 10984
+key: year
+truth: 1978
+prediction: 1978
+meteor score: 1.0
+
+map: 10984
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blade, L.V.
+map: 10984
+key: authors
+truth: Blade, L.V.
+prediction: ['Blade, L. V.']
+meteor score: 0.9375
+
+map: 11000
+key: title
+truth: Geologic map of the Cowan quadrangle, northeastern Kentucky
+prediction: GEOLOGIC QUADRANGLE MAP COWAN QUADRANGLE, KENTUCKY GQ - 1466
+meteor score: 0.4179775280898876
+
+map: 11000
+key: year
+truth: 1978
+prediction: 1978
+meteor score: 1.0
+
+map: 11000
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blade, L.V.
+map: 11000
+key: authors
+truth: Blade, L.V.
+prediction: ['Blade, L. V.']
+meteor score: 0.9375
+
+map: 11664
+key: title
+truth: Geologic map and coal sections of Johns Peak quadrangle, Sevier County, Utah
+prediction: GEOLOGIC MAP AND COAL SECTIONS OF JOHNS PEAK QUADRANGLE, SEVIER COUNTY, UTAH
+meteor score: 0.9997106481481481
+
+map: 11664
+key: year
+truth: 1980
+prediction: 1980
+meteor score: 1.0
+
+map: 11664
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blanchard, L.F.
+map: 11664
+key: authors
+truth: Blanchard, L.F.
+prediction: ['Blanchard, L.F.']
+meteor score: 0.9375
+
+map: 12123
+key: title
+truth: Geologic map and coal deposits of the Seminoe Dam SE quadrangle, Carbon County, Wyoming
+prediction: GEOLOGIC MAP AND COAL DEPOSITS OF THE SEMINOE DAM SE QUADRANGLE, CARBON COUNTY, WYOMING
+meteor score: 0.9998177842565598
+
+map: 12123
+key: year
+truth: 1981
+prediction: 1981
+meteor score: 1.0
+
+map: 12123
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blanchard, L.F.
+map: 12123
+key: authors
+truth: Blanchard, L.F.
+prediction: ['Blanchard, L. F.', 'NULL', 'NULL']
+meteor score: 0.9375
+
+map: 11677
+key: title
+truth: Geologic map and coal sections of the Pats Bottom quadrangle, Carbon County, Wyoming
+prediction: PATS BOTTOM QUADRANGLE WYOMING - CARBON CO. 7.5 MINUTE SERIES (TOPOGRAPHIC)
+meteor score: 0.2818080357142857
+
+map: 11677
+key: year
+truth: 1980
+prediction: 1980
+meteor score: 1.0
+
+map: 11677
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Blanchard, L.F.; Comstock, M.C.
+map: 11677
+key: authors
+truth: Blanchard, L.F.; Comstock, M.C.
+prediction: ['Blanchard, L. F.', 'Comstock, M. C.']
+meteor score: 0.9921875
+
+map: 13650
+key: title
+truth: Geological map and coal sections of the Old Woman Plateau quadrangle, Sevier County, Utah
+prediction: GEOLOGIC MAP AND COAL SECTIONS OF THE OLD WOMAN PLATEAU QUADRANGLE, SEVIER COUNTY, UTAH
+meteor score: 0.9998177842565598
+
+map: 13650
+key: year
+truth: 1982
+prediction: 1983
+meteor score: 0.0
+
+map: 13650
+key: scale
+truth: 24000
+prediction: NULL
+meteor score: 0.0
+
+Blanchard, L.F.; Sanchez, J.D.
+map: 13650
+key: authors
+truth: Blanchard, L.F.; Sanchez, J.D.
+prediction: ['Blanchard, L. F.', 'Sanchez, J. D.']
+meteor score: 0.9921875
+
+map: 9101
+key: title
+truth: Piedmont geology of the Ladysmith and Lake Anna East quadrangles, and vicinity, Virginia
+prediction: PIEDMONT GEOLOGY OF THE LADYSMITH AND LAKE ANNA EAST QUADRANGLES, AND VICINITY, VIRGINIA
+meteor score: 0.9997724169321802
+
+map: 9101
+key: year
+truth: 1981
+prediction: 1982
+meteor score: 0.0
+
+map: 9101
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bobyarchick, A.R.; Pavlides, L.; Wier, K.
+map: 9101
+key: authors
+truth: Bobyarchick, A.R.; Pavlides, Louis; Wier, Karen
+prediction: ['Bobyarchick, A. R.', 'Pavlides, L.', 'Wier, K.']
+meteor score: 0.625
+
+map: 6448
+key: title
+truth: Geologic map and coal sections of the Twentymile Butte quadrangle, Campbell County, Wyoming
+prediction: GEOLOGIC MAP AND COAL SECTIONS OF THE TWENTYMILE BUTTE QUADRANGLE, CAMPBELL COUNTY, WYOMING
+meteor score: 0.9997724169321802
+
+map: 6448
+key: year
+truth: 1979
+prediction: 1979
+meteor score: 1.0
+
+map: 6448
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bohor, B.F.; Kent, B.H.; Haddock, D.R.
+map: 6448
+key: authors
+truth: Bohor, B.F.; Kent, G.H.; Haddock, D.R.
+prediction: ['Bohor, B. F.', 'Kent, B. H.', 'Haddock, D. R.']
+meteor score: 0.8066666666666668
+
+map: 17967
+key: title
+truth: Preliminary geologic map of the Eagle Peak quadrangle, Catron County, New Mexico
+prediction: PRELIMINARY GEOLOGIC MAP OF THE EAGLE PEAK QUADRANGLE, CATRON COUNTY, NEW MEXICO
+meteor score: 0.9997106481481481
+
+map: 17967
+key: year
+truth: 1990
+prediction: 1990
+meteor score: 1.0
+
+map: 17967
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bove, D.J.
+map: 17967
+key: authors
+truth: Bove, D.J.
+prediction: ['Bove, D. J.']
+meteor score: 0.9375
+
+map: 7867
+key: title
+truth: Preliminary geologic map and coal resources of the Henrieville quadrangle, Garfield and Kane Counties, Utah
+prediction: MAP AND COAL RESOURCES OF THE HENRIEVILLE QUADRANGLE, GARFIELD AND KANE COUNTIES, UTAH
+meteor score: 0.9846243500089654
+
+map: 7867
+key: year
+truth: 1974
+prediction: 1974
+meteor score: 1.0
+
+map: 7867
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bowers, W.E.
+map: 7867
+key: authors
+truth: Bowers, W.E.
+prediction: ['Bowers, W. E.', 'NULL', 'NULL']
+meteor score: 0.9375
+
+map: 8263
+key: title
+truth: Preliminary geologic map of the Griffin Point quadrangle, Garfield County, Utah
+prediction: GEOLOGIC MAP OF THE GRIFFIN POINT QUADRANGLE, GARFIELD COUNTY
+meteor score: 0.8687160326086956
+
+map: 8263
+key: year
+truth: 1968
+prediction: 1968
+meteor score: 1.0
+
+map: 8263
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bowers, W.E.
+map: 8263
+key: authors
+truth: Bowers, W.E.
+prediction: ['Bowers, W. E.']
+meteor score: 0.9375
+
+map: 8266
+key: title
+truth: Preliminary geologic map of the Upper Valley quadrangle, Garfield County, Utah
+prediction: PRELIMINARY GEOLOGIC MAP OF THE UPPER VALLEY QUADRANGLE, GARFIELD COUNTY
+meteor score: 0.8904779366825571
+
+map: 8266
+key: year
+truth: 1968
+prediction: 1968
+meteor score: 1.0
+
+map: 8266
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bowers, W.E.; Mackin, J.H.; Zeller, H.D.; Robison, R.A.
+map: 8266
+key: authors
+truth: Bowers, W.E.
+prediction: ['Bowers, W. E.', 'Mackin, J. H.', 'Zeller, H. D.', 'Robison, R. A.']
+meteor score: 0.06756756756756756
+
+map: 19617
+key: title
+truth: Geologic map and coal resources of the Upper Valley quadrangle, Garfield County, Utah
+prediction: GEOLOGIC MAP AND COAL RESOURCES OF THE UPPER VALLEY QUADRANGLE
+meteor score: 0.8731871029605658
+
+map: 19617
+key: year
+truth: 1973
+prediction: 1973
+meteor score: 1.0
+
+map: 19617
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bowers, W.E.
+map: 19617
+key: authors
+truth: Bowers, W.E.
+prediction: ['Bowers, W. E.']
+meteor score: 0.9375
+
+map: 19618
+key: title
+truth: Geologic map and coal resources of the Griffin Point quadrangle, Garfield County, Utah
+prediction: GEOLOGIC MAP AND COAL RESOURCES OF THE GRIFFIN POINT QUADRANGLE, GARFIELD COUNTY, UTAH
+meteor score: 0.9997724169321802
+
+map: 19618
+key: year
+truth: 1973
+prediction: 1973
+meteor score: 1.0
+
+map: 19618
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bowers, W.E.
+map: 19618
+key: authors
+truth: Bowers, W.E.
+prediction: ['Bowers, W. E.']
+meteor score: 0.9375
+
+map: 19623
+key: title
+truth: Geologic map and coal resources of the Pine Lake quadrangle, Garfield County, Utah
+prediction: GEOLOGIC MAP AND COAL RESOURCES OF THE PINE LAKE QUADRANGLE, GARFIELD COUNTY, UTAH
+meteor score: 0.9997724169321802
+
+map: 19623
+key: year
+truth: 1973
+prediction: 1973
+meteor score: 1.0
+
+map: 19623
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Bowers, W.E.
+map: 19623
+key: authors
+truth: Bowers, W.E.
+prediction: ['Bowers, W. E.']
+meteor score: 0.9375
+
+map: 20699
+key: title
+truth: Geology of the Jewel Cave SW quadrangle, Custer County, South Dakota
+prediction: GEOLOGIC MAP AND SECTION OF THE JEWEL CAVE SW QUADRANGLE, SOUTH DAKOTA
+meteor score: 0.742296918767507
+
+map: 20699
+key: year
+truth: 1963
+prediction: 1955
+meteor score: 0.0
+
+map: 20699
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Braddock, W.A.; Carter, G.; Bridge, T.E.
+map: 20699
+key: authors
+truth: Braddock, W.A.
+prediction: ['Braddock, W. A.', 'Carter, G.', 'Bridge, T. E.']
+meteor score: 0.08928571428571427
+
+map: 2134
+key: title
+truth: Geologic map of the Masonville quadrangle, Larimer County, Colorado
+prediction: GEOLOGIC MAP OF THE MASONVILLE QUADRANGLE, LARIMER COUNTY, COLORADO
+meteor score: 0.9993141289437586
+
+map: 2134
+key: year
+truth: 1970
+prediction: 1970
+meteor score: 1.0
+
+map: 2134
+key: scale
+truth: 24000
+prediction: 1:24000
+meteor score: 1.0
+
+Braddock, W.A.; Calvert, R.H.; Gawarecki, S.J.; Nutalaya, P.
+map: 2134
+key: authors
+truth: Braddock, W.A.; Calvert, R.H.; Gawarecki, S.J.; Nutalaya, Prinya
+prediction: ['Braddock, W. A.', 'Calvert, R. H.', 'Gawarecki, S. J.', 'Nutalaya, P.']
+meteor score: 0.8737244897959183
+
+Results:
+====================
+title
+Correct: 204
+Incorrect: 85
+Percent correct: 0.7058823529411765
+
+year
+Correct: 212
+Incorrect: 77
+Percent correct: 0.7335640138408305
+
+scale
+Correct: 263
+Incorrect: 26
+Percent correct: 0.9100346020761245
+
+authors
+Correct: 169
+Incorrect: 120
+Percent correct: 0.5847750865051903
+
+Results:
+====================
+title
+Average Meteor Score: 0.7736744836513452
+
+year
+Average Meteor Score: 0.7335640138408305
+
+scale
+Average Meteor Score: 0.9100346020761245
+
+authors
+Average Meteor Score: 0.6474277400406647
+

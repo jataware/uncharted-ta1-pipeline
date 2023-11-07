@@ -1,0 +1,5500 @@
+ Field: ('map_id', '19')
+ Predicted: 19
+ Truth: 19
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE LAKE HELEN QUADRANGLE, BIG HORN AND JOHNSON COUNTIES, WYOMING')
+ Predicted: GEOLOGIC MAP OF THE LAKE HELEN QUADRANGLE, BIG HORN AND JOHNSON COUNTIES, WYOMING
+ Truth: GEOLOGIC MAP OF THE LAKE HELEN QUADRANGLE, BIG HORN AND JOHNSON COUNTIES, WYOMING
+ Score: 1.0
+ --
+ Field: ('authors', ['Barker, F.'])
+ Predicted: ['Barker, F.']
+ Truth: ['Barker, F.']
+ Score: 1.0
+ --
+ Field: ('year', '1982')
+ Predicted: 1982
+ Truth: 1982
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Lake Helen')
+ Predicted: Lake Helen
+ Truth: Lake Helen
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Wyoming coordinate system, east-central zone', 'Universal Transverse Mercator zone 13'])
+ Predicted: ['Wyoming coordinate system, east-central zone', 'Universal Transverse Mercator zone 13']
+ Truth: ['Wyoming coordinate system, east-central zone', 'Universal Transverse Mercator zone 13']
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1967')
+ Predicted: U.S. Geological Survey, 1967
+ Truth: U.S. Geological Survey, 1967
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '23')
+ Predicted: 23
+ Truth: 23
+ Score: 1.0
+ --
+ Field: ('title', 'PRELIMINARY GEOLOGIC MAP OF THE LILLIS RANCH QUADRANGLE, CALIFORNIA')
+ Predicted: PRELIMINARY GEOLOGIC MAP OF THE LILLIS RANCH QUADRANGLE, CALIFORNIA
+ Truth: PRELIMINARY GEOLOGIC MAP OF THE LILLIS RANCH QUADRANGLE, CALIFORNIA
+ Score: 1.0
+ --
+ Field: ('authors', ['Bartow, J. A.', 'NULL', 'NULL'])
+ Predicted: ['Bartow, J. A.', 'NULL', 'NULL']
+ Truth: ['Bartow, J. A.', 'NULL', 'NULL']
+ Score: 0.0
+ --
+ Field: ('year', '1988')
+ Predicted: 1988
+ Truth: 1988
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Lillis Ranch')
+ Predicted: Lillis Ranch
+ Truth: Lillis Ranch
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey Lillis Ranch quadrangle, 1971')
+ Predicted: U.S. Geological Survey Lillis Ranch quadrangle, 1971
+ Truth: U.S. Geological Survey Lillis Ranch quadrangle, 1971
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '25')
+ Predicted: 25
+ Truth: 25
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF ARVIN QUADRANGLE, KERN COUNTY, CALIFORNIA')
+ Predicted: GEOLOGIC MAP OF ARVIN QUADRANGLE, KERN COUNTY, CALIFORNIA
+ Truth: GEOLOGIC MAP OF ARVIN QUADRANGLE, KERN COUNTY, CALIFORNIA
+ Score: 1.0
+ --
+ Field: ('authors', ['Bartow, J.A.', 'Dibblee, T.W., Jr.'])
+ Predicted: ['Bartow, J.A.', 'Dibblee, T.W., Jr.']
+ Truth: ['Bartow, J.A.', 'Dibblee, T.W. Jr.']
+ Score: 0.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1981
+ Score: 0.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Arvin')
+ Predicted: Arvin
+ Truth: Arvin
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['UTM GRID', '1968 MAGNETIC NORTH DECLINATION'])
+ Predicted: ['UTM GRID', '1968 MAGNETIC NORTH DECLINATION']
+ Truth: ['UTM Zone 11N']
+ Score: 0.0
+ --
+ Field: ('base_map', "USGS Arvin 7.5' quadrangle, 1955")
+ Predicted: USGS Arvin 7.5' quadrangle, 1955
+ Truth: USGS Arvin 7.5' quadrangle, 1955
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '81')
+ Predicted: 81
+ Truth: 81
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE EL PASO MOUNTAINS WILDERNESS STUDY AREA, KERN COUNTY, CALIFORNIA')
+ Predicted: GEOLOGIC MAP OF THE EL PASO MOUNTAINS WILDERNESS STUDY AREA, KERN COUNTY, CALIFORNIA
+ Truth: GEOLOGIC MAP OF THE EL PASO MOUNTAINS WILDERNESS STUDY AREA, KERN COUNTY, CALIFORNIA
+ Score: 1.0
+ --
+ Field: ('authors', ['Cox, B. F.', 'Diggles, M. F.'])
+ Predicted: ['Cox, B. F.', 'Diggles, M. F.']
+ Truth: ['Cox, B. F.', 'Diggles, M. F.']
+ Score: 1.0
+ --
+ Field: ('year', '1986')
+ Predicted: 1986
+ Truth: 1986
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 0.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey Garlock, Saltale NW, 1967; Freeman Junction SE, 1972
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '235')
+ Predicted: 235
+ Truth: 235
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE OWENS PEAK WILDERNESS STUDY AREA, TULARE AND KERN COUNTIES, CALIFORNIA')
+ Predicted: GEOLOGIC MAP OF THE OWENS PEAK WILDERNESS STUDY AREA, TULARE AND KERN COUNTIES, CALIFORNIA
+ Truth: GEOLOGIC MAP OF THE OWENS PEAK WILDERNESS STUDY AREA, TULARE AND KERN COUNTIES, CALIFORNIA
+ Score: 1.0
+ --
+ Field: ('authors', ['Diggles, M.F.', 'Clemens, D.E.'])
+ Predicted: ['Diggles, M.F.', 'Clemens, D.E.']
+ Truth: ['Diggles, M.F.', 'Clemens, D.E.']
+ Score: 1.0
+ --
+ Field: ('year', '1986')
+ Predicted: 1986
+ Truth: 1986
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1:62,500, Inyokern, Onyx, 1943; Lamont Peak, 1956; Little Lake, 1954')
+ Predicted: U.S. Geological Survey 1:62,500, Inyokern, Onyx, 1943; Lamont Peak, 1956; Little Lake, 1954
+ Truth: US Geological Survey 1:62,500, Inyokern, Onyx, 1943; Lamont Peak, 1956; Little Lake, 1954
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '236')
+ Predicted: 236
+ Truth: 236
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE OWENS PEAK AND LITTLE LAKE CANYON WILDERNESS STUDY AREAS, INYO AND KERN COUNTIES, CALIFORNIA')
+ Predicted: GEOLOGIC MAP OF THE OWENS PEAK AND LITTLE LAKE CANYON WILDERNESS STUDY AREAS, INYO AND KERN COUNTIES, CALIFORNIA
+ Truth: GEOLOGIC MAP OF THE OWENS PEAK AND LITTLE LAKE CANYON WILDERNESS STUDY AREAS, INYO AND KERN COUNTIES, CALIFORNIA
+ Score: 1.0
+ --
+ Field: ('authors', ['Conrad, J.E.', 'Dellinger, D.A.', 'Diggles, M.F.'])
+ Predicted: ['Conrad, J.E.', 'Dellinger, D.A.', 'Diggles, M.F.']
+ Truth: ['Conrad, J.E.', 'Dellinger, D.A.', 'Diggles, M.F.']
+ Score: 1.0
+ --
+ Field: ('year', '1982-85')
+ Predicted: 1982-85
+ Truth: 1987
+ Score: 0.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1:62,500, Haiwee Reservoir, 1951; Inyokern, Onyx, 1943; Lamont Peak, Monache Mountain, 1956; Little Lake, 1954')
+ Predicted: U.S. Geological Survey 1:62,500, Haiwee Reservoir, 1951; Inyokern, Onyx, 1943; Lamont Peak, Monache Mountain, 1956; Little Lake, 1954
+ Truth: U.S. Geological Survey 1:62,500, Haiwee Reservoir, 1951; Inyokern, Onyx, 1943; Lamon Peak, Monache Mountain, 1956; Little Lake, 1954
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '237')
+ Predicted: 237
+ Truth: 237
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC AND GEOCHEMICAL - ANOMALY MAP OF THE TUNNEL RIDGE WILDERNESS STUDY AREA, KLAMATH MOUNTAINS, CALIFORNIA')
+ Predicted: GEOLOGIC AND GEOCHEMICAL - ANOMALY MAP OF THE TUNNEL RIDGE WILDERNESS STUDY AREA, KLAMATH MOUNTAINS, CALIFORNIA
+ Truth: GEOLOGIC AND GEOCHEMICAL - ANOMALY MAP OF THE TUNNEL RIDGE WILDERNESS STUDY AREA, KLAMATH MOUNTAINS, CALIFORNIA
+ Score: 1.0
+ --
+ Field: ('authors', ['Diggles, M. F.', 'Kennedy, G. L.', 'NULL'])
+ Predicted: ['Diggles, M. F.', 'Kennedy, G. L.', 'NULL']
+ Truth: ['Diggles, M. F.', 'Kennedy, G. L.']
+ Score: 0.0
+ --
+ Field: ('year', '1986')
+ Predicted: 1986
+ Truth: 1986
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey Dedrick, Junction City, Rush Creek Lakes, Weaverville, 1982 (Provisional editions)')
+ Predicted: U.S. Geological Survey Dedrick, Junction City, Rush Creek Lakes, Weaverville, 1982 (Provisional editions)
+ Truth: U.S. Geological Survey Dedrick, Junction City, Rush Creek Lakes, Weaverville, 1982 (Provisional editions)
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '313')
+ Predicted: 313
+ Truth: 313
+ Score: 1.0
+ --
+ Field: ('title', 'MINERAL RESOURCE POTENTIAL MAP OF THE TURTLE MOUNTAINS WILDERNESS STUDY AREA, SAN BERNARDINO COUNTY, CALIFORNIA')
+ Predicted: MINERAL RESOURCE POTENTIAL MAP OF THE TURTLE MOUNTAINS WILDERNESS STUDY AREA, SAN BERNARDINO COUNTY, CALIFORNIA
+ Truth: MINERAL RESOURCE POTENTIAL MAP OF THE TURTLE MOUNTAINS WILDERNESS STUDY AREA, SAN BERNARDINO COUNTY, CALIFORNIA
+ Score: 1.0
+ --
+ Field: ('year', '1984')
+ Predicted: 1984
+ Truth: 1984
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1:62,500, Vidal (1949), Rice and Turtle Mountains (1954), Savahia Peak (1975)')
+ Predicted: U.S. Geological Survey 1:62,500, Vidal (1949), Rice and Turtle Mountains (1954), Savahia Peak (1975)
+ Truth: U.S. Geological Survey 1:62,500, Vidal (1949), Rice and Turtle Mountains (1954), Savahia Peak (1975)
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '655')
+ Predicted: 655
+ Truth: 655
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE HAZEL QUADRANGLE IN KENTUCKY')
+ Predicted: GEOLOGY OF THE HAZEL QUADRANGLE IN KENTUCKY
+ Truth: GEOLOGY OF THE HAZEL QUADRANGLE IN KENTUCKY
+ Score: 1.0
+ --
+ Field: ('authors', ['Blade, L. V.', 'NULL', 'NULL'])
+ Predicted: ['Blade, L. V.', 'NULL', 'NULL']
+ Truth: ['Blade, L. V.', 'NULL', 'NULL']
+ Score: 0.0
+ --
+ Field: ('year', '1963')
+ Predicted: 1963
+ Truth: 1963
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Hazel Quadrangle')
+ Predicted: Hazel Quadrangle
+ Truth: Hazel
+ Score: 0.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Carter Coordinate System', 'NULL', 'NULL'])
+ Predicted: ['Carter Coordinate System', 'NULL', 'NULL']
+ Truth: ['Carter Coordinate System', 'NULL', 'NULL']
+ Score: 0.0
+ --
+ Field: ('base_map', 'Base map by Tennessee Valley Authority and U. S. Geological Survey, 1951')
+ Predicted: Base map by Tennessee Valley Authority and U. S. Geological Survey, 1951
+ Truth: Tennessee Valley Authority and U. S. Geological Survey, 1951
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '667')
+ Predicted: 667
+ Truth: 667
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE OAK SPRING QUADRANGLE')
+ Predicted: GEOLOGY OF THE OAK SPRING QUADRANGLE
+ Truth: GEOLOGY OF THE OAK SPRING QUADRANGLE, NYE COUNTY, NEVADA
+ Score: 0.0
+ --
+ Field: ('authors', ['Barnes, H.', 'Houser, F. N.', 'Poole, F. G.'])
+ Predicted: ['Barnes, H.', 'Houser, F. N.', 'Poole, F. G.']
+ Truth: ['Barnes, H.', 'Houser, F. N.', 'Poole, F. G.']
+ Score: 1.0
+ --
+ Field: ('year', '1963')
+ Predicted: 1963
+ Truth: 1963
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Oak Spring Quadrangle')
+ Predicted: Oak Spring Quadrangle
+ Truth: Oak Spring
+ Score: 0.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Nevada Coordinate system , central zone'])
+ Predicted: ['Nevada Coordinate system , central zone']
+ Truth: ['Nevada Coordinate system, central zone']
+ Score: 0.0
+ --
+ Field: ('base_map', 'Base map by Topographic Division U.S. Geological Survey , 1960')
+ Predicted: Base map by Topographic Division U.S. Geological Survey , 1960
+ Truth: Topographic Division U.S. Geological Survey, 1960
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '693')
+ Predicted: 693
+ Truth: 693
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE ASPEN GROVE QUADRANGLE, UTAH')
+ Predicted: GEOLOGY OF THE ASPEN GROVE QUADRANGLE, UTAH
+ Truth: GEOLOGY OF THE ASPEN GROVE QUADRANGLE, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Baker, A. A.'])
+ Predicted: ['Baker, A. A.']
+ Truth: ['Baker, A. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1964')
+ Predicted: 1964
+ Truth: 1964
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Aspen Grove')
+ Predicted: Aspen Grove
+ Truth: Aspen Grove
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1950')
+ Predicted: U.S. Geological Survey, 1950
+ Truth: U.S. Geological Survey, 1950
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '695')
+ Predicted: 695
+ Truth: 695
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE OREM QUADRANGLE, UTAH UTAH COUNTY - UTAH')
+ Predicted: GEOLOGY OF THE OREM QUADRANGLE, UTAH UTAH COUNTY - UTAH
+ Truth: GEOLOGY OF THE OREM QUADRANGLE, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Baker, A. A.'])
+ Predicted: ['Baker, A. A.']
+ Truth: ['Baker, A. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1964')
+ Predicted: 1964
+ Truth: 1964
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Orem')
+ Predicted: Orem
+ Truth: OREM
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1950')
+ Predicted: U.S. Geological Survey, 1950
+ Truth: U.S. Geological Survey, 1950
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '729')
+ Predicted: 729
+ Truth: 729
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE CLOVERPORT QUADRANGLE')
+ Predicted: GEOLOGY OF THE CLOVERPORT QUADRANGLE
+ Truth: GEOLOGY OF THE CLOVERPORT QUADRANGLE, KENTUCKY-INDIANA AND THE KENTUCKY PART OF THE CANNELTON QUADRANGLE
+ Score: 0.0
+ --
+ Field: ('authors', ['Bergendahl, M. H.', 'Gray, H. H.'])
+ Predicted: ['Bergendahl, M. H.', 'Gray, H. H.']
+ Truth: ['Bergendahl, M. H.']
+ Score: 0.0
+ --
+ Field: ('year', '1965')
+ Predicted: 1965
+ Truth: 1965
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Cloverport')
+ Predicted: Cloverport
+ Truth: Cloverport
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Carter Coordinate System'])
+ Predicted: ['Carter Coordinate System']
+ Truth: ['Carter Coordinate System']
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1953. Modified 1964')
+ Predicted: U.S. Geological Survey, 1953. Modified 1964
+ Truth: U.S. Geological Survey, 1953
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '740')
+ Predicted: 740
+ Truth: 740
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE WASHINGTON WEST QUADRANGLE PENNSYLVANIA - WASHINGTON CO . GQ - 283')
+ Predicted: GEOLOGY OF THE WASHINGTON WEST QUADRANGLE PENNSYLVANIA - WASHINGTON CO . GQ - 283
+ Truth: GEOLOGY OF THE WASHINGTON WEST QUADRANGLE PENNSYLVANIA - WASHINGTON CO. GQ - 283
+ Score: 0.0
+ --
+ Field: ('authors', ['Berryhill, H. L.', 'Swanson, V. E.'])
+ Predicted: ['Berryhill, H. L.', 'Swanson, V. E.']
+ Truth: ['Berryhill, H. L., Jr.', 'Swanson, V. E.']
+ Score: 0.0
+ --
+ Field: ('year', '1964')
+ Predicted: 1964
+ Truth: 1964
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'WASHINGTON WEST')
+ Predicted: WASHINGTON WEST
+ Truth: WASHINGTON WEST
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'Base map by Topographic Division U.S. Geological Survey, 1954')
+ Predicted: Base map by Topographic Division U.S. Geological Survey, 1954
+ Truth: Topographic Division U.S. Geological Survey, 1954
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '750')
+ Predicted: 750
+ Truth: 750
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE NEW MADRID S.E. AND HUBBARD LAKE QUADRANGLES')
+ Predicted: GEOLOGY OF THE NEW MADRID S.E. AND HUBBARD LAKE QUADRANGLES
+ Truth: GEOLOGY OF THE NEW MADRID S.E. AND HUBBARD LAKE QUADRANGLES IN KENTUCKY
+ Score: 0.0
+ --
+ Field: ('authors', ['Baker, L. N.'])
+ Predicted: ['Baker, L. N.']
+ Truth: ['Baker, L. N.']
+ Score: 1.0
+ --
+ Field: ('year', '1963')
+ Predicted: 1963
+ Truth: 1963
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Carter Coordinate System'])
+ Predicted: ['Carter Coordinate System']
+ Truth: ['Carter Coordinate System']
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1951')
+ Predicted: U.S. Geological Survey, 1951
+ Truth: U.S. Geological Survey, 1951
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '753')
+ Predicted: 753
+ Truth: 753
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE FORDSVILLE QUADRANGLE')
+ Predicted: GEOLOGY OF THE FORDSVILLE QUADRANGLE
+ Truth: GEOLOGY OF THE FORDSVILLE QUADRANGLE, KENTUCKY
+ Score: 0.0
+ --
+ Field: ('authors', ['Bergendahl, M. H.', 'Smith, Avery E.'])
+ Predicted: ['Bergendahl, M. H.', 'Smith, Avery E.']
+ Truth: ['Bergendahl, M. H.', 'Smith, Avery E.', 'NULL']
+ Score: 1.0
+ --
+ Field: ('year', '1964')
+ Predicted: 1964
+ Truth: 1964
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'FORDSVILLE')
+ Predicted: FORDSVILLE
+ Truth: FORDSVILLE
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Carter Coordinate System'])
+ Predicted: ['Carter Coordinate System']
+ Truth: ['Carter Coordinate System', 'NULL', 'NULL']
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1953')
+ Predicted: U.S. Geological Survey, 1953
+ Truth: U.S. Geological Survey, 1953
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '754')
+ Predicted: 754
+ Truth: 754
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE AMITY QUADRANGLE')
+ Predicted: GEOLOGY OF THE AMITY QUADRANGLE
+ Truth: GEOLOGY OF THE AMITY QUADRANGLE, PENNSYLVANIA
+ Score: 0.0
+ --
+ Field: ('authors', ['Berryhill, H. L.'])
+ Predicted: ['Berryhill, H. L.']
+ Truth: ['Berryhill, H. L.']
+ Score: 1.0
+ --
+ Field: ('year', '1964')
+ Predicted: 1964
+ Truth: 1964
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Amity')
+ Predicted: Amity
+ Truth: Amity
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1954')
+ Predicted: U.S. Geological Survey 1954
+ Truth: U.S. Geological Survey, 1954
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '784')
+ Predicted: 784
+ Truth: 784
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE CUBA QUADRANGLE IN KENTUCKY')
+ Predicted: GEOLOGY OF THE CUBA QUADRANGLE IN KENTUCKY
+ Truth: GEOLOGY OF THE CUBA QUADRANGLE IN KENTUCKY
+ Score: 1.0
+ --
+ Field: ('authors', ['Blade, L. V.'])
+ Predicted: ['Blade, L. V.']
+ Truth: ['Blade, L. V.', 'NULL', 'NULL']
+ Score: 1.0
+ --
+ Field: ('year', '1964')
+ Predicted: 1964
+ Truth: 1964
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'CUBA')
+ Predicted: CUBA
+ Truth: CUBA
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('coordinate_systems', ['Carter Coordinate System'])
+ Predicted: ['Carter Coordinate System']
+ Truth: ['Carter Coordinate System', 'NULL', 'NULL']
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1952. Modified 1964')
+ Predicted: U.S. Geological Survey, 1952. Modified 1964
+ Truth: U.S. Geological Survey, 1952. Modified 1964
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '787')
+ Predicted: 787
+ Truth: 787
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE VERSAILLES QUADRANGLE, KENTUCKY')
+ Predicted: GEOLOGY OF THE VERSAILLES QUADRANGLE, KENTUCKY
+ Truth: GEOLOGY OF THE VERSAILLES QUADRANGLE, KENTUCKY
+ Score: 1.0
+ --
+ Field: ('authors', ['Black, D. F. B.'])
+ Predicted: ['Black, D. F. B.']
+ Truth: ['Black, D. F. B.']
+ Score: 1.0
+ --
+ Field: ('year', '1964')
+ Predicted: 1964
+ Truth: 1964
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Versailles')
+ Predicted: Versailles
+ Truth: Versailles
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Carter Coordinate System'])
+ Predicted: ['Carter Coordinate System']
+ Truth: ['Carter Coordinate System']
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1954')
+ Predicted: U.S. Geological Survey, 1954
+ Truth: U.S. Geological Survey, 1954. Modified 1964
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '796')
+ Predicted: 796
+ Truth: 796
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY OF THE ELLSWORTH QUADRANGLE')
+ Predicted: GEOLOGY OF THE ELLSWORTH QUADRANGLE
+ Truth: GEOLOGY OF THE ELLSWORTH QUADRANGLE
+ Score: 1.0
+ --
+ Field: ('authors', ['Berryhill, H. L., Jr.', 'Schweinfurth, Stanley P.'])
+ Predicted: ['Berryhill, H. L., Jr.', 'Schweinfurth, Stanley P.']
+ Truth: ['Berryhill, H. L., Jr.', 'Schweinfurth, Stanley P.']
+ Score: 1.0
+ --
+ Field: ('year', '1964')
+ Predicted: 1964
+ Truth: 1964
+ Score: 1.0
+ --
+ Field: ('scale', '1:140')
+ Predicted: 1:140
+ Truth: 1:24000
+ Score: 0.0
+ --
+ Field: ('quadrangle', 'ELLSWORTH')
+ Predicted: ELLSWORTH
+ Truth: ELLSWORTH
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey , 1954')
+ Predicted: U.S. Geological Survey , 1954
+ Truth: U.S. Geological Survey, 1954
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '825')
+ Predicted: 825
+ Truth: 825
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE JANGLE RIDGE QUADRANGLE')
+ Predicted: GEOLOGIC MAP OF THE JANGLE RIDGE QUADRANGLE
+ Truth: GEOLOGIC MAP OF THE JANGLE RIDGE QUADRANGLE, NYE AND LINCOLN COUNTIES, NEVADA
+ Score: 0.0
+ --
+ Field: ('authors', ['Barnes, H.', 'Christiansen, R. L.', 'Byers, F. M. Jr.'])
+ Predicted: ['Barnes, H.', 'Christiansen, R. L.', 'Byers, F. M. Jr.']
+ Truth: ['Barnes, H.', 'Christiansen, R. L.', 'Byers, F. M. Jr.']
+ Score: 1.0
+ --
+ Field: ('year', '1965')
+ Predicted: 1965
+ Truth: 1965
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'JANGLE RIDGE')
+ Predicted: JANGLE RIDGE
+ Truth: JANGLE RIDGE
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Nevada Coordinate system, central and east zones'])
+ Predicted: ['Nevada Coordinate system, central and east zones']
+ Truth: ['Nevada Coordinate system, central and east zones']
+ Score: 1.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survery, 1961
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '910')
+ Predicted: 910
+ Truth: 910
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE BROAD BOTTOM QUADRANGLE, EASTERN KENTUCKY')
+ Predicted: GEOLOGIC MAP OF THE BROAD BOTTOM QUADRANGLE, EASTERN KENTUCKY
+ Truth: GEOLOGIC MAP OF THE BROAD BOTTOM QUADRANGLE, EASTERN KENTUCKY
+ Score: 1.0
+ --
+ Field: ('authors', ['Alvord, D. C.', 'Holbrook, C. E.'])
+ Predicted: ['Alvord, D. C.', 'Holbrook, C. E.']
+ Truth: ['Alvord, D. C.', 'NULL']
+ Score: 0.0
+ --
+ Field: ('year', '1965')
+ Predicted: 1965
+ Truth: 1965
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Broad Bottom Quadrangle')
+ Predicted: Broad Bottom Quadrangle
+ Truth: Broad Bottom Quadrangle
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Carter Coordinate System'])
+ Predicted: ['Carter Coordinate System']
+ Truth: ['Carter Coordinate System', 'NULL', 'NULL']
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1954')
+ Predicted: U.S. Geological Survey 1954
+ Truth: U.S. Geological Survey, 1954
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '925')
+ Predicted: 925
+ Truth: 925
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC QUADRANGLE MAP HICKORY QUADRANGLE, KENTUCKY GQ-457')
+ Predicted: GEOLOGIC QUADRANGLE MAP HICKORY QUADRANGLE, KENTUCKY GQ-457
+ Truth: GEOLOGIC MAP OF THE HICKORY QUADRANGLE, GRAVES COUNTY, KENTUCKY
+ Score: 0.0
+ --
+ Field: ('authors', ['Blade, L. V.'])
+ Predicted: ['Blade, L. V.']
+ Truth: ['Blade, L. V.']
+ Score: 1.0
+ --
+ Field: ('year', '1965')
+ Predicted: 1965
+ Truth: 1965
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'HICKORY QUADRANGLE')
+ Predicted: HICKORY QUADRANGLE
+ Truth: HICKORY QUADRANGLE
+ Score: 1.0
+ --
+ Field: ('base_map', 'Base map by Tennessee Valley Authority and U.S. Geological Survey, 1951')
+ Predicted: Base map by Tennessee Valley Authority and U.S. Geological Survey, 1951
+ Truth: Base map by Tennessee Valley Authority and U.S. Geological Survey, 1951
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '926')
+ Predicted: 926
+ Truth: 926
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE SOUTH PASS CITY QUADRANGLE, FREMONT COUNTY, WYOMING')
+ Predicted: GEOLOGIC MAP OF THE SOUTH PASS CITY QUADRANGLE, FREMONT COUNTY, WYOMING
+ Truth: GEOLOGIC MAP OF THE SOUTH PASS CITY QUADRANGLE, FREMONT COUNTY, WYOMING
+ Score: 1.0
+ --
+ Field: ('authors', ['Bayley, R. W.'])
+ Predicted: ['Bayley, R. W.']
+ Truth: ['Bayley, R. W.']
+ Score: 1.0
+ --
+ Field: ('year', '1965')
+ Predicted: 1965
+ Truth: 1965
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'South Pass City')
+ Predicted: South Pass City
+ Truth: South Pass City
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '927')
+ Predicted: 927
+ Truth: 927
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE ATLANTIC CITY QUADRANGLE, FREMONT COUNTY, WYOMING')
+ Predicted: GEOLOGIC MAP OF THE ATLANTIC CITY QUADRANGLE, FREMONT COUNTY, WYOMING
+ Truth: GEOLOGIC MAP OF THE ATLANTIC CITY QUADRANGLE, FREMONT COUNTY, WYOMING
+ Score: 1.0
+ --
+ Field: ('authors', ['Bayley, R. W.'])
+ Predicted: ['Bayley, R. W.']
+ Truth: ['Bayley, R. W.']
+ Score: 1.0
+ --
+ Field: ('year', '1965')
+ Predicted: 1965
+ Truth: 1965
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Atlantic City Quadrangle')
+ Predicted: Atlantic City Quadrangle
+ Truth: Atlantic City Quadrangle
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level, 1965
+ Score: 0.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '929')
+ Predicted: 929
+ Truth: 929
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE MINERS DELIGHT QUADRANGLE, FREMONT COUNTY, WYOMING')
+ Predicted: GEOLOGIC MAP OF THE MINERS DELIGHT QUADRANGLE, FREMONT COUNTY, WYOMING
+ Truth: GEOLOGIC MAP OF THE MINERS DELIGHT QUADRANGLE, FREMONT COUNTY, WYOMING
+ Score: 1.0
+ --
+ Field: ('authors', ['Bayley, R. W.'])
+ Predicted: ['Bayley, R. W.']
+ Truth: ['Bayley, R. W.']
+ Score: 1.0
+ --
+ Field: ('year', '1965')
+ Predicted: 1965
+ Truth: 1965
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Miners Delight')
+ Predicted: Miners Delight
+ Truth: Miners Delight
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '930')
+ Predicted: 930
+ Truth: 930
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE LOUIS LAKE QUADRANGLE, FREMONT COUNTY, WYOMING')
+ Predicted: GEOLOGIC MAP OF THE LOUIS LAKE QUADRANGLE, FREMONT COUNTY, WYOMING
+ Truth: GEOLOGIC MAP OF THE LOUIS LAKE QUADRANGLE, FREMONT COUNTY, WYOMING
+ Score: 1.0
+ --
+ Field: ('authors', ['Bayley, R. W.'])
+ Predicted: ['Bayley, R. W.']
+ Truth: ['Bayley, R. W.']
+ Score: 1.0
+ --
+ Field: ('year', '1965')
+ Predicted: 1965
+ Truth: 1965
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Louis Lake')
+ Predicted: Louis Lake
+ Truth: Louis Lake
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level, 1965')
+ Predicted: mean sea level, 1965
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey')
+ Predicted: U.S. Geological Survey
+ Truth: U.S. Geological Survey
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '949')
+ Predicted: 949
+ Truth: 949
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE PIKEVILLE QUADRANGLE, PIKE AND FLOYD COUNTIES, KENTUCKY')
+ Predicted: GEOLOGIC MAP OF THE PIKEVILLE QUADRANGLE, PIKE AND FLOYD COUNTIES, KENTUCKY
+ Truth: GEOLOGIC MAP OF THE PIKEVILLE QUADRANGLE, PIKE AND FLOYD COUNTIES, KENTUCKY
+ Score: 1.0
+ --
+ Field: ('authors', ['Alvord, D. C.', 'Holbrook, C. E.'])
+ Predicted: ['Alvord, D. C.', 'Holbrook, C. E.']
+ Truth: ['Alvord, D. C.', 'Holbrook, C. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1965')
+ Predicted: 1965
+ Truth: 1965
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Pikeville Quadrangle')
+ Predicted: Pikeville Quadrangle
+ Truth: Pikeville Quadrangle
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Carter Coordinate System'])
+ Predicted: ['Carter Coordinate System']
+ Truth: ['Carter Coordinate System']
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1954')
+ Predicted: U.S. Geological Survey, 1954
+ Truth: U.S. Geological Survey, 1954
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '968')
+ Predicted: 968
+ Truth: 968
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC QUADRANGLE MAP HAMLIN AND PARIS LANDING QUADRANGLES, KENTUCKY')
+ Predicted: GEOLOGIC QUADRANGLE MAP HAMLIN AND PARIS LANDING QUADRANGLES, KENTUCKY
+ Truth: GEOLOGIC QUADRANGLE MAP HAMLIN AND PARIS LANDING QUADRANGLES, KENTUCKY
+ Score: 1.0
+ --
+ Field: ('authors', ['Blade, L. V.', 'MacCary, L. M.'])
+ Predicted: ['Blade, L. V.', 'MacCary, L. M.']
+ Truth: ['Blade, L. V.']
+ Score: 0.0
+ --
+ Field: ('year', '1966')
+ Predicted: 1966
+ Truth: 1966
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Hamlin and Paris Landing Quadrangles')
+ Predicted: Hamlin and Paris Landing Quadrangles
+ Truth: Hamlin and Paris Landing Quadrangles
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Carter Coordinate System'])
+ Predicted: ['Carter Coordinate System']
+ Truth: ['Carter Coordinate System', 'NULL', 'NULL']
+ Score: 1.0
+ --
+ Field: ('base_map', 'Tennessee Valley Authority and U.S. Geological Survey, 1950')
+ Predicted: Tennessee Valley Authority and U.S. Geological Survey, 1950
+ Truth: Tennessee Valley Authority and U.S. Geological Survey, 1950
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '1438')
+ Predicted: 1438
+ Truth: 1438
+ Score: 1.0
+ --
+ Field: ('title', 'CARLISLE - 3 QUADRANGLE SAN JUAN COUNTY , UTAH')
+ Predicted: CARLISLE - 3 QUADRANGLE SAN JUAN COUNTY , UTAH
+ Truth: PHOTOGEOLOGIC MAP OF THE CARLISLE-3 QUADRANGLE, SAN JUAN COUNTY, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Bates, C. E.'])
+ Predicted: ['Bates, C. E.']
+ Truth: ['Bates, C. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1955
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'CARLISLE - 3')
+ Predicted: CARLISLE - 3
+ Truth: CARLISLE-3 QUADRANGLE
+ Score: 0.0
+ --
+ Field: ('base_map', 'U. S. Geological Survey topographic map , Carlisle 2 NE ( unpublished )')
+ Predicted: U. S. Geological Survey topographic map , Carlisle 2 NE ( unpublished )
+ Truth: U. S. Geological Survey topographic map, Carlisle 2 NE (unpublished)
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '1441')
+ Predicted: 1441
+ Truth: 1441
+ Score: 1.0
+ --
+ Field: ('title', 'CARLISLE - 6 QUADRANGLE SAN JUAN COUNTY, UTAH')
+ Predicted: CARLISLE - 6 QUADRANGLE SAN JUAN COUNTY, UTAH
+ Truth: PHOTOGEOLOGIC MAP OF THE CARLISLE-6 QUADRANGLE, SAN JUAN COUNTY, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Bates, C. E.'])
+ Predicted: ['Bates, C. E.']
+ Truth: ['Bates, C. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1951')
+ Predicted: 1951
+ Truth: 1955
+ Score: 0.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Carlisle 2 S.E.')
+ Predicted: Carlisle 2 S.E.
+ Truth: CARLISLE-6 QUADRANGLE
+ Score: 0.0
+ --
+ Field: ('base_map', 'U. S. Geological Survey topographic map Carlisle 2 S.E. ( unpublished )')
+ Predicted: U. S. Geological Survey topographic map Carlisle 2 S.E. ( unpublished )
+ Truth: U. S. Geological Survey topographic map Carlisle 2 S.E. ( unpublished )
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '1489')
+ Predicted: 1489
+ Truth: 1489
+ Score: 1.0
+ --
+ Field: ('title', 'ELK RIDGE QUADRANGLE')
+ Predicted: ELK RIDGE QUADRANGLE
+ Truth: PHOTOGEOLOGIC MAP OF THE ELK RIDGE-10 QUADRANGLE, SAN JUAN COUNTY, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Bennett, H. S.'])
+ Predicted: ['Bennett, H. S.']
+ Truth: ['Bennett, H. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1955
+ Score: 1.0
+ --
+ Field: ('scale', '1:125000')
+ Predicted: 1:125000
+ Truth: 1:12400
+ Score: 0.0
+ --
+ Field: ('quadrangle', 'ELK RIDGE')
+ Predicted: ELK RIDGE
+ Truth: ELK RIDGE-10
+ Score: 0.0
+ --
+ Field: ('base_map', 'Soil Conservation Service map, Utah - 326')
+ Predicted: Soil Conservation Service map, Utah - 326
+ Truth: Soil Conservation Service map, Utah-326
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '1503')
+ Predicted: 1503
+ Truth: 1503
+ Score: 1.0
+ --
+ Field: ('title', 'PHOTOGEOLOGIC MAP OF THE EMERY - 10 QUADRANGLE EMERY COUNTY, UTAH')
+ Predicted: PHOTOGEOLOGIC MAP OF THE EMERY - 10 QUADRANGLE EMERY COUNTY, UTAH
+ Truth: PHOTOGEOLOGIC MAP OF THE EMERY-10 QUADRANGLE, EMERY COUNTY, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Bennett, H. S.'])
+ Predicted: ['Bennett, H. S.']
+ Truth: ['Bennett, H. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1955
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'EMERY - 10')
+ Predicted: EMERY - 10
+ Truth: EMERY-10 QUADRANGLE
+ Score: 0.0
+ --
+ Field: ('base_map', 'compiled by U.S. Geological Survey from vertical aerial photographs')
+ Predicted: compiled by U.S. Geological Survey from vertical aerial photographs
+ Truth: Base map compilted by U.S. Geological Survey from vertical aerial photographs
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '1506')
+ Predicted: 1506
+ Truth: 1506
+ Score: 1.0
+ --
+ Field: ('title', 'PHOTOGEOLOGIC MAP OF THE EMERY - 7 QUADRANGLE EMERY COUNTY, UTAH')
+ Predicted: PHOTOGEOLOGIC MAP OF THE EMERY - 7 QUADRANGLE EMERY COUNTY, UTAH
+ Truth: PHOTOGEOLOGIC MAP OF THE EMERY - 7 QUADRANGLE EMERY COUNTY, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Bennett, H. S.'])
+ Predicted: ['Bennett, H. S.']
+ Truth: ['Bennett, H. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1955
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'EMERY - 7')
+ Predicted: EMERY - 7
+ Truth: EMERY-7
+ Score: 0.0
+ --
+ Field: ('base_map', 'Base map compiled by U.S. Geological Survey from vertical aerial photographs.')
+ Predicted: Base map compiled by U.S. Geological Survey from vertical aerial photographs.
+ Truth: Base map compilted by U.S. Geological Survey from vertical aerial photographs
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '1542')
+ Predicted: 1542
+ Truth: 1542
+ Score: 1.0
+ --
+ Field: ('title', 'PHOTOGEOLOGIC MAP OF THE MOAB - 10 QUADRANGLE GRAND COUNTY, UTAH')
+ Predicted: PHOTOGEOLOGIC MAP OF THE MOAB - 10 QUADRANGLE GRAND COUNTY, UTAH
+ Truth: PHOTOGEOLOGIC MAP OF THE MOAB - 10 QUADRANGLE GRAND COUNTY, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Bates, C. E.'])
+ Predicted: ['Bates, C. E.']
+ Truth: ['Bates, C. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1951')
+ Predicted: 1951
+ Truth: 1955
+ Score: 0.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'MOAB QUADRANGLE')
+ Predicted: MOAB QUADRANGLE
+ Truth: MOAB-10 QUADRANGLE
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey preliminary topographic map Moab 4 NW')
+ Predicted: U.S. Geological Survey preliminary topographic map Moab 4 NW
+ Truth: U. S. Geological Survey preliminary topographic map Moab 4 NW
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '1543')
+ Predicted: 1543
+ Truth: 1543
+ Score: 1.0
+ --
+ Field: ('title', 'PHOTOGEOLOGIC MAP OF THE MOAB - 11 QUADRANGLE GRAND COUNTY, UTAH')
+ Predicted: PHOTOGEOLOGIC MAP OF THE MOAB - 11 QUADRANGLE GRAND COUNTY, UTAH
+ Truth: PHOTOGEOLOGIC MAP OF THE MOAB - 11 QUADRANGLE GRAND COUNTY, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Bates, C. E.'])
+ Predicted: ['Bates, C. E.']
+ Truth: ['Bates, C. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1955
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'MOAB - 11')
+ Predicted: MOAB - 11
+ Truth: MOAB - 11
+ Score: 1.0
+ --
+ Field: ('base_map', 'U. S. Geological Survey topographic map Moab 3 NE ( unpublished )')
+ Predicted: U. S. Geological Survey topographic map Moab 3 NE ( unpublished )
+ Truth: U. S. Geological Survey topographic map Moab 3 NE ( unpublished )
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '1545')
+ Predicted: 1545
+ Truth: 1545
+ Score: 1.0
+ --
+ Field: ('title', 'MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I - 118')
+ Predicted: MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I - 118
+ Truth: PHOTOGEOLOGIC MAP OF THE MOAB-13 QUADRANGLE GRAND COUNTY, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Bergquist, W. E.'])
+ Predicted: ['Bergquist, W. E.']
+ Truth: ['Bergquist, W. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1955
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'MOAB QUADRANGLE')
+ Predicted: MOAB QUADRANGLE
+ Truth: MOAB-13 QUADRANGLE
+ Score: 0.0
+ --
+ Field: ('base_map', 'U. S. Geological Survey preliminary topographic map Moab 3 SW')
+ Predicted: U. S. Geological Survey preliminary topographic map Moab 3 SW
+ Truth: U. S. Geological Survey preliminary topographic map Moab 3 SW
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '1572')
+ Predicted: 1572
+ Truth: 1572
+ Score: 1.0
+ --
+ Field: ('title', 'MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I- 45')
+ Predicted: MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I- 45
+ Truth: PHOTOGEOLOGIC MAP OF THE NAVAJO MOUNTAIN-12 QUADRANGLE KANE AND SAN JUAN COUNTIES, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Bennett, H. S.'])
+ Predicted: ['Bennett, H. S.']
+ Truth: ['Bennett, H. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1955
+ Score: 1.0
+ --
+ Field: ('scale', '1:240000')
+ Predicted: 1:240000
+ Truth: 1:24000
+ Score: 0.0
+ --
+ Field: ('quadrangle', 'NAVAJO MOUNTAIN - 12 QUADRANGLE KANE AND SAN JUAN COUNTIES, UTAH')
+ Predicted: NAVAJO MOUNTAIN - 12 QUADRANGLE KANE AND SAN JUAN COUNTIES, UTAH
+ Truth: NAVAJO MOUNTAIN - 12
+ Score: 0.0
+ --
+ Field: ('base_map', 'Base map compiled by U. S. Geological Survey from vertical aerial photographs')
+ Predicted: Base map compiled by U. S. Geological Survey from vertical aerial photographs
+ Truth: Base map compiled by U.S. Geological Survey from vertical aerial photographs
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '1576')
+ Predicted: 1576
+ Truth: 1576
+ Score: 1.0
+ --
+ Field: ('title', 'PHOTOGEOLOGIC MAP OF THE NAVAJO MOUNTAIN - 2 QUADRANGLE')
+ Predicted: PHOTOGEOLOGIC MAP OF THE NAVAJO MOUNTAIN - 2 QUADRANGLE
+ Truth: PHOTOGEOLOGIC MAP OF THE NAVAJO MOUNTAIN - 2 QUADRANGLE KANE AND SAN JUAN COUNTIES, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Bennett, H. S.'])
+ Predicted: ['Bennett, H. S.']
+ Truth: ['Bennett, H. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1955
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'NAVAJO MOUNTAIN - 2')
+ Predicted: NAVAJO MOUNTAIN - 2
+ Truth: NAVAJO MOUNTAIN - 2
+ Score: 1.0
+ --
+ Field: ('base_map', 'Base map compiled by U. S. Geological Survey from vertical aerial photographs')
+ Predicted: Base map compiled by U. S. Geological Survey from vertical aerial photographs
+ Truth: Base map compiled by U.S. Geological Survey from vertical aerial photographs
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '1579')
+ Predicted: 1579
+ Truth: 1579
+ Score: 1.0
+ --
+ Field: ('title', 'PHOTOGEOLOGIC MAP OF THE NAVAJO MOUNTAIN - 5 QUADRANGLE KANE AND SAN JUAN COUNTIES , UTAH')
+ Predicted: PHOTOGEOLOGIC MAP OF THE NAVAJO MOUNTAIN - 5 QUADRANGLE KANE AND SAN JUAN COUNTIES , UTAH
+ Truth: PHOTOGEOLOGIC MAP OF THE NAVAJO MOUNTAIN - 5 QUADRANGLE KANE AND SAN JUAN COUNTIES , UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Bennett, H. S.'])
+ Predicted: ['Bennett, H. S.']
+ Truth: ['Bennett, H. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1955
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'NAVAJO MOUNTAIN QUADRANGLE')
+ Predicted: NAVAJO MOUNTAIN QUADRANGLE
+ Truth: NAVAJO MOUNTAIN QUADRANGLE
+ Score: 1.0
+ --
+ Field: ('base_map', 'Base map compiled by U. S. Geological Survey from vertical aerial photographs')
+ Predicted: Base map compiled by U. S. Geological Survey from vertical aerial photographs
+ Truth: Base map compiled by U. S. Geological Survey from vertical aerial photographs
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '1581')
+ Predicted: 1581
+ Truth: 1581
+ Score: 1.0
+ --
+ Field: ('title', 'NAVAJO MOUNTAIN - 7 QUADRANGLE')
+ Predicted: NAVAJO MOUNTAIN - 7 QUADRANGLE
+ Truth: NAVAJO MOUNTAIN - 7 QUADRANGLE KANE AND SAN JUAN COUNTIES, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Bennett, H. S.'])
+ Predicted: ['Bennett, H. S.']
+ Truth: ['Bennett, H. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1955
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'NAVAJO MOUNTAIN - 7')
+ Predicted: NAVAJO MOUNTAIN - 7
+ Truth: NAVAJO MOUNTAIN - 7
+ Score: 1.0
+ --
+ Field: ('base_map', 'Base map compiled by U. S. Geological Survey from vertical aerial photographs')
+ Predicted: Base map compiled by U. S. Geological Survey from vertical aerial photographs
+ Truth: Base map compiled by U. S. Geological Survey from vertical aerial photographs
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '1630')
+ Predicted: 1630
+ Truth: 1630
+ Score: 1.0
+ --
+ Field: ('title', 'PHOTOGEOLOGIC MAP OF THE TIDWELL - 6 QUADRANGLE EMERY COUNTY, UTAH')
+ Predicted: PHOTOGEOLOGIC MAP OF THE TIDWELL - 6 QUADRANGLE EMERY COUNTY, UTAH
+ Truth: PHOTOGEOLOGIC MAP OF THE TIDWELL - 6 QUADRANGLE EMERY COUNTY, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Bennett, H. S.'])
+ Predicted: ['Bennett, H. S.']
+ Truth: ['Bennett, H. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1955')
+ Predicted: 1955
+ Truth: 1955
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'TIDWELL QUADRANGLE')
+ Predicted: TIDWELL QUADRANGLE
+ Truth: TIDWELL - 6
+ Score: 0.0
+ --
+ Field: ('base_map', 'U. S. Soil Conservation Service map, Utah - 223')
+ Predicted: U. S. Soil Conservation Service map, Utah - 223
+ Truth: U. S. Soil Conservation Service map, Utah - 223
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '1633')
+ Predicted: 1633
+ Truth: 1633
+ Score: 1.0
+ --
+ Field: ('title', 'MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I - 114')
+ Predicted: MISCELLANEOUS GEOLOGIC INVESTIGATIONS MAP I - 114
+ Truth: PHOTOGEOLOGIC MAP OF THE TIDWELL - 9 QUADRANGLE EMERY COUNTY, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Bates, C. E.', 'Sable, V. H.'])
+ Predicted: ['Bates, C. E.', 'Sable, V. H.']
+ Truth: ['Bates, C. E.', 'Sable, V. H.']
+ Score: 1.0
+ --
+ Field: ('year', 'NULL')
+ Predicted: NULL
+ Truth: 1955
+ Score: 0.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'TIDWELL - 9')
+ Predicted: TIDWELL - 9
+ Truth: TIDWELL - 9
+ Score: 1.0
+ --
+ Field: ('base_map', 'U. S. Geological Survey')
+ Predicted: U. S. Geological Survey
+ Truth: Base map compiled by U. S. Geological Survey from vertical aerial photographsy
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '1868')
+ Predicted: 1868
+ Truth: 1868
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE LITTLE CYPRESS QUADRANGLE, KENTUCKY - ILLINOIS')
+ Predicted: GEOLOGIC MAP OF THE LITTLE CYPRESS QUADRANGLE, KENTUCKY - ILLINOIS
+ Truth: GEOLOGIC MAP OF THE LITTLE CYPRESS QUADRANGLE, KENTUCKY - ILLINOIS
+ Score: 1.0
+ --
+ Field: ('authors', ['Amos, D. H.', 'Wolfe, E. W.'])
+ Predicted: ['Amos, D. H.', 'Wolfe, E. W.']
+ Truth: ['Amos, D. H.', 'Wolfe, E. W.']
+ Score: 1.0
+ --
+ Field: ('year', '1966')
+ Predicted: 1966
+ Truth: 1966
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Little Cypress')
+ Predicted: Little Cypress
+ Truth: Little Cypress
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('coordinate_systems', ['NULL'])
+ Predicted: ['NULL']
+ Truth: ['Carter coordinate system']
+ Score: 0.0
+ --
+ Field: ('base_map', 'Base map by Tennessee Valley Authority and U.S. Geological Survey, 1958. Modified 1966')
+ Predicted: Base map by Tennessee Valley Authority and U.S. Geological Survey, 1958. Modified 1966
+ Truth: Tennessee Valley Authority and U.S. Geological Survey, 1958. Modified 1966
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '1954')
+ Predicted: 1954
+ Truth: 1954
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE COLETOWN QUADRANGLE, EAST-CENTRAL KENTUCKY')
+ Predicted: GEOLOGIC MAP OF THE COLETOWN QUADRANGLE, EAST-CENTRAL KENTUCKY
+ Truth: GEOLOGIC MAP OF THE COLETOWN QUADRANGLE, EAST-CENTRAL KENTUCKY
+ Score: 1.0
+ --
+ Field: ('authors', ['Black, D. F. B.', 'Cressman, E. R.', 'Mac Quown, W. C., Jr.'])
+ Predicted: ['Black, D. F. B.', 'Cressman, E. R.', 'Mac Quown, W. C., Jr.']
+ Truth: ['Black, D. F. B.']
+ Score: 0.0
+ --
+ Field: ('year', '1967')
+ Predicted: 1967
+ Truth: 1967
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Coletown Quadrangle')
+ Predicted: Coletown Quadrangle
+ Truth: Coletown Quadrangle
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['NULL'])
+ Predicted: ['NULL']
+ Truth: ['Carter coordinate system']
+ Score: 0.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: Base by U.S. Geological Survey, 1959.  Modified 1967
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '2013')
+ Predicted: 2013
+ Truth: 2013
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE MUNGER MOUNTAIN QUADRANGLE, TETON AND LINCOLN COUNTIES, WYOMING')
+ Predicted: GEOLOGIC MAP OF THE MUNGER MOUNTAIN QUADRANGLE, TETON AND LINCOLN COUNTIES, WYOMING
+ Truth: GEOLOGIC MAP OF THE MUNGER MOUNTAIN QUADRANGLE, TETON AND LINCOLN COUNTIES, WYOMING
+ Score: 1.0
+ --
+ Field: ('authors', ['Albee, H. F.'])
+ Predicted: ['Albee, H. F.']
+ Truth: ['Albee, H. F.']
+ Score: 1.0
+ --
+ Field: ('year', '1968')
+ Predicted: 1968
+ Truth: 1968
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Munger Mountain Quadrangle')
+ Predicted: Munger Mountain Quadrangle
+ Truth: Munger Mountain
+ Score: 0.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1963')
+ Predicted: U.S. Geological Survey, 1963
+ Truth: U.S. Geological Survey, 1963
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '2021')
+ Predicted: 2021
+ Truth: 2021
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC QUADRANGLE MAP DORTON QUADRANGLE, KENTUCKY GQ-713')
+ Predicted: GEOLOGIC QUADRANGLE MAP DORTON QUADRANGLE, KENTUCKY GQ-713
+ Truth: GEOLOGIC MAP OF THE DORTON QUADRANGLE, PIKE COUNTY, KENTUCKY
+ Score: 0.0
+ --
+ Field: ('authors', ['Barr, J. L.', 'Arndt, H. H.'])
+ Predicted: ['Barr, J. L.', 'Arndt, H. H.']
+ Truth: ['Barr, J. L.', 'Arndt, H. H.', 'NULL']
+ Score: 1.0
+ --
+ Field: ('year', '1968')
+ Predicted: 1968
+ Truth: 1968
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'DORTON QUADRANGLE')
+ Predicted: DORTON QUADRANGLE
+ Truth: DORTON QUADRANGLE
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('coordinate_systems', ['Carter Coordinate System'])
+ Predicted: ['Carter Coordinate System']
+ Truth: ['Carter Coordinate System', 'NULL', 'NULL']
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1954')
+ Predicted: U.S. Geological Survey 1954
+ Truth: U.S. Geological Survey, 1954. Modified 1968
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '2070')
+ Predicted: 2070
+ Truth: 2070
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE FORD QUADRANGLE, CENTRAL KENTUCKY')
+ Predicted: GEOLOGIC MAP OF THE FORD QUADRANGLE, CENTRAL KENTUCKY
+ Truth: GEOLOGIC MAP OF THE FORD QUADRANGLE, CENTRAL KENTUCKY
+ Score: 1.0
+ --
+ Field: ('authors', ['Douglas F. B. Black', 'NULL', 'NULL'])
+ Predicted: ['Douglas F. B. Black', 'NULL', 'NULL']
+ Truth: ['Black, D. F. B.']
+ Score: 0.0
+ --
+ Field: ('year', '1968')
+ Predicted: 1968
+ Truth: 1968
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Ford Quadrangle')
+ Predicted: Ford Quadrangle
+ Truth: Ford Quadrangle
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('coordinate_systems', ['The Carter Coordinate System', 'NULL', 'NULL'])
+ Predicted: ['The Carter Coordinate System', 'NULL', 'NULL']
+ Truth: ['Carter Coordinate System']
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1968')
+ Predicted: U.S. Geological Survey 1968
+ Truth: U.S. Geological Survey, 1968.  Modified 1968
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '2077')
+ Predicted: 2077
+ Truth: 2077
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE BRADLEY PEAK QUADRANGLE, CARBON COUNTY, WYOMING')
+ Predicted: GEOLOGIC MAP OF THE BRADLEY PEAK QUADRANGLE, CARBON COUNTY, WYOMING
+ Truth: GEOLOGIC MAP OF THE BRADLEY PEAK QUADRANGLE, CARBON COUNTY, WYOMING
+ Score: 1.0
+ --
+ Field: ('authors', ['Bayley, R. W.'])
+ Predicted: ['Bayley, R. W.']
+ Truth: ['Bayley, R. W.']
+ Score: 1.0
+ --
+ Field: ('year', '1968')
+ Predicted: 1968
+ Truth: 1968
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'BRADLEY PEAK')
+ Predicted: BRADLEY PEAK
+ Truth: Bradley Peak
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1955')
+ Predicted: U.S. Geological Survey, 1955
+ Truth: U.S. Geological Survey, 1955
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '2134')
+ Predicted: 2134
+ Truth: 2134
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE MASONVILLE QUADRANGLE, LARIMER COUNTY, COLORADO')
+ Predicted: GEOLOGIC MAP OF THE MASONVILLE QUADRANGLE, LARIMER COUNTY, COLORADO
+ Truth: GEOLOGIC MAP OF THE MASONVILLE QUADRANGLE, LARIMER COUNTY, COLORADO
+ Score: 1.0
+ --
+ Field: ('authors', ['Braddock, W. A.', 'Calvert, R. H.', 'Gawarecki, S. J.', 'Nutalaya, P.'])
+ Predicted: ['Braddock, W. A.', 'Calvert, R. H.', 'Gawarecki, S. J.', 'Nutalaya, P.']
+ Truth: ['Braddock, W. A.', 'Calvert, R. H.', 'Gawarecki, S. J.', 'Nutalaya, P.']
+ Score: 1.0
+ --
+ Field: ('year', '1970')
+ Predicted: 1970
+ Truth: 1970
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Masonville')
+ Predicted: Masonville
+ Truth: Masonville
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1962')
+ Predicted: U.S. Geological Survey, 1962
+ Truth: Base by U.S. Geological Survey, 1962
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '2175')
+ Predicted: 2175
+ Truth: 2175
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE BLACKFORD QUADRANGLE, WESTERN KENTUCKY')
+ Predicted: GEOLOGIC MAP OF THE BLACKFORD QUADRANGLE, WESTERN KENTUCKY
+ Truth: GEOLOGIC MAP OF THE BLACKFORD QUADRANGLE, WESTERN KENTUCKY
+ Score: 1.0
+ --
+ Field: ('authors', ['Amos, D. H.'])
+ Predicted: ['Amos, D. H.']
+ Truth: ['Amos, D. H.']
+ Score: 1.0
+ --
+ Field: ('year', '1970')
+ Predicted: 1970
+ Truth: 1970
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Blackford')
+ Predicted: Blackford
+ Truth: Blackford Quadrangle
+ Score: 0.0
+ --
+ Field: ('coordinate_systems', ['NULL'])
+ Predicted: ['NULL']
+ Truth: ['Carter Coordinate System']
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1954')
+ Predicted: U.S. Geological Survey 1954
+ Truth: Base by U.S. Geological Survey, 1954.  Modified 1970
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '2209')
+ Predicted: 2209
+ Truth: 2209
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC QUADRANGLE MAP BUSHKILL QUADRANGLE, PA - N.J.')
+ Predicted: GEOLOGIC QUADRANGLE MAP BUSHKILL QUADRANGLE, PA - N.J.
+ Truth: GEOLOGIC MAP OF THE BUSHKILL QUADRANGLE, PENNSYLVANIA - NEW JERSEY
+ Score: 0.0
+ --
+ Field: ('authors', ['Alvord, D. C.', 'Drake, A. A.'])
+ Predicted: ['Alvord, D. C.', 'Drake, A. A.']
+ Truth: ['Alvord, D. C.', 'Drake, A. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1971')
+ Predicted: 1971
+ Truth: 1971
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Bushkill')
+ Predicted: Bushkill
+ Truth: Bushkill
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Pennsylvania coordinate system, north zone', 'New Jersey coordinate system'])
+ Predicted: ['Pennsylvania coordinate system, north zone', 'New Jersey coordinate system']
+ Truth: ['Pennsylvania coordinate system, north zone', 'New Jersey coordinate system']
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '2587')
+ Predicted: 2587
+ Truth: 2587
+ Score: 1.0
+ --
+ Field: ('title', 'PRELIMINARY GEOLOGIC MAP OF THE SOUTHERN HALF OF THE JEFFERSON CITY QUADRANGLE JEFFERSON COUNTY, MONTANA')
+ Predicted: PRELIMINARY GEOLOGIC MAP OF THE SOUTHERN HALF OF THE JEFFERSON CITY QUADRANGLE JEFFERSON COUNTY, MONTANA
+ Truth: PRELIMINARY GEOLOGIC MAP OF THE SOUTHERN HALF OF THE JEFFERSON CITY QUADRANGLE JEFFERSON COUNTY, MONTANA
+ Score: 1.0
+ --
+ Field: ('authors', ['Becraft, G. E.', 'Meschter, D. Y.', 'Weeks, R. A.', 'Klepper, M. R.', 'Rosenblum, S.', 'Pinckney, D. M.', 'Gross, E. B.', 'Roberts, W. A.'])
+ Predicted: ['Becraft, G. E.', 'Meschter, D. Y.', 'Weeks, R. A.', 'Klepper, M. R.', 'Rosenblum, S.', 'Pinckney, D. M.', 'Gross, E. B.', 'Roberts, W. A.']
+ Truth: ['Becraft, G. E.']
+ Score: 0.0
+ --
+ Field: ('year', '1950-53')
+ Predicted: 1950-53
+ Truth: 1960
+ Score: 0.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Jefferson City')
+ Predicted: Jefferson City
+ Truth: Jefferson City
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U. S. Geological Survey topographic quadrangle, Jefferson City, 15-minute, 1950')
+ Predicted: U. S. Geological Survey topographic quadrangle, Jefferson City, 15-minute, 1950
+ Truth: U. S. Geological Survey topographic quadrangle, Jefferson City, 15-minute, 1950
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '2599')
+ Predicted: 2599
+ Truth: 2599
+ Score: 1.0
+ --
+ Field: ('title', 'PRELIMINARY GEOLOGIC MAP OF THE NORTHWEST QUARTER OF THE BOULDER QUADRANGLE, MONTANA')
+ Predicted: PRELIMINARY GEOLOGIC MAP OF THE NORTHWEST QUARTER OF THE BOULDER QUADRANGLE, MONTANA
+ Truth: PRELIMINARY GEOLOGIC MAP OF THE NORTHWEST QUARTER OF THE BOULDER QUADRANGLE, MONTANA
+ Score: 1.0
+ --
+ Field: ('authors', ['Becraft, G. E.', 'Pinckney, D. M.'])
+ Predicted: ['Becraft, G. E.', 'Pinckney, D. M.']
+ Truth: ['Becraft, G. E.', 'Pinckney, D. M.']
+ Score: 1.0
+ --
+ Field: ('year', '1961')
+ Predicted: 1961
+ Truth: 1961
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Boulder')
+ Predicted: Boulder
+ Truth: Boulder
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', "U.S. Geological Survey topographic quadrangle: Boulder 15', 1954")
+ Predicted: U.S. Geological Survey topographic quadrangle: Boulder 15', 1954
+ Truth: U. S. Geological Survey topographic quadrangle: Boulder 15', 1954
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '2645')
+ Predicted: 2645
+ Truth: 2645
+ Score: 1.0
+ --
+ Field: ('title', 'PRELIMINARY GEOLOGIC MAP OF THE NW 4 MAYER QUADRANGLE, YAVA PAI COUNTY, ARIZONA')
+ Predicted: PRELIMINARY GEOLOGIC MAP OF THE NW 4 MAYER QUADRANGLE, YAVA PAI COUNTY, ARIZONA
+ Truth: PRELIMINARY GEOLOGIC MAP OF THE NW 1/4 MAYER QUADRANGLE, YAVA PAI COUNTY, ARIZONA
+ Score: 0.0
+ --
+ Field: ('authors', ['Anderson, C. A.', 'Blacet, P. M.'])
+ Predicted: ['Anderson, C. A.', 'Blacet, P. M.']
+ Truth: ['Anderson, C. A.']
+ Score: 0.0
+ --
+ Field: ('year', '1959')
+ Predicted: 1959
+ Truth: 1959
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Mayer')
+ Predicted: Mayer
+ Truth: Mayer
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level 1959')
+ Predicted: mean sea level 1959
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('base_map', "U. S. Geological Survey Mayer 15', 1:62 500 quadrangle, Arizona, 1947")
+ Predicted: U. S. Geological Survey Mayer 15', 1:62 500 quadrangle, Arizona, 1947
+ Truth: U. S. Geological Survey Mayer 15', 1:62 500 quadrangle, Arizona, 1947
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '3876')
+ Predicted: 3876
+ Truth: 3876
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE LOPERS SPRING QUADRANGLE, BEAVER COUNTY, UTAH')
+ Predicted: GEOLOGIC MAP OF THE LOPERS SPRING QUADRANGLE, BEAVER COUNTY, UTAH
+ Truth: GEOLOGIC MAP OF THE LOPERS SPRING QUADRANGLE, BEAVER COUNTY, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Best, M. G.'])
+ Predicted: ['Best, M. G.']
+ Truth: ['Best, M. G.']
+ Score: 1.0
+ --
+ Field: ('year', '1976')
+ Predicted: 1976
+ Truth: 1976
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'LOPERS SPRING')
+ Predicted: LOPERS SPRING
+ Truth: LOPERS SPRING
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1:24,000')
+ Predicted: U.S. Geological Survey 1:24,000
+ Truth: U.S. Geological Survey 1:24000.  Lopers Spring, 1972
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '4965')
+ Predicted: 4965
+ Truth: 4965
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE FRANKLIN QUADRANGLE AND PART OF THE HAMBURG QUADRANGLE , NEW JERSEY')
+ Predicted: GEOLOGIC MAP OF THE FRANKLIN QUADRANGLE AND PART OF THE HAMBURG QUADRANGLE , NEW JERSEY
+ Truth: GEOLOGIC MAP OF THE FRANKLIN QUADRANGLE AND PART OF THE HAMBURG QUADRANGLE , NEW JERSEY
+ Score: 1.0
+ --
+ Field: ('year', '1951-53')
+ Predicted: 1951-53
+ Truth: -1
+ Score: 0.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Franklin Quadrangle')
+ Predicted: Franklin Quadrangle
+ Truth: Franklin Quadrangle
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey , 1954')
+ Predicted: U.S. Geological Survey , 1954
+ Truth: U.S. Geological Survey, 1954
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '5324')
+ Predicted: 5324
+ Truth: 5324
+ Score: 1.0
+ --
+ Field: ('title', 'STRUCTURE AND STRATIGRAPHY OF THE PENNSYLVANIAN ROCKS EXPOSED IN THE SEITZ QUADRANGLE BREATHITT, MAGOFFIN, MORGAN, AND WOLFE COUNTIES, KENTUCKY')
+ Predicted: STRUCTURE AND STRATIGRAPHY OF THE PENNSYLVANIAN ROCKS EXPOSED IN THE SEITZ QUADRANGLE BREATHITT, MAGOFFIN, MORGAN, AND WOLFE COUNTIES, KENTUCKY
+ Truth: STRUCTURE AND STRATIGRAPHY OF THE PENNSYLVANIAN ROCKS EXPOSED IN THE SEITZ QUADRANGLE BREATHITT, MAGOFFIN, MORGAN, AND WOLFE COUNTIES, KENTUCKY
+ Score: 1.0
+ --
+ Field: ('authors', ['Bergin, M. J.'])
+ Predicted: ['Bergin, M. J.']
+ Truth: ['Bergin, M. J.']
+ Score: 1.0
+ --
+ Field: ('year', '1956')
+ Predicted: 1956
+ Truth: 1956
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Seitz Quadrangle')
+ Predicted: Seitz Quadrangle
+ Truth: Seitz Quadrangle
+ Score: 1.0
+ --
+ Field: ('base_map', 'Base map by Topographic Division U.S. Geological Survey, 1951')
+ Predicted: Base map by Topographic Division U.S. Geological Survey, 1951
+ Truth: Base map by Topographic Division U.S. Geological Survey, 1951
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '5478')
+ Predicted: 5478
+ Truth: 5478
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE BARBOURS CREEK AND SHAWVERS RUN WILDERNESS STUDY AREAS, CRAIG COUNTY, VIRGINIA')
+ Predicted: GEOLOGIC MAP OF THE BARBOURS CREEK AND SHAWVERS RUN WILDERNESS STUDY AREAS, CRAIG COUNTY, VIRGINIA
+ Truth: GEOLOGIC MAP OF THE BARBOURS CREEK AND SHAWVERS RUN WILDERNESS STUDY AREAS, CRAIG COUNTY, VIRGINIA
+ Score: 1.0
+ --
+ Field: ('authors', ['Lesure, F. G.', 'Estabrook, J. R.', 'Linden, M. A.'])
+ Predicted: ['Lesure, F. G.', 'Estabrook, J. R.', 'Linden, M. A.']
+ Truth: ['Lesure, F. G.', 'Estabrook, J. R.', 'Linden, M. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1:24,000 Jordan Mines, 1966 (photoinspected 1977); Newcastle, 1966 (photorevised 1979); Potts Creek, 1966')
+ Predicted: U.S. Geological Survey 1:24,000 Jordan Mines, 1966 (photoinspected 1977); Newcastle, 1966 (photorevised 1979); Potts Creek, 1966
+ Truth: U.S. Geological Survey 1:24,000 Jordan Mines, 1966 (photoinspected 1977); Newcastle, 1966 (photorevised 1979); Potts Creek, 1966
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '5483')
+ Predicted: 5483
+ Truth: 5483
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE BLACK ROCK WILDERNESS STUDY AREA, GRAHAM COUNTY, ARIZONA')
+ Predicted: GEOLOGIC MAP OF THE BLACK ROCK WILDERNESS STUDY AREA, GRAHAM COUNTY, ARIZONA
+ Truth: GEOLOGIC MAP OF THE BLACK ROCK WILDERNESS STUDY AREA, GRAHAM COUNTY, ARIZONA
+ Score: 1.0
+ --
+ Field: ('authors', ['Simons, F. S.'])
+ Predicted: ['Simons, F. S.']
+ Truth: ['Simons, F. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey Jackson Mountain, Telegraph Wash, 1972')
+ Predicted: U.S. Geological Survey Jackson Mountain, Telegraph Wash, 1972
+ Truth: U.S. Geological Survey Jackson Mountain, Telegraph Wash, 1972
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '5484')
+ Predicted: 5484
+ Truth: 5484
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE FISHHOOKS WILDERNESS STUDY AREA, GRAHAM COUNTY, ARIZONA')
+ Predicted: GEOLOGIC MAP OF THE FISHHOOKS WILDERNESS STUDY AREA, GRAHAM COUNTY, ARIZONA
+ Truth: GEOLOGIC MAP OF THE FISHHOOKS WILDERNESS STUDY AREA, GRAHAM COUNTY, ARIZONA
+ Score: 1.0
+ --
+ Field: ('authors', ['Simons, F. S.'])
+ Predicted: ['Simons, F. S.']
+ Truth: ['Simons, F. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1:62,500, Bylas, Fort Thomas, Diamond Bar, 1960; 1:24,000, Ash Creek Ranch, 1966, Tule Tubs, 1967')
+ Predicted: U.S. Geological Survey 1:62,500, Bylas, Fort Thomas, Diamond Bar, 1960; 1:24,000, Ash Creek Ranch, 1966, Tule Tubs, 1967
+ Truth: U.S. Geological Survey, 1:62,500, Bylas, Fort Thomas, 1960; 1:24,000, Ash Creek Ranch, 1966, Tule Tubs, 1967
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '5489')
+ Predicted: 5489
+ Truth: 5489
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE WEEPAH SPRING WILDERNESS STUDY AREA, LINCOLN AND NYE COUNTIES, NEVADA')
+ Predicted: GEOLOGIC MAP OF THE WEEPAH SPRING WILDERNESS STUDY AREA, LINCOLN AND NYE COUNTIES, NEVADA
+ Truth: GEOLOGIC MAP OF THE WEEPAH SPRING WILDERNESS STUDY AREA, LINCOLN AND NYE COUNTIES, NEVADA
+ Score: 1.0
+ --
+ Field: ('authors', ['du Bray, E. A.', 'Hurtubise, D. O.', 'Bannister, C. A.'])
+ Predicted: ['du Bray, E. A.', 'Hurtubise, D. O.', 'Bannister, C. A.']
+ Truth: ['du Bray, E. A.', 'Hurtubise, D. O.', 'Bannister, C. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:24,000 Deadman Spring, Oreana Spring, Weepah Spring, White River Narrows, 1970; Timber Mtn. Pass East, Timber Mtn. Pass West, 1971')
+ Predicted: U.S. Geological Survey, 1:24,000 Deadman Spring, Oreana Spring, Weepah Spring, White River Narrows, 1970; Timber Mtn. Pass East, Timber Mtn. Pass West, 1971
+ Truth: US Geological Survey, 1:24,000 Deadman Spring, Oreana Spring, Weepah Spring, White River Narrows, 1970; Timber Mtn. Pass East, Timber Mtn. Pass West, 1971
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '5492')
+ Predicted: 5492
+ Truth: 5492
+ Score: 1.0
+ --
+ Field: ('title', 'OWYHEE CANYON WILDERNESS STUDY AREA')
+ Predicted: OWYHEE CANYON WILDERNESS STUDY AREA
+ Truth: GEOLOGIC MAP OF THE OWYHEE CANYON WILDERNESS STUDY AREA, MALHEUR COUNTY, ORGEGON
+ Score: 0.0
+ --
+ Field: ('authors', ['Evans, J. G.'])
+ Predicted: ['Evans, J. G.']
+ Truth: ['Evans, J. G.']
+ Score: 1.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:62500')
+ Predicted: 1:62500
+ Truth: 1:62500
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey, 1:24,000 Dry Creek Rim, Little Grassy Mtn., Juniper Ridge, Parsnip Peak, 1969; Indian Fort, Skull Creek, Whitehore Butte, Juniper Point, Caviatta Ridge, Squaw Flat, Three Forks, Brewster Reservoir, 1980; Peacock Lake, No Crossing Crossing, Drummond Basin, Deacon Crossing, Starvation Spring, Rawhide Springs, Rawhide Pocket, Beaver Charlie Breaks, Chipmuck Basin, Guadalupe Meadows, Stoney Corral, Defeat Butte, Oregon Butte, Lookout Lake, Star Valley Knoll, 1982; Dear Flat, 1983
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '5498')
+ Predicted: 5498
+ Truth: 5498
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE BLUEBELL AND GOSHUTE PEAK WILDERNESS STUDY AREAS, ELKO COUNTY, NEVADA')
+ Predicted: GEOLOGIC MAP OF THE BLUEBELL AND GOSHUTE PEAK WILDERNESS STUDY AREAS, ELKO COUNTY, NEVADA
+ Truth: GEOLOGIC MAP OF THE BLUEBELL AND GOSHUTE PEAK WILDERNESS STUDY AREAS, ELKO COUNTY, NEVADA
+ Score: 1.0
+ --
+ Field: ('authors', ['Day, W. C.', 'Elrick, M.', 'Ketner, K. B.', 'Vaag, M. K.'])
+ Predicted: ['Day, W. C.', 'Elrick, M.', 'Ketner, K. B.', 'Vaag, M. K.']
+ Truth: ['Day, W. C.', 'Elrick, M.', 'Ketner, K. B.', 'Vaag, M. K.']
+ Score: 1.0
+ --
+ Field: ('year', '1984-85')
+ Predicted: 1984-85
+ Truth: 1987
+ Score: 0.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:24,000 Pilot, Silver Zone Pass, West Morris Basin, 1971; Lion Spring, Morgan Pass, Ola, Spring Gulch, 1972')
+ Predicted: U.S. Geological Survey, 1:24,000 Pilot, Silver Zone Pass, West Morris Basin, 1971; Lion Spring, Morgan Pass, Ola, Spring Gulch, 1972
+ Truth: U.S. Geological Survey, 1:24,000 Ferguson Moutain, Lion Spring, Spring Gulch, White Horse Pass, 1972; Goshute Peak, White Horse Mountain, 1982
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '5503')
+ Predicted: 5503
+ Truth: 5503
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE MOUNT GRAFTON WILDERNESS STUDY AREA, LINCOLN AND WHITE PINE COUNTIES, NEVADA')
+ Predicted: GEOLOGIC MAP OF THE MOUNT GRAFTON WILDERNESS STUDY AREA, LINCOLN AND WHITE PINE COUNTIES, NEVADA
+ Truth: GEOLOGIC MAP OF THE MOUNT GRAFTON WILDERNESS STUDY AREA, LINCOLN AND WHITE PINE COUNTIES, NEVADA
+ Score: 1.0
+ --
+ Field: ('authors', ['Van Loenen, R. E.', 'Lundin, E.', 'Briggs, P.'])
+ Predicted: ['Van Loenen, R. E.', 'Lundin, E.', 'Briggs, P.']
+ Truth: ['Van Loenen, R. E.']
+ Score: 0.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:24,000 Parker Station, Shingle Pass, 1969; Cattle Camp Spring, 1973; Bullwhack Summit, 1977; Milk Ranch Spring, Mount Grafton, 1978')
+ Predicted: U.S. Geological Survey, 1:24,000 Parker Station, Shingle Pass, 1969; Cattle Camp Spring, 1973; Bullwhack Summit, 1977; Milk Ranch Spring, Mount Grafton, 1978
+ Truth: US Geological Survey, 1:24,000 Parker Station, Shingle Pass, 1969; Cattle Camp Spring, 1973; Bullwhack Summit, 1977; Milk Ranch Spring, Mount Grafton, 1978
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '5519')
+ Predicted: 5519
+ Truth: 5519
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC, ALTERATION, AND VEIN MAPS OF THE REDCLOUD PEAK (LAKE CITY CALDERA) AND HANDIES PEAK WILDERNESS STUDY AREAS, HINSDALE COUNTY, COLORADO')
+ Predicted: GEOLOGIC, ALTERATION, AND VEIN MAPS OF THE REDCLOUD PEAK (LAKE CITY CALDERA) AND HANDIES PEAK WILDERNESS STUDY AREAS, HINSDALE COUNTY, COLORADO
+ Truth: GEOLOGIC, ALTERATION, AND VEIN MAPS OF THE REDCLOUD PEAK (LAKE CITY CALDERA) AND HANDIES PEAK WILDERNESS STUDY AREAS, HINSDALE COUNTY, COLORADO
+ Score: 1.0
+ --
+ Field: ('authors', ['Hon, K.'])
+ Predicted: ['Hon, K.']
+ Truth: ['Hon, K.']
+ Score: 1.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 0.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey Uncompahgre Pake and Lake City, 1963; Redcloud Peak and Lake San Cristobal, 1964
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '5521')
+ Predicted: 5521
+ Truth: 5521
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE TABLE TOP MOUNTAIN WILDERNESS STUDY AREA, PINAL AND MARICOPA COUNTIES, ARIZONA')
+ Predicted: GEOLOGIC MAP OF THE TABLE TOP MOUNTAIN WILDERNESS STUDY AREA, PINAL AND MARICOPA COUNTIES, ARIZONA
+ Truth: GEOLOGIC MAP OF THE TABLE TOP MOUNTAIN WILDERNESS STUDY AREA, PINAL AND MARICOPA COUNTIES, ARIZONA
+ Score: 1.0
+ --
+ Field: ('authors', ['Peterson, J. A.', 'Tosdal, R. M.', 'Hornberger, M. I.'])
+ Predicted: ['Peterson, J. A.', 'Tosdal, R. M.', 'Hornberger, M. I.']
+ Truth: ['Peterson, J. A.', 'Tosdal, R. M.', 'Hornberger, M. I.']
+ Score: 1.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey Antelope Peak, Indian Butte, Little Table Top, and Vekol Mts. NE, 1981')
+ Predicted: U.S. Geological Survey Antelope Peak, Indian Butte, Little Table Top, and Vekol Mts. NE, 1981
+ Truth: U.S. Geological Survey Antelope Peak, Indian Butte, Little Table Top, and Vekol Mts. NE, 1981
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '5596')
+ Predicted: 5596
+ Truth: 5596
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE SKEDADDLE MOUNTAIN WILDERNESS STUDY AREA')
+ Predicted: GEOLOGIC MAP OF THE SKEDADDLE MOUNTAIN WILDERNESS STUDY AREA
+ Truth: GEOLOGIC MAP OF THE SKEDADDLE MOUNTAIN WILDERNESS STUDY AREA, LASSEN COUNTY, CALIFORNIA, AND WASHOE COUNTY, NEVADA
+ Score: 0.0
+ --
+ Field: ('authors', ['Diggles, M.F.', 'Dellinger, D.A.', 'Batatian, L.D.'])
+ Predicted: ['Diggles, M.F.', 'Dellinger, D.A.', 'Batatian, L.D.']
+ Truth: ['Diggles, M.F.', 'Dellinger, D.A.', 'Batatian, L.D.']
+ Score: 1.0
+ --
+ Field: ('year', '1989')
+ Predicted: 1989
+ Truth: 1989
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:48000
+ Score: 0.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('projection', 'Universal Transverse Mercator')
+ Predicted: Universal Transverse Mercator
+ Truth: Universal Transverse Mercator
+ Score: 1.0
+ --
+ Field: ('base_map', 'Red Rock Canyon, Parker Canyon, 1980, Nevada')
+ Predicted: Red Rock Canyon, Parker Canyon, 1980, Nevada
+ Truth: U.S. Geological Survey, 1:62,500, Wendel 1954, California; 1:24,000, Reck Rock Canyon, Parker Canyon, 1980, Nevada
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '5627')
+ Predicted: 5627
+ Truth: 5627
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE YELLOW HILLS WEST QUADRANGLE, WASHOE COUNTY, NEVADA')
+ Predicted: GEOLOGIC MAP OF THE YELLOW HILLS WEST QUADRANGLE, WASHOE COUNTY, NEVADA
+ Truth: GEOLOGIC MAP OF THE YELLOW HILLS WEST QUADRANGLE, WASHOE COUNTY, NEVADA
+ Score: 1.0
+ --
+ Field: ('authors', ['Ach, J. A.'])
+ Predicted: ['Ach, J. A.']
+ Truth: ['Ach, J. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1988')
+ Predicted: 1988
+ Truth: 1988
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Yellow Hills West')
+ Predicted: Yellow Hills West
+ Truth: Yellow Hills West
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1972')
+ Predicted: U.S. Geological Survey, 1972
+ Truth: U.S. Geological Survey, 1972
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '5628')
+ Predicted: 5628
+ Truth: 5628
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE YELLOW HILLS EAST QUADRANGLE, WASHOE AND HUMBOLDT COUNTIES, NEVADA')
+ Predicted: GEOLOGIC MAP OF THE YELLOW HILLS EAST QUADRANGLE, WASHOE AND HUMBOLDT COUNTIES, NEVADA
+ Truth: GEOLOGIC MAP OF THE YELLOW HILLS EAST QUADRANGLE, WASHOE AND HUMBOLDT COUNTIES, NEVADA
+ Score: 1.0
+ --
+ Field: ('authors', ['Ach, J. A.'])
+ Predicted: ['Ach, J. A.']
+ Truth: ['Ach, J. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1988')
+ Predicted: 1988
+ Truth: 1988
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Yellow Hills East')
+ Predicted: Yellow Hills East
+ Truth: Yellow Hills East
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1972')
+ Predicted: U.S. Geological Survey, 1972
+ Truth: U.S. Geological Survey, 1972
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '5637')
+ Predicted: 5637
+ Truth: 5637
+ Score: 1.0
+ --
+ Field: ('title', 'PRELIMINARY GEOLOGIC MAP OF THE YELLOWTAIL DAM QUADRANGLE, BIG HORN COUNTY, MONTANA')
+ Predicted: PRELIMINARY GEOLOGIC MAP OF THE YELLOWTAIL DAM QUADRANGLE, BIG HORN COUNTY, MONTANA
+ Truth: PRELIMINARY GEOLOGIC MAP OF THE YELLOWTAIL DAM QUADRANGLE, BIG HORN COUNTY, MONTANA
+ Score: 1.0
+ --
+ Field: ('authors', ['Agard, S. S.', 'Roberts, G. R.', 'Council, L. C.', 'Shields, C. L.', 'Niemi, T. M.'])
+ Predicted: ['Agard, S. S.', 'Roberts, G. R.', 'Council, L. C.', 'Shields, C. L.', 'Niemi, T. M.']
+ Truth: ['Agard, S. S.']
+ Score: 0.0
+ --
+ Field: ('year', '1988')
+ Predicted: 1988
+ Truth: 1988
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Yellowtail Dam')
+ Predicted: Yellowtail Dam
+ Truth: Yellowtail Dam
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1964; photorevised 1983')
+ Predicted: U.S. Geological Survey, 1964; photorevised 1983
+ Truth: U.S. Geological Survey, 1964; photorevised 1983
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '5642')
+ Predicted: 5642
+ Truth: 5642
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE WOOLSEY PEAK WILDERNESS STUDY AREA , MARICOPA COUNTY , ARIZONA')
+ Predicted: GEOLOGIC MAP OF THE WOOLSEY PEAK WILDERNESS STUDY AREA , MARICOPA COUNTY , ARIZONA
+ Truth: GEOLOGIC MAP OF THE WOOLSEY PEAK WILDERNESS STUDY AREA, MARICOPA COUNTY, ARIZONA
+ Score: 0.0
+ --
+ Field: ('authors', ['Peterson, J. A.', 'Miller, R. J.', 'Jones, S. L.'])
+ Predicted: ['Peterson, J. A.', 'Miller, R. J.', 'Jones, S. L.']
+ Truth: ['Peterson, J. A.', 'Miller, R. J.', 'Jones, S. L.']
+ Score: 1.0
+ --
+ Field: ('year', '1988')
+ Predicted: 1988
+ Truth: 1989
+ Score: 0.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey , 1 : 62,500 , Dendora Valley , Woolsey Peak , 1951')
+ Predicted: U.S. Geological Survey , 1 : 62,500 , Dendora Valley , Woolsey Peak , 1951
+ Truth: U.S. Geological Survey, 1:62,500, Dendora Valley, Woolsey Peak, 1951
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '5659')
+ Predicted: 5659
+ Truth: 5659
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE NORTH STANSBURY MOUNTAINS WILDERNESS STUDY AREA, TOOELE COUNTY, UTAH')
+ Predicted: GEOLOGIC MAP OF THE NORTH STANSBURY MOUNTAINS WILDERNESS STUDY AREA, TOOELE COUNTY, UTAH
+ Truth: GEOLOGIC MAP OF THE NORTH STANSBURY MOUNTAINS WILDERNESS STUDY AREA, TOOELE COUNTY, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Foose, M. P.', 'Lopez, R.', 'Moore, W. J.'])
+ Predicted: ['Foose, M. P.', 'Lopez, R.', 'Moore, W. J.']
+ Truth: ['Foose, M. P.']
+ Score: 0.0
+ --
+ Field: ('year', '1989')
+ Predicted: 1989
+ Truth: 1989
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey provisional Flux, North Willow Canyon, Salt Mountain, and Timpie, 1985')
+ Predicted: U.S. Geological Survey provisional Flux, North Willow Canyon, Salt Mountain, and Timpie, 1985
+ Truth: U.S. Geological Survey provisional Flux, North Willow Canyon, Salt Mountain, and Timpie, 1985
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '5699')
+ Predicted: 5699
+ Truth: 5699
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE DEEP CREEK MOUNTAINS WILDERNESS STUDY AREA, TOOELE AND JUAB COUNTIES, UTAH')
+ Predicted: GEOLOGIC MAP OF THE DEEP CREEK MOUNTAINS WILDERNESS STUDY AREA, TOOELE AND JUAB COUNTIES, UTAH
+ Truth: GEOLOGIC MAP OF THE DEEP CREEK MOUNTAINS WILDERNESS STUDY AREA, TOOELE AND JUAB COUNTIES, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Rodgers, D. W.'])
+ Predicted: ['Rodgers, D. W.']
+ Truth: ['Rodgers, D. W.']
+ Score: 1.0
+ --
+ Field: ('year', '1989')
+ Predicted: 1989
+ Truth: 1989
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U. S. Geological Survey Goshute, Goshute Canyon, Ibapah Peak, Indian Farm Creek, 1972; Partoun, Trout Creek, 1961')
+ Predicted: U. S. Geological Survey Goshute, Goshute Canyon, Ibapah Peak, Indian Farm Creek, 1972; Partoun, Trout Creek, 1961
+ Truth: U. S. Geological Survey Goshute, Goshute Canyon, Ibapah Peak, Indian Farm Creek, 1972; Partoun, Trout Creek, 1961
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '5721')
+ Predicted: 5721
+ Truth: 5721
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE DIABLO MOUNTAIN WILDERNESS STUDY AREA, LAKE COUNTY, OREGON')
+ Predicted: GEOLOGIC MAP OF THE DIABLO MOUNTAIN WILDERNESS STUDY AREA, LAKE COUNTY, OREGON
+ Truth: GEOLOGIC MAP OF THE DIABLO MOUNTAIN WILDERNESS STUDY AREA, LAKE COUNTY, OREGON
+ Score: 1.0
+ --
+ Field: ('authors', ['Diggles, M. F.', 'Conrad, J. E.', 'Soreghan, G. A.'])
+ Predicted: ['Diggles, M. F.', 'Conrad, J. E.', 'Soreghan, G. A.']
+ Truth: ['Diggles, M. F.', 'Conrad, J. E.', 'Soreghan, G. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1990')
+ Predicted: 1990
+ Truth: 1990
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1:24,000 Sharp Top, 1985; Ana River, Bull Lake, Diablo Peak, Loco Lake, Saint Patrick Mtn., and South of Ana River, 1986')
+ Predicted: U.S. Geological Survey 1:24,000 Sharp Top, 1985; Ana River, Bull Lake, Diablo Peak, Loco Lake, Saint Patrick Mtn., and South of Ana River, 1986
+ Truth: U.S. Geological Survey 1:24,000 Sharp Top 1985;, Ana River, Bull Lake, Diablo Peak, Loco Lake, Saint Patrick Mtn., and South of Ana River, 1986
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '5730')
+ Predicted: 5730
+ Truth: 5730
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE SHEEP CREEK WEST WILDERNESS STUDY AREA, OWYHEE COUNTY, IDAHO')
+ Predicted: GEOLOGIC MAP OF THE SHEEP CREEK WEST WILDERNESS STUDY AREA, OWYHEE COUNTY, IDAHO
+ Truth: GEOLOGIC MAP OF THE SHEEP CREEK WEST WILDERNESS STUDY AREA, OWYHEE COUNTY, IDAHO
+ Score: 1.0
+ --
+ Field: ('authors', ['Bonnichsen, B.', 'Bernt, J.', 'Jenks, M. D.'])
+ Predicted: ['Bonnichsen, B.', 'Bernt, J.', 'Jenks, M. D.']
+ Truth: ['Bonnichsen, B.', 'Bernt, J.', 'Jenks, M. D.']
+ Score: 1.0
+ --
+ Field: ('year', '1990')
+ Predicted: 1990
+ Truth: 1990
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:24,000, Black Leg Creek and Indian Hay Meadow, 1979')
+ Predicted: U.S. Geological Survey, 1:24,000, Black Leg Creek and Indian Hay Meadow, 1979
+ Truth: U.S. Geological Survey, 1:24,000, Black Leg Creek and Indian Hay Meadow, 1979
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '5731')
+ Predicted: 5731
+ Truth: 5731
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE JARBIDGE RIVER WILDERNESS STUDY AREA, OWYHEE COUNTY, IDAHO')
+ Predicted: GEOLOGIC MAP OF THE JARBIDGE RIVER WILDERNESS STUDY AREA, OWYHEE COUNTY, IDAHO
+ Truth: GEOLOGIC MAP OF THE JARBIDGE RIVER WILDERNESS STUDY AREA, OWYHEE COUNTY, IDAHO
+ Score: 1.0
+ --
+ Field: ('authors', ['Bonnichsen, B.', 'Jenks, M. D.'])
+ Predicted: ['Bonnichsen, B.', 'Jenks, M. D.']
+ Truth: ['Bonnichsen, B.', 'Jenks, M. D.']
+ Score: 1.0
+ --
+ Field: ('year', '1990')
+ Predicted: 1990
+ Truth: 1990
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:24,000, The Arch, 1978; Cowan Reservoir, Dishpan, Indian Hot Springs, Inside Lakes, Poison Butte, Triguero Lake, 1979')
+ Predicted: U.S. Geological Survey, 1:24,000, The Arch, 1978; Cowan Reservoir, Dishpan, Indian Hot Springs, Inside Lakes, Poison Butte, Triguero Lake, 1979
+ Truth: U.S. Geological Survey, 1:24,000, The Arch, 1978; Cowan Reservoir, Dishpan, Indian Hot Springs, Inside Lakes, Poison Butte, Triguero Lake, 1979
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '5732')
+ Predicted: 5732
+ Truth: 5732
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE BRUNEAU RIVER WILDERNESS STUDY AREA, OWYHEE COUNTY, IDAHO')
+ Predicted: GEOLOGIC MAP OF THE BRUNEAU RIVER WILDERNESS STUDY AREA, OWYHEE COUNTY, IDAHO
+ Truth: GEOLOGIC MAP OF THE BRUNEAU RIVER WILDERNESS STUDY AREA, OWYHEE COUNTY, IDAHO
+ Score: 1.0
+ --
+ Field: ('authors', ['Jenks, M. D.', 'Bonnichsen, B.'])
+ Predicted: ['Jenks, M. D.', 'Bonnichsen, B.']
+ Truth: ['Jenks, M. D.', 'Bonnichsen, B.']
+ Score: 1.0
+ --
+ Field: ('year', '1990')
+ Predicted: 1990
+ Truth: 1990
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:24000
+ Score: 0.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:24,000, Hot Spring, 1947')
+ Predicted: U.S. Geological Survey, 1:24,000, Hot Spring, 1947
+ Truth: U.S. Geological Survey, 1:24,000, Hot Spring, 1947; Blackstone Reservoir, Buster Butte, Cave Draw, Indian Springs, Inside Lakes, Stiff Tree Draw, 1979; Austin Butte, Crowbar Gulch, Winter Camp, 1980
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '5759')
+ Predicted: 5759
+ Truth: 5759
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE LITTLE JACKS CREEK, BIG JACKS CREEK, AND DUNCAN CREEK WILDERNESS STUDY AREAS, OWYHEE COUNTY, IDAHO')
+ Predicted: GEOLOGIC MAP OF THE LITTLE JACKS CREEK, BIG JACKS CREEK, AND DUNCAN CREEK WILDERNESS STUDY AREAS, OWYHEE COUNTY, IDAHO
+ Truth: GEOLOGIC MAP OF THE LITTLE JACKS CREEK, BIG JACKS CREEK, AND DUNCAN CREEK WILDERNESS STUDY AREAS, OWYHEE COUNTY, IDAHO
+ Score: 1.0
+ --
+ Field: ('authors', ['Kauffman, D. F.', 'Bonnichsen, B.'])
+ Predicted: ['Kauffman, D. F.', 'Bonnichsen, B.']
+ Truth: ['Kauffman, D. F.', 'Bonnichsen, B.']
+ Score: 1.0
+ --
+ Field: ('year', '1990')
+ Predicted: 1990
+ Truth: 1990
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'MEAN SEA LEVEL NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: MEAN SEA LEVEL NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: MEAN SEA LEVEL NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey, 1:24,000 Perjue Canyon, 1974; Big Horse Basin Gap, Hill Pasture, O X Lake, Snow Creek, Sugarload, and Wickahoney Point, 1972; Hole in Rock, Wichahoney Crossing, 1980
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '6448')
+ Predicted: 6448
+ Truth: 6448
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP AND COAL SECTIONS OF THE TWENTYMILE BUTTE QUADRANGLE, CAMPBELL COUNTY, WYOMING')
+ Predicted: GEOLOGIC MAP AND COAL SECTIONS OF THE TWENTYMILE BUTTE QUADRANGLE, CAMPBELL COUNTY, WYOMING
+ Truth: GEOLOGIC MAP AND COAL SECTIONS OF THE TWENTYMILE BUTTE QUADRANGLE, CAMPBELL COUNTY, WYOMING
+ Score: 1.0
+ --
+ Field: ('authors', ['Bohor, B. F.', 'Kent, B. H.', 'Haddock, D. R.'])
+ Predicted: ['Bohor, B. F.', 'Kent, B. H.', 'Haddock, D. R.']
+ Truth: ['Bohor, B. F.', 'Kent, B. H.', 'Haddock, D. R.']
+ Score: 1.0
+ --
+ Field: ('year', '1979')
+ Predicted: 1979
+ Truth: 1979
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'TWENTYMILE BUTTE')
+ Predicted: TWENTYMILE BUTTE
+ Truth: TWENTYMILE BUTTE
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey 1972
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '6538')
+ Predicted: 6538
+ Truth: 6538
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE SAWTOOTH PEAK QUADRANGLE, BEAVER COUNTY, UTAH')
+ Predicted: GEOLOGIC MAP OF THE SAWTOOTH PEAK QUADRANGLE, BEAVER COUNTY, UTAH
+ Truth: GEOLOGIC MAP OF THE SAWTOOTH PEAK QUADRANGLE, BEAVER COUNTY, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Best, M. G.', 'Hintze, L. F.', 'NULL'])
+ Predicted: ['Best, M. G.', 'Hintze, L. F.', 'NULL']
+ Truth: ['Best, M. G.', 'Hintze, L. F.']
+ Score: 0.0
+ --
+ Field: ('year', '1980')
+ Predicted: 1980
+ Truth: 1980
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'SAWTOOTH PEAK')
+ Predicted: SAWTOOTH PEAK
+ Truth: SAWTOOTH PEAK
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1971')
+ Predicted: U.S. Geological Survey, 1971
+ Truth: U.S. Geological Survey, 1971
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '6539')
+ Predicted: 6539
+ Truth: 6539
+ Score: 1.0
+ --
+ Field: ('title', 'PRELIMINARY GEOLOGIC MAP OF THE HALFWAY SUMMIT QUADRANGLE, MILLARD AND BEAVER COUNTIES, UTAH')
+ Predicted: PRELIMINARY GEOLOGIC MAP OF THE HALFWAY SUMMIT QUADRANGLE, MILLARD AND BEAVER COUNTIES, UTAH
+ Truth: PRELIMINARY GEOLOGIC MAP OF THE HALFWAY SUMMIT QUADRANGLE, MILLARD AND BEAVER COUNTIES, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Best, M. G.', 'Hintze, L. F.'])
+ Predicted: ['Best, M. G.', 'Hintze, L. F.']
+ Truth: ['Best, M. G.', 'Hintze, L. F.']
+ Score: 1.0
+ --
+ Field: ('year', '1978')
+ Predicted: 1978
+ Truth: 1980
+ Score: 0.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'HALFWAY SUMMIT')
+ Predicted: HALFWAY SUMMIT
+ Truth: HALFWAY SUMMIT
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1971')
+ Predicted: U.S. Geological Survey, 1971
+ Truth: U.S. Geological Survey, 1971
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '6586')
+ Predicted: 6586
+ Truth: 6586
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC, GEOCHEMICAL, AND GEOPHYSICAL MAPS OF THE BELL MOUNTAIN WILDERNESS STUDY AREA, IRON COUNTY, MISSOURI')
+ Predicted: GEOLOGIC, GEOCHEMICAL, AND GEOPHYSICAL MAPS OF THE BELL MOUNTAIN WILDERNESS STUDY AREA, IRON COUNTY, MISSOURI
+ Truth: GEOLOGIC, GEOCHEMICAL, AND GEOPHYSICAL MAPS OF THE BELL MOUNTAIN WILDERNESS STUDY AREA, IRON COUNTY, MISSOURI
+ Score: 1.0
+ --
+ Field: ('authors', ['Pratt, W. P.', 'Erickson, R. L.'])
+ Predicted: ['Pratt, W. P.', 'Erickson, R. L.']
+ Truth: ['Pratt, W. P.', 'Erickson, R. L.']
+ Score: 1.0
+ --
+ Field: ('year', '1982')
+ Predicted: 1982
+ Truth: 1982
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, Banner, Edgehill, Johnson Mountain and Johnson Shut-ins quadrangles, 1968, 1:24,000')
+ Predicted: U.S. Geological Survey, Banner, Edgehill, Johnson Mountain and Johnson Shut-ins quadrangles, 1968, 1:24,000
+ Truth: US Geological Survey, Banner, Edgehill, Johnson Mountain and Johnson Shut-ins quadrangles, 1968, 1:24,000
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '6588')
+ Predicted: 6588
+ Truth: 6588
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP AND COAL SECTIONS OF THE CACTUS RESERVOIR QUADRANGLE, RIO BLANCO AND MOFFAT COUNTIES, COLORADO')
+ Predicted: GEOLOGIC MAP AND COAL SECTIONS OF THE CACTUS RESERVOIR QUADRANGLE, RIO BLANCO AND MOFFAT COUNTIES, COLORADO
+ Truth: GEOLOGIC MAP AND COAL SECTIONS OF THE CACTUS RESERVOIR QUADRANGLE, RIO BLANCO AND MOFFAT COUNTIES, COLORADO
+ Score: 1.0
+ --
+ Field: ('authors', ['Barnum, B. E.', 'Garrigues, R. S.'])
+ Predicted: ['Barnum, B. E.', 'Garrigues, R. S.']
+ Truth: ['Barnum, B. E.', 'Garrigues, R. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1980')
+ Predicted: 1980
+ Truth: 1980
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'CACTUS RESERVOIR')
+ Predicted: CACTUS RESERVOIR
+ Truth: CACTUS RESERVOIR
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey, 1962
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '6614')
+ Predicted: 6614
+ Truth: 6614
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGICAL MAP OF SALMO - PRIEST WILDERNESS STUDY AREA')
+ Predicted: GEOLOGICAL MAP OF SALMO - PRIEST WILDERNESS STUDY AREA
+ Truth: GEOLOGIC MAP OF SALMO-PRIEST WILDERNESS STUDY AREA (RARE E6-981 A1-981), PEND OREILLE COUNTY, WASHINGTON, AND BOUNDARY COUNTY, IDAHO
+ Score: 0.0
+ --
+ Field: ('authors', ['Miller, F. K.', 'McKee, E. H.', 'Yates, R. G.'])
+ Predicted: ['Miller, F. K.', 'McKee, E. H.', 'Yates, R. G.']
+ Truth: ['Miller, F. K.']
+ Score: 0.0
+ --
+ Field: ('year', '1982')
+ Predicted: 1982
+ Truth: 1982
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'Base from U. S. Geological Survey 1 : 24,000 Boundary Dam, Gypsy Peak, Metaline Falls, Pass Creek, Wash., 1967; Helmer Mtn., Salmo Mtn., Wash. and Idaho, 1967; Continental Mtn., Idaho, 1968')
+ Predicted: Base from U. S. Geological Survey 1 : 24,000 Boundary Dam, Gypsy Peak, Metaline Falls, Pass Creek, Wash., 1967; Helmer Mtn., Salmo Mtn., Wash. and Idaho, 1967; Continental Mtn., Idaho, 1968
+ Truth: U.S Geological Survey, 1:24,000, Boundary Dam, Gypsy Peak, Metaline Falls, Pass Creek, Wash., 1967; Helmer Mtn., Salmo Mtn., Wash. and Idaho, 1967; Continental Mtn., Idaho, 1968
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '6616')
+ Predicted: 6616
+ Truth: 6616
+ Score: 1.0
+ --
+ Field: ('title', 'MINERAL RESOURCE POTENTIAL MAP OF THE SALMO - PRIEST WILDERNESS STUDY AREA ( RARE E6-981 A1-981 ) , PEND OREILLE COUNTY , WASHINGTON , AND BOUNDARY COUNTY , IDAHO')
+ Predicted: MINERAL RESOURCE POTENTIAL MAP OF THE SALMO - PRIEST WILDERNESS STUDY AREA ( RARE E6-981 A1-981 ) , PEND OREILLE COUNTY , WASHINGTON , AND BOUNDARY COUNTY , IDAHO
+ Truth: MINERAL RESOURCE POTENTIAL MAP OF THE SALMO - PRIEST WILDERNESS STUDY AREA (RARE E6-981 A1-981), PEND OREILLE COUNTY, WASHINGTON, AND BOUNDARY COUNTY, IDAHO
+ Score: 0.0
+ --
+ Field: ('authors', ['Miller, F. K.', 'Schmauch, S. W.', 'Rodriguez, E. A.'])
+ Predicted: ['Miller, F. K.', 'Schmauch, S. W.', 'Rodriguez, E. A.']
+ Truth: ['Miller, F. K.', 'Schmauch, S. W.', 'Rodriguez, E. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1982')
+ Predicted: 1982
+ Truth: 1982
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U. S. Geological Survey 1 : 24,000 Boundary Dam , Gypsy Peak , Metaline Falls , Pass Creek , Wash . , 1967 ; Helmer Mtn . , Salmo Mtn . , Wash . and Idaho , 1967 ; Continental Mtn . , Idaho , 1968')
+ Predicted: U. S. Geological Survey 1 : 24,000 Boundary Dam , Gypsy Peak , Metaline Falls , Pass Creek , Wash . , 1967 ; Helmer Mtn . , Salmo Mtn . , Wash . and Idaho , 1967 ; Continental Mtn . , Idaho , 1968
+ Truth: U.S. Geological Survey 1:24,000 Boundary Dam, Gypsy Peak, Metaline Falls, Pass Creek, Wash., 1967; Helmer Mtn., Salmo Mtn., Wash. and Idaho, 1967; Continental Mtn., Idaho, 1968
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '6865')
+ Predicted: 6865
+ Truth: 6865
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE DELANO PEAK SW QUADRANGLE, BEAVER COUNTY, UTAH')
+ Predicted: GEOLOGIC MAP OF THE DELANO PEAK SW QUADRANGLE, BEAVER COUNTY, UTAH
+ Truth: GEOLOGIC MAP OF THE DELANO PEAK SW QUADRANGLE, BEAVER COUNTY, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Anderson, J. J.', 'Sigmund, J. M.', 'Cunningham, C. G.', 'Steven, T. A.', 'Lanigan, J. C.', 'Rowley, P. D.'])
+ Predicted: ['Anderson, J. J.', 'Sigmund, J. M.', 'Cunningham, C. G.', 'Steven, T. A.', 'Lanigan, J. C.', 'Rowley, P. D.']
+ Truth: ['Anderson, J. J.', 'Sigmund, J. M.', 'Cunningham, C. G.', 'Steven, T. A.', 'Lanigan, J. C.', 'Rowley, P. D.']
+ Score: 1.0
+ --
+ Field: ('year', '1980')
+ Predicted: 1980
+ Truth: 1980
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'DELANO PEAK SW')
+ Predicted: DELANO PEAK SW
+ Truth: DELANO PEAK SW
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1977')
+ Predicted: U.S. Geological Survey, 1977
+ Truth: U.S. Geological Survey, 1977
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '6869')
+ Predicted: 6869
+ Truth: 6869
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE SOUTH HALF OF THE AMMON QUADRANGLE, BINGHAM AND BONNEVILLE COUNTIES, IDAHO')
+ Predicted: GEOLOGIC MAP OF THE SOUTH HALF OF THE AMMON QUADRANGLE, BINGHAM AND BONNEVILLE COUNTIES, IDAHO
+ Truth: GEOLOGIC MAP OF THE SOUTH HALF OF THE AMMON QUADRANGLE, BINGHAM AND BONNEVILLE COUNTIES, IDAHO
+ Score: 1.0
+ --
+ Field: ('authors', ['Allmendinger, R. W.'])
+ Predicted: ['Allmendinger, R. W.']
+ Truth: ['Allmendinger, R. W.']
+ Score: 1.0
+ --
+ Field: ('year', '1980')
+ Predicted: 1980
+ Truth: 1980
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Ammon')
+ Predicted: Ammon
+ Truth: Ammon
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey Ammon SE and Ammon SW, 1976, unedited advance prints')
+ Predicted: U.S. Geological Survey Ammon SE and Ammon SW, 1976, unedited advance prints
+ Truth: U.S. Geological Survey Ammon SE and Ammon SW, 1976, unedited advance prints
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '6893')
+ Predicted: 6893
+ Truth: 6893
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE BEAVER SE QUADRANGLE, BEAVER COUNTY, UTAH')
+ Predicted: GEOLOGIC MAP OF THE BEAVER SE QUADRANGLE, BEAVER COUNTY, UTAH
+ Truth: GEOLOGIC MAP OF THE BEAVER SE QUADRANGLE, BEAVER COUNTY, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Anderson, J. J.', 'Lanigan, J. C.', 'Cunningham, C. G.', 'Naeser, C. W.'])
+ Predicted: ['Anderson, J. J.', 'Lanigan, J. C.', 'Cunningham, C. G.', 'Naeser, C. W.']
+ Truth: ['Anderson, J. J.', 'Lanigan, J. C.', 'Cunningham, C. G.', 'Naeser, C. W.']
+ Score: 1.0
+ --
+ Field: ('year', '1981')
+ Predicted: 1981
+ Truth: 1981
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Beaver SE')
+ Predicted: Beaver SE
+ Truth: Beaver SE
+ Score: 1.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey, unedited advance prints
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '6905')
+ Predicted: 6905
+ Truth: 6905
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGY AND MINERAL RESOURCE POTENTIAL OF THE PADDY CREEK WILDERNESS STUDY AREA, TEXAS COUNTY, MISSOURI')
+ Predicted: GEOLOGY AND MINERAL RESOURCE POTENTIAL OF THE PADDY CREEK WILDERNESS STUDY AREA, TEXAS COUNTY, MISSOURI
+ Truth: GEOLOGY AND MINERAL RESOURCE POTENTIAL OF THE PADDY CREEK WILDERNESS STUDY AREA, TEXAS COUNTY, MISSOURI
+ Score: 1.0
+ --
+ Field: ('authors', ['Pratt, W. P.', 'Mosier, E. L.', 'Ellis, Clarence'])
+ Predicted: ['Pratt, W. P.', 'Mosier, E. L.', 'Ellis, Clarence']
+ Truth: ['Pratt, W. P.', 'Mosier, E. L.', 'Ellis, Clarence']
+ Score: 1.0
+ --
+ Field: ('year', '1981')
+ Predicted: 1981
+ Truth: 1981
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Paddy Creek Wilderness Study Area')
+ Predicted: Paddy Creek Wilderness Study Area
+ Truth: Paddy Creek Wilderness Study Area
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, Slabtown Spring quadrangle, 1954, photorevised 1976')
+ Predicted: U.S. Geological Survey, Slabtown Spring quadrangle, 1954, photorevised 1976
+ Truth: U. S. Geological Survey, Slabtown Spring quadrangle, 1954, photorevised 1976
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '6980')
+ Predicted: 6980
+ Truth: 6980
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE ROCK PILE MOUNTAIN WILDERNESS STUDY AREA, MADISON COUNTY, MISSOURI')
+ Predicted: GEOLOGIC MAP OF THE ROCK PILE MOUNTAIN WILDERNESS STUDY AREA, MADISON COUNTY, MISSOURI
+ Truth: GEOLOGIC MAP OF THE ROCK PILE MOUNTAIN WILDERNESS STUDY AREA, MADISON COUNTY, MISSOURI
+ Score: 1.0
+ --
+ Field: ('authors', ['Erickson, R. L.', 'Mosier, E. L.', 'Viets, J. G.', 'Odland, S. K.'])
+ Predicted: ['Erickson, R. L.', 'Mosier, E. L.', 'Viets, J. G.', 'Odland, S. K.']
+ Truth: ['Erickson, R. L.', 'Pratt, W. P.']
+ Score: 0.0
+ --
+ Field: ('year', '1980')
+ Predicted: 1980
+ Truth: 1980
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Rock Pile Mountain')
+ Predicted: Rock Pile Mountain
+ Truth: Rock Pile Mountain
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1980')
+ Predicted: U.S. Geological Survey, 1980
+ Truth: U.S. Geological Survey, 1980
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '7229')
+ Predicted: 7229
+ Truth: 7229
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE JERRY PEAK WILDERNESS STUDY AREA, CUSTER COUNTY, IDAHO')
+ Predicted: GEOLOGIC MAP OF THE JERRY PEAK WILDERNESS STUDY AREA, CUSTER COUNTY, IDAHO
+ Truth: GEOLOGIC MAP OF THE JERRY PEAK WILDERNESS STUDY AREA, CUSTER COUNTY, IDAHO
+ Score: 1.0
+ --
+ Field: ('authors', ['McIntyre, D. H.'])
+ Predicted: ['McIntyre, D. H.']
+ Truth: ['McIntyre, D. H.']
+ Score: 1.0
+ --
+ Field: ('year', '1982')
+ Predicted: 1982
+ Truth: 1982
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:24,000: Ziegler Basin, 1963; Bowery Peak, 1963; The Paint Pot, 1967; Horse Basin, 1967; Herd Lake, 1967; Jerry Peak, 1967')
+ Predicted: U.S. Geological Survey, 1:24,000: Ziegler Basin, 1963; Bowery Peak, 1963; The Paint Pot, 1967; Horse Basin, 1967; Herd Lake, 1967; Jerry Peak, 1967
+ Truth: U.S. Geological Survey, 1:24,000: Ziegler Basin, 1963, Bowery Peak, 1963; The Paint Pot, 1967; Horse Basin, 1967; Herd Lake, 1967; Jerry Peak, 1967
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7300')
+ Predicted: 7300
+ Truth: 7300
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC AND ISOPACH MAPS OF THE BISTI, DE-NA-ZIN, AND AH-SHE-SLE-PAH WILDERNESS STUDY AREAS, SAN JUAN COUNTY, NEW MEXICO')
+ Predicted: GEOLOGIC AND ISOPACH MAPS OF THE BISTI, DE-NA-ZIN, AND AH-SHE-SLE-PAH WILDERNESS STUDY AREAS, SAN JUAN COUNTY, NEW MEXICO
+ Truth: GEOLOGIC AND ISOPACH MAPS OF THE BISTI, DE-NA-ZIN, AND AH-SHE-SLE-PAH WILDERNESS STUDY AREAS, SAN JUAN COUNTY, NEW MEXICO
+ Score: 1.0
+ --
+ Field: ('authors', ['Brown, J.L.'])
+ Predicted: ['Brown, J.L.']
+ Truth: ['Brown, J.L.']
+ Score: 1.0
+ --
+ Field: ('year', '1983')
+ Predicted: 1983
+ Truth: 1983
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('base_map', 'Base from U.S. Geological Survey, 1:24,000, 1966')
+ Predicted: Base from U.S. Geological Survey, 1:24,000, 1966
+ Truth: U.S. Geological Survey, 1:24,000, 1966; Bisti Trading Post, Alamo Mesa West, Alamo Mesa East, Huerfano Trading Post SW, Tanner Lake, Pretty Rock, Pueblo Bonito NW, and Pueblo Bonito
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7312')
+ Predicted: 7312
+ Truth: 7312
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC AND STRUCTURE MAPS OF THE MONARCH QUADRANGLE, SHERIDAN COUNTY, WYOMING, AND BIG HORN COUNTY, MONTANA')
+ Predicted: GEOLOGIC AND STRUCTURE MAPS OF THE MONARCH QUADRANGLE, SHERIDAN COUNTY, WYOMING, AND BIG HORN COUNTY, MONTANA
+ Truth: GEOLOGIC AND STRUCTURE MAPS OF THE MONARCH QUADRANGLE, SHERIDAN COUNTY, WYOMING, AND BIG HORN COUNTY, MONTANA
+ Score: 1.0
+ --
+ Field: ('authors', ['Barnum, B. E.'])
+ Predicted: ['Barnum, B. E.']
+ Truth: ['Barnum, B. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1983')
+ Predicted: 1983
+ Truth: 1983
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'MONARCH QUADRANGLE')
+ Predicted: MONARCH QUADRANGLE
+ Truth: Monarch Quadrangle
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1964')
+ Predicted: U.S. Geological Survey, 1964
+ Truth: U.S. Geological Survey, 1964
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '7342')
+ Predicted: 7342
+ Truth: 7342
+ Score: 1.0
+ --
+ Field: ('title', 'AEROMAGNETIC MAP')
+ Predicted: AEROMAGNETIC MAP
+ Truth: AEROMAGNETIC AND ISOSTATIC GRAVITY MAPS OF THE CROSSMAN PEAK WILDERNESS STUDY AREA. MOHAVE COUNTY, ARIZONA
+ Score: 0.0
+ --
+ Field: ('authors', ['Simpson, R. W.', 'Gage, T. B.', 'Bracken, R. E.'])
+ Predicted: ['Simpson, R. W.', 'Gage, T. B.', 'Bracken, R. E.']
+ Truth: ['Simpson, R. W.', 'Gage, T. B.', 'Bracken, R. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1986')
+ Predicted: 1986
+ Truth: 1986
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1 : 62500 : Parker Dam , 1959. 1 : 24000 : Standard Wash , 1959 ; Buck Mountains , Buck Mountains NE , Buck Mountains SE , Crossman Peak , Franconia , Lake Havasu City North , 1970 ; Lake Havasu City South , 1975')
+ Predicted: U.S. Geological Survey 1 : 62500 : Parker Dam , 1959. 1 : 24000 : Standard Wash , 1959 ; Buck Mountains , Buck Mountains NE , Buck Mountains SE , Crossman Peak , Franconia , Lake Havasu City North , 1970 ; Lake Havasu City South , 1975
+ Truth: U.S. Geological Survey 1 : 62500 : Parker Dam , 1959.  1:24000: Standard Wash, 1959; Buck Mountains, Buck Mountains NE, Buck Mountains SE, Crossman Peak, Franconia, Lake Havasu City North, 1970; Lake Havasu City South, 1975
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7378')
+ Predicted: 7378
+ Truth: 7378
+ Score: 1.0
+ --
+ Field: ('title', 'GENERALIZED GEOLOGIC MAP OF THE VASQUEZ PEAK WILDERNESS STUDY AREA AND THE WILLIAMS FORK AND ST . LOUIS PEAK ROADLESS AREAS , CLEAR CREEK , GRAND , AND SUMMIT COUNTIES , COLORADO')
+ Predicted: GENERALIZED GEOLOGIC MAP OF THE VASQUEZ PEAK WILDERNESS STUDY AREA AND THE WILLIAMS FORK AND ST . LOUIS PEAK ROADLESS AREAS , CLEAR CREEK , GRAND , AND SUMMIT COUNTIES , COLORADO
+ Truth: GENERALIZED GEOLOGIC MAP OF THE VASQUEZ PEAK WILDERNESS STUDY AREA AND THE WILLIAMS FORK AND ST . LOUIS PEAK ROADLESS AREAS , CLEAR CREEK , GRAND , AND SUMMIT COUNTIES , COLORADO
+ Score: 1.0
+ --
+ Field: ('authors', ['Eppinger, R. G.', 'Theobald, P. K.', 'Carlson, R. R.'])
+ Predicted: ['Eppinger, R. G.', 'Theobald, P. K.', 'Carlson, R. R.']
+ Truth: ['Eppinger, R. G.', 'Theobald, P. K.', 'Carlson, R. R.']
+ Score: 1.0
+ --
+ Field: ('year', '1985')
+ Predicted: 1985
+ Truth: 1985
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:62500
+ Score: 0.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey , 1 : 62,500 Dillon , 1929 ; Ute Peak , 1933 ; Fraser , 1957 ; and Montezuma , 1958')
+ Predicted: U.S. Geological Survey , 1 : 62,500 Dillon , 1929 ; Ute Peak , 1933 ; Fraser , 1957 ; and Montezuma , 1958
+ Truth: U.S. Geological Survey, 1:62500 Dillon, 1929; Ute Peak, 1933; Fraser, 1957; and Montezuma, 1958
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7390')
+ Predicted: 7390
+ Truth: 7390
+ Score: 1.0
+ --
+ Field: ('title', 'GEOCHEMICAL MAP OF THE SPANISH PEAKS WILDERNESS STUDY AREA')
+ Predicted: GEOCHEMICAL MAP OF THE SPANISH PEAKS WILDERNESS STUDY AREA
+ Truth: GEOCHEMICAL MAP OF THE SPANISH PEAKS WILDERNESS STUDY AREA, HUERFANO AND LAS ANIMAS COUNTIES, COLORADO
+ Score: 0.0
+ --
+ Field: ('authors', ['Budding, K. E.', 'Lawrence, V. A.'])
+ Predicted: ['Budding, K. E.', 'Lawrence, V. A.']
+ Truth: ['Budding, K. E.', 'Lawrence, V. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1983')
+ Predicted: 1983
+ Truth: 1983
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1 : 24,000 Cuchara , 1963 ; Spanish Peaks , 1971 ; Cucharas Pass , 1967 ; and Herlick Canyon , 1971')
+ Predicted: U.S. Geological Survey 1 : 24,000 Cuchara , 1963 ; Spanish Peaks , 1971 ; Cucharas Pass , 1967 ; and Herlick Canyon , 1971
+ Truth: U.S. Geological Survey 1:24,000 Cuachara, 1963; Spanish Peaks, 1971; Cucharas Pass, 1967; and Herlick Canyon, 1971
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7404')
+ Predicted: 7404
+ Truth: 7404
+ Score: 1.0
+ --
+ Field: ('title', 'GEOCHEMICAL MAPS OF THE TEN LAKES WILDERNESS STUDY AREA, LINCOLN COUNTY, MONTANA')
+ Predicted: GEOCHEMICAL MAPS OF THE TEN LAKES WILDERNESS STUDY AREA, LINCOLN COUNTY, MONTANA
+ Truth: GEOCHEMICAL MAPS OF THE TEN LAKES WILDERNESS STUDY AREA, LINCOLN COUNTY, MONTANA
+ Score: 1.0
+ --
+ Field: ('authors', ['Leinz, R. W.', 'Siems, D. F.', 'Whipple, J. W.'])
+ Predicted: ['Leinz, R. W.', 'Siems, D. F.', 'Whipple, J. W.']
+ Truth: ['Leinz, R. W.', 'Siems, D. F.', 'Whipple, J. W.']
+ Score: 1.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('base_map', 'Base from U.S. Geological Survey, 1:24,000 Eureka North, Fortine, Ksanka Peak, Mount Marston, and Stahl Peak, 1963')
+ Predicted: Base from U.S. Geological Survey, 1:24,000 Eureka North, Fortine, Ksanka Peak, Mount Marston, and Stahl Peak, 1963
+ Truth: U.S. Geological Survey, 1:24,000 Eureka North, Fortine, Ksanka Peak, Mount Marston, and Stahl Peak, 1963
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7447')
+ Predicted: 7447
+ Truth: 7447
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE DIRTY DEVIL, FRENCH SPRING - HAPPY CANYON, AND HORSESHOE CANYON WILDERNESS STUDY AREAS, WAYNE AND GARFIELD COUNTIES, UTAH')
+ Predicted: GEOLOGIC MAP OF THE DIRTY DEVIL, FRENCH SPRING - HAPPY CANYON, AND HORSESHOE CANYON WILDERNESS STUDY AREAS, WAYNE AND GARFIELD COUNTIES, UTAH
+ Truth: GEOLOGIC MAP OF THE DIRTY DEVIL, FRENCH SPRING - HAPPY CANYON, AND HORSESHOE CANYON WILDERNESS STUDY AREAS, WAYNE AND GARFIELD COUNTIES, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Dubiel, R. F.', 'Bromfield, C. S.', 'Larson, M. J.', 'Patterson, C. G.', 'Peterson, Fred'])
+ Predicted: ['Dubiel, R. F.', 'Bromfield, C. S.', 'Larson, M. J.', 'Patterson, C. G.', 'Peterson, Fred']
+ Truth: ['Dubiel, R. F.', 'Bromfield, C. S.', 'Larson, M. J.', 'Patterson, C. G.', 'Peterson, Fred']
+ Score: 1.0
+ --
+ Field: ('year', '1985')
+ Predicted: 1985
+ Truth: 1985
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:62,500 Bull Mountain, 1952; Fiddler Butte, 1953; Hanksville, 1963; Orange Cliffs, 1953; Robbers Roost Canyon, 1963; The Spur, 1953')
+ Predicted: U.S. Geological Survey, 1:62,500 Bull Mountain, 1952; Fiddler Butte, 1953; Hanksville, 1963; Orange Cliffs, 1953; Robbers Roost Canyon, 1963; The Spur, 1953
+ Truth: U.S. Geological Survey Bull Mountain, 1952; Fiddler Butte, 1953; Hanksville, 1963; Orange Cliffs, 1953; Robbers Roost Canyon, 1963; The Spur, 1953
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7460')
+ Predicted: 7460
+ Truth: 7460
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE HIGH STEENS AND LITTLE BLITZEN GORGE WILDERNESS STUDY AREAS, HARNEY COUNTY, OREGON')
+ Predicted: GEOLOGIC MAP OF THE HIGH STEENS AND LITTLE BLITZEN GORGE WILDERNESS STUDY AREAS, HARNEY COUNTY, OREGON
+ Truth: GEOLOGIC MAP OF THE HIGH STEENS AND LITTLE BLITZEN GORGE WILDERNESS STUDY AREAS, HARNEY COUNTY, OREGON
+ Score: 1.0
+ --
+ Field: ('authors', ['Minor, S. A.', 'Rytuba, J. J.', 'Grubensky, M. J.', 'Vander Meulen, D. B.', 'Goeldner, C. A.', 'Tegtmeyer, K. J.'])
+ Predicted: ['Minor, S. A.', 'Rytuba, J. J.', 'Grubensky, M. J.', 'Vander Meulen, D. B.', 'Goeldner, C. A.', 'Tegtmeyer, K. J.']
+ Truth: ['Minor, S. A.', 'Rytuba, J. J.', 'Grubensky, M. J.', 'Vander Meulen, D. B.', 'Goeldner, C. A.', 'Tegtmeyer, K. J.']
+ Score: 1.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL ODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL ODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL ODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geologic Survey Alvord Hot Springs, Ankle Creek, Fish Lakes, Wildhorse Lake.
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7487')
+ Predicted: 7487
+ Truth: 7487
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE NORTH FORK OF THE LITTLE HUMBOLDT RIVER WILDERNESS STUDY AREA, HUMBOLDT COUNTY, NEVADA')
+ Predicted: GEOLOGIC MAP OF THE NORTH FORK OF THE LITTLE HUMBOLDT RIVER WILDERNESS STUDY AREA, HUMBOLDT COUNTY, NEVADA
+ Truth: GEOLOGIC MAP OF THE NORTH FORK OF THE LITTLE HUMBOLDT RIVER WILDERNESS STUDY AREA, HUMBOLDT COUNTY, NEVADA
+ Score: 1.0
+ --
+ Field: ('authors', ['Peterson, J. A.', 'Wong, G.'])
+ Predicted: ['Peterson, J. A.', 'Wong, G.']
+ Truth: ['Peterson, J. A.', 'Wong, G.']
+ Score: 1.0
+ --
+ Field: ('year', '1986')
+ Predicted: 1986
+ Truth: 1986
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'Greeley Flat, Greeley Flat SE, Whiskey Springs, 1980 GEOLOGIC MAP OF THE NORTH FORK OF THE LITTLE HUMBOLDT RIVER WILDERNESS STUDY AREA, HUMBOLDT COUNTY, NEVADA')
+ Predicted: Greeley Flat, Greeley Flat SE, Whiskey Springs, 1980 GEOLOGIC MAP OF THE NORTH FORK OF THE LITTLE HUMBOLDT RIVER WILDERNESS STUDY AREA, HUMBOLDT COUNTY, NEVADA
+ Truth: U.S. Geological Survey Greeley Flat, Greeley Flat SE, Whiskey Springs, 1980
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7490')
+ Predicted: 7490
+ Truth: 7490
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE PIEDRA WILDERNESS STUDY AREA, ARCHULETA AND HINSDALE COUNTIES, COLORADO')
+ Predicted: GEOLOGIC MAP OF THE PIEDRA WILDERNESS STUDY AREA, ARCHULETA AND HINSDALE COUNTIES, COLORADO
+ Truth: GEOLOGIC MAP OF THE PIEDRA WILDERNESS STUDY AREA, ARCHULETA AND HINSDALE COUNTIES, COLORADO
+ Score: 1.0
+ --
+ Field: ('authors', ['Condon, S. M.', 'Franczyk, K. J.', 'Bush, A. L.'])
+ Predicted: ['Condon, S. M.', 'Franczyk, K. J.', 'Bush, A. L.']
+ Truth: ['Condon, S. M.', 'Franczyk, K. J.', 'Bush, A. L.']
+ Score: 1.0
+ --
+ Field: ('year', '1984')
+ Predicted: 1984
+ Truth: 1984
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey, Archuleta County, Sheet 1, 1975, and Hinsdale County, sheet 2, 1978
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7495')
+ Predicted: 7495
+ Truth: 7495
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE ROBERTS WILDERNESS STUDY AREA, EUREKA COUNTY, NEVADA')
+ Predicted: GEOLOGIC MAP OF THE ROBERTS WILDERNESS STUDY AREA, EUREKA COUNTY, NEVADA
+ Truth: GEOLOGIC MAP OF THE ROBERTS WILDERNESS STUDY AREA, EUREKA COUNTY, NEVADA
+ Score: 1.0
+ --
+ Field: ('authors', ['McKee, E. H.'])
+ Predicted: ['McKee, E. H.']
+ Truth: ['McKee, E. H.']
+ Score: 1.0
+ --
+ Field: ('year', '1986')
+ Predicted: 1986
+ Truth: 1986
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Roberts Creek Mountain 15-minute quadrangle')
+ Predicted: Roberts Creek Mountain 15-minute quadrangle
+ Truth: Roberts Creek Mountain 15-minute quadrangle
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'Base from U.S. Geological Survey 1:62,500, Roberts Creek Mountain, 1949')
+ Predicted: Base from U.S. Geological Survey 1:62,500, Roberts Creek Mountain, 1949
+ Truth: U.S. Geological Survey 1:62,500, Roberts Creek Mountain, 1949
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7501')
+ Predicted: 7501
+ Truth: 7501
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE SOUTH JACKSON MOUNTAINS WILDERNESS STUDY AREA, HUMBOLDT HUMBOLDT COUNTY, NEVADA')
+ Predicted: GEOLOGIC MAP OF THE SOUTH JACKSON MOUNTAINS WILDERNESS STUDY AREA, HUMBOLDT HUMBOLDT COUNTY, NEVADA
+ Truth: GEOLOGIC MAP OF THE SOUTH JACKSON MOUNTAINS WILDERNESS STUDY AREA, HUMBOLDT COUNTY, NEVADA
+ Score: 0.0
+ --
+ Field: ('authors', ['Willden, R.', 'Russell, R.'])
+ Predicted: ['Willden, R.', 'Russell, R.']
+ Truth: ['Sorenson, M. L.']
+ Score: 0.0
+ --
+ Field: ('year', '1986')
+ Predicted: 1986
+ Truth: 1985
+ Score: 0.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'Hobo Canyon, 1972; Bottle Creek, 1961; Donna Peak, King Lear Peak, 1966')
+ Predicted: Hobo Canyon, 1972; Bottle Creek, 1961; Donna Peak, King Lear Peak, 1966
+ Truth: U.S. Geological Survey 1:24,000: Hobo Canyon, 1972; 1:62,500: Bottle Creek, 1961; Donna Shee Peak, King Lear Peak, 1966
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7502')
+ Predicted: 7502
+ Truth: 7502
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE SPRING CREEK BASIN QUADRANGLE, OWYHEE COUNTY, IDAHO')
+ Predicted: GEOLOGIC MAP OF THE SPRING CREEK BASIN QUADRANGLE, OWYHEE COUNTY, IDAHO
+ Truth: GEOLOGIC MAP OF THE SPRING CREEK BASIN QUADRANGLE, OWYHEE COUNTY, IDAHO
+ Score: 1.0
+ --
+ Field: ('authors', ['Ach, J. A.'])
+ Predicted: ['Ach, J. A.']
+ Truth: ['Ach, J. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1986')
+ Predicted: 1986
+ Truth: 1986
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Spring Creek Basin')
+ Predicted: Spring Creek Basin
+ Truth: Spring Creek Basin
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1973')
+ Predicted: U.S. Geological Survey, 1973
+ Truth: U.S. Geological Survey, 1973
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '7507')
+ Predicted: 7507
+ Truth: 7507
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE TEN LAKES WILDERNESS STUDY AREA, LINCOLN COUNTY, MONTANA')
+ Predicted: GEOLOGIC MAP OF THE TEN LAKES WILDERNESS STUDY AREA, LINCOLN COUNTY, MONTANA
+ Truth: GEOLOGIC MAP OF THE TEN LAKES WILDERNESS STUDY AREA, LINCOLN COUNTY, MONTANA
+ Score: 1.0
+ --
+ Field: ('authors', ['Whipple, J. W.', 'Sample, J. C.', 'Lefkowitz, L. A.'])
+ Predicted: ['Whipple, J. W.', 'Sample, J. C.', 'Lefkowitz, L. A.']
+ Truth: ['Whipple, J. W.']
+ Score: 0.0
+ --
+ Field: ('year', '1984')
+ Predicted: 1984
+ Truth: 1984
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:24,000 Eureka North, Fortine, Ksanka Peak, Mount Marston, and Stahl Peak, 1963')
+ Predicted: U.S. Geological Survey, 1:24,000 Eureka North, Fortine, Ksanka Peak, Mount Marston, and Stahl Peak, 1963
+ Truth: U.S. Geological Survey, 1:24,000 Eureka North, Fortine, Ksanka Peak, Mount Marston, and Stahl Peak, 1963
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '7522')
+ Predicted: 7522
+ Truth: 7522
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF PART OF THE MOREY AND FANDANGO WILDERNESS STUDY AREAS, NYE COUNTY, NEVADA')
+ Predicted: GEOLOGIC MAP OF PART OF THE MOREY AND FANDANGO WILDERNESS STUDY AREAS, NYE COUNTY, NEVADA
+ Truth: GEOLOGIC MAP OF PART OF THE MOREY AND FANDANGO WILDERNESS STUDY AREAS, NYE COUNTY, NEVADA
+ Score: 1.0
+ --
+ Field: ('authors', ['Carr, W.J.', 'Dodge, H.W., Jr.', 'Byers, F.W., Jr.', 'John, D.A.'])
+ Predicted: ['Carr, W.J.', 'Dodge, H.W., Jr.', 'Byers, F.W., Jr.', 'John, D.A.']
+ Truth: ['John, D. A.']
+ Score: 0.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:62500')
+ Predicted: 1:62500
+ Truth: 1:62500
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'Fish Springs, Morey Peak, Pritchards Station, 1968; Moores Station, 1967')
+ Predicted: Fish Springs, Morey Peak, Pritchards Station, 1968; Moores Station, 1967
+ Truth: U.S Geological Survey, 1:62,500, Fish Springs, Morey Peak, Pritchards Station, 1968; Moores Station, 1967
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7541')
+ Predicted: 7541
+ Truth: 7541
+ Score: 1.0
+ --
+ Field: ('title', 'GEOPHYSICAL MAPS OF THE TEN LAKES WILDERNESS STUDY AREA, LINCOLN COUNTY, MONTANA')
+ Predicted: GEOPHYSICAL MAPS OF THE TEN LAKES WILDERNESS STUDY AREA, LINCOLN COUNTY, MONTANA
+ Truth: GEOPHYSICAL MAPS OF THE TEN LAKES WILDERNESS STUDY AREA, LINCOLN COUNTY, MONTANA
+ Score: 1.0
+ --
+ Field: ('authors', ['Bankey, V.', 'Hoover, D. B.', 'Kleinkopf, M. D.'])
+ Predicted: ['Bankey, V.', 'Hoover, D. B.', 'Kleinkopf, M. D.']
+ Truth: ['Bankey, V.', 'Hoover, D. B.', 'Kleinkopf, M. D.']
+ Score: 1.0
+ --
+ Field: ('year', '1985')
+ Predicted: 1985
+ Truth: 1985
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:24,000 Eureka North, Fontine, Ksanka Peak, Mount Marston, and Stahl Peak, 1963')
+ Predicted: U.S. Geological Survey, 1:24,000 Eureka North, Fontine, Ksanka Peak, Mount Marston, and Stahl Peak, 1963
+ Truth: U.S. Geological Survey, 1:24,000 Eureka North, Fontine, Ksanka Peak, Mount Marston, and Stahl Peak, 1963
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '7573')
+ Predicted: 7573
+ Truth: 7573
+ Score: 1.0
+ --
+ Field: ('title', 'MAP SHOWING GEOLOGY AND MINERAL RESOURCE POTENTIAL OF THE OH - BE - JOYFUL WILDERNESS STUDY AREA, GUNNISON COUNTY, COLORADO')
+ Predicted: MAP SHOWING GEOLOGY AND MINERAL RESOURCE POTENTIAL OF THE OH - BE - JOYFUL WILDERNESS STUDY AREA, GUNNISON COUNTY, COLORADO
+ Truth: MAP SHOWING GEOLOGY AND MINERAL RESOURCE POTENTIAL OF THE OH - BE - JOYFUL WILDERNESS STUDY AREA, GUNNISON COUNTY, COLORADO
+ Score: 1.0
+ --
+ Field: ('authors', ['Ludington, S.', 'Ellis, C. E.'])
+ Predicted: ['Ludington, S.', 'Ellis, C. E.']
+ Truth: ['Ludington, S.', 'Ellis, C. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1983')
+ Predicted: 1983
+ Truth: 1983
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey, 1961
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7598')
+ Predicted: 7598
+ Truth: 7598
+ Score: 1.0
+ --
+ Field: ('title', 'MAP A - GEOLOGIC MAP OF THE WHEELER WILDERNESS STUDY AREA')
+ Predicted: MAP A - GEOLOGIC MAP OF THE WHEELER WILDERNESS STUDY AREA
+ Truth: MAPS SHOWING GEOLOGY AND MINEARL RESOURCE POTENTIAL OF THE WHEELER WILDERNESS STUDY AREA, MINERAL COUNTRY, COLORADO
+ Score: 0.0
+ --
+ Field: ('authors', ['Raymond, W. H.', 'Crock, J. G.', 'Bieniewski, C. L.'])
+ Predicted: ['Raymond, W. H.', 'Crock, J. G.', 'Bieniewski, C. L.']
+ Truth: ['Raymond, W. H.', 'Crock, J. G.', 'Bieniewski, C. L.']
+ Score: 1.0
+ --
+ Field: ('year', '1983')
+ Predicted: 1983
+ Truth: 1983
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey County Map Series, 1978')
+ Predicted: U.S. Geological Survey County Map Series, 1978
+ Truth: U.S. Geological Survey County Map Series, 1978
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '7630')
+ Predicted: 7630
+ Truth: 7630
+ Score: 1.0
+ --
+ Field: ('title', 'MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF GUADALUPE ESCARPMENT WILDERNESS STUDY AREA, EDDY COUNTY, NEW MEXICO')
+ Predicted: MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF GUADALUPE ESCARPMENT WILDERNESS STUDY AREA, EDDY COUNTY, NEW MEXICO
+ Truth: MINERAL RESOURCE POTENTIAL AND GEOLOGIC MAP OF GUADALUPE ESCARPMENT WILDERNESS STUDY AREA, EDDY COUNTY, NEW MEXICO
+ Score: 1.0
+ --
+ Field: ('authors', ['Hayes, P. T.', 'Light, T. D.'])
+ Predicted: ['Hayes, P. T.', 'Light, T. D.']
+ Truth: ['Hayes, P. T.', 'Light, T. D.', 'Thompson, J. R.']
+ Score: 0.0
+ --
+ Field: ('year', '1982')
+ Predicted: 1982
+ Truth: 1983
+ Score: 0.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey , 1979 El Paso Gap , Gunsight Canyon , and Queen')
+ Predicted: U.S. Geological Survey , 1979 El Paso Gap , Gunsight Canyon , and Queen
+ Truth: U.S. Geological Survey, 1979 El Paso Gap, Gunsight Canyon, and Queen
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7648')
+ Predicted: 7648
+ Truth: 7648
+ Score: 1.0
+ --
+ Field: ('title', 'MINERAL RESOURCE POTENTIAL MAP OF THE CHEMEHUEVI MOUNTAINS WILDERNESS STUDY AREA (CDCA-310), SAN BERNARDINO COUNTY, CALIFORNIA')
+ Predicted: MINERAL RESOURCE POTENTIAL MAP OF THE CHEMEHUEVI MOUNTAINS WILDERNESS STUDY AREA (CDCA-310), SAN BERNARDINO COUNTY, CALIFORNIA
+ Truth: MINERAL RESOURCE POTENTIAL MAP OF THE CHEMEHUEVI MOUNTAINS WILDERNESS STUDY AREA (CDCA-310), SAN BERNARDINO COUNTY, CALIFORNIA
+ Score: 1.0
+ --
+ Field: ('authors', ['Miller, D. M.', 'John, B. E.', 'Antweiler, J. C.', 'Simpson, R. W.', 'Hoover, D. B.', 'Raines, G. L.', 'Kreidler, T. J.'])
+ Predicted: ['Miller, D. M.', 'John, B. E.', 'Antweiler, J. C.', 'Simpson, R. W.', 'Hoover, D. B.', 'Raines, G. L.', 'Kreidler, T. J.']
+ Truth: ['Miller, D. M.', 'John, B. E.', 'Antweiler, J. C.', 'Simpson, R. W.', 'Hoover, D. B.', 'Raines, G. L.', 'Kreidler, T. J.']
+ Score: 1.0
+ --
+ Field: ('year', '1983')
+ Predicted: 1983
+ Truth: 1983
+ Score: 1.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:24,000 Castle Rock, Havasu Lake, Topock, 1970; Chemehuevi Peak, Monumental Pass, Savahia Peak NW and NE, Snaggletooth, Whale Mountain, 1971')
+ Predicted: U.S. Geological Survey, 1:24,000 Castle Rock, Havasu Lake, Topock, 1970; Chemehuevi Peak, Monumental Pass, Savahia Peak NW and NE, Snaggletooth, Whale Mountain, 1971
+ Truth: U.S. Geological Survey, 1:24,000 Castle Rock, Havasu Lake, Topock, 1970; Chemehuevi Peak, Monumental Pass, Savahia Peak NW and NE, Snaggletooth, Whale Mountain, 1971
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '7698')
+ Predicted: 7698
+ Truth: 7698
+ Score: 1.0
+ --
+ Field: ('title', 'Geologic map of the Ten Lakes Wilderness Study Area')
+ Predicted: Geologic map of the Ten Lakes Wilderness Study Area
+ Truth: Geologic map of the Ten Lakes Wilderness Study Area, Lincoln County, Montana
+ Score: 0.0
+ --
+ Field: ('authors', ['Whipple, J. W.', 'Sample, J. C.', 'Lefkowitz, L. A.'])
+ Predicted: ['Whipple, J. W.', 'Sample, J. C.', 'Lefkowitz, L. A.']
+ Truth: ['Whipple, J. W.', 'Perry, W. J. Jr.', 'Leinz, R. W.', 'Hamilton, M. M.', 'Avery, D. W.']
+ Score: 0.0
+ --
+ Field: ('year', '1984')
+ Predicted: 1984
+ Truth: 1983
+ Score: 0.0
+ --
+ Field: ('scale', '1:48000')
+ Predicted: 1:48000
+ Truth: 1:48000
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1:24,000 Eureka North, Fontine, Ksanka Peak, Mount Marston, and Stahl Peak, 1963')
+ Predicted: U.S. Geological Survey, 1:24,000 Eureka North, Fontine, Ksanka Peak, Mount Marston, and Stahl Peak, 1963
+ Truth: U.S. Geological Survey, 1:24,000 Eureka North, Fontine, Ksanka Peak, Mount Marston, Stahl Peak, 1963
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7706')
+ Predicted: 7706
+ Truth: 7706
+ Score: 1.0
+ --
+ Field: ('title', 'MINERAL RESOURCE POTENTIAL MAP OF THE WEST PIONEER WILDERNESS STUDY AREA, BEAVERHEAD COUNTY, MONTANA')
+ Predicted: MINERAL RESOURCE POTENTIAL MAP OF THE WEST PIONEER WILDERNESS STUDY AREA, BEAVERHEAD COUNTY, MONTANA
+ Truth: MINERAL RESOURCE POTENTIAL MAP OF THE WEST PIONEER WILDERNESS STUDY AREA, BEAVERHEAD COUNTY, MONTANA
+ Score: 1.0
+ --
+ Field: ('authors', ['Berger, B. R.', 'Snee, L. W.', 'Hanna, William', 'Benham, J. R.'])
+ Predicted: ['Berger, B. R.', 'Snee, L. W.', 'Hanna, William', 'Benham, J. R.']
+ Truth: ['Berger, B. R.', 'Snee, L. W.', 'Hanna, William', 'Benham, J. R.']
+ Score: 1.0
+ --
+ Field: ('year', '1983')
+ Predicted: 1983
+ Truth: 1983
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('base_map', 'Dickie Hills, Foolhen Ridge, Pine Hill, Proposal Rock, Stewart Mountain, 1962; Maurice Mountain, Odell Lake, 1974; Jackson Hill, Shaw Mountain, Stine Mountain, 1978; and Polaris, 1959')
+ Predicted: Dickie Hills, Foolhen Ridge, Pine Hill, Proposal Rock, Stewart Mountain, 1962; Maurice Mountain, Odell Lake, 1974; Jackson Hill, Shaw Mountain, Stine Mountain, 1978; and Polaris, 1959
+ Truth: U.S. Geological Survey 1:24,000: Dickie Hills, Foolhen Ridge, Pine Hill, Proposal Rock, Stewart Mountain, 1962; Maurice Mountain, Odell Lake, 1974; Jackson Hill, Shaw Mountain, Stine Mountain, 1978; and 1:62,500:Polaris, 1959
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '7766')
+ Predicted: 7766
+ Truth: 7766
+ Score: 1.0
+ --
+ Field: ('title', 'PRELIMINARY GEOLOGIC MAP OF THE BEAR HOLE QUADRANGLE, BIG HORN COUNTY, MONTANA, AND BIG HORN AND SHERIDAN COUNTIES, WYOMING')
+ Predicted: PRELIMINARY GEOLOGIC MAP OF THE BEAR HOLE QUADRANGLE, BIG HORN COUNTY, MONTANA, AND BIG HORN AND SHERIDAN COUNTIES, WYOMING
+ Truth: PRELIMINARY GEOLOGIC MAP OF THE BEAR HOLE QUADRANGLE, BIG HORN COUNTY, MONTANA, AND BIG HORN AND SHERIDAN COUNTIES, WYOMING
+ Score: 1.0
+ --
+ Field: ('authors', ['Agard, S. S.'])
+ Predicted: ['Agard, S. S.']
+ Truth: ['Agard, S. S.']
+ Score: 1.0
+ --
+ Field: ('year', '1986')
+ Predicted: 1986
+ Truth: 1986
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'BEAR HOLE')
+ Predicted: BEAR HOLE
+ Truth: Bear Hole
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1969')
+ Predicted: U.S. Geological Survey, 1969
+ Truth: U.S. Geological Survey, 1969
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '7801')
+ Predicted: 7801
+ Truth: 7801
+ Score: 1.0
+ --
+ Field: ('title', 'APPROXIMATE BOUNDARY OF SPANISH PEAKS WILDERNESS STUDY AREA')
+ Predicted: APPROXIMATE BOUNDARY OF SPANISH PEAKS WILDERNESS STUDY AREA
+ Truth: RECONNAISSANCE GEOLOGIC MAP OF THE SPANISH PEAKS WILDERNESS STUDY AREA, HUERFANO AND LAS ANIMAS COUNTIES, COLORADO
+ Score: 0.0
+ --
+ Field: ('authors', ['Budding, K. E.', 'Lawrence, V. A.'])
+ Predicted: ['Budding, K. E.', 'Lawrence, V. A.']
+ Truth: ['Budding, K. E.', 'Lawrence, V. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1983')
+ Predicted: 1983
+ Truth: 1983
+ Score: 1.0
+ --
+ Field: ('scale', '1:50000')
+ Predicted: 1:50000
+ Truth: 1:50000
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1 : 24,000 Cuchara , 1963 ; Spanish Peaks , 1971 ; Cucharas Pass , 1967 ; and Herlick Canyon , 1971')
+ Predicted: U.S. Geological Survey 1 : 24,000 Cuchara , 1963 ; Spanish Peaks , 1971 ; Cucharas Pass , 1967 ; and Herlick Canyon , 1971
+ Truth: U.S. Geological Survey 1 : 24,000 Cuchara , 1963 ; Spanish Peaks , 1971 ; Cucharas Pass , 1967 ; and Herlick Canyon , 1971
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '7867')
+ Predicted: 7867
+ Truth: 7867
+ Score: 1.0
+ --
+ Field: ('title', 'MAP AND COAL RESOURCES OF THE HENRIEVILLE QUADRANGLE, GARFIELD AND KANE COUNTIES, UTAH')
+ Predicted: MAP AND COAL RESOURCES OF THE HENRIEVILLE QUADRANGLE, GARFIELD AND KANE COUNTIES, UTAH
+ Truth: MAP AND COAL RESOURCES OF THE HENRIEVILLE QUADRANGLE, GARFIELD AND KANE COUNTIES, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Bowers, W. E.', 'NULL', 'NULL'])
+ Predicted: ['Bowers, W. E.', 'NULL', 'NULL']
+ Truth: ['Bowers, W. E.', 'NULL', 'NULL']
+ Score: 0.0
+ --
+ Field: ('year', '1974')
+ Predicted: 1974
+ Truth: 1974
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'HENRIEVILLE QUADRANGLE')
+ Predicted: HENRIEVILLE QUADRANGLE
+ Truth: HENRIEVILLE QUADRANGLE
+ Score: 1.0
+ --
+ Field: ('datum', '1927 North American datum')
+ Predicted: 1927 North American datum
+ Truth: North American datum 1927
+ Score: 0.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: Mean sea level
+ Score: 0.0
+ --
+ Field: ('projection', 'Polytonic')
+ Predicted: Polytonic
+ Truth: Polyconic
+ Score: 0.0
+ --
+ Field: ('coordinate_systems', ['Utal coordinate system', 'Universal Transverse Mercatol grid', 'NULL'])
+ Predicted: ['Utal coordinate system', 'Universal Transverse Mercatol grid', 'NULL']
+ Truth: ['UTM Zone 12', 'Utah coordinate system, south zone', 'NULL']
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1964')
+ Predicted: U.S. Geological Survey 1964
+ Truth: U.S. Geological Survey 1964
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '8000')
+ Predicted: 8000
+ Truth: 8000
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE OAK SPRING QUADRANGLE, NYE COUNTY, NEVADA')
+ Predicted: GEOLOGIC MAP OF THE OAK SPRING QUADRANGLE, NYE COUNTY, NEVADA
+ Truth: GEOLOGIC MAP OF THE OAK SPRING QUADRANGLE, NYE COUNTY, NEVADA
+ Score: 1.0
+ --
+ Field: ('authors', ['Barnes, H.', 'Houser, E. N.', 'Poole, F. G.'])
+ Predicted: ['Barnes, H.', 'Houser, E. N.', 'Poole, F. G.']
+ Truth: ['Barnes, H.', 'Houser, E. N.', 'Poole, F. G.']
+ Score: 1.0
+ --
+ Field: ('year', '1961')
+ Predicted: 1961
+ Truth: 1961
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Oak Spring')
+ Predicted: Oak Spring
+ Truth: Oak Spring
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Nevada State coordinates'])
+ Predicted: ['Nevada State coordinates']
+ Truth: ['Nevada State coordinates']
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '8006')
+ Predicted: 8006
+ Truth: 8006
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE ASPEN GROVE QUADRANGLE, UTAH')
+ Predicted: GEOLOGIC MAP OF THE ASPEN GROVE QUADRANGLE, UTAH
+ Truth: GEOLOGIC MAP OF THE ASPEN GROVE QUADRANGLE, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Baker, A.A.'])
+ Predicted: ['Baker, A.A.']
+ Truth: ['Baker, A. A.']
+ Score: 0.0
+ --
+ Field: ('year', '1961')
+ Predicted: 1961
+ Truth: 1961
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Aspen Grove Quadrangle')
+ Predicted: Aspen Grove Quadrangle
+ Truth: Aspen Grove
+ Score: 0.0
+ --
+ Field: ('datum', 'North American datum 1927')
+ Predicted: North American datum 1927
+ Truth: North American datum 1927
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('projection', 'Polyconic')
+ Predicted: Polyconic
+ Truth: Polyconic
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Utah coordinate system, central zone'])
+ Predicted: ['Utah coordinate system, central zone']
+ Truth: ['Utah coordinate system, central zone']
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '8008')
+ Predicted: 8008
+ Truth: 8008
+ Score: 1.0
+ --
+ Field: ('title', 'Geologic Map of Southeastern Part of Brighton Quadrangle, Utah')
+ Predicted: Geologic Map of Southeastern Part of Brighton Quadrangle, Utah
+ Truth: Geologic Map of Southeastern Part of Brighton Quadrangle, Utah
+ Score: 1.0
+ --
+ Field: ('authors', ['Baker, A.A.'])
+ Predicted: ['Baker, A.A.']
+ Truth: ['Baker, A. A.']
+ Score: 0.0
+ --
+ Field: ('year', '1961')
+ Predicted: 1961
+ Truth: 1961
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Brighton Quadrangle')
+ Predicted: Brighton Quadrangle
+ Truth: Brighton Quadrangle
+ Score: 1.0
+ --
+ Field: ('datum', 'North American datum 1927')
+ Predicted: North American datum 1927
+ Truth: North American datum 1927
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: Mean sea level
+ Score: 0.0
+ --
+ Field: ('projection', 'Polyconic')
+ Predicted: Polyconic
+ Truth: Polyconic
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Utah coordinate system, central and north zones'])
+ Predicted: ['Utah coordinate system, central and north zones']
+ Truth: ['Utah coordinate system, central zone', 'Utah coordinate system, north zone']
+ Score: 0.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: USGS base map
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '8100')
+ Predicted: 8100
+ Truth: 8100
+ Score: 1.0
+ --
+ Field: ('title', 'MAP OF THE POKER PEAK AND PALISADES RESERVOIR QUADRANGLES, BONNEVILLE COUNTY, IDAHO, AND LINCOLN COUNTY, WYOMING')
+ Predicted: MAP OF THE POKER PEAK AND PALISADES RESERVOIR QUADRANGLES, BONNEVILLE COUNTY, IDAHO, AND LINCOLN COUNTY, WYOMING
+ Truth: PRELIMINARY GEOLOGIC MAP OF THE POKER PEAK AND PALISADES RESERVOIR QUADRANGLES, BONNEVILLE COUNTY, IDAHO, AND LINCOLN COUNTY, WYOMING
+ Score: 0.0
+ --
+ Field: ('authors', ['Albee, H. E.', 'Cullins, H. L.'])
+ Predicted: ['Albee, H. E.', 'Cullins, H. L.']
+ Truth: ['Albee, H. E.', 'Cullins, H. L.']
+ Score: 1.0
+ --
+ Field: ('year', '1965')
+ Predicted: 1965
+ Truth: 1965
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Poker Peak and Palisades Reservoir')
+ Predicted: Poker Peak and Palisades Reservoir
+ Truth: Poker Peak and Palisades Reservoir
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '8222')
+ Predicted: 8222
+ Truth: 8222
+ Score: 1.0
+ --
+ Field: ('title', 'PRELIMINARY GEOLOGIC MAP OF THE SW 1/4 MAYER QUADRANGLE, YAVAPAI COUNTY, ARIZONA')
+ Predicted: PRELIMINARY GEOLOGIC MAP OF THE SW 1/4 MAYER QUADRANGLE, YAVAPAI COUNTY, ARIZONA
+ Truth: PRELIMINARY GEOLOGIC MAP OF THE SW 1/4 MAYER QUADRANGLE, YAVAPAI COUNTY, ARIZONA
+ Score: 1.0
+ --
+ Field: ('authors', ['ANDERSON, C. A.'])
+ Predicted: ['ANDERSON, C. A.']
+ Truth: ['ANDERSON, C. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1967')
+ Predicted: 1967
+ Truth: 1967
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'MAYER')
+ Predicted: MAYER
+ Truth: MAYER
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '8252')
+ Predicted: 8252
+ Truth: 8252
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE SE 1/4 MOUNT UNION QUADRANGLE, YAVAPA! COUNTY, ARIZONA')
+ Predicted: GEOLOGIC MAP OF THE SE 1/4 MOUNT UNION QUADRANGLE, YAVAPA! COUNTY, ARIZONA
+ Truth: GEOLOGIC MAP OF THE SE 1/4 MOUNT UNION QUADRANGLE, YAVAPA! COUNTY, ARIZONA
+ Score: 1.0
+ --
+ Field: ('authors', ['BLACET, P. M.'])
+ Predicted: ['BLACET, P. M.']
+ Truth: ['BLACET, P. M.']
+ Score: 1.0
+ --
+ Field: ('year', '1961-64')
+ Predicted: 1961-64
+ Truth: 1968
+ Score: 0.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'MOUNT UNION')
+ Predicted: MOUNT UNION
+ Truth: Mount Union SE
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '8263')
+ Predicted: 8263
+ Truth: 8263
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE GRIFFIN POINT QUADRANGLE, GARFIELD COUNTY')
+ Predicted: GEOLOGIC MAP OF THE GRIFFIN POINT QUADRANGLE, GARFIELD COUNTY
+ Truth: GEOLOGIC MAP OF THE GRIFFIN POINT QUADRANGLE, GARFIELD COUNTY, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Bowers, W. E.'])
+ Predicted: ['Bowers, W. E.']
+ Truth: ['Bowers, W. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1968')
+ Predicted: 1968
+ Truth: 1968
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Griffin Point Quadrangle')
+ Predicted: Griffin Point Quadrangle
+ Truth: Griffin Point
+ Score: 0.0
+ --
+ Field: ('datum', 'North American datum 1927')
+ Predicted: North American datum 1927
+ Truth: North American datum 1927
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: Mean Sea Level
+ Score: 0.0
+ --
+ Field: ('projection', 'Polyconic')
+ Predicted: Polyconic
+ Truth: Polyconic
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Utah coordinate system, south zone', '1000-meter Universal Transverse Mercator grid ticks, zone 12'])
+ Predicted: ['Utah coordinate system, south zone', '1000-meter Universal Transverse Mercator grid ticks, zone 12']
+ Truth: ['Utah coordinate system, south zone', 'Universal Transverse Mercator, zone 12']
+ Score: 0.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey, 1964
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '8266')
+ Predicted: 8266
+ Truth: 8266
+ Score: 1.0
+ --
+ Field: ('title', 'PRELIMINARY GEOLOGIC MAP OF THE UPPER VALLEY QUADRANGLE, GARFIELD COUNTY')
+ Predicted: PRELIMINARY GEOLOGIC MAP OF THE UPPER VALLEY QUADRANGLE, GARFIELD COUNTY
+ Truth: PRELIMINARY GEOLOGIC MAP OF THE UPPER VALLEY QUADRANGLE, GARFIELD COUNTY, UTAH
+ Score: 0.0
+ --
+ Field: ('authors', ['Bowers, W. E.'])
+ Predicted: ['Bowers, W. E.']
+ Truth: ['Bowers, W. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1968')
+ Predicted: 1968
+ Truth: 1968
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'UPPER VALLEY QUADRANGLE')
+ Predicted: UPPER VALLEY QUADRANGLE
+ Truth: UPPER VALLEY
+ Score: 0.0
+ --
+ Field: ('datum', 'North American datum')
+ Predicted: North American datum
+ Truth: North American datum 1927
+ Score: 0.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('projection', 'Polyconic')
+ Predicted: Polyconic
+ Truth: Polyconic
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Utah coordinate system, south zone', 'Universal Transverse Mercator grid ticks, zone 12'])
+ Predicted: ['Utah coordinate system, south zone', 'Universal Transverse Mercator grid ticks, zone 12']
+ Truth: ['Utah coordinate system, south zone', 'Universal Transverse Mercator, zone 12']
+ Score: 0.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey, 1964
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '8681')
+ Predicted: 8681
+ Truth: 8681
+ Score: 1.0
+ --
+ Field: ('title', 'PRELIMINARY GEOLOGIC MAP OF THE OBSERVATION PEAK QUADRANGLE, TETON AND LINCOLN')
+ Predicted: PRELIMINARY GEOLOGIC MAP OF THE OBSERVATION PEAK QUADRANGLE, TETON AND LINCOLN
+ Truth: PRELIMINARY GEOLOGIC MAP OF THE OBSERVATION PEAK QUADRANGLE, TETON AND LINCOLN COUNTIES, WYOMING
+ Score: 0.0
+ --
+ Field: ('authors', ['Albee, H. F.'])
+ Predicted: ['Albee, H. F.']
+ Truth: ['Albee, H. F.']
+ Score: 1.0
+ --
+ Field: ('year', '1972')
+ Predicted: 1972
+ Truth: 1972
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Observation Peak')
+ Predicted: Observation Peak
+ Truth: OBSERVATION PEAK
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1963')
+ Predicted: U.S. Geological Survey, 1963
+ Truth: U.S. Geological Survey, 1963
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '8753')
+ Predicted: 8753
+ Truth: 8753
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF NE PART OF SPANISH FORK PEAK QUADRANGLE, UTAH')
+ Predicted: GEOLOGIC MAP OF NE PART OF SPANISH FORK PEAK QUADRANGLE, UTAH
+ Truth: GEOLOGIC MAP OF NE PART OF SPANISH FORK PEAK QUADRANGLE, UTAH
+ Score: 1.0
+ --
+ Field: ('authors', ['Baker, A. A.'])
+ Predicted: ['Baker, A. A.']
+ Truth: ['Baker, A. A.', 'NULL', 'NULL']
+ Score: 1.0
+ --
+ Field: ('year', '1972')
+ Predicted: 1972
+ Truth: 1972
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'SPANISH FORK PEAK QUADRANGLE')
+ Predicted: SPANISH FORK PEAK QUADRANGLE
+ Truth: SPANISH FORK PEAK
+ Score: 0.0
+ --
+ Field: ('datum', 'North American datum 1927')
+ Predicted: North American datum 1927
+ Truth: North American datum 1927
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: Mean Sea Level
+ Score: 0.0
+ --
+ Field: ('projection', 'Polyconic')
+ Predicted: Polyconic
+ Truth: Polyconic
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Utah coordinate system, central zone'])
+ Predicted: ['Utah coordinate system, central zone']
+ Truth: ['Utah coordinate system, central zone', 'NULL', 'NULL']
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '8950')
+ Predicted: 8950
+ Truth: 8950
+ Score: 1.0
+ --
+ Field: ('title', 'MAP SHOWING GEOLOGY, STRUCTURE, AND OIL AND GAS FIELDS IN THE STERLING 1° × 2° QUADRANGLE, COLORADO, NEBRASKA, AND KANSAS')
+ Predicted: MAP SHOWING GEOLOGY, STRUCTURE, AND OIL AND GAS FIELDS IN THE STERLING 1° × 2° QUADRANGLE, COLORADO, NEBRASKA, AND KANSAS
+ Truth: MAP SHOWING GEOLOGY, STRUCTURE, AND OIL AND GAS FIELDS IN THE STERLING 1° × 2° QUADRANGLE, COLORADO, NEBRASKA, AND KANSAS
+ Score: 1.0
+ --
+ Field: ('authors', ['Scott, G. R.'])
+ Predicted: ['Scott, G. R.']
+ Truth: ['Scott, G. R.']
+ Score: 1.0
+ --
+ Field: ('year', '1978')
+ Predicted: 1978
+ Truth: 1978
+ Score: 1.0
+ --
+ Field: ('scale', '1:250000')
+ Predicted: 1:250000
+ Truth: 1:250000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'STERLING')
+ Predicted: STERLING
+ Truth: Sterling
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Colorado coordinate system, north zone', 'Universal Transverse Mercator zone 13'])
+ Predicted: ['Colorado coordinate system, north zone', 'Universal Transverse Mercator zone 13']
+ Truth: ['Colorado coordinate system, north zone', 'Universal Transverse Mercator zone 13']
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1954-64')
+ Predicted: U.S. Geological Survey, 1954-64
+ Truth: USGS base map 1954-64
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '9023')
+ Predicted: 9023
+ Truth: 9023
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP')
+ Predicted: GEOLOGIC MAP
+ Truth: GEOLOGIC AND TECTONIC MAPS OF THE MERCURY QAUDRANGLE, NYE AND CLARK COUNTIES, NEVADA
+ Score: 0.0
+ --
+ Field: ('authors', ['Barnes, H.', 'Ekren, E. B.', 'Rodgers, C. L.', 'Hedlund, D. C.'])
+ Predicted: ['Barnes, H.', 'Ekren, E. B.', 'Rodgers, C. L.', 'Hedlund, D. C.']
+ Truth: ['Barnes, H.', 'Ekren, E. B.', 'Rodgers, C. L.', 'Hedlund, D. C.']
+ Score: 1.0
+ --
+ Field: ('year', '1982')
+ Predicted: 1982
+ Truth: 1982
+ Score: 1.0
+ --
+ Field: ('scale', '1:62500')
+ Predicted: 1:62500
+ Truth: 1:24000
+ Score: 0.0
+ --
+ Field: ('quadrangle', 'Mercury quadrangle')
+ Predicted: Mercury quadrangle
+ Truth: Mercury quadrangle
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Nevada coordinate system, central and east zones', 'Universal Transverse Mercator grid ticks, zone 11'])
+ Predicted: ['Nevada coordinate system, central and east zones', 'Universal Transverse Mercator grid ticks, zone 11']
+ Truth: ['Nevada coordinate system, central and east zones', 'Universal Transverse Mercator, zone 11']
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1961')
+ Predicted: U.S. Geological Survey, 1961
+ Truth: U.S. Geological Survey, 1961
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '9063')
+ Predicted: 9063
+ Truth: 9063
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE LIMON 1 ° x 2 ° QUADRANGLE, COLORADO AND KANSAS')
+ Predicted: GEOLOGIC MAP OF THE LIMON 1 ° x 2 ° QUADRANGLE, COLORADO AND KANSAS
+ Truth: GEOLOGIC MAP OF THE LIMON 1° x 2° QUADRANGLE, COLORADO AND KANSAS
+ Score: 0.0
+ --
+ Field: ('authors', ['Sharps, J. A.'])
+ Predicted: ['Sharps, J. A.']
+ Truth: ['Sharps, J. A.']
+ Score: 1.0
+ --
+ Field: ('year', '1980')
+ Predicted: 1980
+ Truth: 1980
+ Score: 1.0
+ --
+ Field: ('scale', '1:250000')
+ Predicted: 1:250000
+ Truth: 1:250000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Limon')
+ Predicted: Limon
+ Truth: Limon
+ Score: 1.0
+ --
+ Field: ('datum', 'North American Datum of 1927')
+ Predicted: North American Datum of 1927
+ Truth: North American Datum of 1927
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'National Geodetic Vertical Datum of 1929')
+ Predicted: National Geodetic Vertical Datum of 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['UTM Zone 13', 'Colorado coordinate system central zone', 'Colorado coordinate system north zone'])
+ Predicted: ['UTM Zone 13', 'Colorado coordinate system central zone', 'Colorado coordinate system north zone']
+ Truth: ['Colorado coordinate system, central zone', 'Colorado coordinate system, north zone', 'Universal Transverse Mercator zone 13']
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1954 Limited revision 1964')
+ Predicted: U.S. Geological Survey 1954 Limited revision 1964
+ Truth: USGS base map 1954 Limited revision 1964
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '9101')
+ Predicted: 9101
+ Truth: 9101
+ Score: 1.0
+ --
+ Field: ('title', 'PIEDMONT GEOLOGY OF THE LADYSMITH AND LAKE ANNA EAST QUADRANGLES, AND VICINITY, VIRGINIA')
+ Predicted: PIEDMONT GEOLOGY OF THE LADYSMITH AND LAKE ANNA EAST QUADRANGLES, AND VICINITY, VIRGINIA
+ Truth: PIEDMONT GEOLOGY OF THE LADYSMITH AND LAKE ANNA EAST QUADRANGLES, AND VICINITY, VIRGINIA
+ Score: 1.0
+ --
+ Field: ('authors', ['Bobyarchick, A. R.', 'Pavlides, Louis', 'Wier, Karen'])
+ Predicted: ['Bobyarchick, A. R.', 'Pavlides, Louis', 'Wier, Karen']
+ Truth: ['Bobyarchick, A. R.', 'Pavlides, L.', 'Wier, K.']
+ Score: 0.0
+ --
+ Field: ('year', '1981')
+ Predicted: 1981
+ Truth: 1981
+ Score: 1.0
+ --
+ Field: ('scale', '1:24000')
+ Predicted: 1:24000
+ Truth: 1:24000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'LADYSMITH AND LAKE ANNA EAST')
+ Predicted: LADYSMITH AND LAKE ANNA EAST
+ Truth: LADYSMITH AND LAKE ANNA EAST
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1979')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1979
+ Truth: NATIONAL GEODETIC VERTICAL DATUM OF 1979
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1980')
+ Predicted: U.S. Geological Survey, 1980
+ Truth: U.S. Geological Survey, 1980
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '9346')
+ Predicted: 9346
+ Truth: 9346
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE TRINIDAD QUADRANGLE SOUTH - CENTRAL COLORADO')
+ Predicted: GEOLOGIC MAP OF THE TRINIDAD QUADRANGLE SOUTH - CENTRAL COLORADO
+ Truth: GEOLOGIC MAP OF THE TRINIDAD QUADRANGLE SOUTH - CENTRAL COLORADO
+ Score: 1.0
+ --
+ Field: ('authors', ['Johnson, R. B.', 'Wood, G. H., Jr.', 'Eargle, D. H.'])
+ Predicted: ['Johnson, R. B.', 'Wood, G. H., Jr.', 'Eargle, D. H.']
+ Truth: ['Johnson, R. B.']
+ Score: 0.0
+ --
+ Field: ('year', '1969')
+ Predicted: 1969
+ Truth: 1969
+ Score: 1.0
+ --
+ Field: ('scale', '1:250000')
+ Predicted: 1:250000
+ Truth: 1:250000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Trinidad')
+ Predicted: Trinidad
+ Truth: Trinidad
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey, 1954
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '9348')
+ Predicted: 9348
+ Truth: 9348
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC AND STRUCTURE CONTOUR MAP OF THE LA JUNTA QUADRANGLE, COLORADO AND KANSAS')
+ Predicted: GEOLOGIC AND STRUCTURE CONTOUR MAP OF THE LA JUNTA QUADRANGLE, COLORADO AND KANSAS
+ Truth: GEOLOGIC AND STRUCTURE CONTOUR MAP OF THE LA JUNTA QUADRANGLE, COLORADO AND KANSAS
+ Score: 1.0
+ --
+ Field: ('authors', ['Scott, G. R.'])
+ Predicted: ['Scott, G. R.']
+ Truth: ['Scott, G. R.']
+ Score: 1.0
+ --
+ Field: ('year', '1968')
+ Predicted: 1968
+ Truth: 1968
+ Score: 1.0
+ --
+ Field: ('scale', '1:250000')
+ Predicted: 1:250000
+ Truth: 1:250000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'La Junta')
+ Predicted: La Junta
+ Truth: La Junta
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1955')
+ Predicted: U.S. Geological Survey, 1955
+ Truth: U.S. Geological Survey, 1955
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '9350')
+ Predicted: 9350
+ Truth: 9350
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP AND SECTIONS OF THE SOUTHWEST QUARTER OF THE DILLON QUADRANGLE EAGLE AND SUMMIT COUNTIES, COLORADO')
+ Predicted: GEOLOGIC MAP AND SECTIONS OF THE SOUTHWEST QUARTER OF THE DILLON QUADRANGLE EAGLE AND SUMMIT COUNTIES, COLORADO
+ Truth: GEOLOGIC MAP AND SECTIONS OF THE SOUTHWEST QUARTER OF THE DILLON QUADRANGLE EAGLE AND SUMMIT COUNTIES, COLORADO
+ Score: 1.0
+ --
+ Field: ('authors', ['Bergendahl, M. H.', 'Shearer, J. E.', 'Gardner, M. E.', 'Smith, R. P.'])
+ Predicted: ['Bergendahl, M. H.', 'Shearer, J. E.', 'Gardner, M. E.', 'Smith, R. P.']
+ Truth: ['Bergendahl, M. H.']
+ Score: 0.0
+ --
+ Field: ('year', '1969')
+ Predicted: 1969
+ Truth: 1969
+ Score: 1.0
+ --
+ Field: ('scale', '1:62500')
+ Predicted: 1:62500
+ Truth: 1:24000
+ Score: 0.0
+ --
+ Field: ('quadrangle', 'DILLON')
+ Predicted: DILLON
+ Truth: Dillon
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Universal Transverse Mercator zone 13'])
+ Predicted: ['Universal Transverse Mercator zone 13']
+ Truth: ['UTM Zone 13']
+ Score: 0.0
+ --
+ Field: ('base_map', 'Preliminary base from Army Map Service')
+ Predicted: Preliminary base from Army Map Service
+ Truth: Army Map Service
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '9487')
+ Predicted: 9487
+ Truth: 9487
+ Score: 1.0
+ --
+ Field: ('title', 'BEDROCK GEOLOGIC MAP SHOWING THICKNESS CF OVERLYING QUATERNARY DEPOSITS , LINCOLN QUADRANGLE AND PART OF NEBRASKA CITY QUADRANGLE , NEBRASKA AND KANSAS')
+ Predicted: BEDROCK GEOLOGIC MAP SHOWING THICKNESS CF OVERLYING QUATERNARY DEPOSITS , LINCOLN QUADRANGLE AND PART OF NEBRASKA CITY QUADRANGLE , NEBRASKA AND KANSAS
+ Truth: BEDROCK GEOLOGIC MAP SHOWING THICKNESS CF OVERLYING QUATERNARY DEPOSITS , LINCOLN QUADRANGLE AND PART OF NEBRASKA CITY QUADRANGLE , NEBRASKA AND KANSAS
+ Score: 1.0
+ --
+ Field: ('authors', ['Burchett, R. R.', 'Dreezen, V. H.', 'Reed, E. C.', 'Prichard, G. E.'])
+ Predicted: ['Burchett, R. R.', 'Dreezen, V. H.', 'Reed, E. C.', 'Prichard, G. E.']
+ Truth: ['Burchett, R. R.', 'Dreezen, V. H.', 'Reed, E. C.', 'Prichard, G. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1972')
+ Predicted: 1972
+ Truth: 1972
+ Score: 1.0
+ --
+ Field: ('scale', '1:250000')
+ Predicted: 1:250000
+ Truth: 1:250000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'LINCOLN QUADRANGLE AND PART OF NEBRASKA CITY QUADRANGLE')
+ Predicted: LINCOLN QUADRANGLE AND PART OF NEBRASKA CITY QUADRANGLE
+ Truth: LINCOLN QUADRANGLE AND PART OF NEBRASKA CITY QUADRANGLE
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: mean sea level
+ Score: 0.0
+ --
+ Field: ('base_map', 'NULL')
+ Predicted: NULL
+ Truth: U.S. Geological Survey, 1955
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '9648')
+ Predicted: 9648
+ Truth: 9648
+ Score: 1.0
+ --
+ Field: ('title', 'BEDROCK GEOLOGIC MAP SHOWING THICKNESS OF OVERLYING QUATERNARY DEPOSITS, GRAND ISLAND QUADRANGLE, NEBRASKA AND KANSAS')
+ Predicted: BEDROCK GEOLOGIC MAP SHOWING THICKNESS OF OVERLYING QUATERNARY DEPOSITS, GRAND ISLAND QUADRANGLE, NEBRASKA AND KANSAS
+ Truth: BEDROCK GEOLOGIC MAP SHOWING THICKNESS OF OVERLYING QUATERNARY DEPOSITS, GRAND ISLAND QUADRANGLE, NEBRASKA AND KANSAS
+ Score: 1.0
+ --
+ Field: ('authors', ['Dreeszen, V. H.', 'Reed, E. C.', 'Burchett, R. R.', 'Prichard, G. E.'])
+ Predicted: ['Dreeszen, V. H.', 'Reed, E. C.', 'Burchett, R. R.', 'Prichard, G. E.']
+ Truth: ['Dreeszen, V. H.', 'Reed, E. C.', 'Burchett, R. R.', 'Prichard, G. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1973')
+ Predicted: 1973
+ Truth: 1973
+ Score: 1.0
+ --
+ Field: ('scale', '1:250000')
+ Predicted: 1:250000
+ Truth: 1:250000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Grand Island')
+ Predicted: Grand Island
+ Truth: Grand Island
+ Score: 1.0
+ --
+ Field: ('datum', 'NULL')
+ Predicted: NULL
+ Truth: North American Datum of 1927
+ Score: 0.0
+ --
+ Field: ('coordinate_systems', ['10,000 - meter Universal Transverse Mercator grid, zone 14'])
+ Predicted: ['10,000 - meter Universal Transverse Mercator grid, zone 14']
+ Truth: ['UTM Zone 14', 'Nebraska coordinate system, south zone']
+ Score: 0.0
+ --
+ Field: ('base_map', 'Base from U.S. Geological Survey, 1955-66 100,000 - foot grid based on Nebraska coordinate system, south zone')
+ Predicted: Base from U.S. Geological Survey, 1955-66 100,000 - foot grid based on Nebraska coordinate system, south zone
+ Truth: U.S. Geological Survey, 1955-66
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '9797')
+ Predicted: 9797
+ Truth: 9797
+ Score: 1.0
+ --
+ Field: ('title', 'BEDROCK GEOLOGIC MAP SHOWING THICKNESS OF OVERLYING QUATERNARY DEPOSITS, FREMONT QUADRANGLE AND PART OF OMAHA QUADRANGLE, NEBRASKA')
+ Predicted: BEDROCK GEOLOGIC MAP SHOWING THICKNESS OF OVERLYING QUATERNARY DEPOSITS, FREMONT QUADRANGLE AND PART OF OMAHA QUADRANGLE, NEBRASKA
+ Truth: BEDROCK GEOLOGIC MAP SHOWING THICKNESS OF OVERLYING QUATERNARY DEPOSITS, FREMONT QUADRANGLE AND PART OF OMAHA QUADRANGLE, NEBRASKA
+ Score: 1.0
+ --
+ Field: ('authors', ['Burchett, R. R.', 'Reed, E. C.', 'Dreeszen, V. H.', 'Prichard, G. E.'])
+ Predicted: ['Burchett, R. R.', 'Reed, E. C.', 'Dreeszen, V. H.', 'Prichard, G. E.']
+ Truth: ['Burchett, R. R.', 'Reed, E. C.', 'Dreeszen, V. H.', 'Prichard, G. E.']
+ Score: 1.0
+ --
+ Field: ('year', '1975')
+ Predicted: 1975
+ Truth: 1975
+ Score: 1.0
+ --
+ Field: ('scale', '1:250000')
+ Predicted: 1:250000
+ Truth: 1:250000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'Fremont Quadrangle and part of Omaha Quadrangle')
+ Predicted: Fremont Quadrangle and part of Omaha Quadrangle
+ Truth: Fremont Quadrangle
+ Score: 0.0
+ --
+ Field: ('vertical_datum', 'mean sea level')
+ Predicted: mean sea level
+ Truth: mean sea level
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Nebraska coordinate system, south and north zones', 'Iowa coordinate system, south and north zones', 'Universal Transverse Mercator grid'])
+ Predicted: ['Nebraska coordinate system, south and north zones', 'Iowa coordinate system, south and north zones', 'Universal Transverse Mercator grid']
+ Truth: ['Nebraska coordinate system, south and north zones', 'Iowa coordinate system, south and north zones', 'Universal Transverse Mercator, zone 14']
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1954-66')
+ Predicted: U.S. Geological Survey, 1954-66
+ Truth: U.S. Geological Survey, 1954-66
+ Score: 1.0
+ --
+===============================
+ Field: ('map_id', '9861')
+ Predicted: 9861
+ Truth: 9861
+ Score: 1.0
+ --
+ Field: ('title', 'GEOLOGIC MAP OF THE KINNEY RIM 30 x 60 MINUTE QUADRANGLE, WYOMING AND COLORADO')
+ Predicted: GEOLOGIC MAP OF THE KINNEY RIM 30 x 60 MINUTE QUADRANGLE, WYOMING AND COLORADO
+ Truth: GEOLOGIC MAP OF THE KINNEY RIM 30 x 60 MINUTE QUADRANGLE, WYOMING AND COLORADO
+ Score: 1.0
+ --
+ Field: ('authors', ['Roehler, H. W.'])
+ Predicted: ['Roehler, H. W.']
+ Truth: ['Roehler, H. W.']
+ Score: 1.0
+ --
+ Field: ('year', '1985')
+ Predicted: 1985
+ Truth: 1985
+ Score: 1.0
+ --
+ Field: ('scale', '1:100000')
+ Predicted: 1:100000
+ Truth: 1:100000
+ Score: 1.0
+ --
+ Field: ('quadrangle', 'KINNEY RIM')
+ Predicted: KINNEY RIM
+ Truth: KINNEY RIM
+ Score: 1.0
+ --
+ Field: ('vertical_datum', 'NATIONAL GEODETIC VERTICAL DATUM OF 1929')
+ Predicted: NATIONAL GEODETIC VERTICAL DATUM OF 1929
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 1.0
+ --
+ Field: ('coordinate_systems', ['Universal Transverse Mercator zone 12'])
+ Predicted: ['Universal Transverse Mercator zone 12']
+ Truth: ['UTM Zone 12', 'Wyoming coordinate system, west central zone']
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey, 1980 25,000 - foot grid based on Wyoming coordinate system, west central zone')
+ Predicted: U.S. Geological Survey, 1980 25,000 - foot grid based on Wyoming coordinate system, west central zone
+ Truth: U.S. Geological Survey, 1980
+ Score: 0.0
+ --
+===============================
+ Field: ('map_id', '9866')
+ Predicted: 9866
+ Truth: 9866
+ Score: 1.0
+ --
+ Field: ('title', "GEOLOGIC MAP OF THE MANTI 30 ' x 60 ' QUADRANGLE")
+ Predicted: GEOLOGIC MAP OF THE MANTI 30 ' x 60 ' QUADRANGLE
+ Truth: GEOLOGIC MAP OF THE MANTI 30 ' x 60 ' QUADRANGLE
+ Score: 1.0
+ --
+ Field: ('authors', ['Witkind, I. J.', 'Weiss, M. P.', 'Brown, T. L.'])
+ Predicted: ['Witkind, I. J.', 'Weiss, M. P.', 'Brown, T. L.']
+ Truth: ['Witkind, I. J.', 'Weiss, M. P.', 'Brown, T. L.']
+ Score: 1.0
+ --
+ Field: ('year', '1987')
+ Predicted: 1987
+ Truth: 1987
+ Score: 1.0
+ --
+ Field: ('scale', '1:100000')
+ Predicted: 1:100000
+ Truth: 1:100000
+ Score: 1.0
+ --
+ Field: ('quadrangle', "Manti 30 ' x 60 ' ( 1 : 100,000 )")
+ Predicted: Manti 30 ' x 60 ' ( 1 : 100,000 )
+ Truth: Manti 30' x 60' (1 : 100,000) quadrangle
+ Score: 0.0
+ --
+ Field: ('vertical_datum', 'NULL')
+ Predicted: NULL
+ Truth: National Geodetic Vertical Datum of 1929
+ Score: 0.0
+ --
+ Field: ('coordinate_systems', ['Utah coordinate system central zone', 'Universal Transverse Mercator grid , zone 12'])
+ Predicted: ['Utah coordinate system central zone', 'Universal Transverse Mercator grid , zone 12']
+ Truth: ['Utah coordinate system central zone', 'Universal Transverse Mercator, zone 12']
+ Score: 0.0
+ --
+ Field: ('base_map', 'U.S. Geological Survey 1981 10,000 - meter Universal Transverse Mercator grid , zone 12')
+ Predicted: U.S. Geological Survey 1981 10,000 - meter Universal Transverse Mercator grid , zone 12
+ Truth: U.S. Geological Survey 1981
+ Score: 0.0
+ --
+===============================
+Results:
+====================
+map_id
+Samples: 139
+Mean score: 1.0
+
+title
+Samples: 139
+Mean score: 0.7266187050359713
+
+authors
+Samples: 137
+Mean score: 0.7883211678832117
+
+year
+Samples: 139
+Mean score: 0.8992805755395683
+
+scale
+Samples: 139
+Mean score: 0.9424460431654677
+
+quadrangle
+Samples: 91
+Mean score: 0.7802197802197802
+
+vertical_datum
+Samples: 98
+Mean score: 0.7551020408163265
+
+coordinate_systems
+Samples: 34
+Mean score: 0.47058823529411764
+
+base_map
+Samples: 132
+Mean score: 0.4090909090909091
+
+projection
+Samples: 7
+Mean score: 0.8571428571428571
+
+datum
+Samples: 8
+Mean score: 0.625
+

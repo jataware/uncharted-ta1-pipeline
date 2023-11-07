@@ -1,0 +1,46 @@
+Results:
+====================
+map_id
+Samples: 139
+Mean score: 1.0
+
+title
+Samples: 139
+Mean score: 0.7266187050359713
+
+authors
+Samples: 137
+Mean score: 0.7883211678832117
+
+year
+Samples: 139
+Mean score: 0.8992805755395683
+
+scale
+Samples: 139
+Mean score: 0.9424460431654677
+
+quadrangle
+Samples: 91
+Mean score: 0.7802197802197802
+
+vertical_datum
+Samples: 97
+Mean score: 0.7628865979381443
+
+coordinate_systems
+Samples: 34
+Mean score: 0.47058823529411764
+
+base_map
+Samples: 132
+Mean score: 0.4090909090909091
+
+datum
+Samples: 10
+Mean score: 0.5
+
+projection
+Samples: 13
+Mean score: 0.38461538461538464
+
