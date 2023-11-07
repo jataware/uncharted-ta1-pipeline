@@ -182,41 +182,41 @@ class MetadataExtractor:
 class MetadataFileWriter:
     _S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.-]+$")
 
-    def __init__(self, metadata: List[MetadataExtraction], output_path: str):
+    def __init__(self, output_path: str):
         self._metadata = metadata
         self._output_path = output_path
 
-    def process(self) -> None:
+    def process(self, metadata: MetadataExtraction) -> None:
         """Writes metadata to a json file on the local file system or to an s3 bucket"""
 
         # check to see if path is an s3 uri - otherwise treat it as a file path
         if self._S3_URI_MATCHER.match(str(self._output_path)):
             self._write_to_s3(
-                self._metadata,
+                metadata,
                 self._output_path,
                 boto3.client("s3"),
             )
         else:
-            self._write_to_file(self._metadata, self._output_path)
+            self._write_to_file(metadata, self._output_path)
 
     @staticmethod
-    def _write_to_file(metadata: List[MetadataExtraction], output_path: str) -> None:
+    def _write_to_file(metadata: MetadataExtraction, output_path: str) -> None:
         """Writes metadata to a json file"""
 
         # if the output dir doesn't exist, create it
         if not os.path.exists(output_path):
-            output_dir = os.path.dirname(output_path)
+            os.makedirs(output_path)
             os.makedirs(output_dir)
 
-        for m in metadata:
+        json_model = metadata.model_dump_json()
             json_model = m.model_dump_json()
-            with open(
-                os.path.join(output_path, f"{m.map_id}_metadata.json"), "w"
-            ) as outfile:
-                outfile.write(json_model)
+        with open(
+            os.path.join(output_path, f"{metadata.map_id}_metadata.json"), "w"
+        ) as outfile:
+            outfile.write(json_model)
 
     @staticmethod
-    def _write_to_s3(
+    def _write_to_s3(metadata: MetadataExtraction, output_path: str, client) -> None:
         metadata: List[MetadataExtraction], output_path: str, client
     ) -> None:
         """Writes metadata to an s3 bucket"""
@@ -225,13 +225,13 @@ class MetadataFileWriter:
         bucket = output_path.split("/")[2]
 
         # write data to the bucket
-        for m in metadata:
+        json_model = metadata.model_dump_json()
             json_model = m.model_dump_json()
-            client.put_object(
-                Body=json_model,
-                Bucket=bucket,
-                Key=f"{m.map_id}_metadata.json",
-            )
+        client.put_object(
+            Body=json_model,
+            Bucket=bucket,
+            Key=f"{metadata.map_id}_metadata.json",
+        )
 
 
 class SchemaFileWriter:  # TODO: factor out common code with MetadataFileWriter
