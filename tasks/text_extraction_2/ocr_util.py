@@ -248,6 +248,7 @@ def display_ocr_results(texts: List[Dict[str, Any]], pil_image: PILImage, color=
         draw_img.polygon(
             [(vertex.x, vertex.y) for vertex in text["bounding_poly"].vertices],
             outline=color,
+            width=2,
         )
     pil_image.show()
 

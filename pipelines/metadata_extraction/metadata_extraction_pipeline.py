@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
+import tqdm
 from tasks.metadata_extraction.metadata_extraction import (
     MetadataExtractor,
-    SchemaFileWriter,
 )
 from tasks.text_extraction_2.gva_ocr import GoogleVisionOCR
 from tasks.metadata_extraction.entities import MetadataExtraction
@@ -25,7 +25,7 @@ class MetadataExtractorPipeline:
         metadata_extractor = MetadataExtractor(self._verbose)
 
         result: List[MetadataExtraction] = []
-        for doc_id, image in input:
+        for doc_id, image in tqdm.tqdm(input):
             print(f"Processing image: {doc_id}")
 
             # run google vision ocr
