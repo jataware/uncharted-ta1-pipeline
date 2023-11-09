@@ -88,9 +88,6 @@ def process_image():
 
 def start_server():
     logging.basicConfig(level=logging.INFO, format=f'%(asctime)s %(levelname)s %(name)s\t: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-    logger = logging.getLogger('segmenter app')
-    logger.info('*** Starting Legend and Map Segmenter App ***')
+    logger = logging.getLogger('georef app')
+    logger.info('*** Starting geo referencing app ***')
     app.run(host='0.0.0.0', port=5000)
-
-if __name__ == '__main__':
-    start_server()
