@@ -1,24 +1,17 @@
-# Dockerfile for georef PIPELINE
+FROM python:3.9.18-alpine3.18
 
-# NOTES:
-# - Must be run with build context ./
-# - Uses 'docker.uncharted.software/lara/georef-tasks:0.1' as a base image
+RUN mkdir /app
+RUN mkdir /input
+RUN mkdir /output
+RUN mkdir /workdir
+WORKDIR /app
 
-FROM  docker.uncharted.software/lara/georef-tasks:0.1 
+COPY pipelines pipelines
+COPY tasks tasks
 
-# Create needed directories for georef pipeline
-ARG PIPELINES_DIR=/app/pipelines/geo_referencing/
-RUN mkdir -p ${PIPELINES_DIR}
-WORKDIR ${PIPELINES_DIR}
+RUN pip install -e ./tasks
+RUN pip install -e ./pipelines/geo_referencing
 
-COPY ../requirements.txt ./
+ENV GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
 
-# install requirements
-RUN pip install --upgrade pip --no-cache-dir
-RUN pip install --no-cache-dir -r requirements.txt      
-
-# Copy over georef pipeline code
-COPY ../*.py ../*.yaml ../*.yml ./
-#COPY .env ./
-
-CMD ["bash"]
+CMD ["python3", "-m", "pipelines.geo_referencing.run_server"]
