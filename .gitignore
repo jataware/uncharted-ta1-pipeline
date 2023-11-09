@@ -160,3 +160,8 @@ cython_debug/
 
 output
 temp
+# VS code
+.vscode
+
+pipelines/metadata_extraction/working/
+pipelines/metadata_extraction/deploy/**/

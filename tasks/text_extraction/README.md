@@ -1,5 +1,5 @@
 
-## LARA Image Text Extraction Tasks
+## LARA Image Text Extraction (OCR) Tasks
 
 **Goal:** to perform OCR-based text extraction on an image
 

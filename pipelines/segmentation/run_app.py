@@ -20,7 +20,7 @@ app = Flask(__name__)
 def process_image():
     '''
     Perform legend and map segmentation on an image
-    Image buffer is expected to be an opencv-formatted image object (numpy array) 
+    request.data is expected to contain binary image file buffer
     '''
 
     # Adapted from code samples here: https://gist.github.com/kylehounslow/767fb72fde2ebdd010a0bf4242371594
