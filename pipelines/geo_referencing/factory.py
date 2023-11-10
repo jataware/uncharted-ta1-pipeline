@@ -1,11 +1,11 @@
 
 from pipelines.geo_referencing.output import (DetailedOutput, GCPOutput, GeoReferencingOutput, IntegrationOutput, UserLeverOutput, SummaryOutput)
 from pipelines.geo_referencing.pipeline import Pipeline
-from tasks.geo_referencing.src.coordinates_extractor import (GeocodeCoordinatesExtractor, GeoCoordinatesExtractor, UTMCoordinatesExtractor)
-from tasks.geo_referencing.src.georeference import GeoReference
-from tasks.geo_referencing.src.roi_extractor import (EntropyROIExtractor, ModelROIExtractor, buffer_fixed, buffer_image_ratio, buffer_roi_ratio)
-from tasks.geo_referencing.src.task import Task
-from tasks.geo_referencing.src.text_extraction import ResizeTextExtractor, TileTextExtractor
+from tasks.geo_referencing.coordinates_extractor import (GeocodeCoordinatesExtractor, GeoCoordinatesExtractor, UTMCoordinatesExtractor)
+from tasks.geo_referencing.georeference import GeoReference
+from tasks.geo_referencing.roi_extractor import (EntropyROIExtractor, ModelROIExtractor, buffer_fixed, buffer_image_ratio, buffer_roi_ratio)
+from tasks.geo_referencing.task import Task
+from tasks.geo_referencing.text_extraction import ResizeTextExtractor, TileTextExtractor
 
 def create_geo_referencing_pipelines() -> list[Pipeline]:
     p = []

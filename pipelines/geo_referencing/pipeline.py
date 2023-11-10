@@ -1,7 +1,7 @@
 
 from PIL import Image
 
-from tasks.geo_referencing.src.task import (Task, TaskInput, TaskResult)
+from tasks.geo_referencing.task import (Task, TaskInput, TaskResult)
 
 class PipelineInput:
     image: Image = None

@@ -8,12 +8,12 @@ from PIL import Image
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
 from pipelines.geo_referencing.output import (JSONWriter)
 from pipelines.geo_referencing.pipeline import (PipelineInput)
-from tasks.geo_referencing.src.georeference import QueryPoint
+from tasks.geo_referencing.georeference import QueryPoint
 
 Image.MAX_IMAGE_PIXELS = 400000000
 
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/phorne/google-vision-lara.json'
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/credentials.json'
 
 app = Flask(__name__)
 
@@ -86,8 +86,19 @@ def process_image():
     return Response(result, status=200, mimetype="application/json")
 
 
+@app.route("/healthcheck")
+def health():
+    """
+    healthcheck
+    """
+    return ("healthy", 200)
+
+
 def start_server():
     logging.basicConfig(level=logging.INFO, format=f'%(asctime)s %(levelname)s %(name)s\t: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     logger = logging.getLogger('georef app')
     logger.info('*** Starting geo referencing app ***')
     app.run(host='0.0.0.0', port=5000)
+
+if __name__ == "__main__":
+    start_server()

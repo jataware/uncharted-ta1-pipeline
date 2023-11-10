@@ -4,7 +4,7 @@ import math
 from geopy.distance import geodesic
 
 from compute.geo_projection import GeoProjection
-from tasks.geo_referencing.src.task import (Task, TaskInput, TaskResult)
+from tasks.geo_referencing.task import (Task, TaskInput, TaskResult)
 
 class QueryPoint:
 

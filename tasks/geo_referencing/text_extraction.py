@@ -5,7 +5,7 @@ from math import ceil
 from PIL import Image
 
 from compute.ocr import OCR
-from tasks.geo_referencing.src.task import (Task, TaskInput, TaskResult)
+from tasks.geo_referencing.task import (Task, TaskInput, TaskResult)
 
 
 PIXEL_LIM = 6000

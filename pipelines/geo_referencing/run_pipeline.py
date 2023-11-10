@@ -7,13 +7,13 @@ from PIL import Image
 from pipelines.geo_referencing.factory import create_geo_referencing_pipelines
 from pipelines.geo_referencing.output import (CSVWriter, JSONWriter)
 from pipelines.geo_referencing.pipeline import PipelineInput
-from tasks.geo_referencing.src.georeference import QueryPoint
+from tasks.geo_referencing.georeference import QueryPoint
 
 FOV_RANGE_KM = 700              # [km] max range of a image's field-of-view (around the clue coord pt)
 LON_MINMAX = [-66.0, -180.0]     # fallback geo-fence (ALL of USA + Alaska)
 LAT_MINMAX = [24.0, 73.0]
 
-QUERY_PATH_IN = '/Users/phorne/projects/criticalmaas/data/challenge_1/AI4CMA_Map Georeferencing Challenge_Validation Answer Key/'
+QUERY_PATH_IN = ''
 IMG_FILE_EXT = 'tif'
 CLUE_FILEN_SUFFIX = '_clue'
 
@@ -24,7 +24,7 @@ GEOCODE_CACHE = 'temp/geocode/'
 os.makedirs(IMG_CACHE, exist_ok=True)
 os.makedirs(OCR_CACHE, exist_ok=True)
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/phorne/google-vision-lara.json'
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/credentials.json'
 
 def create_input(raster_id:str, image_path:str, query_path:str):
     input = PipelineInput()

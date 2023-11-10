@@ -9,7 +9,7 @@ import matplotlib.path as mpltPath
 
 from compute.geo_coordinates import split_lon_lat_degrees
 from model.coordinate import Coordinate
-from tasks.geo_referencing.src.task import (Task, TaskInput, TaskResult)
+from tasks.geo_referencing.task import (Task, TaskInput, TaskResult)
 from util.cache import (cache_geocode_data, load_geocode_cache)
 from util.coordinates import (ocr_to_coordinates)
 
