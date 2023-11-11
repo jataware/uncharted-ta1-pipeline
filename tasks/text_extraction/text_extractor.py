@@ -133,7 +133,7 @@ class TileTextExtractor(TextExtractor):
         self.split_lim = split_lim
         self._model_id += f"tile-{split_lim}"
 
-    def process(self, im: PILImage, doc_id: str) -> DocTextExtraction:
+    def process(self, doc_id: str, im: PILImage) -> DocTextExtraction:
         """
         Run OCR-based text extractor
         Image may be internally tiled prior to OCR, if needed

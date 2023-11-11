@@ -5,7 +5,6 @@ import json
 import os
 import openai
 import tiktoken
-from tqdm import tqdm
 from typing import List, Optional, Any
 import boto3
 from tasks.metadata_extraction.entities import MetadataExtraction
@@ -183,7 +182,6 @@ class MetadataFileWriter:
     _S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.-]+$")
 
     def __init__(self, output_path: str):
-        self._metadata = metadata
         self._output_path = output_path
 
     def process(self, metadata: MetadataExtraction) -> None:
@@ -206,10 +204,8 @@ class MetadataFileWriter:
         # if the output dir doesn't exist, create it
         if not os.path.exists(output_path):
             os.makedirs(output_path)
-            os.makedirs(output_dir)
 
         json_model = metadata.model_dump_json()
-            json_model = m.model_dump_json()
         with open(
             os.path.join(output_path, f"{metadata.map_id}_metadata.json"), "w"
         ) as outfile:
@@ -217,8 +213,6 @@ class MetadataFileWriter:
 
     @staticmethod
     def _write_to_s3(metadata: MetadataExtraction, output_path: str, client) -> None:
-        metadata: List[MetadataExtraction], output_path: str, client
-    ) -> None:
         """Writes metadata to an s3 bucket"""
 
         # extract bucket from s3 uri
@@ -226,7 +220,6 @@ class MetadataFileWriter:
 
         # write data to the bucket
         json_model = metadata.model_dump_json()
-            json_model = m.model_dump_json()
         client.put_object(
             Body=json_model,
             Bucket=bucket,
