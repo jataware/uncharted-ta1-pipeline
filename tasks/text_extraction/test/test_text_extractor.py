@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 
-@pytest.mark.skip(reason="requires google vision credentials")
+# @pytest.mark.skip(reason="requires google vision credentials")
 def test_resize_text_extractor():
     """
     Test function for ResizeTextExtractor class.
@@ -16,7 +16,7 @@ def test_resize_text_extractor():
     Creates a ResizeTextExtractor object and tests its process() method
     on a test image. Asserts that the resulting doc_text_extraction object
     contains the expected text extractions and that the cache file is created
-    and deleted successfully.
+    and re-used successfully.
     """
     # create ResizeTextExtractor object
     cache_dir = Path("tasks/text_extraction/test/data")
@@ -34,16 +34,22 @@ def test_resize_text_extractor():
     expected_doc_id = f"{doc_id}-google-cloud-visionresize-{pixel_lim}"
     assert doc_text_extraction.doc_id == expected_doc_id
     assert len(doc_text_extraction.extractions) == 5
-
     validate_tile_extractions(doc_text_extraction)
 
     # check cache
     cache_file = cache_dir / f"{expected_doc_id}.json"
     assert cache_file.exists()
+
+    # re-run process() to test cached version
+    doc_text_extraction = rte.process(doc_id, im)
+    assert doc_text_extraction.doc_id == expected_doc_id
+    assert len(doc_text_extraction.extractions) == 5
+    validate_tile_extractions(doc_text_extraction)
+
     cache_file.unlink()
 
 
-@pytest.mark.skip(reason="requires google vision credentials")
+# @pytest.mark.skip(reason="requires google vision credentials")
 def test_tiling_text_extractor():
     """
     Test function for TilingTextExtractor class.
@@ -75,6 +81,13 @@ def test_tiling_text_extractor():
     # check cache
     cache_file = cache_dir / f"{expected_doc_id}.json"
     assert cache_file.exists()
+
+    # re-run process() to test cached version
+    doc_text_extraction = tte.process(doc_id, im)
+    assert doc_text_extraction.doc_id == expected_doc_id
+    assert len(doc_text_extraction.extractions) == 5
+    validate_tile_extractions(doc_text_extraction)
+
     cache_file.unlink()
 
 

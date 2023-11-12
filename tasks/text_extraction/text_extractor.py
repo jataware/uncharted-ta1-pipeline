@@ -1,5 +1,7 @@
 import numpy as np
-import os, logging
+import os
+import logging
+import json
 from math import ceil
 from typing import Tuple, List, Dict, Any
 from pathlib import Path
@@ -81,6 +83,14 @@ class ResizeTextExtractor(TextExtractor):
         # im_orig_size = im.size   #(width, height)
         im_resized, im_resize_ratio = self._resize_image(im)
 
+        doc_key = f"{doc_id}-{self._model_id}"
+        doc_path = os.path.join(self._cache_dir, f"{doc_key}.json")
+
+        # check cache and re-use existing file if present
+        if os.path.isfile(doc_path):
+            with open(doc_path, "rb") as f:
+                return DocTextExtraction(**json.load(f))
+
         ocr_blocks = self._extract_text(im_resized)
 
         # scale OCR pixel co-ords back to original image dimensions
@@ -101,7 +111,14 @@ class ResizeTextExtractor(TextExtractor):
             )
             texts.append(ocr_result)
 
-        return DocTextExtraction(doc_id=f"{doc_id}-{self._model_id}", extractions=texts)
+        doc_text_extraction = DocTextExtraction(doc_id=doc_key, extractions=texts)
+
+        # write to cache
+        with open(doc_path, "w") as f:
+            json_model = doc_text_extraction.model_dump()
+            json.dump(json_model, f)
+
+        return doc_text_extraction
 
     def _resize_image(self, im: PILImage) -> Tuple[PILImage, float]:
         """
@@ -150,6 +167,14 @@ class TileTextExtractor(TextExtractor):
         # TODO -- this code could be modified to include overlap/stride len, etc.
         # (then, any overlapping OCR results need to be de-dup'd)
 
+        doc_key = f"{doc_id}-{self._model_id}"
+        doc_path = os.path.join(self._cache_dir, f"{doc_key}.json")
+
+        # check cache and re-use existing file if present
+        if os.path.isfile(doc_path):
+            with open(doc_path, "rb") as f:
+                return DocTextExtraction(**json.load(f))
+
         im_tiles = self._split_image(im, self.split_lim)
         logger.info(
             f"Image split into {len(im_tiles)} tiles. Extracting OCR text from each..."
@@ -177,7 +202,15 @@ class TileTextExtractor(TextExtractor):
                 text=ocr_block["text"], confidence=1.0, bounds=bounds
             )
             texts.append(ocr_result)
-        return DocTextExtraction(doc_id=f"{doc_id}-{self._model_id}", extractions=texts)
+
+        doc_text_extraction = DocTextExtraction(doc_id=doc_key, extractions=texts)
+
+        # write to cache
+        with open(doc_path, "w") as f:
+            json_model = doc_text_extraction.model_dump()
+            json.dump(json_model, f)
+
+        return doc_text_extraction
 
     def _split_image(self, image: PILImage, size_limit: int) -> List[Tile]:
         """
