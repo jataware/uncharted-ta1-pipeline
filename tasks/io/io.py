@@ -1,8 +1,9 @@
 from pathlib import Path
 import os
 import re
+import json
 from pydantic import BaseModel
-from typing import Iterator, List, Tuple
+from typing import Iterator, List, Tuple, Sequence, Union
 from PIL.Image import Image as PILImage
 from PIL import Image
 import boto3
@@ -43,7 +44,9 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
 class JSONFileWriter:
     """Writes a BaseModel as a JSON file to either the local file system or an s3 bucket"""
 
-    def process(self, output_location: str, data: BaseModel) -> None:
+    def process(
+        self, output_location: str, data: Union[BaseModel, Sequence[BaseModel]]
+    ) -> None:
         """Writes metadata to a json file on the local file system or to an s3 bucket based
         on the output location format"""
 
@@ -54,19 +57,27 @@ class JSONFileWriter:
             self._write_to_file(data, Path(output_location))
 
     @staticmethod
-    def _write_to_file(data: BaseModel, output_location: Path) -> None:
+    def _write_to_file(
+        data: Union[BaseModel, Sequence[BaseModel]], output_location: Path
+    ) -> None:
         """Writes metadata to a json file"""
 
         # if the output dir doesn't exist, create it
         if not output_location.exists():
             os.makedirs(output_location)
 
-        json_model = data.model_dump_json()
+        # write the data to the output file
         with open(output_location, "w") as outfile:
-            outfile.write(json_model)
+            if isinstance(data, Sequence):
+                for d in data:
+                    json.dump(d.model_dump(), outfile)
+            else:
+                json.dump(data.model_dump(), outfile)
 
     @staticmethod
-    def _write_to_s3(data: BaseModel, output_uri: str) -> None:
+    def _write_to_s3(
+        data: Union[BaseModel, Sequence[BaseModel]], output_uri: str
+    ) -> None:
         """Writes metadata to an s3 bucket"""
 
         # create s3 client
@@ -76,9 +87,16 @@ class JSONFileWriter:
         bucket = output_uri.split("/")[2]
 
         # write data to the bucket
-        json_model = data.model_dump_json()
-        client.put_object(
-            Body=json_model,
-            Bucket=bucket,
-            Key=output_uri,
-        )
+        if isinstance(data, Sequence):
+            model_list = [d.model_dump() for d in data]
+            model_str = json.dumps(model_list)
+            client.put_object(
+                Body=bytes(model_str.encode("utf-8")), Bucket=bucket, Key=output_uri
+            )
+        else:
+            json_model = data.model_dump_json()
+            client.put_object(
+                Body=bytes(json_model.encode("utf-8")),
+                Bucket=bucket,
+                Key=output_uri,
+            )
