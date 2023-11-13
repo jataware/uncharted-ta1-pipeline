@@ -59,8 +59,8 @@ class ResizeTextExtractor(TextExtractor):
     def __init__(
         self,
         cache_dir: Path,
-        to_blocks: bool,
-        document_ocr: bool,
+        to_blocks=True,
+        document_ocr=False,
         pixel_lim: int = PIXEL_LIM_DEFAULT,
     ):
         super().__init__(cache_dir, to_blocks, document_ocr)
