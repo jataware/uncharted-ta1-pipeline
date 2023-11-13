@@ -61,8 +61,6 @@ def test_tiling_text_extractor():
     """
     # create TilingTextExtractor object
     cache_dir = Path("tasks/text_extraction/test/data")
-    to_blocks = True
-    document_ocr = False
     tile_size = 256
     tte = TileTextExtractor(cache_dir, tile_size)
 
@@ -73,6 +71,7 @@ def test_tiling_text_extractor():
 
     # check doc_text_extraction
     expected_doc_id = f"{doc_id}-google-cloud-visiontile-{tile_size}"
+
     assert doc_text_extraction.doc_id == expected_doc_id
     assert len(doc_text_extraction.extractions) == 5
 

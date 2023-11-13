@@ -2,7 +2,7 @@ from google.cloud.vision import ImageAnnotatorClient
 from google.cloud.vision import Image as VisionImage
 from google.cloud.vision_v1.types.geometry import BoundingPoly
 from PIL.Image import Image as PILImage
-import cv2
+import cv2.cv2 as cv
 import numpy as np
 import io, copy, logging
 from typing import List, Dict, Any, Optional, Tuple
@@ -184,33 +184,34 @@ class GoogleVisionOCR:
         if poly2 is None:
             return poly1
 
-        min_x = poly1.vertices[0].x
-        min_y = poly1.vertices[0].y
-        max_x = poly1.vertices[0].x
-        max_y = poly1.vertices[0].y
+        min_x = poly1_vertices[0].x  # type: ignore
+        min_x = poly1_vertices[0].x  # type: ignore
+        min_y = poly1.vertices[0].y  # type: ignore
+        max_x = poly1.vertices[0].x  # type: ignore
+        max_y = poly1.vertices[0].y  # type: ignore
 
-        for vertex in poly1.vertices:
+        for vertex in poly1.vertices:  # type: ignore
             min_x = min(min_x, vertex.x)
             min_y = min(min_y, vertex.y)
             max_x = max(max_x, vertex.x)
             max_y = max(max_y, vertex.y)
 
-        for vertex in poly2.vertices:
+        for vertex in poly2.vertices:  # type: ignore
             min_x = min(min_x, vertex.x)
             min_y = min(min_y, vertex.y)
             max_x = max(max_x, vertex.x)
             max_y = max(max_y, vertex.y)
 
         poly_combined = copy.deepcopy(poly1)
-        poly_combined.vertices[0].x = min_x
-        poly_combined.vertices[1].x = max_x
-        poly_combined.vertices[2].x = max_x
-        poly_combined.vertices[3].x = min_x
+        poly_combined.vertices[0].x = min_x  # type: ignore
+        poly_combined.vertices[1].x = max_x  # type: ignore
+        poly_combined.vertices[2].x = max_x  # type: ignore
+        poly_combined.vertices[3].x = min_x  # type: ignore
 
-        poly_combined.vertices[0].y = min_y
-        poly_combined.vertices[1].y = min_y
-        poly_combined.vertices[2].y = max_y
-        poly_combined.vertices[3].y = max_y
+        poly_combined.vertices[0].y = min_y  # type: ignore
+        poly_combined.vertices[1].y = min_y  # type: ignore
+        poly_combined.vertices[2].y = max_y  # type: ignore
+        poly_combined.vertices[3].y = max_y  # type: ignore
 
         return poly_combined
 
@@ -254,7 +255,7 @@ class GoogleVisionOCR:
         """
         convert google vision BoundingPoly object to list of x,y points
         """
-        poly_pts = [(vertex.x, vertex.y) for vertex in bounding_poly.vertices]
+        poly_pts = [(vertex.x, vertex.y) for vertex in bounding_poly.vertices]  # type: ignore
 
         return poly_pts
 
@@ -285,5 +286,5 @@ class GoogleVisionOCR:
         Converts an opencv image (numpy array) to a google vision api image object
         """
         # (from https://jdhao.github.io/2019/07/06/python_opencv_pil_image_to_bytes/)
-        success, encoded_image = cv2.imencode(".jpg", cv_image)
+        success, encoded_image = cv.imencode(".jpg", cv_image)
         return VisionImage(content=encoded_image.tobytes())
