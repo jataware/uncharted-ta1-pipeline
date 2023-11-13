@@ -9,6 +9,7 @@ from PIL import Image
 from PIL.Image import Image as PILImage
 from .ocr.google_vision_ocr import GoogleVisionOCR
 from .entities import DocTextExtraction, TextExtraction, Point, Tile
+from schema.ta1_schema import PageExtraction, ExtractionIdentifier, Map
 
 # ENV VARIABLE -- needed for google-vision API
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/path/to/google/vision/creds/json/file'
@@ -245,3 +246,25 @@ class TileTextExtractor(TextExtractor):
             split_vals.append((current, next_inc))
             current = next_inc
         return split_vals
+
+
+class SchemaTransformer:
+    """Converts metadata to a CM ta1 schema object"""
+
+    # TODO: this is a temporary solution until we have a better way to convert
+    def process(self, doc_text_extraction: DocTextExtraction) -> List[PageExtraction]:
+        """Converts metadata to a CM ta1 schema object"""
+        page_extractions: List[PageExtraction] = []
+        for text_extraction in doc_text_extraction.extractions:
+            page_extraction = PageExtraction(
+                name="ocr",
+                model=ExtractionIdentifier(
+                    id=1, model="google-cloud-vision", field="ocr"
+                ),
+                ocr_text=text_extraction.text,
+                # confidence=text_extraction.confidence,
+                bounds=[(v.x, v.y) for v in text_extraction.bounds],
+                color_estimation=None,
+            )
+            page_extractions.append(page_extraction)
+        return page_extractions
