@@ -1,12 +1,10 @@
 from flask import Flask, request, Response
 import logging, json
-import numpy as np
-import cv2.cv2 as cv2
-from urllib.parse import urlparse
-from metadata_extraction_pipeline import MetadataExtractorPipeline, SchemaTransformer
 from hashlib import sha1
+from pathlib import Path
 from io import BytesIO
 from PIL import Image
+from metadata_extraction_pipeline import MetadataExtractorPipeline
 
 app = Flask(__name__)
 
@@ -60,7 +58,7 @@ if __name__ == "__main__":
     logger.info("*** Starting Legend and Map Segmenter App ***")
 
     # init segmenter
-    metadata_extraction = MetadataExtractorPipeline("work_dir")
+    metadata_extraction = MetadataExtractorPipeline(Path("tmp/lara/workdir"))
 
     #### start flask server
     app.run(host="0.0.0.0", port=5000)
