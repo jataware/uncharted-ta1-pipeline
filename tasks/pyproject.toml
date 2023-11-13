@@ -26,3 +26,6 @@ dependencies = [
     "Shapely",
     "utm",
 ]
+
+[tool.setuptools.packages]
+find = {}
