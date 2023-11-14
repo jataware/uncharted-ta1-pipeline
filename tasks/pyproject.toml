@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lara-tasks"
+version = "0.1.0"
+description = "LARA pipeline tasks"
+readme = "README.md"
+dependencies = [
+    "numpy",
+    "tqdm",
+    "pydantic",
+    "tiktoken",
+    "openai",
+    "google-cloud-vision",
+    "grpcio",
+    "boto3",
+    "pillow",
+    "geopy",
+    "matplotlib",
+    "opencv_python",
+    "protobuf",
+    "scikit_image",
+    "scikit_learn",
+    "Shapely",
+    "utm",
+]
+
+[tool.setuptools.packages]
+find = {}

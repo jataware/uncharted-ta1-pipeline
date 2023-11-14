@@ -1,10 +1,24 @@
 from flask import Flask, request, Response
 import logging, json
-from hashlib import sha1
 from pathlib import Path
-from io import BytesIO
+import numpy as np
+from hashlib import sha1
+from typing import Tuple
+
+# import cv2
+# from urllib.parse import urlparse
+import io
 from PIL import Image
-from metadata_extraction_pipeline import MetadataExtractorPipeline
+
+import env_defaults as env
+
+from .text_extraction_pipeline import TextExtractionPipeline
+from tasks.text_extraction.entities import DocTextExtraction
+
+
+#
+# Flask web app for text extraction
+#
 
 app = Flask(__name__)
 
@@ -12,26 +26,29 @@ app = Flask(__name__)
 @app.route("/api/process_image", methods=["POST"])
 def process_image():
     """
-    performs metadata extraction on an image
+    Perform ocr text extraction on an image
     request.data is expected to contain binary image file buffer
     """
 
-    # Adapted from code samples here: https://gist.github.com/kylehounslow/767fb72fde2ebdd010a0bf4242371594
     try:
-        # open the image from the supplied byte stream
-        bytes_io = BytesIO(request.data)
-        image = Image.open(bytes_io)
+        # decode and open as a PIL Image
+        im = Image.open(io.BytesIO(request.data))
 
         # use the hash as the doc id since we don't have a filename
         doc_id = sha1(request.data).hexdigest()
 
-        # ran the image through the metadata extraction pipeline
-        data = iter([(doc_id, image)])
-        result = metadata_extraction.run(data)
-        map_json = json.dumps(SchemaTransformer().transform(result))
+        input = iter([(doc_id, im)])
+
+        results = pipeline.run(input)
+        if len(results) == 0:
+            msg = "No text extracted"
+            logging.warning(msg)
+            return (msg, 500)
 
         # convert result to a JSON array
-        return Response(map_json, status=200, mimetype="application/json")
+        result_json = json.dumps(results[0].model_dump)
+
+        return Response(result_json, status=200, mimetype="application/json")
 
     except Exception as e:
         msg = f"Error with process_image: {repr(e)}"
@@ -54,11 +71,12 @@ if __name__ == "__main__":
         format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    logger = logging.getLogger("segmenter app")
-    logger.info("*** Starting Legend and Map Segmenter App ***")
+    logger = logging.getLogger("text_extractor app")
+    logger.info("*** Starting Text Extractor App ***")
 
-    # init segmenter
-    metadata_extraction = MetadataExtractorPipeline(Path("tmp/lara/workdir"))
+    pipeline = TextExtractionPipeline(
+        Path("/tmp/lara/workdir"), tile=True, verbose=False
+    )
 
     #### start flask server
     app.run(host="0.0.0.0", port=5000)
