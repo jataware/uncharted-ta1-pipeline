@@ -2,7 +2,7 @@ from google.cloud.vision import ImageAnnotatorClient
 from google.cloud.vision import Image as VisionImage
 from google.cloud.vision_v1.types.geometry import BoundingPoly
 from PIL.Image import Image as PILImage
-import cv2.cv2 as cv
+import cv2 as cv
 import numpy as np
 import io, copy, logging
 from typing import List, Dict, Any, Optional, Tuple
@@ -184,8 +184,8 @@ class GoogleVisionOCR:
         if poly2 is None:
             return poly1
 
-        min_x = poly1_vertices[0].x  # type: ignore
-        min_x = poly1_vertices[0].x  # type: ignore
+        min_x = poly1.vertices[0].x  # type: ignore
+        min_x = poly1.vertices[0].x  # type: ignore
         min_y = poly1.vertices[0].y  # type: ignore
         max_x = poly1.vertices[0].x  # type: ignore
         max_y = poly1.vertices[0].y  # type: ignore

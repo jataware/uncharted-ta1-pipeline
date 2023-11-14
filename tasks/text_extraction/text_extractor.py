@@ -66,7 +66,7 @@ class ResizeTextExtractor(TextExtractor):
     ):
         super().__init__(cache_dir, to_blocks, document_ocr)
         self._pixel_lim = pixel_lim
-        self._model_id += f"resize-{pixel_lim}"
+        self._model_id += f"_resize-{pixel_lim}"
 
     def process(self, doc_id: str, im: PILImage) -> DocTextExtraction:
         """
@@ -84,7 +84,7 @@ class ResizeTextExtractor(TextExtractor):
         # im_orig_size = im.size   #(width, height)
         im_resized, im_resize_ratio = self._resize_image(im)
 
-        doc_key = f"{doc_id}-{self._model_id}"
+        doc_key = f"{doc_id}_{self._model_id}"
         doc_path = os.path.join(self._cache_dir, f"{doc_key}.json")
 
         # check cache and re-use existing file if present
@@ -149,7 +149,7 @@ class TileTextExtractor(TextExtractor):
     def __init__(self, cache_dir: Path, split_lim: int = PIXEL_LIM_DEFAULT):
         super().__init__(cache_dir)
         self.split_lim = split_lim
-        self._model_id += f"tile-{split_lim}"
+        self._model_id += f"_tile-{split_lim}"
 
     def process(self, doc_id: str, im: PILImage) -> DocTextExtraction:
         """
@@ -168,7 +168,7 @@ class TileTextExtractor(TextExtractor):
         # TODO -- this code could be modified to include overlap/stride len, etc.
         # (then, any overlapping OCR results need to be de-dup'd)
 
-        doc_key = f"{doc_id}-{self._model_id}"
+        doc_key = f"{doc_id}_{self._model_id}"
         doc_path = os.path.join(self._cache_dir, f"{doc_key}.json")
 
         # check cache and re-use existing file if present

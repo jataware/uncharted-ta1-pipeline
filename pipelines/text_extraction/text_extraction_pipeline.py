@@ -5,6 +5,10 @@ from typing import Iterator, Tuple, List
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 from tasks.text_extraction.entities import DocTextExtraction
 from PIL.Image import Image as PILImage
+from PIL import Image
+
+# https://stackoverflow.com/questions/51152059/pillow-in-python-wont-let-me-open-image-exceeds-limit
+Image.MAX_IMAGE_PIXELS = 400000000  # to allow PIL to load large images
 
 
 class TextExtractionPipeline:
@@ -20,27 +24,21 @@ class TextExtractionPipeline:
         List[DocTextExtraction]: A list of DocTextExtraction objects containing the extracted text.
     """
 
-    def __init__(
-        self,
-        work_dir: Path,
-        tile=False,
-        verbose=False,
-    ):
+    def __init__(self, work_dir: Path, tile=True, pixel_limit=6000, verbose=False):
         self._ocr_output = Path(os.path.join(work_dir, "ocr_output"))
         self._verbose = verbose
         self._tile = tile
+        self._pixel_limit = pixel_limit
 
     def run(self, input: Iterator[Tuple[str, PILImage]]) -> List[DocTextExtraction]:
         """Runs OCR on the supplied stream of input images"""
         results: List[DocTextExtraction] = []
 
         if self._tile:
-            ocr_task = TileTextExtractor(
-                self._ocr_output,
-            )
+            ocr_task = TileTextExtractor(self._ocr_output, split_lim=self._pixel_limit)
         else:
             ocr_task = ResizeTextExtractor(
-                self._ocr_output,
+                self._ocr_output, pixel_lim=self._pixel_limit
             )
 
         for doc_id, image in tqdm.tqdm(input):

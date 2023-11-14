@@ -62,9 +62,13 @@ class JSONFileWriter:
     ) -> None:
         """Writes metadata to a json file"""
 
-        # if the output dir doesn't exist, create it
-        if not output_location.exists():
-            os.makedirs(output_location)
+        # get the director of the file
+        if output_location.is_dir():
+            raise ValueError(f"Output location {output_location} is not a file.")
+
+        output_dir = output_location.parent
+        if not output_dir.exists():
+            os.makedirs(output_dir)
 
         # write the data to the output file
         with open(output_location, "w") as outfile:

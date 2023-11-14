@@ -20,9 +20,6 @@ from tasks.text_extraction.entities import DocTextExtraction
 # Flask web app for text extraction
 #
 
-# https://stackoverflow.com/questions/51152059/pillow-in-python-wont-let-me-open-image-exceeds-limit
-Image.MAX_IMAGE_PIXELS = 400000000  # to allow PIL to load large images
-
 app = Flask(__name__)
 
 
