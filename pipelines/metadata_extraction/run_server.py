@@ -5,6 +5,7 @@ from pathlib import Path
 from io import BytesIO
 from PIL import Image
 from metadata_extraction_pipeline import MetadataExtractorPipeline
+from tasks.metadata_extraction.metadata_extraction import SchemaTransformer
 
 app = Flask(__name__)
 
@@ -25,10 +26,15 @@ def process_image():
         # use the hash as the doc id since we don't have a filename
         doc_id = sha1(request.data).hexdigest()
 
-        # ran the image through the metadata extraction pipeline
+        # run the image through the metadata extraction pipeline
         data = iter([(doc_id, image)])
         result = metadata_extraction.run(data)
-        map_json = json.dumps(SchemaTransformer().transform(result))
+        if len(result) == 0:
+            msg = "No text extracted"
+            logging.warning(msg)
+            return (msg, 500)
+
+        map_json = json.dumps(SchemaTransformer().process(result[0]))
 
         # convert result to a JSON array
         return Response(map_json, status=200, mimetype="application/json")
@@ -55,7 +61,7 @@ if __name__ == "__main__":
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     logger = logging.getLogger("segmenter app")
-    logger.info("*** Starting Legend and Map Segmenter App ***")
+    logger.info("*** Starting map metadata app ***")
 
     # init segmenter
     metadata_extraction = MetadataExtractorPipeline(Path("tmp/lara/workdir"))

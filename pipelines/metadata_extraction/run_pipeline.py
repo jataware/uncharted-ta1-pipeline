@@ -1,13 +1,12 @@
 import argparse
 from pathlib import Path
+import logging
+import os
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
-from tasks.io.io import ImageFileInputIterator
-from tasks.metadata_extraction.metadata_extraction import (
-    SchemaFileWriter,
-    MetadataFileWriter,
-)
+from tasks.metadata_extraction.metadata_extraction import SchemaTransformer
+from tasks.io.io import ImageFileInputIterator, JSONFileWriter
 
 
 def main():
@@ -28,14 +27,15 @@ def main():
     results = pipeline.run(input)
 
     # write the results as TA1 schema Map files
-    if p.ta1_schema:
-        schema_file_writer = SchemaFileWriter(p.output)
-        for result in results:
-            schema_file_writer.process(result)
-    else:
-        file_writer = MetadataFileWriter(p.output)
-        for result in results:
-            file_writer.process(result)
+    file_writer = JSONFileWriter()
+    for result in results:
+        if p.ta1_schema:
+            schema_result = SchemaTransformer().process(result)
+            path = os.path.join(p.output, f"{result.map_id}_map_schema.json")
+            file_writer.process(path, schema_result)
+        else:
+            path = os.path.join(p.output, f"{result.map_id}_metadata.json")
+            file_writer.process(path, result)
 
 
 if __name__ == "__main__":

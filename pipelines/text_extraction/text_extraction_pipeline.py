@@ -7,9 +7,6 @@ from tasks.text_extraction.entities import DocTextExtraction
 from PIL.Image import Image as PILImage
 from PIL import Image
 
-# https://stackoverflow.com/questions/51152059/pillow-in-python-wont-let-me-open-image-exceeds-limit
-Image.MAX_IMAGE_PIXELS = 400000000  # to allow PIL to load large images
-
 
 class TextExtractionPipeline:
     """
@@ -29,6 +26,8 @@ class TextExtractionPipeline:
         self._verbose = verbose
         self._tile = tile
         self._pixel_limit = pixel_limit
+
+        print(f"Tile: {self._tile}")
 
     def run(self, input: Iterator[Tuple[str, PILImage]]) -> List[DocTextExtraction]:
         """Runs OCR on the supplied stream of input images"""

@@ -47,7 +47,7 @@ class TextExtractor:
 
         return ocr_texts
 
-    def process(self):
+    def process(self, doc_id: str, im: PILImage):
         # override in inherited classes below
         raise NotImplementedError
 
