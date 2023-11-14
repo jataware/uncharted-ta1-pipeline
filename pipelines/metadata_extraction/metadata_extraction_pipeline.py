@@ -4,7 +4,7 @@ import tqdm
 from tasks.metadata_extraction.metadata_extraction import (
     MetadataExtractor,
 )
-from tasks.text_extraction_2.gva_ocr import GoogleVisionOCR
+from tasks.text_extraction.text_extractor import ResizeTextExtractor
 from tasks.metadata_extraction.entities import MetadataExtraction
 from typing import Iterator, Tuple, List
 from PIL.Image import Image as PILImage
@@ -21,7 +21,7 @@ class MetadataExtractorPipeline:
 
     def run(self, input: Iterator[Tuple[str, PILImage]]) -> List[MetadataExtraction]:
         # instantiate the loader
-        ocr_task = GoogleVisionOCR(self._ocr_output, True, True)
+        ocr_task = ResizeTextExtractor(self._ocr_output, False, True)
         metadata_extractor = MetadataExtractor(self._verbose)
 
         result: List[MetadataExtraction] = []

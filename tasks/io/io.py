@@ -9,6 +9,10 @@ from PIL import Image
 import boto3
 
 
+# https://stackoverflow.com/questions/51152059/pillow-in-python-wont-let-me-open-image-exceeds-limit
+Image.MAX_IMAGE_PIXELS = 400000000  # to allow PIL to load large images
+
+
 # regex for matching s3 uris
 S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.-]+$")
 

@@ -8,7 +8,7 @@ import tiktoken
 from typing import List, Optional, Any
 import boto3
 from tasks.metadata_extraction.entities import MetadataExtraction
-from tasks.text_extraction_2.entities import DocTextExtraction
+from tasks.text_extraction.entities import DocTextExtraction
 from schema.ta1_schema import Map, MapFeatureExtractions, ProjectionMeta
 
 # env var for openai api key
@@ -224,62 +224,6 @@ class MetadataFileWriter:
             Body=json_model,
             Bucket=bucket,
             Key=f"{metadata.map_id}_metadata.json",
-        )
-
-
-class SchemaFileWriter:  # TODO: factor out common code with MetadataFileWriter
-    """Converts metadata to a schema objects, and writes them as a json
-    file on the local file system or to an s3 bucket"""
-
-    _S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.-]+$")
-
-    def __init__(self, output_path: str):
-        self._output_path = output_path
-
-    def process(self, metadata: MetadataExtraction) -> None:
-        """Writes metadata to a json file on the local file system or to an s3 bucket"""
-
-        # check to see if path is an s3 uri - otherwise treat it as a file path
-        if self._S3_URI_MATCHER.match(str(self._output_path)):
-            self._write_to_s3(
-                metadata,
-                self._output_path,
-                boto3.client("s3"),
-            )
-        else:
-            self._write_to_file(metadata, self._output_path)
-
-    @staticmethod
-    def _write_to_file(metadata: MetadataExtraction, output_path: str) -> None:
-        """Writes metadata to a json file"""
-
-        # if the output dir doesn't exist, create it
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-
-        map = SchemaTransformer().process(metadata)
-        json_model = map.model_dump_json()
-        with open(
-            os.path.join(output_path, f"{metadata.map_id}_map.json"), "w"
-        ) as outfile:
-            outfile.write(json_model)
-
-    @staticmethod
-    def _write_to_s3(
-        metadata: MetadataExtraction, output_path: str, client: Any
-    ) -> None:
-        """Writes metadata to an s3 bucket"""
-
-        # extract bucket from s3 uri
-        bucket = output_path.split("/")[2]
-
-        # write data to the bucket
-        schema_map = SchemaTransformer().process(metadata)
-        json_model = schema_map.model_dump_json()
-        client.put_object(
-            Body=json_model,
-            Bucket=bucket,
-            Key=f"{metadata.map_id}_map.json",
         )
 
 
