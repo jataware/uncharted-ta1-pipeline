@@ -6,13 +6,12 @@ import os
 from PIL import Image
 from scipy.ndimage import label as scipy_label
 from tqdm import tqdm
-from typing import Dict, List, Union, Mapping
+from typing import Dict, List, Union
 
 Image.MAX_IMAGE_PIXELS = 500000000
 
 
 class CompetitionCOCOLoader:
-
 
     """
     Assumptions to be made before using this loader:
@@ -45,6 +44,8 @@ class CompetitionCOCOLoader:
             flat_values = [i for j in out_dict.values() for i in j]
             for match in match_candidates:
                 if match in flat_values:
+                    # This is really bad, but its temporary. We ought to just preprocess and store the training/validation data somewhere.
+                    # The logic here is that since we are matching longer maps first, we can remove any matches already in the output dict since we know that the longest match is the most specific.
                     print(f'Removing duplicate match: {match} from map: {map_name}, since it is already in the output dict.')
                     match_candidates.remove(match)
             out_dict[map_name] = match_candidates
@@ -64,6 +65,7 @@ class CompetitionCOCOLoader:
     def construct_bounding_boxes(bitmask: Union[str, np.array],
                                  bounding_box_size: List[int] = [50, 50]) -> List[List[int]]:
     # this is slow, due to massive size of bitmask files.. the points labeled in the .json files are the legend icons.
+    # not sure what to do about this.
 
         if isinstance(bitmask, str):
             bitmask = np.array(Image.open(bitmask))
@@ -106,20 +108,22 @@ class CompetitionCOCOLoader:
         maps = self._fetch_map_paths(raster_dir)
         map_metadata = [self._fetch_map_metadata(_map) for _map in maps]
         label_names = list(label_map.keys())
-        bitmask_reverse_index = {i: label for label in label_names for i in label_map[label]}
-        label_aliases = [i for j in label_map.values() for i in j] # account for variation in bitmask file names, flatten all values in mapping.
+        bitmask_reverse_index = {}
+        for k, v in label_map.items():
+            for i in v:
+                bitmask_reverse_index[i] = k
+        label_aliases = set([i for j in label_map.values() for i in j]) # account for variation in bitmask file names, flatten all values in mapping.
         categories = [{'id': i, 'name': label_names[i]} for i in range(len(label_names))] # Create category ID mapping.
         annotations = []
 
         label_paths_dict = self._fetch_bitmask_paths(raster_dir, maps)
         for map_name, label_paths in tqdm(label_paths_dict.items(), desc='Processing bitmasks'):
-            filtered_label_paths = [i for i in label_paths if any(label in i for label in label_aliases)] # Check any bitmask that contains a label alias.
+            filtered_label_paths = set([i for i in label_paths if any(label in i for label in label_aliases)]) # Check any bitmask that contains a label alias.
             detected_label_names = []
 
             for i in filtered_label_paths:
                 for alias in label_aliases:
                     if alias in i:
-                        print(f'detected label: {bitmask_reverse_index[alias]} from alias {alias}')
                         detected_label_names.append(bitmask_reverse_index[alias])
 
             all_bboxes = [self.construct_bounding_boxes(i, bbox_shape) for i in filtered_label_paths]
