@@ -6,7 +6,7 @@ from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
 from tasks.metadata_extraction.metadata_extraction import SchemaTransformer
-from tasks.io.io import ImageFileInputIterator, JSONFileWriter
+from common.io import ImageFileInputIterator, JSONFileWriter
 
 
 def main():
