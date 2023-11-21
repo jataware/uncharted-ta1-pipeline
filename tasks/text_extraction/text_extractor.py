@@ -10,6 +10,7 @@ from PIL.Image import Image as PILImage
 from .ocr.google_vision_ocr import GoogleVisionOCR
 from .entities import DocTextExtraction, TextExtraction, Point, Tile
 from schema.ta1_schema import PageExtraction, ExtractionIdentifier, Map
+from ..common.task import Task, TaskInput, TaskResult
 
 # ENV VARIABLE -- needed for google-vision API
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/path/to/google/vision/creds/json/file'
@@ -19,14 +20,19 @@ PIXEL_LIM_DEFAULT = 6000  # default max pixel limit for input image (determines 
 logger = logging.getLogger(__name__)
 
 
-class TextExtractor:
+class TextExtractor(Task):
     """
     Base class for OCR-based text extraction
     """
 
     def __init__(
-        self, cache_dir: Path, to_blocks: bool = True, document_ocr: bool = False
+        self,
+        task_id: str,
+        cache_dir: Path,
+        to_blocks: bool = True,
+        document_ocr: bool = False,
     ):
+        super().__init__(task_id)
         self._ocr = GoogleVisionOCR()
         self._model_id = "google-cloud-vision"
         self._to_blocks = to_blocks
@@ -47,8 +53,7 @@ class TextExtractor:
 
         return ocr_texts
 
-    def process(self, doc_id: str, im: PILImage):
-        # override in inherited classes below
+    def run(self, input: TaskInput) -> TaskResult:
         raise NotImplementedError
 
 
@@ -59,38 +64,32 @@ class ResizeTextExtractor(TextExtractor):
 
     def __init__(
         self,
+        task_id: str,
         cache_dir: Path,
         to_blocks=True,
         document_ocr=False,
         pixel_lim: int = PIXEL_LIM_DEFAULT,
     ):
-        super().__init__(cache_dir, to_blocks, document_ocr)
+        super().__init__(task_id, cache_dir, to_blocks, document_ocr)
         self._pixel_lim = pixel_lim
         self._model_id += f"_resize-{pixel_lim}"
 
-    def process(self, doc_id: str, im: PILImage) -> DocTextExtraction:
-        """
-        Run OCR-based text extractor
-        Image may be internally scaled prior to OCR, if needed
-
-        Args:
-            im: input image (PIL image format)
-            to_blocks: =True; group OCR results into blocks/lines of text related text
-            document_ocr: =False; use 'document level' OCR, meant for images with dense paragraphs/columns of text
-        Returns:
-            DocumentTextExtraction object
-            (in pixel coords of full-sized image, not resized pixel coords)
-        """
+    def run(self, input: TaskInput) -> TaskResult:
         # im_orig_size = im.size   #(width, height)
-        im_resized, im_resize_ratio = self._resize_image(im)
+        if input.image is None:
+            return TaskResult(self._task_id)
 
-        doc_key = f"{doc_id}_{self._model_id}"
+        im_resized, im_resize_ratio = self._resize_image(input.image)
+
+        doc_key = f"{input.raster_id}_{self._model_id}"
         doc_path = os.path.join(self._cache_dir, f"{doc_key}.json")
 
         # check cache and re-use existing file if present
         if os.path.isfile(doc_path):
             with open(doc_path, "rb") as f:
-                return DocTextExtraction(**json.load(f))
+                return TaskResult(
+                    self._task_id, DocTextExtraction(**json.load(f)).model_dump()
+                )
 
         ocr_blocks = self._extract_text(im_resized)
 
@@ -119,7 +118,7 @@ class ResizeTextExtractor(TextExtractor):
             json_model = doc_text_extraction.model_dump()
             json.dump(json_model, f)
 
-        return doc_text_extraction
+        return TaskResult(self._task_id, doc_text_extraction.model_dump())
 
     def _resize_image(self, im: PILImage) -> Tuple[PILImage, float]:
         """
@@ -146,37 +145,41 @@ class TileTextExtractor(TextExtractor):
     OCR-based text extraction with image tiling prior to OCR
     """
 
-    def __init__(self, cache_dir: Path, split_lim: int = PIXEL_LIM_DEFAULT):
-        super().__init__(cache_dir)
+    def __init__(
+        self, task_id: str, cache_dir: Path, split_lim: int = PIXEL_LIM_DEFAULT
+    ):
+        super().__init__(task_id, cache_dir)
         self.split_lim = split_lim
         self._model_id += f"_tile-{split_lim}"
 
-    def process(self, doc_id: str, im: PILImage) -> DocTextExtraction:
+    def run(self, input: TaskInput) -> TaskResult:
         """
         Run OCR-based text extractor
         Image may be internally tiled prior to OCR, if needed
 
         Args:
-            im: input image (PIL image format)
-            to_blocks: =True; group OCR results into blocks/lines of text related text
-            document_ocr: =False; use 'document level' OCR, meant for images with dense paragraphs/columns of text
+            input: TaskInput object with image to process
         Returns:
-            List of PageExtraction objects
-            (in pixel coords of full-sized image, not resized pixel coords)
+            TaskResult object containing a DocTextExtraction object
         """
 
         # TODO -- this code could be modified to include overlap/stride len, etc.
         # (then, any overlapping OCR results need to be de-dup'd)
 
-        doc_key = f"{doc_id}_{self._model_id}"
+        if input.image is None:
+            return TaskResult(self._task_id)
+
+        doc_key = f"{input.raster_id}_{self._model_id}"
         doc_path = os.path.join(self._cache_dir, f"{doc_key}.json")
 
         # check cache and re-use existing file if present
         if os.path.isfile(doc_path):
             with open(doc_path, "rb") as f:
-                return DocTextExtraction(**json.load(f))
+                return TaskResult(
+                    self._task_id, DocTextExtraction(**json.load(f)).model_dump()
+                )
 
-        im_tiles = self._split_image(im, self.split_lim)
+        im_tiles = self._split_image(input.image, self.split_lim)
         logger.info(
             f"Image split into {len(im_tiles)} tiles. Extracting OCR text from each..."
         )
@@ -211,7 +214,7 @@ class TileTextExtractor(TextExtractor):
             json_model = doc_text_extraction.model_dump()
             json.dump(json_model, f)
 
-        return doc_text_extraction
+        return TaskResult(self._task_id, doc_text_extraction.model_dump())
 
     def _split_image(self, image: PILImage, size_limit: int) -> List[Tile]:
         """
@@ -246,25 +249,3 @@ class TileTextExtractor(TextExtractor):
             split_vals.append((current, next_inc))
             current = next_inc
         return split_vals
-
-
-class SchemaTransformer:
-    """Converts metadata to a CM ta1 schema object"""
-
-    # TODO: this is a temporary solution until we have a better way to convert
-    def process(self, doc_text_extraction: DocTextExtraction) -> List[PageExtraction]:
-        """Converts metadata to a CM ta1 schema object"""
-        page_extractions: List[PageExtraction] = []
-        for text_extraction in doc_text_extraction.extractions:
-            page_extraction = PageExtraction(
-                name="ocr",
-                model=ExtractionIdentifier(
-                    id=1, model="google-cloud-vision", field="ocr"
-                ),
-                ocr_text=text_extraction.text,
-                # confidence=text_extraction.confidence,
-                bounds=[(v.x, v.y) for v in text_extraction.bounds],
-                color_estimation=None,
-            )
-            page_extractions.append(page_extraction)
-        return page_extractions

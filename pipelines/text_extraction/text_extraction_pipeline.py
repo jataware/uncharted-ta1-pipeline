@@ -1,50 +1,111 @@
-import os
 from pathlib import Path
-import tqdm
-from typing import Iterator, Tuple, List
+from typing import List
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 from tasks.text_extraction.entities import DocTextExtraction
-from PIL.Image import Image as PILImage
-from PIL import Image
+from tasks.common.pipeline import (
+    Pipeline,
+    BaseModelListOutput,
+    BaseModelOutput,
+    Output,
+    OutputCreator,
+    PipelineResult,
+)
+from schema.ta1_schema import PageExtraction, ExtractionIdentifier
 
 
-class TextExtractionPipeline:
+class TextExtractionPipeline(Pipeline):
     """
     Pipeline for extracting text from images using OCR.
 
     Args:
         work_dir (Path): The directory where OCR output will be saved.
         tile (bool): Whether to tile the image before OCR.
-        verbose (bool): Whether to print verbose output.
+        pixel_limit (int): The maximum number of pixels in the image before resizing / tiling will apply.
 
     Returns:
         List[DocTextExtraction]: A list of DocTextExtraction objects containing the extracted text.
     """
 
-    def __init__(self, work_dir: Path, tile=True, pixel_limit=6000, verbose=False):
-        self._ocr_output = Path(os.path.join(work_dir, "ocr_output"))
-        self._verbose = verbose
-        self._tile = tile
-        self._pixel_limit = pixel_limit
-
-        print(f"Tile: {self._tile}")
-
-    def run(self, input: Iterator[Tuple[str, PILImage]]) -> List[DocTextExtraction]:
-        """Runs OCR on the supplied stream of input images"""
-        results: List[DocTextExtraction] = []
-
-        if self._tile:
-            ocr_task = TileTextExtractor(self._ocr_output, split_lim=self._pixel_limit)
+    def __init__(self, work_dir: Path, tile=True, pixel_limit=6000):
+        if tile:
+            tasks = [
+                ResizeTextExtractor("resize_text", work_dir, False, True, pixel_limit)
+            ]
         else:
-            ocr_task = ResizeTextExtractor(
-                self._ocr_output, pixel_lim=self._pixel_limit
+            tasks = [TileTextExtractor("tile_text", work_dir, pixel_limit)]
+
+        outputs = [
+            IntegrationOutput("integration_output"),
+            DocTextExtractionOutput("doc_text_extraction_output"),
+        ]
+
+        super().__init__(
+            "text_extraction",
+            "Text Extraction",
+            outputs,
+            tasks,
+        )
+
+
+class IntegrationOutput(OutputCreator):
+    """
+    OutputCreator for text extraction pipeline.
+
+    Args:
+        id (str): The ID of the output creator.
+
+    Returns:
+        Output: The output of the pipeline.
+    """
+
+    def __init__(self, id):
+        """Initializes the output creator."""
+        super().__init__(id)
+
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
+        """Validates the pipeline result and converts into the TA1 schema representation"""
+        doc_text_extraction = DocTextExtraction.model_validate(pipeline_result.data)
+
+        page_extractions: List[PageExtraction] = []
+        for text_extraction in doc_text_extraction.extractions:
+            page_extraction = PageExtraction(
+                name="ocr",
+                model=ExtractionIdentifier(
+                    id=1, model="google-cloud-vision", field="ocr"
+                ),
+                ocr_text=text_extraction.text,
+                # confidence=text_extraction.confidence,
+                bounds=[(v.x, v.y) for v in text_extraction.bounds],
+                color_estimation=None,
             )
+            page_extractions.append(page_extraction)
 
-        for doc_id, image in tqdm.tqdm(input):
-            ocr_results = ocr_task.process(doc_id, image)
-            if ocr_results is None:
-                continue
+        result = BaseModelListOutput(
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, page_extractions
+        )
+        return result
 
-            results.append(ocr_results)
 
-        return results
+class DocTextExtractionOutput(OutputCreator):
+    """
+    OutputCreator for text extraction pipeline.
+
+    Args:
+        id (str): The ID of the output creator.
+
+    Returns:
+        Output: The output of the pipeline.
+    """
+
+    def __init__(self, id):
+        """Initializes the output creator."""
+        super().__init__(id)
+
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
+        """Validates the pipeline result and converts into the TA1 schema representation"""
+        doc_text_extraction = DocTextExtraction.model_validate(pipeline_result.data)
+        return BaseModelOutput(
+            pipeline_result.pipeline_id,
+            pipeline_result.pipeline_name,
+            doc_text_extraction,
+        )

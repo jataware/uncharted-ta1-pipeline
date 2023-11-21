@@ -1,9 +1,9 @@
 import argparse
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Any, Dict
 from tasks.io.io import ImageFileInputIterator, JSONFileWriter
-from tasks.text_extraction.text_extractor import SchemaTransformer
+from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from .text_extraction_pipeline import TextExtractionPipeline
 
 
@@ -24,20 +24,23 @@ def main():
     input = ImageFileInputIterator(p.input)
 
     # run the extraction pipeline
-    pipeline = TextExtractionPipeline(p.workdir, p.tile, p.pixel_limit, p.verbose)
-    results = pipeline.run(input)
+    pipeline = TextExtractionPipeline(p.workdir, p.tile, p.pixel_limit)
 
-    # write the results as TA1 schema Map files
     file_writer = JSONFileWriter()
-    if p.ta1_schema:
-        for result in results:
-            path = os.path.join(p.output, f"{result.doc_id}_schema.json")
-            tx_result = SchemaTransformer().process(result)
-            file_writer.process(path, tx_result)
-    else:
-        for result in results:
-            path = os.path.join(p.output, f"{result.doc_id}.json")
-            file_writer.process(path, result)
+    for doc_id, image in input:
+        # run the model
+        results = pipeline.run(PipelineInput(raster_id=doc_id, image=image))
+
+        # write the results out to the file system or s3 bucket
+        for output_type, output_data in results.items():
+            if type(output_data) == BaseModelOutput:  # type assertion
+                path = os.path.join(p.output, f"{doc_id}_text_extraction_type.json")
+                file_writer.process(path, output_data.data)
+            elif type(output_data) == BaseModelListOutput:  # type assertion
+                path = os.path.join(p.output, f"{doc_id}_text_extraction_schema.json")
+                file_writer.process(path, output_data.data)
+            else:
+                continue
 
 
 if __name__ == "__main__":

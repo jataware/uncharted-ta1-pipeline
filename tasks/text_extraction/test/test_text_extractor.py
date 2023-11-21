@@ -5,7 +5,7 @@ from tasks.text_extraction.text_extractor import (
 )
 from tasks.io import image_io
 from pathlib import Path
-import pytest
+from tasks.common.task import TaskInput
 
 
 # @pytest.mark.skip(reason="requires google vision credentials")
@@ -23,15 +23,19 @@ def test_resize_text_extractor():
     to_blocks = True
     document_ocr = False
     pixel_lim = 500
-    rte = ResizeTextExtractor(cache_dir, to_blocks, document_ocr, pixel_lim)
+    rte = ResizeTextExtractor(
+        "resize_text", cache_dir, to_blocks, document_ocr, pixel_lim
+    )
 
     # test process()
     doc_id = "test"
     im = image_io.load_pil_image("tasks/text_extraction/test/data/test.jpg")
-    doc_text_extraction = rte.process(doc_id, im)
+    input = TaskInput(0, image=im, raster_id=doc_id)
+    result = rte.run(input)
+    doc_text_extraction = DocTextExtraction.model_validate(result.output)
 
     # check doc_text_extraction
-    expected_doc_id = f"{doc_id}-google-cloud-visionresize-{pixel_lim}"
+    expected_doc_id = f"{doc_id}_google-cloud-vision_resize-{pixel_lim}"
     assert doc_text_extraction.doc_id == expected_doc_id
     assert len(doc_text_extraction.extractions) == 5
     validate_tile_extractions(doc_text_extraction)
@@ -41,7 +45,8 @@ def test_resize_text_extractor():
     assert cache_file.exists()
 
     # re-run process() to test cached version
-    doc_text_extraction = rte.process(doc_id, im)
+    result = rte.run(input)
+    doc_text_extraction = DocTextExtraction.model_validate(result.output)
     assert doc_text_extraction.doc_id == expected_doc_id
     assert len(doc_text_extraction.extractions) == 5
     validate_tile_extractions(doc_text_extraction)
@@ -62,15 +67,17 @@ def test_tiling_text_extractor():
     # create TilingTextExtractor object
     cache_dir = Path("tasks/text_extraction/test/data")
     tile_size = 256
-    tte = TileTextExtractor(cache_dir, tile_size)
+    tte = TileTextExtractor("tile_text", cache_dir, tile_size)
 
     # test process()
     doc_id = "test"
     im = image_io.load_pil_image("tasks/text_extraction/test/data/test.jpg")
-    doc_text_extraction = tte.process(doc_id, im)
+    input = TaskInput(0, image=im, raster_id=doc_id)
+    result = tte.run(input)
+    doc_text_extraction = DocTextExtraction.model_validate(result.output)
 
     # check doc_text_extraction
-    expected_doc_id = f"{doc_id}-google-cloud-visiontile-{tile_size}"
+    expected_doc_id = f"{doc_id}_google-cloud-vision_tile-{tile_size}"
 
     assert doc_text_extraction.doc_id == expected_doc_id
     assert len(doc_text_extraction.extractions) == 5
@@ -82,7 +89,8 @@ def test_tiling_text_extractor():
     assert cache_file.exists()
 
     # re-run process() to test cached version
-    doc_text_extraction = tte.process(doc_id, im)
+    result = tte.run(input)
+    doc_text_extraction = DocTextExtraction.model_validate(result.output)
     assert doc_text_extraction.doc_id == expected_doc_id
     assert len(doc_text_extraction.extractions) == 5
     validate_tile_extractions(doc_text_extraction)
