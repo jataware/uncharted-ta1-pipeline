@@ -9,7 +9,7 @@ setup(
         "Pillow",
         "scipy",
         "tqdm",
-        "torch==2.01",
+        "torch==2.0.1",
         "matplotlib",
         "pydantic",
         "torchvision==0.15.2",
