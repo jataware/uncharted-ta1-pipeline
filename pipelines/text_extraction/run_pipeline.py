@@ -32,11 +32,13 @@ def main():
         results = pipeline.run(PipelineInput(raster_id=doc_id, image=image))
 
         # write the results out to the file system or s3 bucket
-        for output_type, output_data in results.items():
-            if type(output_data) == BaseModelOutput:  # type assertion
-                path = os.path.join(p.output, f"{doc_id}_text_extraction_type.json")
+        for _, output_data in results.items():
+            if isinstance(output_data, BaseModelOutput):  # type assertion
+                path = os.path.join(p.output, f"{doc_id}_text_extraction.json")
                 file_writer.process(path, output_data.data)
-            elif type(output_data) == BaseModelListOutput:  # type assertion
+            elif (
+                isinstance(output_data, BaseModelListOutput) and p.ta1_schema
+            ):  # type assertion
                 path = os.path.join(p.output, f"{doc_id}_text_extraction_schema.json")
                 file_writer.process(path, output_data.data)
             else:

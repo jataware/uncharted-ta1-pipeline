@@ -75,6 +75,7 @@ class MetadataExtractor(Task):
             # normalize quadrangle
             metadata.quadrangle = self._normalize_quadrangle(metadata.quadrangle)
             task_result.output = metadata.model_dump()
+
         return task_result
 
     def _process_doc_text_extraction(
@@ -232,27 +233,4 @@ class MetadataFileWriter:
             Body=json_model,
             Bucket=bucket,
             Key=f"{metadata.map_id}_metadata.json",
-        )
-
-
-class SchemaTransformer:
-    """Converts metadata to a schema object"""
-
-    def process(self, metadata: MetadataExtraction) -> Map:
-        """Converts metadata to a schema object"""
-        return Map(
-            name=metadata.title,
-            source_url="",
-            image_url="",
-            image_size=[],
-            authors=", ".join(metadata.authors),
-            publisher="",
-            year=int(metadata.year) if metadata.year.isdigit() else -1,
-            organization="",
-            scale=metadata.scale,
-            bounds="",
-            features=MapFeatureExtractions(lines=[], points=[], polygons=[]),
-            cross_sections=None,
-            pipelines=[],
-            projection_info=ProjectionMeta(gcps=[], projection=""),
         )
