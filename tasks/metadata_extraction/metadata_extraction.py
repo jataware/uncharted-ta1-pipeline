@@ -3,6 +3,7 @@ import os
 import pprint
 import json
 import os
+from common.task import TaskInput, TaskResult
 import openai
 import tiktoken
 from typing import List, Optional, Any
@@ -10,12 +11,13 @@ import boto3
 from tasks.metadata_extraction.entities import MetadataExtraction
 from tasks.text_extraction.entities import DocTextExtraction
 from schema.ta1_schema import Map, MapFeatureExtractions, ProjectionMeta
+from tasks.common.pipeline import Task
 
 # env var for openai api key
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
-class MetadataExtractor:
+class MetadataExtractor(Task):
     # matcher for alphanumeric strings
     ALPHANUMERIC_PATTERN = re.compile(r".*[a-zA-Z].*\d.*|.*\d.*[a-zA-Z].*|.*[a-zA-Z].*")
 
@@ -53,13 +55,18 @@ class MetadataExtractor:
 
     def __init__(
         self,
+        id: str,
         verbose=False,
     ):
+        super().__init__(id)
         self._verbose = verbose
 
-    def process(self, doc_text: DocTextExtraction) -> Optional[MetadataExtraction]:
+    def run(self, input: TaskInput) -> TaskResult:
         """Processes a directory of OCR files and writes the metadata to a json file"""
         # extract metadata from ocr output
+        doc_text = DocTextExtraction.model_validate(input.data)
+        task_result = TaskResult(self._task_id)
+
         metadata = self._process_doc_text_extraction(doc_text, verbose=self._verbose)
         if metadata:
             # normalize scale
@@ -67,7 +74,8 @@ class MetadataExtractor:
 
             # normalize quadrangle
             metadata.quadrangle = self._normalize_quadrangle(metadata.quadrangle)
-        return metadata
+            task_result.output = metadata.model_dump()
+        return task_result
 
     def _process_doc_text_extraction(
         self, doc_text_extraction: DocTextExtraction, verbose=False
