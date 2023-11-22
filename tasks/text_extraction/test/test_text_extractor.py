@@ -3,7 +3,7 @@ from tasks.text_extraction.text_extractor import (
     TileTextExtractor,
     DocTextExtraction,
 )
-from tasks.io import image_io
+from common import image_io
 from pathlib import Path
 from tasks.common.task import TaskInput
 

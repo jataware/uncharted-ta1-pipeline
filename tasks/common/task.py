@@ -1,5 +1,5 @@
 from PIL.Image import Image as PILImage
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 
 
 class TaskParameter:
@@ -32,16 +32,16 @@ class TaskInput:
     task_index: int
     raster_id: str = ""
     request = {}
-    data = {}
+    data: Dict[Any, Any] = {}
     params_used: List[TaskParameter] = []
 
     def __init__(
         self,
         task_index: int,
-        data: dict = {},
+        data: Dict[Any, Any] = {},
         image: Optional[PILImage] = None,
         raster_id: str = "",
-        request: dict = {},
+        request: Dict[Any, Any] = {},
         params_used: List[TaskParameter] = [],
     ):
         self.data = data
@@ -71,10 +71,12 @@ class TaskInput:
 
 class TaskResult:
     task_id = ""
-    output = {}
+    output: Dict[Any, Any] = {}
     parameters: List[TaskParameter] = []
 
-    def __init__(self, task_id: str = "", output: dict = {}, parameters: list = []):
+    def __init__(
+        self, task_id: str = "", output: Dict[Any, Any] = {}, parameters: List[Any] = []
+    ):
         self.task_id = task_id
         self.output = output
         self.parameters = parameters
