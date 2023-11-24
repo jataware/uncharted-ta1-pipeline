@@ -2,7 +2,7 @@
 import jsons
 import uuid
 
-from pipelines.geo_referencing.pipeline import (ObjectOutput, Output, TabularOutput, OutputCreator, PipelineResult)
+from tasks.common.pipeline import (ObjectOutput, Output, TabularOutput, OutputCreator, PipelineResult)
 
 class GeoReferencingOutput(OutputCreator):
 
@@ -28,7 +28,8 @@ class GeoReferencingOutput(OutputCreator):
             'pixel_dist_x',
             'pixel_dist_yx',
             'pirxel_dist_yy',
-            'pixel_dist_y'
+            'pixel_dist_y',
+            'confidence'
         ]
 
         if 'query_pts' not in pipeline_result.data:
@@ -42,6 +43,7 @@ class GeoReferencingOutput(OutputCreator):
                     'col': qp.xy[0],
                     'NAD83_x': qp.lonlat[0],
                     'NAD83_y': qp.lonlat[1],
+                    'confidence': qp.confidence,
                 }
             if qp.lonlat_gtruth:
                 o['actual_x'] = qp.lonlat_gtruth[0]
@@ -86,7 +88,8 @@ class SummaryOutput(OutputCreator):
             'lat',
             'lon',
             'extraction',
-            'rmse'
+            'rmse',
+            'confidence'
         ]
 
         # obtain the rmse and other summary output
@@ -98,7 +101,8 @@ class SummaryOutput(OutputCreator):
             'lat': '',
             'lon': '',
             'extraction': '',
-            'rmse': pipeline_result.data['rmse']
+            'rmse': pipeline_result.data['rmse'],
+            'confidence': pipeline_result.data['query_pts'][0].confidence
         }]
         return res
 
@@ -184,6 +188,8 @@ class GCPOutput(OutputCreator):
                     'x': qp.lonlat[0],
                     'y': qp.lonlat[1],
                 }
+            if qp.properties and len(qp.properties) > 0:
+                o['properties'] = qp.properties
             res.data['gcps'].append(o)
         #for p in pipeline_result.params:
         #    res.data['levers'].append(p)

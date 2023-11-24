@@ -1,15 +1,18 @@
 
+import copy
 import numpy as np
 
 from math import ceil
 from PIL import Image
 
 from compute.ocr import OCR
-from tasks.geo_referencing.task import (Task, TaskInput, TaskResult)
+from tasks.common.task import (Task, TaskInput, TaskResult)
 
 
 PIXEL_LIM = 6000
 JPG_TEMP_FILENAME = 'temp/temp_image_resized.jpg'
+
+ocr_cache = {}
 
 class TextExtractor(Task):
     _ocr:OCR = None
@@ -19,12 +22,23 @@ class TextExtractor(Task):
         self._ocr = OCR()
     
     def _get_ocr_text(self, image:Image, key:str=''):
+
+        if key != '' and key in ocr_cache:
+            print('reading from ocr cache')
+            return copy.deepcopy(ocr_cache[key])
+        
         # store image to temp location
         image.save(f'{JPG_TEMP_FILENAME}', "JPEG", quality=100, optimize=True)
 
         #----- do GoogleVision OCR
         ocr_texts = self._ocr.detect_text(JPG_TEMP_FILENAME, key)
+        #with open(f'temp/ocr-{key}.txt', "w") as f_out:
+        #    f_out.write(f'{ocr_texts}')
         ocr_blocks = self._ocr.text_to_blocks(ocr_texts)
+        #with open(f'temp/ocr-{key}-blocks.txt', "w") as f_out:
+        #    f_out.write(f'{ocr_blocks}')
+        if key != '':
+            ocr_cache[key] = copy.deepcopy(ocr_blocks)
         
         return ocr_blocks
 
@@ -39,6 +53,9 @@ class ResizeTextExtractor(TextExtractor):
         _, im_resize_ratio, image = self._resize_image(input.image)
 
         ocr_blocks = self._get_ocr_text(image, f'{input.raster_id}-resize')
+        ocr_blocks = self._ocr.merge_multiline(ocr_blocks)
+        #with open(f'temp/ocr-{input.raster_id}-resize-blocks-merged.txt', "w") as f_out:
+        #    f_out.write(f'{ocr_blocks}')
 
         result = TaskResult()
         result.task_id = self._task_id
@@ -79,8 +96,13 @@ class TileTextExtractor(TextExtractor):
 
         ocr_blocks = []
         for im in ims:
-            ocr = self._get_ocr_text(im.image, f'{input.raster_id}-tile-{im.coordinates}')
+            ocr = self._get_ocr_text(im.image, f'{input.raster_id}-tile-{im.coordinates[0]}-{im.coordinates[1]}')
             ocr_blocks = ocr_blocks + self._adjust_ocr_blocks(ocr, im.coordinates)
+        #with open(f'temp/ocr-{input.raster_id}-blocks.txt', "w") as f_out:
+        #    f_out.write(f'{ocr_blocks}')
+        ocr_blocks = self._ocr.merge_multiline(ocr_blocks)
+        #with open(f'temp/ocr-{input.raster_id}-blocks-merged.txt', "w") as f_out:
+        #    f_out.write(f'{ocr_blocks}')
 
         result = TaskResult()
         result.task_id = self._task_id

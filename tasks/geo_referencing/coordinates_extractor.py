@@ -2,6 +2,7 @@
 import os
 import re
 import utm
+import uuid
 
 from geopy.geocoders import Nominatim, GoogleV3
 from geopy.point import Point
@@ -9,13 +10,13 @@ import matplotlib.path as mpltPath
 
 from compute.geo_coordinates import split_lon_lat_degrees
 from model.coordinate import Coordinate
-from tasks.geo_referencing.task import (Task, TaskInput, TaskResult)
+from tasks.common.task import (Task, TaskInput, TaskResult)
 from util.cache import (cache_geocode_data, load_geocode_cache)
 from util.coordinates import (ocr_to_coordinates)
 
 # GeoCoordinates
 # pre-compiled regex patterns
-RE_DMS = re.compile(r"^|\b[-+]?([0-9]{1,2}|1[0-7][0-9]|180)( |[o*°⁰˙˚•·º]|( ?,?[o*°⁰˙˚•·º]))( ?[0-6][0-9])['`′/]?( ?[0-6][0-9])?[\"″'`′/]?($|\b)")  # match degrees with minutes (and optionally seconds)
+RE_DMS = re.compile(r"^|\b[-+]?([0-9]{1,2}|1[0-7][0-9]|180)( |[o*°⁰˙˚•·º:]|( ?,?[o*°⁰˙˚•·º:]))( ?[0-6]?[0-9])['`′/]?( ?[0-6][0-9])?[\"″'`′/]?($|\b)")  # match degrees with minutes (and optionally seconds)
 
 RE_DEG = re.compile(r"^|\b[-+]?([0-9]{1,2}|1[0-7][0-9]|180) ?,?[o*°⁰˙˚•·º⁹]($|\b)")  # match degrees only
 
@@ -134,7 +135,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         if num_keypoints > 0:
             #----- do Region-of-Interest analysis (automatic cropping)
             roi_xy = input.input.get_data('roi')
-            self._add_param(input.input, 'roi', 'roi', roi_xy)
+            self._add_param(input.input, uuid.uuid4(), 'roi', roi_xy)
             lon_pts, lat_pts = self._validate_lonlat_extractions(input, lon_pts, lat_pts, input.input.image.size, roi_xy)
         
         return lon_pts, lat_pts
@@ -204,13 +205,16 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
             idx += 1
         
         updated_geofence = self._get_geofence([lon_minmax, lat_minmax], dms_matches, ocr_text_blocks)
-        lon_minmax = updated_geofence[0]
-        lat_minmax = updated_geofence[1]
-        input.updated_output['lon_minmax'] = lon_minmax
-        input.updated_output['lat_minmax'] = lat_minmax
-        lon_clue = (lon_minmax[0] + lon_minmax[1])/2
-        lat_clue = (lat_minmax[0] + lat_minmax[1])/2
-        print(f'new geo fence: {updated_geofence}')
+        # the updated geofence should only narrow the existing one so make sure it falls within the initial geofence
+        if updated_geofence[0][0] >= lon_minmax[0] and updated_geofence[0][1] <= lon_minmax[1]:
+            lon_minmax = updated_geofence[0]
+            input.updated_output['lon_minmax'] = lon_minmax
+            lon_clue = (lon_minmax[0] + lon_minmax[1])/2
+        if updated_geofence[1][0] >= lat_minmax[0] and updated_geofence[1][1] <= lat_minmax[1]:
+            lat_minmax = updated_geofence[1]
+            input.updated_output['lat_minmax'] = lat_minmax
+            lat_clue = (lat_minmax[0] + lat_minmax[1])/2
+        print(f'new geo fence: {updated_geofence}\tlon clue: {lon_clue}\tlat clue: {lat_clue}')
 
         #---- finalize lat/lon results
         coord_results = []
@@ -218,6 +222,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         coord_lon_results = {}
         #---- Check degress-minutes-seconds extractions...
         for idx, (groups, span, _) in dms_matches.items():
+            #print(f'DMS MATCHES: {ocr_text_blocks[idx]["text"]}')
             try:
                 deg = RE_NONNUMERIC.sub('', groups[0])
                 deg = float(deg)
@@ -249,7 +254,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 print(f'Excluding candidate point due to unexpected degree increment: {deg_decimal}')
                 self._add_param(
                     input.input, 
-                    f'{idx}', 
+                    uuid.uuid4(), 
                     'coordinate-excluded', 
                     ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                     f'excluded due to invalid increment - {ocr_text_blocks[idx]["text"]}'
@@ -260,19 +265,23 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 print('Excluding candidate point: {}'.format(deg_decimal))
                 self._add_param(
                     input.input, 
-                    f'{idx}', 
+                    uuid.uuid4(), 
                     'coordinate-excluded', 
                     ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                     f'excluded due to consecutive point - {ocr_text_blocks[idx]["text"]}'
                 )
                 continue
 
-            if abs(deg_decimal - lat_clue) < abs(deg_decimal - lon_clue):
+            # could fit in only one geo fence
+            is_lat = (lat_minmax[0] <= deg_decimal <= lat_minmax[1]) and not (lon_minmax[0] <= deg_decimal <= lon_minmax[1])
+            is_lon = not (lat_minmax[0] <= deg_decimal <= lat_minmax[1]) and (lon_minmax[0] <= deg_decimal <= lon_minmax[1])
+
+            if is_lat or (not is_lon and abs(deg_decimal - lat_clue) < abs(deg_decimal - lon_clue)):
                 # latitude keypoint (y-axis)
                 if deg_decimal >= lat_minmax[0] and deg_decimal <= lat_minmax[1]:
                     # valid latitude point
                     x_ranges = (0.0, 1.0) if span[2]==0 else (span[0]/float(span[2]), span[1]/float(span[2]))
-                    coord = Coordinate('lat keypoint', ocr_text_blocks[idx]['text'], deg_decimal, True, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges)
+                    coord = Coordinate('lat keypoint', ocr_text_blocks[idx]['text'], deg_decimal, True, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.95)
                     coord_results.append(coord)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     # pixel->latitude mapping depends mostly on y-pixel (but also x-pixel values, due to possible map rotation/projection)
@@ -281,7 +290,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     print('Excluding candidate latitude point: {} with lat minmax {}'.format(deg_decimal, lat_minmax))
                     self._add_param(
                         input.input, 
-                        f'{idx}', 
+                        uuid.uuid4(), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lat point - {ocr_text_blocks[idx]["text"]}'
@@ -291,7 +300,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 if deg_decimal >= lon_minmax[0] and deg_decimal <= lon_minmax[1]:
                     # valid longitude point
                     x_ranges = (0.0, 1.0) if span[2]==0 else (span[0]/float(span[2]), span[1]/float(span[2]))
-                    coord = Coordinate('lon keypoint', ocr_text_blocks[idx]['text'], deg_decimal, False, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges)
+                    coord = Coordinate('lon keypoint', ocr_text_blocks[idx]['text'], deg_decimal, False, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.95)
                     coord_results.append(coord)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     # pixel->longitude mapping depends mostly on x-pixel (but also y-pixel values, due to possible map rotation/projection)
@@ -300,7 +309,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     print('Excluding candidate longitude point: {}'.format(deg_decimal))
                     self._add_param(
                         input.input, 
-                        f'{idx}', 
+                        uuid.uuid4(), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lon point - {ocr_text_blocks[idx]["text"]}'
@@ -326,7 +335,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 print('Excluding candidate point: {}'.format(deg_decimal))
                 self._add_param(
                     input.input, 
-                    f'{idx}', 
+                    uuid.uuid4(), 
                     'coordinate-excluded', 
                     ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                     f'excluded due to consecutive point - {ocr_text_blocks[idx]["text"]}'
@@ -338,7 +347,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 if deg_decimal >= lat_minmax[0] and deg_decimal <= lat_minmax[1]:
                     # valid latitude point
                     x_ranges = (0.0, 1.0) if span[2]==0 else (span[0]/float(span[2]), span[1]/float(span[2]))
-                    coord = Coordinate('lat keypoint', ocr_text_blocks[idx]['text'], deg_decimal, True, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges)
+                    coord = Coordinate('lat keypoint', ocr_text_blocks[idx]['text'], deg_decimal, True, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.9)
                     coord_results.append(coord)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     # pixel->latitude mapping depends mostly on y-pixel (but also x-pixel values, due to possible map rotation/projection)
@@ -347,7 +356,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     print('Excluding candidate latitude point: {}'.format(deg_decimal))
                     self._add_param(
                         input.input, 
-                        f'{idx}', 
+                        uuid.uuid4(), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lat point - {ocr_text_blocks[idx]["text"]}'
@@ -357,7 +366,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 if deg_decimal >= lon_minmax[0] and deg_decimal <= lon_minmax[1]:
                     # valid longitude point
                     x_ranges = (0.0, 1.0) if span[2]==0 else (span[0]/float(span[2]), span[1]/float(span[2]))
-                    coord = Coordinate('lon keypoint', ocr_text_blocks[idx]['text'], deg_decimal, False, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges)
+                    coord = Coordinate('lon keypoint', ocr_text_blocks[idx]['text'], deg_decimal, False, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.9)
                     coord_results.append(coord)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     # pixel->longitude mapping depends mostly on x-pixel (but also y-pixel values, due to possible map rotation/projection)
@@ -366,7 +375,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     print('Excluding candidate longitude point: {}'.format(deg_decimal))
                     self._add_param(
                         input.input, 
-                        f'{idx}', 
+                        uuid.uuid4(), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lon point - {ocr_text_blocks[idx]["text"]}'
@@ -376,7 +385,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         # to estimate map rotation, scale and translation tranformations
         if len(coord_lat_results) >= 3 and len(coord_lon_results) >= 3:
             for c in coord_results:
-                self._add_param(input.input, f'coordinate-{c.get_type()}', f'coordinate-{c.get_type()}', ocr_to_coordinates(c.get_bounding_box()), f'extracted coordinate - {c.get_text()}')
+                self._add_param(input.input, uuid.uuid4(), f'coordinate-{c.get_type()}', ocr_to_coordinates(c.get_bounding_box()), f'extracted coordinate - {c.get_text()} as {c.get_parsed_degree()}')
             return (coord_lon_results, coord_lat_results)
         
         #-----
@@ -430,7 +439,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 if deg_decimal >= lat_minmax[0] and deg_decimal <= lat_minmax[1]:
                     # valid latitude point
                     x_ranges = (0.0, 1.0) if span[2]==0 else (span[0]/float(span[2]), span[1]/float(span[2]))
-                    coord = Coordinate('lat keypoint', ocr_text_blocks[idx]['text'], deg_decimal, True, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, font_height=font_height)
+                    coord = Coordinate('lat keypoint', ocr_text_blocks[idx]['text'], deg_decimal, True, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, font_height=font_height, confidence=0.8)
                     coord_results.append(coord)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     coord_lat_results[ (deg_decimal, y_pixel) ] = coord
@@ -438,7 +447,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     print('Excluding candidate latitude point: {}'.format(deg_decimal))
                     self._add_param(
                         input.input, 
-                        f'{idx}', 
+                        uuid.uuid4(), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lat point - {ocr_text_blocks[idx]["text"]}'
@@ -448,7 +457,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 if deg_decimal >= lon_minmax[0] and deg_decimal <= lon_minmax[1]:
                     # valid longitude point
                     x_ranges = (0.0, 1.0) if span[2]==0 else (span[0]/float(span[2]), span[1]/float(span[2]))
-                    coord = Coordinate('lon keypoint', ocr_text_blocks[idx]['text'], deg_decimal, False, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, font_height=font_height)
+                    coord = Coordinate('lon keypoint', ocr_text_blocks[idx]['text'], deg_decimal, False, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, font_height=font_height, confidence=0.8)
                     coord_results.append(coord)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     coord_lon_results[ (deg_decimal, x_pixel) ] = coord
@@ -456,14 +465,14 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     print('Excluding candidate longitude point: {}'.format(deg_decimal))
                     self._add_param(
                         input.input, 
-                        f'{idx}', 
+                        uuid.uuid4(), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lon point - {ocr_text_blocks[idx]["text"]}'
                     )
         
         for c in coord_results:
-            self._add_param(input.input, f'coordinate-{c.get_type()}', f'coordinate-{c.get_type()}', ocr_to_coordinates(c.get_bounding_box()), f'extracted coordinate - {c.get_text()}')
+            self._add_param(input.input, uuid.uuid4(), f'coordinate-{c.get_type()}', ocr_to_coordinates(c.get_bounding_box()), f'extracted coordinate - {c.get_text()} as {c.get_parsed_degree()}')
         
         return (coord_lon_results, coord_lat_results)
 
@@ -500,22 +509,22 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         if roi_xy and (num_lat_pts > 4 or num_lon_pts > 4):
             for (deg, y), coord in list(lat_results.items()):
                 if not self._in_polygon(coord.get_pixel_alignment(), roi_xy):
-                    print('Excluding out-of-bounds latitude point: {}'.format(deg))
+                    print(f'Excluding out-of-bounds latitude point: {deg} ({coord.get_pixel_alignment()})')
                     del lat_results[(deg, y)]
                     self._add_param(
                         input.input, 
-                        f'{(deg, y)}', 
+                        uuid.uuid4(), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(coord.get_bounding_box()), 
                         f'excluded due to being outside roi - {coord.get_text()}'
                     )
             for (deg, x), coord in list(lon_results.items()):
                 if not self._in_polygon(coord.get_pixel_alignment(), roi_xy):
-                    print('Excluding out-of-bounds longitude point: {}'.format(deg))
+                    print(f'Excluding out-of-bounds longitude point: {deg} ({coord.get_pixel_alignment()})')
                     del lon_results[(deg, x)]
                     self._add_param(
                         input.input, 
-                        f'{(deg, x)}', 
+                        uuid.uuid4(), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(coord.get_bounding_box()), 
                         f'excluded due to being outside roi - {coord.get_text()}'
@@ -525,10 +534,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         num_lon_pts = len(lon_results)
         print(f'after exclusion lat,lon: {num_lat_pts},{num_lon_pts}')
 
-        if num_lon_pts > 4:
-            lon_results = self._remove_outlier_pts(input, lon_results, im_size[0], im_size[1])
-        if num_lat_pts > 4:
-            lat_results = self._remove_outlier_pts(input, lat_results, im_size[1], im_size[0])
+        #if num_lon_pts > 4:
+        #    lon_results = self._remove_outlier_pts(input, lon_results, im_size[0], im_size[1])
+        #if num_lat_pts > 4:
+        #    lat_results = self._remove_outlier_pts(input, lat_results, im_size[1], im_size[0])
 
         # check number of unique lat and lon values
         num_lat_pts = len(set([x[0] for x in lat_results]))     
@@ -549,7 +558,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 new_y = 0 if lat_pt[0][1] > im_size[1]/2 else im_size[1]-1
                 print('t1')
                 new_lat = -deg_per_pxl*(new_y - lat_pt[0][1]) + lat_pt[0][0]
-                coord = Coordinate('lat keypoint', '', new_lat, True, pixel_alignment=(lat_pt[1].to_deg_result()[1], new_y))
+                coord = Coordinate('lat keypoint', '', new_lat, True, pixel_alignment=(lat_pt[1].to_deg_result()[1], new_y), confidence=0.6)
                 print('t2')
                 lat_results[ (new_lat, new_y) ] = coord
     
@@ -567,7 +576,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 new_x = 0 if lon_pt[0][1] > im_size[0]/2 else im_size[0]-1
                 print('t3')
                 new_lon = -deg_per_pxl*(new_x - lon_pt[0][1]) + lon_pt[0][0]
-                coord = Coordinate('lon keypoint', '', new_lon, False, pixel_alignment=(new_x, lon_pt[1].to_deg_result()[1]))
+                coord = Coordinate('lon keypoint', '', new_lon, False, pixel_alignment=(new_x, lon_pt[1].to_deg_result()[1]), confidence=0.6)
                 print(f'lon pt: {lon_pt}')
                 print('t4')
                 lon_results[ (new_lon, new_x) ] = coord
@@ -637,7 +646,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 else:
                     self._add_param(
                         input.input, 
-                        f'{k}', 
+                        uuid.uuid4(), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(v.get_bounding_box()), 
                         f'excluded due to being an outlier - {v.get_text()}'
@@ -733,10 +742,17 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
     def _extract_coordinates(self, input:CoordinateInput):
         ocr_blocks = input.input.get_data('ocr_blocks')
         lon_minmax = input.input.get_request_info('lon_minmax', [0, 180])
-        lat_minmax = input.input.get_request_info('lat_minmax', [0, 90])
+        lat_minmax = input.input.get_request_info('lat_minmax', [-80, 84])
         lon_pts = input.input.get_data('lons')
         lat_pts = input.input.get_data('lats')
         lon_sign_factor = input.input.get_request_info('lon_sign_factor', 1)
+
+        # UTM is limited to the range of 80 south to 84 north
+        if lat_minmax[0] < -80:
+            lat_minmax[0] = -80
+        if lat_minmax[1] > 84:
+            lat_minmax[1] = 84
+        print(f'utm lon & lat limits: {lon_minmax}\t{lat_minmax}')
 
         lon_pts, lat_pts = self._extract_utm(input, ocr_blocks, (lon_pts, lat_pts), lon_minmax, lat_minmax, lon_sign_factor)
 
@@ -763,6 +779,9 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         northing_range = min(abs(utm_clue[1] - northing_range0[1]), FOV_RANGE_METERS)    # northing search range (in meters)
         easting_range0 = utm.from_latlon(lat_clue, lon_minmax[0]*lon_sign_factor)
         easting_range = min(abs(utm_clue[0] - easting_range0[0]), FOV_RANGE_METERS)      # easting search range (in meters)
+
+        utm_geofence_min = utm.from_latlon(lat_minmax[0], lon_minmax[0])
+        utm_geofence_max = utm.from_latlon(lat_minmax[1], lon_minmax[1])
 
         idx = 0
         ne_matches = []
@@ -793,10 +812,20 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     x_ranges = (0.0, 1.0) if span[2]==0 else (span[0]/float(span[2]), span[1]/float(span[2]))
                     # convert extracted northing value to latitude and save keypoint result 
                     latlon_pt = utm.to_latlon(easting_clue, utm_dist, utm_clue[2], utm_clue[3])
-                    coord = Coordinate('lat keypoint', ocr_text_blocks[idx]['text'], latlon_pt[0], True, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges)
+                    coord = Coordinate('lat keypoint', ocr_text_blocks[idx]['text'], latlon_pt[0], True, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.75)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     lat_results[ (latlon_pt[0], y_pixel) ] = coord
-                    self._add_param(input.input, f'coordinate-{coord.get_type()}', f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted utm coordinate - {coord.get_text()}')
+                    self._add_param(input.input, uuid.uuid4(), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted northing utm coordinate - {coord.get_text()}')
+                elif utm_geofence_min[1] <= utm_dist <= utm_geofence_max[1]:
+                    # valid latitude point
+                    # TODO: LOWER CONFIDENCE SCORE MATCH
+                    x_ranges = (0.0, 1.0) if span[2]==0 else (span[0]/float(span[2]), span[1]/float(span[2]))
+                    # convert extracted northing value to latitude and save keypoint result 
+                    latlon_pt = utm.to_latlon(easting_clue, utm_dist, utm_clue[2], utm_clue[3])
+                    coord = Coordinate('lat keypoint', ocr_text_blocks[idx]['text'], latlon_pt[0], True, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.75)
+                    x_pixel, y_pixel = coord.get_pixel_alignment()
+                    lat_results[ (latlon_pt[0], y_pixel) ] = coord
+                    self._add_param(input.input, uuid.uuid4(), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted northing utm coordinate - {coord.get_text()}')
                 else:
                     print('Excluding candidate northing point: {}'.format(utm_dist))
             else:
@@ -806,10 +835,20 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     x_ranges = (0.0, 1.0) if span[2]==0 else (span[0]/float(span[2]), span[1]/float(span[2]))
                     # convert extracted easting value to longitude and save keypoint result
                     latlon_pt = utm.to_latlon(utm_dist, northing_clue, utm_clue[2], utm_clue[3])
-                    coord = Coordinate('lon keypoint', ocr_text_blocks[idx]['text'], latlon_pt[1]*lon_sign_factor, False, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges)
+                    coord = Coordinate('lon keypoint', ocr_text_blocks[idx]['text'], latlon_pt[1]*lon_sign_factor, False, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.75)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     lon_results[ (latlon_pt[1]*lon_sign_factor, x_pixel) ] = coord
-                    self._add_param(input.input, f'coordinate-{coord.get_type()}', f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted utm coordinate - {coord.get_text()}')
+                    self._add_param(input.input, uuid.uuid4(), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted easting utm coordinate - {coord.get_text()}')
+                elif utm_geofence_min[0] <= utm_dist <= utm_geofence_max[0]:
+                    # valid longitude point
+                    # TODO: LOWER CONFIDENCE SCORE MATCH
+                    x_ranges = (0.0, 1.0) if span[2]==0 else (span[0]/float(span[2]), span[1]/float(span[2]))
+                    # convert extracted easting value to longitude and save keypoint result
+                    latlon_pt = utm.to_latlon(utm_dist, northing_clue, utm_clue[2], utm_clue[3])
+                    coord = Coordinate('lon keypoint', ocr_text_blocks[idx]['text'], latlon_pt[1]*lon_sign_factor, False, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.75)
+                    x_pixel, y_pixel = coord.get_pixel_alignment()
+                    lon_results[ (latlon_pt[1]*lon_sign_factor, x_pixel) ] = coord
+                    self._add_param(input.input, uuid.uuid4(), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted easting utm coordinate - {coord.get_text()}')
                 else:
                     print('Excluding candidate easting point: {}'.format(utm_dist))
         print('done utm')
@@ -967,7 +1006,7 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
                 lon_deg = geo_lonlat_results[i][0][0]
                 x = geo_lonlat_results[i][1][0]
                 y = geo_lonlat_results[i][1][1]
-                coord = Coordinate('lon keypoint', '', lon_deg, False, pixel_alignment=(x, y))
+                coord = Coordinate('lon keypoint', '', lon_deg, False, pixel_alignment=(x, y), confidence=0.55)
                 lon_results[ (lon_deg, x) ] = coord
 
         geo_pts_needed = max(min(3 - len(lat_results), len(geo_lonlat_results)), 0)
@@ -976,7 +1015,7 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
                 lat_deg = geo_lonlat_results[i][0][1]
                 x = geo_lonlat_results[i][1][0]
                 y = geo_lonlat_results[i][1][1]
-                coord = Coordinate('lat keypoint', '', lat_deg, True, pixel_alignment=(x, y))
+                coord = Coordinate('lat keypoint', '', lat_deg, True, pixel_alignment=(x, y), confidence=0.55)
                 lat_results[ (lat_deg, y) ] = coord
 
             

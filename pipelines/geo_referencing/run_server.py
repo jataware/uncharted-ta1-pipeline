@@ -7,7 +7,7 @@ from PIL import Image
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
 from pipelines.geo_referencing.output import (JSONWriter)
-from pipelines.geo_referencing.pipeline import (PipelineInput)
+from tasks.common.pipeline import (PipelineInput)
 from tasks.geo_referencing.georeference import QueryPoint
 
 Image.MAX_IMAGE_PIXELS = 400000000

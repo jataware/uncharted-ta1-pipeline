@@ -1,3 +1,6 @@
+
+import copy
+
 from PIL.Image import Image as PILImage
 from typing import Optional, List, Any, Dict
 
@@ -31,7 +34,7 @@ class TaskInput:
     image: Optional[PILImage] = None
     task_index: int
     raster_id: str = ""
-    request = {}
+    request: Dict[Any, Any] = {}
     data: Dict[Any, Any] = {}
     params_used: List[TaskParameter] = []
 
@@ -51,14 +54,14 @@ class TaskInput:
         self.params_used = params_used
         self.task_index = task_index
 
-    def get_data(self, key: str, default_value=None):
+    def get_data(self, key: str, default_value:Any=None) -> Any:
         if key in self.data:
             return self.data[key]
         return default_value
-
-    def get_request_info(self, key: str, default_value=None):
+    
+    def get_request_info(self, key:str, default_value:Any=None) -> Any:
         if key in self.request:
-            return self.request[key]
+            return copy.deepcopy(self.request[key])
         return default_value
 
     def add_param(
@@ -67,7 +70,6 @@ class TaskInput:
         self.params_used.append(
             TaskParameter(task_id, self.task_index, key, category, value, description)
         )
-
 
 class TaskResult:
     task_id = ""
@@ -78,7 +80,8 @@ class TaskResult:
         self, task_id: str = "", output: Dict[Any, Any] = {}, parameters: List[Any] = []
     ):
         self.task_id = task_id
-        self.output = output
+        #self.output = output
+        self.output = {}
         self.parameters = parameters
 
 
@@ -95,7 +98,7 @@ class Task:
         result.task_id = self._task_id
         return result
 
-    def _create_result(self, input: TaskInput):
+    def _create_result(self, input: TaskInput) -> TaskResult:
         result = TaskResult()
         result.task_id = self._task_id
         result.parameters = input.params_used.copy()

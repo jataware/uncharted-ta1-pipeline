@@ -13,7 +13,6 @@ def split_lon_lat_degrees(geofence, degrees:list[float, float, float]) -> (list[
     # start with clustering approach
     # only need a few to cluster to determine lat and lon range
     data = np.array(list(map(lambda x: x[2], degrees))).reshape(-1, 1)
-    print(f'clustering data: {data}')
 
     db = DBSCAN(eps=0.3, min_samples=2).fit(data)
     labels = db.labels_
@@ -115,7 +114,20 @@ def cluster_is_lat(geofence, degrees:list[float,float,float]) -> (bool, bool):
     elif not in_lat_geofence and in_lon_geofence:
         return True, False
     
-    # determine if x or y changes within cluster values
+    # determine if x or y changes within cluster values when identical degrees
+    degrees_mapped = {}
+    for d in degrees:
+        if d[2] not in degrees_mapped:
+            degrees_mapped[d[2]] = []
+        degrees_mapped[d[2]].append(d)
+    for _,v in degrees_mapped.items():
+        if len(v) > 1:
+            x_diff = max(list(map(lambda x: x[0], v))) - min(list(map(lambda x: x[0], v)))
+            y_diff = max(list(map(lambda x: x[1], v))) - min(list(map(lambda x: x[1], v)))
+            if x_diff * 0.05 > y_diff:
+                return True, True
+            elif y_diff * 0.05 > x_diff:
+                return True, False
 
     # unable to determine direction
     return False, False

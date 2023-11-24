@@ -7,7 +7,7 @@ from skimage.filters.rank import entropy
 from skimage.morphology import disk
 
 from compute.roi_mapping import determine_roi
-from tasks.geo_referencing.task import (Task, TaskInput, TaskResult)
+from tasks.common.task import (Task, TaskInput, TaskResult)
 
 ROI_PXL_LIMIT = 2000
 SLICE_PERCENT = 0.05
