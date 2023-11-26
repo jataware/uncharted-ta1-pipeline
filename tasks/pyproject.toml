@@ -19,12 +19,15 @@ dependencies = [
     "pillow",
     "geopy",
     "matplotlib",
-    "opencv_python",
+    "opencv-python",
     "protobuf",
     "scikit_image",
     "scikit_learn",
     "Shapely",
     "utm",
+    "torch", # needed for detectron2, but not listed in its dependencies (see setup.py in detectron2 for reasons)
+    "torchvision",
+    "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"
 ]
 
 [tool.setuptools.packages]
