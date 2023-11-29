@@ -11,7 +11,7 @@ import torch
 from detectron2.data import detection_utils as utils
 from detectron2.data import transforms as T
 
-from layoutlmft import Layout_LMv3Tokenizer
+from tasks.segmentation.layoutlmft import Layout_LMv3Tokenizer
 
 __all__ = ["DetrDatasetMapper"]
 

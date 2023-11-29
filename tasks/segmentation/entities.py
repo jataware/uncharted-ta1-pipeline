@@ -14,7 +14,7 @@ class SegmentationResult(BaseModel):
     bbox: List[float]  # bounding box
     class_label: str  # predicted segmentation class label
     confidence: float  # prediction score
-    model_id: str  # model ID
+    id_model: str  # model ID (model_id not used due to pydantic reserved word)
 
 
 class MapSegmentation(BaseModel):

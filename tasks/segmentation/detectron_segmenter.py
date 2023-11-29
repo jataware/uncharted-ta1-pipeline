@@ -43,7 +43,7 @@ class DetectronSegmenter(Task):
         self.model_weights = model_weights
         self.class_labels = class_labels
         self.predictor: Optional[DefaultPredictor] = None
-        self.model_id: str = ""
+        self.id_model: str = ""
 
         # instantiate config
         self.cfg = get_cfg()
@@ -84,8 +84,8 @@ class DetectronSegmenter(Task):
             # load model...
             logger.info(f"Loading segmentation model {self.model_name}")
             self.predictor = DefaultPredictor(self.cfg)
-            self.model_id = self._get_model_id(self.predictor.model)
-            logger.info(f"Model ID: {self.model_id}")
+            self.id_model = self._get_id_model(self.predictor.model)
+            logger.info(f"Model ID: {self.id_model}")
 
         # --- run inference
         predictions = self.predictor(np.array(input.image))["instances"]
@@ -128,7 +128,7 @@ class DetectronSegmenter(Task):
                         area=cv2.contourArea(contour),
                         confidence=scores[i],
                         class_label=self.class_labels[classes[i]],
-                        model_id=self.model_id,
+                        id_model=self.id_model,
                     )
                     seg_results.append(seg_result)
         map_segmentation = MapSegmentation(doc_id=input.raster_id, segments=seg_results)
@@ -159,7 +159,7 @@ class DetectronSegmenter(Task):
         has_holes = (hierarchy.reshape(-1, 4)[:, 3] >= 0).sum() > 0
         return (res[-2], has_holes)
 
-    def _get_model_id(self, model) -> str:
+    def _get_id_model(self, model) -> str:
         """
         Create a unique string ID for this model,
         based on MD5 hash of the model's state-dict
