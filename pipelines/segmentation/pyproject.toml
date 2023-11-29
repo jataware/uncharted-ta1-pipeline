@@ -7,7 +7,7 @@ name = "lara-map-segmentation"
 version = "0.1.0"
 description = "LARA map segmentation pipeline and server"
 readme = "README.md"
-dependencies = ["python-dotenv", "lara-tasks"]
+dependencies = ["flask", "python-dotenv", "lara-tasks"]
 
 [tool.setuptools.packages]
 find = {}
