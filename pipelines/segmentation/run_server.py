@@ -1,8 +1,7 @@
 from flask import Flask, request, Response
 import logging, json
-import numpy as np
 from PIL import Image
-import env_defaults as env
+import argparse
 from hashlib import sha1
 from io import BytesIO
 
@@ -41,7 +40,7 @@ def process_image():
             logging.warning(msg)
             return (msg, 500)
 
-        segmentation_result = result["map_segmenation_output"]
+        segmentation_result = result["map_segmentation_output"]
         if isinstance(segmentation_result, BaseModelOutput):
             # convert result to a JSON array
             result_json = json.dumps(segmentation_result.data.model_dump())
@@ -75,15 +74,21 @@ if __name__ == "__main__":
     logger = logging.getLogger("segmenter app")
     logger.info("*** Starting Legend and Map Segmenter App ***")
 
+    # parse command line args
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--workdir", type=str, required=True)
+    parser.add_argument("--model", type=str, required=True)
+    parser.add_argument("--min_confidence", type=float, default=0.25)
+    parser.add_argument("--debug", type=float, default=False)
+    p = parser.parse_args()
+
     # init segmenter
-    segmentation_pipeline = SegmentationPipeline(
-        str(env.MODEL_DATA_PATH),
-        str(env.MODEL_DATA_CACHE_PATH),
-        confidence_thres=env.MODEL_CONFIDENCE_THRES,
-    )
+    segmentation_pipeline = SegmentationPipeline(p.model, p.workdir, p.min_confidence)
 
     #### start flask server
-    app.run(host="0.0.0.0", port=5000)
+    if p.debug:
+        app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    else:
+        app.run(host="0.0.0.0", port=5000)
 
     # TEMP Use this for debug mode
-    # app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)

@@ -25,12 +25,21 @@ dependencies = [
     "scikit_learn",
     "Shapely",
     "utm",
-    "timm",
-    "torch", # needed for detectron2, but not listed in its dependencies (see setup.py in detectron2 for reasons)
-    "torchvision",
-    "transformers",
-    "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"
+    # torch and torchvision are not included in the dependencies because they (in most cases) require
+    # a manual installation (see https://pytorch.org/get-started/locally/)
+    #
+    # "torch",
+    # "torchvision",
+    #
+    # can't install detectron via pip so we need to install it manually as well
+    # (see https://github.com/facebookresearch/detectron2/issues/4472)
+    #
+    # "detectron2 @ git+https://github.com/facebookresearch/detectron2.git"
+
 ]
+[project.optional-dependencies]
+segmentation = ["timm", "transformers"]
 
 [tool.setuptools.packages]
 find = {}
+

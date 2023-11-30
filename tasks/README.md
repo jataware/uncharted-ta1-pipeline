@@ -10,6 +10,22 @@ LARA Pipeline Tasks
 pip install -e .
 ```
 
+The image segmentation task relies on [LayoutLMV3](https://github.com/microsoft/unilm/tree/master/layoutlmv3), which is not `pip` installable due to transitive dependencies on specific verions of Pytorch and Detectron2.  Use of the image segmentation consequently requires manual installation of both libraries separately.
+
+For GPU support (requires CUDA version >= 11.1):
+
+```bash
+pip install torch==1.10.0+cu111 torchvision==0.11.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
+pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.10/index.html
+```
+
+For software only:
+
+```bash
+pip install torch==1.10.0 torchvision==0.11.1 -f https://download.pytorch.org/whl/torch_stable.html
+pip install 'git+https://github.com/facebookresearch/detectron2.git'
+```
+
 ### Image Text Extraction (OCR) Task
 
 **Goal:** to perform OCR-based text extraction on an image
