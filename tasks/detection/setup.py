@@ -20,10 +20,9 @@ setup(
         "parmap",
     ],
     python_requires=">=3.10.0",
-
-    entry_points = {
-    'console_scripts': [
-        'coco_conversion = etl.coco_conversion:main',
-    ],
-}
+    entry_points={
+        "console_scripts": [
+            "coco_conversion = etl.coco_conversion:main",
+        ],
+    },
 )

@@ -8,11 +8,13 @@ from typing import Optional, List, Dict, Union, Any
 
 ## Data Objects
 
+
 class MapPointLabel(BaseModel):
     """
     Represents a label on a map image.
     Class ID should correspond to the ID encoded in the underlying model.
     """
+
     classifier_name: str
     classifier_version: int
     class_id: int
@@ -27,15 +29,23 @@ class MapPointLabel(BaseModel):
     def serialize(self):
         return dict(self)
 
+
 class MapImage(BaseModel):
     """
     Represents a map image.
     """
+
     path: str
     labels: Optional[List[MapPointLabel]] = None
-    map_bounds: Optional[List[int]] = None # [x1, y1, h, w] location of map. TODO: Accept polygonal seg mask.
-    point_legend_bounds: Optional[List[int]] = None # [x1, y1, h, w] location of point legend.
-    polygon_legend_bounds: Optional[List[int]] = None # [x1, y1, h, w] location of polygon legend.
+    map_bounds: Optional[
+        List[int]
+    ] = None  # [x1, y1, h, w] location of map. TODO: Accept polygonal seg mask.
+    point_legend_bounds: Optional[
+        List[int]
+    ] = None  # [x1, y1, h, w] location of point legend.
+    polygon_legend_bounds: Optional[
+        List[int]
+    ] = None  # [x1, y1, h, w] location of polygon legend.
 
     _cached_image = None
 
@@ -56,16 +66,15 @@ class MapImage(BaseModel):
         # TODO: Use polygonal segmask stored in self.map_bounds to filter the image and crop out the non-map regions.
         return img
 
-
     @classmethod
-    def load(cls, path: str,
-             labels: Optional[List[MapPointLabel]] = None,
-             map_bounds: Optional[List[int]] = None):
+    def load(
+        cls,
+        path: str,
+        labels: Optional[List[MapPointLabel]] = None,
+        map_bounds: Optional[List[int]] = None,
+    ):
         image = Image.open(path)
-        return cls(path=path,
-                   image=image,
-                   labels=labels,
-                   map_bounds=map_bounds)
+        return cls(path=path, image=image, labels=labels, map_bounds=map_bounds)
 
     def _serialize_labels(self):
         if self.labels:
@@ -76,12 +85,11 @@ class MapImage(BaseModel):
 
     @model_serializer
     def serialize(self):
-
         return {
-            'map_path': self.path,
-            'map_bounds': self.map_bounds,
-            'point_legend_bounds': self.point_legend_bounds,
-            'labels': self._serialize_labels(),
+            "map_path": self.path,
+            "map_bounds": self.map_bounds,
+            "point_legend_bounds": self.point_legend_bounds,
+            "labels": self._serialize_labels(),
         }
 
 
@@ -92,11 +100,12 @@ class MapTile(BaseModel):
 
     Image tensors are assumed to be in Torchvision format (C, H, W). These are automatically converted to PIL Images.
     """
+
     x_offset: int  # x offset of the tile in the original image.
     y_offset: int  # y offset of the tile in the original image.
     width: int
     height: int
-    image: Any # torch.Tensor or PIL.Image
+    image: Any  # torch.Tensor or PIL.Image
     map_path: str  # Path to the original map image.
     predictions: Union[Any, None] = None
 
@@ -121,15 +130,16 @@ class MapTile(BaseModel):
     @classmethod
     def load(cls, path: str, predictions: Optional[List[MapPointLabel]] = None):
         image = Image.open(path)
-        return cls(path=path,
-                   image=image,
-                   predictions=predictions)
+        return cls(path=path, image=image, predictions=predictions)
 
     def img_to_torchvision_tensor(self):
-        return torch.tensor(self.image).float().permute(2, 0, 1) # Convert from (H, W, C) to (C, H, W)
+        return (
+            torch.tensor(self.image).float().permute(2, 0, 1)
+        )  # Convert from (H, W, C) to (C, H, W)
 
 
 ## Pipeline Objects
+
 
 class Task(ABC):
     """
@@ -151,10 +161,8 @@ class Task(ABC):
         pass
 
 
-class Pipeline():
-
-    def __init__(self,
-                 steps: List[Task]):
+class Pipeline:
+    def __init__(self, steps: List[Task]):
         self.steps = steps
         assert len(self.steps) > 0, "Pipeline must have at least one step."
         self._validate_steps()
@@ -169,7 +177,9 @@ class Pipeline():
                 break
             output_type = self.steps[i].output_type
             input_type = self.steps[i + 1].input_type
-            assert output_type == input_type, f"Step {i} output type {output_type} does not match step {i + 1} input type {input_type}"
+            assert (
+                output_type == input_type
+            ), f"Step {i} output type {output_type} does not match step {i + 1} input type {input_type}"
 
     def process(self, image: Union[MapImage, MapTile]) -> Union[MapImage, MapTile]:
         """
