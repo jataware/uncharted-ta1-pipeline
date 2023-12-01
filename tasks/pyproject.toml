@@ -43,3 +43,12 @@ segmentation = ["timm", "transformers"]
 [tool.setuptools.packages]
 find = {}
 
+
+[tool.pyright]
+ignore = [
+    "**/segmentation/ditod",
+    "**/segmentation/layoutlmft"
+]
+# ignoring missing imports because of the optinal dependencies and manual
+# detectron installation
+reportMissingImports = false
