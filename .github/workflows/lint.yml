@@ -20,7 +20,7 @@ jobs:
       - name: Check formatting
         uses: psf/black@stable
         with:
-          options: "--check --verbose --exclude='tasks/segmentation/(layoutlmft|ditod)' --exclude='build/lib'"
+          options: "--check --verbose --exclude='tasks/segmentation/(layoutlmft|ditod)' --extend-exclude='build/lib'"
           src: "."
           version: ">=22.3"
       - name: Install dependencies
