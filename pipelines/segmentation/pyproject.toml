@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lara-map-segmentation"
+version = "0.1.0"
+description = "LARA map segmentation pipeline and server"
+readme = "README.md"
+dependencies = ["flask", "mypy-boto3-s3", "lara-tasks"]
+
+[tool.setuptools.packages]
+find = {}

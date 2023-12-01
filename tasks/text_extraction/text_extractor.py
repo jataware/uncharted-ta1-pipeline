@@ -9,7 +9,6 @@ from PIL import Image
 from PIL.Image import Image as PILImage
 from .ocr.google_vision_ocr import GoogleVisionOCR
 from .entities import DocTextExtraction, TextExtraction, Point, Tile
-from schema.ta1_schema import PageExtraction, ExtractionIdentifier, Map
 from ..common.task import Task, TaskInput, TaskResult
 
 # ENV VARIABLE -- needed for google-vision API
