@@ -94,7 +94,7 @@ class MetadataExtractor(Task):
                 print(f"Found {num_tokens} tokens.")
 
             if num_tokens < self.TOKEN_LIMIT:
-                response = openai.ChatCompletion.create(
+                response = openai.ChatCompletion.create(  # type: ignore
                     model="gpt-3.5-turbo",
                     # model="gpt-4",
                     messages=[
