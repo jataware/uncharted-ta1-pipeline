@@ -147,7 +147,6 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         ocr_blocks = input.input.get_data("ocr_blocks")
         lon_minmax = input.input.get_request_info("lon_minmax", [0, 180])
         lat_minmax = input.input.get_request_info("lat_minmax", [0, 180])
-        print(len(ocr_blocks))
 
         lon_pts, lat_pts = self._extract_lonlat(
             input, ocr_blocks, lon_minmax, lat_minmax
@@ -156,7 +155,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         if num_keypoints > 0:
             #----- do Region-of-Interest analysis (automatic cropping)
             roi_xy = input.input.get_data('roi')
-            self._add_param(input.input, uuid.uuid4(), 'roi', roi_xy)
+            self._add_param(input.input, str(uuid.uuid4()), 'roi', roi_xy)
             lon_pts, lat_pts = self._validate_lonlat_extractions(input, lon_pts, lat_pts, input.input.image.size, roi_xy)
         
         return lon_pts, lat_pts
@@ -280,13 +279,13 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
             deg_decimal = deg + minutes / 60.0 + seconds / 3600.0
 
             # minutes and seconds expected in certain increments
-            if not self._check_degree_increments(minutes, seconds):
+            if not self._check_degree_increments(int(minutes), int(seconds)):
                 print(
                     f"Excluding candidate point due to unexpected degree increment: {deg_decimal}"
                 )
                 self._add_param(
                     input.input, 
-                    uuid.uuid4(), 
+                    str(uuid.uuid4()), 
                     'coordinate-excluded', 
                     ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                     f'excluded due to invalid increment - {ocr_text_blocks[idx]["text"]}'
@@ -297,7 +296,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 print("Excluding candidate point: {}".format(deg_decimal))
                 self._add_param(
                     input.input, 
-                    uuid.uuid4(), 
+                    str(uuid.uuid4()), 
                     'coordinate-excluded', 
                     ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                     f'excluded due to consecutive point - {ocr_text_blocks[idx]["text"]}'
@@ -326,7 +325,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     )
                     self._add_param(
                         input.input, 
-                        uuid.uuid4(), 
+                        str(uuid.uuid4()), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lat point - {ocr_text_blocks[idx]["text"]}'
@@ -345,7 +344,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     print("Excluding candidate longitude point: {}".format(deg_decimal))
                     self._add_param(
                         input.input, 
-                        uuid.uuid4(), 
+                        str(uuid.uuid4()), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lon point - {ocr_text_blocks[idx]["text"]}'
@@ -371,7 +370,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 print("Excluding candidate point: {}".format(deg_decimal))
                 self._add_param(
                     input.input, 
-                    uuid.uuid4(), 
+                    str(uuid.uuid4()), 
                     'coordinate-excluded', 
                     ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                     f'excluded due to consecutive point - {ocr_text_blocks[idx]["text"]}'
@@ -392,7 +391,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     print("Excluding candidate latitude point: {}".format(deg_decimal))
                     self._add_param(
                         input.input, 
-                        uuid.uuid4(), 
+                        str(uuid.uuid4()), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lat point - {ocr_text_blocks[idx]["text"]}'
@@ -411,7 +410,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     print("Excluding candidate longitude point: {}".format(deg_decimal))
                     self._add_param(
                         input.input, 
-                        uuid.uuid4(), 
+                        str(uuid.uuid4()), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lon point - {ocr_text_blocks[idx]["text"]}'
@@ -421,7 +420,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         # to estimate map rotation, scale and translation tranformations
         if len(coord_lat_results) >= 3 and len(coord_lon_results) >= 3:
             for c in coord_results:
-                self._add_param(input.input, uuid.uuid4(), f'coordinate-{c.get_type()}', ocr_to_coordinates(c.get_bounding_box()), f'extracted coordinate - {c.get_text()} as {c.get_parsed_degree()}')
+                self._add_param(input.input, str(uuid.uuid4()), f'coordinate-{c.get_type()}', ocr_to_coordinates(c.get_bounding_box()), f'extracted coordinate - {c.get_text()} as {c.get_parsed_degree()}')
             return (coord_lon_results, coord_lat_results)
 
         # -----
@@ -488,7 +487,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     print("Excluding candidate latitude point: {}".format(deg_decimal))
                     self._add_param(
                         input.input, 
-                        uuid.uuid4(), 
+                        str(uuid.uuid4()), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lat point - {ocr_text_blocks[idx]["text"]}'
@@ -506,14 +505,14 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     print("Excluding candidate longitude point: {}".format(deg_decimal))
                     self._add_param(
                         input.input, 
-                        uuid.uuid4(), 
+                        str(uuid.uuid4()), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(ocr_text_blocks[idx]['bounding_poly']), 
                         f'excluded candidate lon point - {ocr_text_blocks[idx]["text"]}'
                     )
 
         for c in coord_results:
-            self._add_param(input.input, uuid.uuid4(), f'coordinate-{c.get_type()}', ocr_to_coordinates(c.get_bounding_box()), f'extracted coordinate - {c.get_text()} as {c.get_parsed_degree()}')
+            self._add_param(input.input, str(uuid.uuid4()), f'coordinate-{c.get_type()}', ocr_to_coordinates(c.get_bounding_box()), f'extracted coordinate - {c.get_text()} as {c.get_parsed_degree()}')
         
         return (coord_lon_results, coord_lat_results)
 
@@ -558,7 +557,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     del lat_results[(deg, y)]
                     self._add_param(
                         input.input, 
-                        uuid.uuid4(), 
+                        str(uuid.uuid4()), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(coord.get_bounding_box()), 
                         f'excluded due to being outside roi - {coord.get_text()}'
@@ -569,7 +568,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     del lon_results[(deg, x)]
                     self._add_param(
                         input.input, 
-                        uuid.uuid4(), 
+                        str(uuid.uuid4()), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(coord.get_bounding_box()), 
                         f'excluded due to being outside roi - {coord.get_text()}'
@@ -699,7 +698,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 else:
                     self._add_param(
                         input.input, 
-                        uuid.uuid4(), 
+                        str(uuid.uuid4()), 
                         'coordinate-excluded', 
                         ocr_to_coordinates(v.get_bounding_box()), 
                         f'excluded due to being an outlier - {v.get_text()}'
@@ -766,7 +765,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
         return updated_geofence
 
-    def _parse_dms(self, groups) -> (bool, float):
+    def _parse_dms(self, groups) -> tuple[bool, float]:
         try:
             deg = RE_NONNUMERIC.sub("", groups[0])
             deg = float(deg)
@@ -891,7 +890,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     coord = Coordinate('lat keypoint', ocr_text_blocks[idx]['text'], latlon_pt[0], True, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.75)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     lat_results[ (latlon_pt[0], y_pixel) ] = coord
-                    self._add_param(input.input, uuid.uuid4(), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted northing utm coordinate - {coord.get_text()}')
+                    self._add_param(input.input, str(uuid.uuid4()), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted northing utm coordinate - {coord.get_text()}')
                 elif utm_geofence_min[1] <= utm_dist <= utm_geofence_max[1]:
                     # valid latitude point
                     # TODO: LOWER CONFIDENCE SCORE MATCH
@@ -901,7 +900,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     coord = Coordinate('lat keypoint', ocr_text_blocks[idx]['text'], latlon_pt[0], True, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.75)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     lat_results[ (latlon_pt[0], y_pixel) ] = coord
-                    self._add_param(input.input, uuid.uuid4(), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted northing utm coordinate - {coord.get_text()}')
+                    self._add_param(input.input, str(uuid.uuid4()), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted northing utm coordinate - {coord.get_text()}')
                 else:
                     print("Excluding candidate northing point: {}".format(utm_dist))
             else:
@@ -921,7 +920,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     coord = Coordinate('lon keypoint', ocr_text_blocks[idx]['text'], latlon_pt[1]*lon_sign_factor, False, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.75)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     lon_results[ (latlon_pt[1]*lon_sign_factor, x_pixel) ] = coord
-                    self._add_param(input.input, uuid.uuid4(), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted easting utm coordinate - {coord.get_text()}')
+                    self._add_param(input.input, str(uuid.uuid4()), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted easting utm coordinate - {coord.get_text()}')
                 elif utm_geofence_min[0] <= utm_dist <= utm_geofence_max[0]:
                     # valid longitude point
                     # TODO: LOWER CONFIDENCE SCORE MATCH
@@ -931,7 +930,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     coord = Coordinate('lon keypoint', ocr_text_blocks[idx]['text'], latlon_pt[1]*lon_sign_factor, False, ocr_text_blocks[idx]['bounding_poly'], x_ranges=x_ranges, confidence=0.75)
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     lon_results[ (latlon_pt[1]*lon_sign_factor, x_pixel) ] = coord
-                    self._add_param(input.input, uuid.uuid4(), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted easting utm coordinate - {coord.get_text()}')
+                    self._add_param(input.input, str(uuid.uuid4()), f'coordinate-{coord.get_type()}', ocr_to_coordinates(coord.get_bounding_box()), f'extracted easting utm coordinate - {coord.get_text()}')
                 else:
                     print("Excluding candidate easting point: {}".format(utm_dist))
         print("done utm")

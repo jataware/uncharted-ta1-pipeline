@@ -19,7 +19,7 @@ JPG_TEMP_FILENAME = "temp/temp_image_resized.jpg"
 ocr_cache = {}
 
 class TextExtractor(Task):
-    _ocr: Optional[OCR] = None
+    _ocr: OCR
 
     def __init__(self, task_id: str):
         super().__init__(task_id)

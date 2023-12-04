@@ -125,7 +125,7 @@ class CSVWriter:
     def __init__(self):
         pass
 
-    def output(self, output: list[Output], params={}):
+    def output(self, output: list[TabularOutput], params={}):
         if len(output) == 0:
             return
 

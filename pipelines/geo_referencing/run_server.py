@@ -6,7 +6,7 @@ from PIL.Image import Image as PILImage
 from PIL import Image
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
-from pipelines.geo_referencing.output import (JSONWriter)
+from pipelines.geo_referencing.output import (JSONWriter, ObjectOutput)
 from tasks.common.pipeline import (PipelineInput)
 from tasks.geo_referencing.georeference import QueryPoint
 
@@ -76,7 +76,7 @@ def process_input(raster_id: str, image_path: str, points):
     outputs = pipeline.run(input)
 
     # create the output assuming schema output is part of the pipeline
-    output_schema = outputs["schema"]
+    output_schema:ObjectOutput = outputs["schema"]
     writer_json = JSONWriter()
     return writer_json.output([output_schema], {})
 

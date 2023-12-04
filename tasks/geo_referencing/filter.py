@@ -70,7 +70,7 @@ class OutlierFilter(FilterCoordinates):
             if test > 0.1 and reduced[i] < 0.5 * test:
                 self._add_param(
                     input, 
-                    uuid.uuid4(), 
+                    str(uuid.uuid4()), 
                     'coordinate-excluded', 
                     ocr_to_coordinates(coords_representation[i].get_bounding_box()), 
                     f'excluded due to regression outlier detection- {coords_representation[i].get_text()}'

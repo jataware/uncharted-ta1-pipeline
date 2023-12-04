@@ -13,24 +13,20 @@ class QueryPoint:
     xy: tuple[float, float]
     lonlat_gtruth: Optional[tuple[float, float]]
     properties: dict[str, Any]
-    lonlat: Optional[tuple[float, float]]
-    lonlat_xp: Optional[tuple[float, float]]
-    lonlat_yp: Optional[tuple[float, float]]
-    error_lonlat: Optional[tuple[float, float]]
+    lonlat: tuple[float, float]
+    lonlat_xp: tuple[float, float]
+    lonlat_yp: tuple[float, float]
+    error_lonlat: tuple[float, float]
 
     def __init__(self, id:str, xy: tuple[float, float], lonlat_gtruth: Optional[tuple[float, float]], properties={}, confidence:float = 0):
         self.id = id
         self.xy = xy
         self.lonlat_gtruth = lonlat_gtruth
         self.properties = properties
-        self.lonlat = None
-        self.lonlat_xp = None
-        self.lonlat_yp = None
 
         self.error_km = None
         self.dist_xp_km = None
         self.dist_yp_km = None
-        self.error_lonlat = None
 
         self.confidence = confidence
 
@@ -211,6 +207,6 @@ class GeoReference(Task):
                 num_pts += 1
 
         if num_pts == 0:
-            return None
+            return -1
         rmse = math.sqrt(sum_sq_error / num_pts)
         return rmse

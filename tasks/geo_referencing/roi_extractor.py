@@ -8,7 +8,7 @@ from skimage.morphology import disk
 from compute.roi_mapping import determine_roi
 from tasks.common.task import (Task, TaskInput, TaskResult)
 
-from typing import (List, Optional)
+from typing import (Callable, List, Optional)
 
 ROI_PXL_LIMIT = 2000
 SLICE_PERCENT = 0.05
@@ -47,7 +47,7 @@ class ROIExtractor(Task):
 
 class ModelROIExtractor(ROIExtractor):
     _coco_file_path: str = ""
-    _buffering_func = None
+    _buffering_func:Callable
 
     def __init__(self, task_id: str, buffering_func, coco_file_path=""):
         super().__init__(task_id)

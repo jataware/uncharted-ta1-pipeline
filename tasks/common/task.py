@@ -31,7 +31,7 @@ class TaskParameter:
 
 
 class TaskInput:
-    image: Optional[PILImage] = None
+    image: PILImage
     task_index: int
     raster_id: str = ""
     request: Dict[Any, Any] = {}
@@ -40,7 +40,6 @@ class TaskInput:
 
     def __init__(self, task_index: int):
         self.data = {}
-        self.image = None
         self.raster_id = ""
         self.request = {}
         self.params_used = []
