@@ -38,20 +38,12 @@ class TaskInput:
     data: Dict[Any, Any] = {}
     params_used: List[TaskParameter] = []
 
-    def __init__(
-        self,
-        task_index: int,
-        data: Dict[Any, Any] = {},
-        image: Optional[PILImage] = None,
-        raster_id: str = "",
-        request: Dict[Any, Any] = {},
-        params_used: List[TaskParameter] = [],
-    ):
-        self.data = data
-        self.image = image
-        self.raster_id = raster_id
-        self.request = request
-        self.params_used = params_used
+    def __init__(self, task_index: int):
+        self.data = {}
+        self.image = None
+        self.raster_id = ""
+        self.request = {}
+        self.params_used = []
         self.task_index = task_index
 
     def get_data(self, key: str, default_value:Any=None) -> Any:
@@ -76,13 +68,10 @@ class TaskResult:
     output: Dict[Any, Any] = {}
     parameters: List[TaskParameter] = []
 
-    def __init__(
-        self, task_id: str = "", output: Dict[Any, Any] = {}, parameters: List[Any] = []
-    ):
-        self.task_id = task_id
-        #self.output = output
+    def __init__(self):
+        self.task_id = ""
         self.output = {}
-        self.parameters = parameters
+        self.parameters = []
 
 
 class Task:
