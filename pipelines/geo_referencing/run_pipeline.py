@@ -1,4 +1,3 @@
-
 import os
 import glob
 
@@ -12,8 +11,12 @@ from tasks.geo_referencing.georeference import QueryPoint
 from util.coordinates import absolute_minmax
 from util.json import read_json_file
 
-FOV_RANGE_KM = 700              # [km] max range of a image's field-of-view (around the clue coord pt)
-LON_MINMAX = [-66.0, -180.0]     # fallback geo-fence (ALL of USA + Alaska)
+from typing import Union
+
+FOV_RANGE_KM = (
+    700  # [km] max range of a image's field-of-view (around the clue coord pt)
+)
+LON_MINMAX = [-66.0, -180.0]  # fallback geo-fence (ALL of USA + Alaska)
 LAT_MINMAX = [24.0, 73.0]
 
 CLUE_PATH_IN = '/Users/phorne/projects/criticalmaas/data/challenge_1/clue_CSVs/'
@@ -24,9 +27,9 @@ IMG_FILE_EXT = 'tif'
 CLUE_FILEN_SUFFIX = '_clue'
 
 Image.MAX_IMAGE_PIXELS = 400000000
-IMG_CACHE = 'temp/images/'
-OCR_CACHE = 'temp/ocr/'
-GEOCODE_CACHE = 'temp/geocode/'
+IMG_CACHE = "temp/images/"
+OCR_CACHE = "temp/ocr/"
+GEOCODE_CACHE = "temp/geocode/"
 os.makedirs(IMG_CACHE, exist_ok=True)
 os.makedirs(OCR_CACHE, exist_ok=True)
 
@@ -49,11 +52,12 @@ def create_input(raster_id:str, image_path:str, points_path:str, query_path:str,
     
     return input
 
-def process_folder(image_folder:str):
+
+def process_folder(image_folder: str):
     # get the pipelines
     pipelines = create_geo_referencing_pipelines()
 
-    img_path_tmp = os.path.join(image_folder, '*.' + IMG_FILE_EXT)
+    img_path_tmp = os.path.join(image_folder, "*." + IMG_FILE_EXT)
     image_filenames = glob.glob(img_path_tmp)
     image_filenames.sort()
     print(f'found {len(image_filenames)} images to process')
@@ -78,9 +82,9 @@ def process_folder(image_folder:str):
         results_levers[p.id] = []
         results_gcps[p.id] = []
         results_integration[p.id] = []
-    
+
     for image_path in image_filenames:
-        print(f'processing {image_path}')
+        print(f"processing {image_path}")
         image_base_filename = os.path.basename(image_path)
         image_base_filename = os.path.splitext(image_base_filename)[0]
         raster_id = os.path.splitext(image_path[len(image_folder):])[0].replace('/', '-')
@@ -94,26 +98,42 @@ def process_folder(image_folder:str):
         for pipeline in pipelines:
             print(f'running pipeline {pipeline.id}')
             output = pipeline.run(input)
-            results[pipeline.id].append(output['geo'])
-            results_summary[pipeline.id].append(output['summary'])
-            results_levers[pipeline.id].append(output['levers'])
-            results_gcps[pipeline.id].append(output['gcps'])
-            results_integration[pipeline.id].append(output['schema'])
-            print(f'done pipeline {pipeline.id}\n\n')
-    
+            results[pipeline.id].append(output["geo"])
+            results_summary[pipeline.id].append(output["summary"])
+            results_levers[pipeline.id].append(output["levers"])
+            results_gcps[pipeline.id].append(output["gcps"])
+            results_integration[pipeline.id].append(output["schema"])
+            print(f"done pipeline {pipeline.id}\n\n")
+
         for p in pipelines:
-            writer_csv.output(results[p.id], {'path': f'output/test-{p.id}.csv'})
-            writer_csv.output(results_summary[p.id], {'path': f'output/test_summary-{p.id}.csv'})
-            writer_json.output(results_levers[p.id], {'path': f'output/test_levers-{p.id}.json'})
-            writer_json.output(results_gcps[p.id], {'path': f'output/test_gcps-{p.id}.json'})
-            writer_json.output(results_integration[p.id], {'path': f'output/test_schema-{p.id}.json'})
-    
+            writer_csv.output(results[p.id], {"path": f"output/test-{p.id}.csv"})
+            writer_csv.output(
+                results_summary[p.id], {"path": f"output/test_summary-{p.id}.csv"}
+            )
+            writer_json.output(
+                results_levers[p.id], {"path": f"output/test_levers-{p.id}.json"}
+            )
+            writer_json.output(
+                results_gcps[p.id], {"path": f"output/test_gcps-{p.id}.json"}
+            )
+            writer_json.output(
+                results_integration[p.id], {"path": f"output/test_schema-{p.id}.json"}
+            )
+
     for p in pipelines:
-        writer_csv.output(results[p.id], {'path': f'output/test-{p.id}.csv'})
-        writer_csv.output(results_summary[p.id], {'path': f'output/test_summary-{p.id}.csv'})
-        writer_json.output(results_levers[p.id], {'path': f'output/test_levers-{p.id}.json'})
-        writer_json.output(results_gcps[p.id], {'path': f'output/test_gcps-{p.id}.json'})
-        writer_json.output(results_integration[p.id], {'path': f'output/test_schema-{p.id}.json'})
+        writer_csv.output(results[p.id], {"path": f"output/test-{p.id}.csv"})
+        writer_csv.output(
+            results_summary[p.id], {"path": f"output/test_summary-{p.id}.csv"}
+        )
+        writer_json.output(
+            results_levers[p.id], {"path": f"output/test_levers-{p.id}.json"}
+        )
+        writer_json.output(
+            results_gcps[p.id], {"path": f"output/test_gcps-{p.id}.json"}
+        )
+        writer_json.output(
+            results_integration[p.id], {"path": f"output/test_schema-{p.id}.json"}
+        )
 
 
 def get_geofence(csv_clue_file, fov_range_km, lon_limits=(-66.0, -180.0), lat_limits=(24.0, 73.0), use_abs=True):
@@ -142,9 +162,9 @@ def get_geofence(csv_clue_file, fov_range_km, lon_limits=(-66.0, -180.0), lat_li
 
     return (absolute_minmax(lon_minmax), absolute_minmax(lat_minmax), lon_sign_factor)
 
-def parse_query_file(csv_query_file, image_size=None):
 
-    '''
+def parse_query_file(csv_query_file, image_size=None):
+    """
     Expected schema is of the form:
     raster_ID,row,col,NAD83_x,NAD83_y
     GEO_0004,8250,12796,-105.72065081057087,43.40255034572461
@@ -152,7 +172,7 @@ def parse_query_file(csv_query_file, image_size=None):
     Note: NAD83* columns may not be present
     row (y) and col (x) = pixel coordinates to query
     NAD83* = (if present) are ground truth answers (lon and lat) for the query x,y pt
-    '''
+    """
 
     first_line = True
     x_idx = 2
@@ -163,11 +183,11 @@ def parse_query_file(csv_query_file, image_size=None):
     try:
         with open(csv_query_file) as f_in:
             for line in f_in:
-                if line.startswith('raster_') or first_line:
+                if line.startswith("raster_") or first_line:
                     first_line = False
-                    continue    # header line, skip
+                    continue  # header line, skip
 
-                rec = line.split(',')
+                rec = line.split(",")
                 if len(rec) < 3:
                     continue
                 raster_id = rec[0]
@@ -176,7 +196,11 @@ def parse_query_file(csv_query_file, image_size=None):
                 if image_size is not None:
                     # sanity check that query points are not > image dimensions!
                     if x > image_size[0] or y > image_size[1]:
-                        err_msg = 'Query point {}, {} is outside image dimensions'.format(x,y)
+                        err_msg = (
+                            "Query point {}, {} is outside image dimensions".format(
+                                x, y
+                            )
+                        )
                         raise IOError(err_msg)
                 lonlat_gt = None
                 if len(rec) >= 5:
@@ -184,17 +208,17 @@ def parse_query_file(csv_query_file, image_size=None):
                     lat = float(rec[lat_idx])
                     if lon != 0 and lat != 0:
                         lonlat_gt = (lon, lat)
-                query_pts.append(QueryPoint(raster_id, (x,y), lonlat_gt) )
-                
+                query_pts.append(QueryPoint(raster_id, (x, y), lonlat_gt))
+
     except Exception as e:
-        print('EXCEPTION parsing query file: {}'.format(csv_query_file))
+        print("EXCEPTION parsing query file: {}".format(csv_query_file))
         print(e)
 
     #print('Num query points parsed: {}'.format(len(query_pts)))
 
     return query_pts
 
-def query_points_from_points(raster_id:str, points_file:str) -> list[QueryPoint]:
+def query_points_from_points(raster_id:str, points_file:str) -> Union[None, list[QueryPoint]]:
     return None
     if not os.path.isfile(points_file):
         return None

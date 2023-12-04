@@ -1,4 +1,3 @@
-
 import math
 
 from geopy.distance import geodesic
@@ -6,9 +5,20 @@ from geopy.distance import geodesic
 from compute.geo_projection import GeoProjection
 from tasks.common.task import (Task, TaskInput, TaskResult)
 
+from typing import (Any, List, Optional)
+
 class QueryPoint:
 
-    def __init__(self, id, xy: tuple, lonlat_gtruth: tuple, properties={}, confidence:float = 0):
+    id: str
+    xy: tuple[float, float]
+    lonlat_gtruth: Optional[tuple[float, float]]
+    properties: dict[str, Any]
+    lonlat: Optional[tuple[float, float]]
+    lonlat_xp: Optional[tuple[float, float]]
+    lonlat_yp: Optional[tuple[float, float]]
+    error_lonlat: Optional[tuple[float, float]]
+
+    def __init__(self, id:str, xy: tuple[float, float], lonlat_gtruth: Optional[tuple[float, float]], properties={}, confidence:float = 0):
         self.id = id
         self.xy = xy
         self.lonlat_gtruth = lonlat_gtruth
@@ -27,7 +37,7 @@ class QueryPoint:
 class GeoReference(Task):
     _poly_order = 1
 
-    def __init__(self, task_id:str, poly_order:int = 1):
+    def __init__(self, task_id: str, poly_order: int = 1):
         super().__init__(task_id)
         self._poly_order = poly_order
     
@@ -45,9 +55,9 @@ class GeoReference(Task):
 
         lon_check = list(map(lambda x: x[0], lon_pts))
         lat_check = list(map(lambda x: x[0], lat_pts))
-        print(f'lon check: {lon_check}\tlat check: {lat_check}')
-        print(f'lons: {lon_pts}')
-        print(f'lats: {lat_pts}')
+        print(f"lon check: {lon_check}\tlat check: {lat_check}")
+        print(f"lons: {lon_pts}")
+        print(f"lats: {lat_pts}")
         num_keypoints = min(len(lon_pts), len(lat_pts))
         confidence = 0
         if num_keypoints < 2 or (abs(max(lon_check) - min(lon_check)) > 40) or (abs(max(lat_check) - min(lat_check)) > 40):
@@ -68,8 +78,8 @@ class GeoReference(Task):
         rmse = self._score_query_points(query_pts)
 
         result = super()._create_result(input)
-        result.output['query_pts'] = results
-        result.output['rmse'] = rmse
+        result.output["query_pts"] = results
+        result.output["rmse"] = rmse
         return result
     
     def _calculate_confidence(self, lons, lats) -> float:
@@ -98,9 +108,7 @@ class GeoReference(Task):
         # combine them
         return min(1, lon_conf * lat_conf)
     
-    def _process_query_points(self, query_pts: list, im_resize_ratio: float, geo_projn: GeoProjection, lon_minmax: tuple, lat_minmax: tuple, confidence: float):
-
-        
+    def _process_query_points(self, query_pts: list, im_resize_ratio: float, geo_projn: Optional[GeoProjection], lon_minmax: tuple, lat_minmax: tuple, confidence: float):
         if geo_projn is None:
             return self._add_fallback(query_pts, lon_minmax, lat_minmax)
 
@@ -122,7 +130,7 @@ class GeoReference(Task):
         
         return results
     
-    def _clip_query_pts(self, query_pts:list[QueryPoint], lon_minmax:[float], lat_minmax:list[float]) -> list[QueryPoint]:
+    def _clip_query_pts(self, query_pts:list[QueryPoint], lon_minmax:List[float], lat_minmax:list[float]) -> list[QueryPoint]:
         if lon_minmax and lat_minmax:
             for qp in query_pts:
                 # ensure query pt results are within expected field-of-view range
@@ -132,7 +140,7 @@ class GeoReference(Task):
                 qp.lonlat_yp = (self._clip(qp.lonlat_yp[0], lon_minmax[0], lon_minmax[1]), self._clip(qp.lonlat_yp[1], lat_minmax[0], lat_minmax[1]))
         return query_pts
     
-    def _determine_hemispheres(self, query_pts:list[QueryPoint]) -> (float, float):
+    def _determine_hemispheres(self, query_pts:list[QueryPoint]) -> tuple[float, float]:
         # function assumes that north is up and that the image is not skewed
         # set east - west hemisphere by seeing how longitude changes when x increases
         lon_multiplier = 1
@@ -163,7 +171,7 @@ class GeoReference(Task):
     def _add_fallback(self, query_pts: list, lon_minmax: tuple, lat_minmax: tuple):
         print(f'adding fallback when georeferencing using {lon_minmax} & {lat_minmax}')
         results = []
-        # no geographic-projection polynomial available, 
+        # no geographic-projection polynomial available,
         # just use the 'clue' midpoint as a fallback answer for any query points
         lon_clue = (lon_minmax[0] + lon_minmax[1])/2    # mid-points of lon/lat clue area
         lat_clue = (lat_minmax[0] + lat_minmax[1])/2    
@@ -174,14 +182,14 @@ class GeoReference(Task):
             qp.confidence = 0
             results.append(qp)
         return results
-    
+
     def _clip(self, value: float, lower: float, upper: float) -> float:
         return lower if value < lower else upper if value > upper else value
-    
+
     def _score_query_points(self, query_pts: list[QueryPoint]) -> float:
-        print('scoring...')
+        print("scoring...")
         # if ground truth lon/lat info exists, calculate the
-        # RMSE of geodesic error distances (in km) for all 
+        # RMSE of geodesic error distances (in km) for all
         # query points for a given image
 
         sum_sq_error = 0.0
@@ -194,15 +202,15 @@ class GeoReference(Task):
                 qp.error_km = err_dist
                 qp.dist_xp_km = geodesic(latlon, (qp.lonlat_xp[1], qp.lonlat_xp[0])).km
                 qp.dist_yp_km = geodesic(latlon, (qp.lonlat_yp[1], qp.lonlat_yp[0])).km
-                qp.error_lonlat = (latlon[1] - latlon_gtruth[1], latlon[0] - latlon_gtruth[0])
+                qp.error_lonlat = (
+                    latlon[1] - latlon_gtruth[1],
+                    latlon[0] - latlon_gtruth[0],
+                )
 
-                sum_sq_error += err_dist*err_dist
+                sum_sq_error += err_dist * err_dist
                 num_pts += 1
 
-        if num_pts==0:
+        if num_pts == 0:
             return None
         rmse = math.sqrt(sum_sq_error / num_pts)
         return rmse
-
-
-

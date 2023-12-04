@@ -43,7 +43,7 @@ class CreateGroundControlPoints(Task):
         coords = self._create_random_coordinates(min_x, min_y, max_x, max_y)
         return [QueryPoint(input.raster_id, (c[0],c[1]), None, properties={'label': 'random'}) for c in coords]
     
-    def _create_random_coordinates(self, min_x:float, min_y:float, max_x:float, max_y:float, n:int=10, buffer:float=0.25) -> list[(int, int)]:
+    def _create_random_coordinates(self, min_x:float, min_y:float, max_x:float, max_y:float, n:int=10, buffer:float=0.25) -> list[tuple[int, int]]:
         # randomize x & y coordinates fitting between boundaries
         range_x = max_x - min_x
         range_y = max_y - min_y

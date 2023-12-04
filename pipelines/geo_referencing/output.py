@@ -1,15 +1,13 @@
-
 import jsons
 import uuid
 
 from tasks.common.pipeline import (ObjectOutput, Output, TabularOutput, OutputCreator, PipelineResult)
 
 class GeoReferencingOutput(OutputCreator):
-
     def __init__(self, id):
         super().__init__(id)
 
-    def create_output(self, pipeline_result:PipelineResult) -> Output:
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
         res = TabularOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
         res.data = []
         res.fields = [
@@ -32,10 +30,10 @@ class GeoReferencingOutput(OutputCreator):
             'confidence'
         ]
 
-        if 'query_pts' not in pipeline_result.data:
+        if "query_pts" not in pipeline_result.data:
             return res
-        
-        query_points = pipeline_result.data['query_pts']
+
+        query_points = pipeline_result.data["query_pts"]
         for qp in query_points:
             o = {
                     'raster_id': pipeline_result.raster_id,
@@ -46,39 +44,41 @@ class GeoReferencingOutput(OutputCreator):
                     'confidence': qp.confidence,
                 }
             if qp.lonlat_gtruth:
-                o['actual_x'] = qp.lonlat_gtruth[0]
-                o['actual_y'] = qp.lonlat_gtruth[1]
-                o['error_x'] = qp.error_lonlat[0]
-                o['error_y'] = qp.error_lonlat[1]
-                o['distance'] = qp.error_km
-                o['pixel_dist_xx'] = qp.lonlat_xp[0]
-                o['pixel_dist_xy'] = qp.lonlat_xp[1]
-                o['pixel_dist_x'] = qp.dist_xp_km
-                o['pixel_dist_yx'] = qp.lonlat_yp[0]
-                o['pixel_dist_yy'] = qp.lonlat_yp[1]
-                o['pixel_dist_y'] = qp.dist_yp_km
+                o["actual_x"] = qp.lonlat_gtruth[0]
+                o["actual_y"] = qp.lonlat_gtruth[1]
+                o["error_x"] = qp.error_lonlat[0]
+                o["error_y"] = qp.error_lonlat[1]
+                o["distance"] = qp.error_km
+                o["pixel_dist_xx"] = qp.lonlat_xp[0]
+                o["pixel_dist_xy"] = qp.lonlat_xp[1]
+                o["pixel_dist_x"] = qp.dist_xp_km
+                o["pixel_dist_yx"] = qp.lonlat_yp[0]
+                o["pixel_dist_yy"] = qp.lonlat_yp[1]
+                o["pixel_dist_y"] = qp.dist_yp_km
             res.data.append(o)
         return res
 
-class DetailedOutput(OutputCreator):
 
+class DetailedOutput(OutputCreator):
     def __init__(self, id):
         super().__init__(id)
 
-    def create_output(self, pipeline_result:PipelineResult) -> Output:
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
         for id, output in pipeline_result.tasks.items():
             print(id)
             for k, v in output.output.items():
                 print(k)
-            if 'lons' in output.output:
+            if "lons" in output.output:
                 print(f'lons: {output.output["lons"]}\nlats: {output.output["lats"]}')
+        
+        return Output(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
+
 
 class SummaryOutput(OutputCreator):
-
     def __init__(self, id):
         super().__init__(id)
-    
-    def create_output(self, pipeline_result:PipelineResult) -> Output:
+
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
         res = TabularOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
         res.fields = [
             'raster_id',
@@ -106,79 +106,84 @@ class SummaryOutput(OutputCreator):
         }]
         return res
 
-class UserLeverOutput(OutputCreator):
 
+class UserLeverOutput(OutputCreator):
     def __init__(self, id):
         super().__init__(id)
-    
+
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
 
         # extract the levers available via params
-        res.data = {'raster_id': pipeline_result.raster_id, 'levers':[]}
+        res.data = {"raster_id": pipeline_result.raster_id, "levers": []}
         for p in pipeline_result.params:
-            res.data['levers'].append(p)
+            res.data["levers"].append(p)
         return res
 
-class CSVWriter:
 
+class CSVWriter:
     def __init__(self):
         pass
 
-    def output(self, output:list[Output], params = {}):
+    def output(self, output: list[Output], params={}):
         if len(output) == 0:
             return
-        
+
         try:
-            with open(params['path'], "w") as f_out:
+            with open(params["path"], "w") as f_out:
                 # write header line
-                line_str = ','.join(output[0].fields)
-                f_out.write(line_str + '\n')
+                line_str = ",".join(output[0].fields)
+                f_out.write(line_str + "\n")
                 for r in output:
                     for d in r.data:
                         row = []
                         for f in r.fields:
                             if f in d:
-                                row.append(f'{d[f]}')
+                                row.append(f"{d[f]}")
                             else:
-                                row.append('')
+                                row.append("")
                         f_out.write(f'{",".join(row)}\n')
 
         except Exception as e:
-            print('EXCEPTION saving results to CSV')
+            print("EXCEPTION saving results to CSV")
             print(repr(e))
 
-class JSONWriter:
 
+class JSONWriter:
     def __init__(self):
         pass
 
-    def output(self, output:list[ObjectOutput], params = {}) -> str:
+    def output(self, output: list[ObjectOutput], params={}) -> str:
         output_target = []
         for o in output:
             output_target.append(o.data)
         json_raw = jsons.dumps(output_target, indent=4)
-        
+
         # Writing to output file if path specified
-        if 'path' in params:
-            with open(params['path'], "w") as f_out:
+        if "path" in params:
+            with open(params["path"], "w") as f_out:
                 f_out.write(json_raw)
-        
+
         # return the raw json
         return json_raw
 
-class GCPOutput(OutputCreator):
 
+class GCPOutput(OutputCreator):
     def __init__(self, id):
         super().__init__(id)
-    
+
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         # capture query points as output
         res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
 
         # extract the levers available via params
-        res.data = {'map': pipeline_result.raster_id, 'crs': ['EPSG:4267', 'EPSG:4269'], 'gcps': [], 'levers': []}
-        query_points = pipeline_result.data['query_pts']
+        res.data = {
+            "map": pipeline_result.raster_id,
+            "crs": ["EPSG:4267", "EPSG:4269"],
+            "gcps": [],
+            "levers": [],
+        }
+        query_points = pipeline_result.data["query_pts"]
         for qp in query_points:
             o = {
                     'crs': 'EPSG:4267',
@@ -195,14 +200,14 @@ class GCPOutput(OutputCreator):
         #    res.data['levers'].append(p)
         return res
 
-class IntegrationOutput(OutputCreator):
 
+class IntegrationOutput(OutputCreator):
     def __init__(self, id):
         super().__init__(id)
-    
+
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         # capture query points as output
-        query_points = pipeline_result.data['query_pts']
+        query_points = pipeline_result.data["query_pts"]
 
         res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
 
@@ -212,25 +217,19 @@ class IntegrationOutput(OutputCreator):
         for qp in query_points:
             count = count + 1
             o = {
-                    'id': count,
-                    'map_geom': {
-                        'coordinates': [qp.lonlat[0], qp.lonlat[1]],
-                        'type': 'Point'
-                    },
-                    'px_geom': {
-                        'coordinates': [qp.xy[0], qp.xy[1]],
-                        'type': 'Point'
-                    }
-                }
+                "id": count,
+                "map_geom": {
+                    "coordinates": [qp.lonlat[0], qp.lonlat[1]],
+                    "type": "Point",
+                },
+                "px_geom": {"coordinates": [qp.xy[0], qp.xy[1]], "type": "Point"},
+            }
             gcps.append(o)
         res.data = {
-            'map': {
-                'name': pipeline_result.raster_id,
-                'projection_info': {
-                    'projection': 'EPSG:4267', 
-                    'gcps': gcps
-                }
+            "map": {
+                "name": pipeline_result.raster_id,
+                "projection_info": {"projection": "EPSG:4267", "gcps": gcps},
             }
         }
-        
+
         return res

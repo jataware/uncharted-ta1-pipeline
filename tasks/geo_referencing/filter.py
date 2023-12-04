@@ -33,7 +33,7 @@ class FilterCoordinates(Task):
 
         return result
     
-    def _filter(self, coords):
+    def _filter(self, input:TaskInput, coords):
         return coords
 
 class OutlierFilter(FilterCoordinates):

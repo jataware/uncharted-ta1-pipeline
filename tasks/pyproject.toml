@@ -16,16 +16,40 @@ dependencies = [
     "google-cloud-vision",
     "grpcio",
     "boto3",
+    "mypy-boto3-s3",
     "pillow",
     "geopy",
     "matplotlib",
-    "opencv_python",
+    "opencv-python",
     "protobuf",
     "scikit_image",
     "scikit_learn",
     "Shapely",
-    "utm",
+    "utm"
+]
+
+[project.optional-dependencies]
+segmentation=[
+    "torch==2.0.1",
+    "torchvision==0.15.2",
+    "detectron2 @ git+https://github.com/facebookresearch/detectron2.git",
+    "transformers",
+    "timm"
+]
+point = [
+    "torch==2.0.1",
+    "torchvision==0.15.2",
 ]
 
 [tool.setuptools.packages]
 find = {}
+
+
+[tool.pyright]
+ignore = [
+    "**/segmentation/ditod",
+    "**/segmentation/layoutlmft"
+]
+# ignoring missing imports because of the optinal dependencies and manual
+# detectron installation
+reportMissingImports = false

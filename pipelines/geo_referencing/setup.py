@@ -8,5 +8,5 @@ setup(
     packages=find_packages(),
     keywords=["georef", "pipeline"],
     license="Apache-2.0",
-    install_requires=["lara_modelling_tasks", "flask", "opencv-python"],
+    install_requires=["lara-tasks", "flask", "opencv-python"],
 )

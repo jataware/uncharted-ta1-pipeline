@@ -8,6 +8,7 @@ from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.roi_extractor import (EntropyROIExtractor, ModelROIExtractor, buffer_fixed, buffer_image_ratio, buffer_roi_ratio)
 from tasks.geo_referencing.text_extraction import ResizeTextExtractor, TileTextExtractor
 
+
 def create_geo_referencing_pipelines() -> list[Pipeline]:
     p = []
 
@@ -70,13 +71,21 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
 
     return p
 
+
 def create_geo_referencing_pipeline() -> Pipeline:
     tasks = []
-    tasks.append(TileTextExtractor('ocr'))
-    tasks.append(ModelROIExtractor('model roi', buffer_fixed, '/Users/phorne/projects/criticalmaas/data/challenge_1/legend_and_map_segmentation_results_20231025'))
-    tasks.append(GeoCoordinatesExtractor('geo'))
-    tasks.append(UTMCoordinatesExtractor('utm'))
-    tasks.append(GeocodeCoordinatesExtractor('geocode'))
-    tasks.append(GeoReference('reference', 1))
-    return Pipeline('wally-finder', 'wally-finder', [IntegrationOutput('schema')], tasks)
-    
+    tasks.append(TileTextExtractor("ocr"))
+    tasks.append(
+        ModelROIExtractor(
+            "model roi",
+            buffer_fixed,
+            "/Users/phorne/projects/criticalmaas/data/challenge_1/legend_and_map_segmentation_results_20231025",
+        )
+    )
+    tasks.append(GeoCoordinatesExtractor("geo"))
+    tasks.append(UTMCoordinatesExtractor("utm"))
+    tasks.append(GeocodeCoordinatesExtractor("geocode"))
+    tasks.append(GeoReference("reference", 1))
+    return Pipeline(
+        "wally-finder", "wally-finder", [IntegrationOutput("schema")], tasks
+    )

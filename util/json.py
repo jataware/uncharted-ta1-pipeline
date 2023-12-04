@@ -1,5 +1,5 @@
-
 import json
+
 
 def read_json_file(path):
     # read it as json
