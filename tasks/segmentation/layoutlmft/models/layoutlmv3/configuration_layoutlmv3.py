@@ -32,15 +32,20 @@ class Layout_LMv3Config(BertConfig):
         visual_embed=True,
         mim=False,
         wpa_task=False,
-        discrete_vae_weight_path='',
-        discrete_vae_type='dall-e',
+        discrete_vae_weight_path="",
+        discrete_vae_type="dall-e",
         input_size=224,
         second_input_size=112,
-        device='cuda',
+        device="cuda",
         **kwargs
     ):
         """Constructs RobertaConfig."""
-        super().__init__(pad_token_id=pad_token_id, bos_token_id=bos_token_id, eos_token_id=eos_token_id, **kwargs)
+        super().__init__(
+            pad_token_id=pad_token_id,
+            bos_token_id=bos_token_id,
+            eos_token_id=eos_token_id,
+            **kwargs
+        )
         self.max_2d_position_embeddings = max_2d_position_embeddings
         self.coordinate_size = coordinate_size
         self.shape_size = shape_size

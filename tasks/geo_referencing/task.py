@@ -1,7 +1,7 @@
-
 from PIL.Image import Image as PILImage
 
-from typing import (Any, Optional)
+from typing import Any, Optional
+
 
 class TaskParameter:
     task_id: str = ""

@@ -44,9 +44,9 @@ def get_roi_model(path: str, raster_id: str):
     polygon = []
     conf = 0.0
     for r in model_output:
-        if r['class_label'] == 'map' and r['confidence'] > conf:
-            polygon = r['poly_bounds']
-            conf = r['confidence']
+        if r["class_label"] == "map" and r["confidence"] > conf:
+            polygon = r["poly_bounds"]
+            conf = r["confidence"]
 
     # map the inner lists as tuples for consistency
     return [(x[0], x[1]) for x in polygon]

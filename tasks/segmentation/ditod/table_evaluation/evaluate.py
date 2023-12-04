@@ -8,7 +8,9 @@ import xml.dom.minidom
 
 # from eval import eval
 if os.path.exists("/mnt/localdata/Users/junlongli/projects/datasets/icdar2019"):
-    PATH = "/mnt/localdata/Users/junlongli/projects/datasets/icdar2019/trackA_modern/test"
+    PATH = (
+        "/mnt/localdata/Users/junlongli/projects/datasets/icdar2019/trackA_modern/test"
+    )
 else:
     PATH = "/mnt/data/data/icdar2019/trackA_modern/test"
 reg_gt_path = os.path.abspath(PATH)
@@ -20,6 +22,7 @@ str_gt_path_archival = os.path.abspath(PATH)
 str_gt_path_modern = os.path.abspath(PATH)
 
 import xml.dom.minidom
+
 # from functools import cmp_to_key
 from os.path import join as osj
 from .data_structure import *
@@ -143,7 +146,9 @@ class eval:
         remaining_tables = result_tables.copy()
 
         # map the tables in gt and result file
-        table_matches = []  # @param: table_matches - list of mapping of tables in gt and res file, in order (gt, res)
+        table_matches = (
+            []
+        )  # @param: table_matches - list of mapping of tables in gt and res file, in order (gt, res)
         for gtt in gt_tables:
             for rest in remaining_tables:
                 if gtt.compute_table_iou(rest) >= iou_value:
@@ -154,7 +159,11 @@ class eval:
         assert len(table_matches) <= len(gt_tables)
         assert len(table_matches) <= len(result_tables)
 
-        retVal = ResultStructure(truePos=len(table_matches), gtTotal=len(gt_tables), resTotal=len(result_tables))
+        retVal = ResultStructure(
+            truePos=len(table_matches),
+            gtTotal=len(gt_tables),
+            resTotal=len(result_tables),
+        )
         return retVal
 
     @staticmethod
@@ -168,19 +177,22 @@ class eval:
         gt_remaining = gt_tables.copy()
 
         # map the tables in gt and result file
-        table_matches = []  # @param: table_matches - list of mapping of tables in gt and res file, in order (gt, res)
+        table_matches = (
+            []
+        )  # @param: table_matches - list of mapping of tables in gt and res file, in order (gt, res)
         for gtt in gt_remaining:
             for rest in remaining_tables:
                 # note: for structural analysis, use 0.8 for table mapping
                 if gtt.compute_table_iou(rest) >= table_iou_value:
                     table_matches.append((gtt, rest))
-                    remaining_tables.remove(rest)  # unsafe... should be ok with the break below
+                    remaining_tables.remove(
+                        rest
+                    )  # unsafe... should be ok with the break below
                     gt_remaining.remove(gtt)
                     break
 
         total_gt_relation, total_res_relation, total_correct_relation = 0, 0, 0
         for gt_table, ress_table in table_matches:
-
             # set up the cell mapping for matching tables
             cell_mapping = gt_table.find_cell_mapping(ress_table, iou_value)
             # set up the adj relations, convert the one for result table to a dictionary for faster searching
@@ -220,8 +232,13 @@ class eval:
         for res_remain in remaining_tables:
             total_res_relation += len(res_remain.find_adj_relations())
 
-        retVal = ResultStructure(truePos=total_correct_relation, gtTotal=total_gt_relation, resTotal=total_res_relation)
+        retVal = ResultStructure(
+            truePos=total_correct_relation,
+            gtTotal=total_gt_relation,
+            resTotal=total_res_relation,
+        )
         return retVal
+
 
 # calculate the gt adj_relations of the missing file
 # @param: file_lst - list of missing ground truth file
@@ -269,11 +286,13 @@ def process_missing_files(track, gt_file_lst, cur_gt_num):
                     cur_gt_num += len(table.find_adj_relations())
         return cur_gt_num
 
+
 def calc(F1):
     sum_a = 0.6 * F1[0] + 0.7 * F1[1] + 0.8 * F1[2] + 0.9 * F1[3]
     sum_b = 0.6 + 0.7 + 0.8 + 0.9
 
     return sum_a / sum_b
+
 
 def calc_table_score(result_path):
     # measure = eval(*sys.argv[1:])
@@ -299,13 +318,12 @@ def calc_table_score(result_path):
     correct_eight, res_eight = 0, 0
     correct_nine, res_nine = 0, 0
 
-
     for each_file in res_lst:
         # print(each_file)
         try:
             gt_file_lst.remove(each_file.result[-1])
-            if each_file.result[-1].replace('.xml', '.jpg') in gt_file_lst:
-                gt_file_lst.remove(each_file.result[-1].replace('.xml', '.jpg'))
+            if each_file.result[-1].replace(".xml", ".jpg") in gt_file_lst:
+                gt_file_lst.remove(each_file.result[-1].replace(".xml", ".jpg"))
             correct_six += each_file.result[0].truePos
             gt_num += each_file.result[0].gtTotal
             res_six += each_file.result[0].resTotal
@@ -336,11 +354,12 @@ def calc_table_score(result_path):
             del gt_file_lst[i]
 
     if len(gt_file_lst) > 0:
-        print("\nWarning: missing result annotations for file: {}\n".format(gt_file_lst))
+        print(
+            "\nWarning: missing result annotations for file: {}\n".format(gt_file_lst)
+        )
         gt_total = process_missing_files(track, gt_file_lst, gt_num)
     else:
         gt_total = gt_num
-
 
     try:
         # print("Evaluation of {}".format(track.replace("-", "")))
@@ -348,28 +367,48 @@ def calc_table_score(result_path):
         p_six = correct_six / res_six
         r_six = correct_six / gt_total
         f1_six = 2 * p_six * r_six / (p_six + r_six)
-        print("IOU @ 0.6 -\nprecision: {}\nrecall: {}\nf1: {}".format(p_six, r_six, f1_six))
+        print(
+            "IOU @ 0.6 -\nprecision: {}\nrecall: {}\nf1: {}".format(
+                p_six, r_six, f1_six
+            )
+        )
         print("correct: {}, gt: {}, res: {}\n".format(correct_six, gt_total, res_six))
 
         # iou @ 0.7
         p_seven = correct_seven / res_seven
         r_seven = correct_seven / gt_total
         f1_seven = 2 * p_seven * r_seven / (p_seven + r_seven)
-        print("IOU @ 0.7 -\nprecision: {}\nrecall: {}\nf1: {}".format(p_seven, r_seven, f1_seven))
-        print("correct: {}, gt: {}, res: {}\n".format(correct_seven, gt_total, res_seven))
+        print(
+            "IOU @ 0.7 -\nprecision: {}\nrecall: {}\nf1: {}".format(
+                p_seven, r_seven, f1_seven
+            )
+        )
+        print(
+            "correct: {}, gt: {}, res: {}\n".format(correct_seven, gt_total, res_seven)
+        )
 
         # iou @ 0.8
         p_eight = correct_eight / res_eight
         r_eight = correct_eight / gt_total
         f1_eight = 2 * p_eight * r_eight / (p_eight + r_eight)
-        print("IOU @ 0.8 -\nprecision: {}\nrecall: {}\nf1: {}".format(p_eight, r_eight, f1_eight))
-        print("correct: {}, gt: {}, res: {}\n".format(correct_eight, gt_total, res_eight))
+        print(
+            "IOU @ 0.8 -\nprecision: {}\nrecall: {}\nf1: {}".format(
+                p_eight, r_eight, f1_eight
+            )
+        )
+        print(
+            "correct: {}, gt: {}, res: {}\n".format(correct_eight, gt_total, res_eight)
+        )
 
         # iou @ 0.9
         p_nine = correct_nine / res_nine
         r_nine = correct_nine / gt_total
         f1_nine = 2 * p_nine * r_nine / (p_nine + r_nine)
-        print("IOU @ 0.9 -\nprecision: {}\nrecall: {}\nf1: {}".format(p_nine, r_nine, f1_nine))
+        print(
+            "IOU @ 0.9 -\nprecision: {}\nrecall: {}\nf1: {}".format(
+                p_nine, r_nine, f1_nine
+            )
+        )
         print("correct: {}, gt: {}, res: {}".format(correct_nine, gt_total, res_nine))
 
         F1 = [f1_six, f1_seven, f1_eight, f1_nine]
@@ -378,25 +417,26 @@ def calc_table_score(result_path):
         print("Average weight F1: {}".format(wF1))
 
         return {
-            'p_six':p_six * 100,
-            "r_six":r_six * 100,
-            "f1_six":f1_six * 100,
-            "p_seven":p_seven * 100,
-            "r_seven":r_seven * 100,
-            "f1_seven":f1_seven * 100,
-            "p_eight":p_eight * 100,
-            "r_eight":r_eight * 100,
-            "f1_eight":f1_eight * 100,
-            "p_nine":p_nine * 100,
-            "r_nine":r_nine * 100,
-            "f1_nine":f1_nine * 100,
-            "wF1":wF1 * 100
+            "p_six": p_six * 100,
+            "r_six": r_six * 100,
+            "f1_six": f1_six * 100,
+            "p_seven": p_seven * 100,
+            "r_seven": r_seven * 100,
+            "f1_seven": f1_seven * 100,
+            "p_eight": p_eight * 100,
+            "r_eight": r_eight * 100,
+            "f1_eight": f1_eight * 100,
+            "p_nine": p_nine * 100,
+            "r_nine": r_nine * 100,
+            "f1_nine": f1_nine * 100,
+            "wF1": wF1 * 100,
         }
     except ZeroDivisionError:
         print(
-            "Error: zero devision error found, (possible that no adjacency relations are found), please check the file input.")
+            "Error: zero devision error found, (possible that no adjacency relations are found), please check the file input."
+        )
         return {"wF1": 0}
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     pass

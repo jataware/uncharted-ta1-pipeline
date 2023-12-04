@@ -4,7 +4,6 @@ import os
 import pickle
 
 
-
 class OCR:
     def __init__(self):
         pass
@@ -15,7 +14,7 @@ class OCR:
     #
     def detect_text(self, path, key: str = ""):
         """Detects text in the file."""
-        
+
         client = vision.ImageAnnotatorClient()
 
         with io.open(path, "rb") as image_file:
@@ -33,9 +32,11 @@ class OCR:
 
         if response.error.message:
             raise Exception(
-                '{}\nFor more info on error messages, check: '
-                'https://cloud.google.com/apis/design/errors'.format(
-                    response.error.message))
+                "{}\nFor more info on error messages, check: "
+                "https://cloud.google.com/apis/design/errors".format(
+                    response.error.message
+                )
+            )
 
         return texts
 
@@ -108,11 +109,13 @@ class OCR:
             )  # TODO - throw exception here?
 
         return results
-    
+
     def merge_multiline(self, ocr_blocks):
-        print('looking for multiline ocr blocks')
+        print("looking for multiline ocr blocks")
         # process blocks top to bottom
-        blocks_sorted = sorted(ocr_blocks, key = lambda x: x['bounding_poly'].vertices[0].y)
+        blocks_sorted = sorted(
+            ocr_blocks, key=lambda x: x["bounding_poly"].vertices[0].y
+        )
 
         # merge blocks that are closely aligned horizontally, offset vertically by roughly one line height
         blocks_combined = []
@@ -120,7 +123,7 @@ class OCR:
         x_match_limit = 15
         for i, b in enumerate(blocks_sorted):
             # make sure the ocr block is not already combined
-            vertices = b['bounding_poly'].vertices
+            vertices = b["bounding_poly"].vertices
             if (vertices[0].x, vertices[0].y) in merged:
                 continue
 
@@ -132,31 +135,43 @@ class OCR:
             # for now limit to one join rather than multiple joins
             # data is sorted on y so only entries further in the list can be matches
             ocr_match = None
-            for b2 in blocks_sorted[i + 1:]:
-                vs = b2['bounding_poly'].vertices
+            for b2 in blocks_sorted[i + 1 :]:
+                vs = b2["bounding_poly"].vertices
                 # check for exceeding y distance limit for merging
                 if vs[0].y > upper_bound:
                     break
-                
+
                 # confirm y falls within expected bound
                 # given the data is sorted, this should not be needed but meh
                 if vs[0].y < lower_bound:
                     continue
 
                 # x boundary needs to fall within an arbitrary pixel limit (in this case +- 15) on both sides
-                if abs(vs[0].x - vertices[0].x) < x_match_limit and abs(vs[2].x - vertices[2].x) < x_match_limit:
+                if (
+                    abs(vs[0].x - vertices[0].x) < x_match_limit
+                    and abs(vs[2].x - vertices[2].x) < x_match_limit
+                ):
                     ocr_match = b2
                     break
             c = b
             if ocr_match:
-                #print('FOUND MULTILINE TO MERGE')
-                #print((ocr_match['bounding_poly'].vertices[0].x, ocr_match['bounding_poly'].vertices[0].y))
-                #print(f'TEXT:\n{b["text"]}\nAND\n{ocr_match["text"]}')
-                combined_bb = self._add_bounding_polygons(b['bounding_poly'], ocr_match['bounding_poly'])
-                c = {'text' : f'{b["text"]} {ocr_match["text"]}', 'bounding_poly' : combined_bb}
-                merged[(ocr_match['bounding_poly'].vertices[0].x, ocr_match['bounding_poly'].vertices[0].y)] = ocr_match
+                # print('FOUND MULTILINE TO MERGE')
+                # print((ocr_match['bounding_poly'].vertices[0].x, ocr_match['bounding_poly'].vertices[0].y))
+                # print(f'TEXT:\n{b["text"]}\nAND\n{ocr_match["text"]}')
+                combined_bb = self._add_bounding_polygons(
+                    b["bounding_poly"], ocr_match["bounding_poly"]
+                )
+                c = {
+                    "text": f'{b["text"]} {ocr_match["text"]}',
+                    "bounding_poly": combined_bb,
+                }
+                merged[
+                    (
+                        ocr_match["bounding_poly"].vertices[0].x,
+                        ocr_match["bounding_poly"].vertices[0].y,
+                    )
+                ] = ocr_match
             blocks_combined.append(c)
-            
 
         return blocks_combined
 

@@ -10,16 +10,22 @@ from transformers.data.data_collator import (
 from transformers.file_utils import PaddingStrategy
 
 from typing import NewType
+
 InputDataClass = NewType("InputDataClass", Any)
 
+
 def pre_calc_rel_mat(segment_ids):
-    valid_span = torch.zeros((segment_ids.shape[0], segment_ids.shape[1], segment_ids.shape[1]),
-                             device=segment_ids.device, dtype=torch.bool)
+    valid_span = torch.zeros(
+        (segment_ids.shape[0], segment_ids.shape[1], segment_ids.shape[1]),
+        device=segment_ids.device,
+        dtype=torch.bool,
+    )
     for i in range(segment_ids.shape[0]):
         for j in range(segment_ids.shape[1]):
             valid_span[i, j, :] = segment_ids[i, :] == segment_ids[i, j]
 
     return valid_span
+
 
 @dataclass
 class DataCollatorForKeyValueExtraction(DataCollatorMixin):
@@ -55,7 +61,11 @@ class DataCollatorForKeyValueExtraction(DataCollatorMixin):
 
     def __call__(self, features):
         label_name = "label" if "label" in features[0].keys() else "labels"
-        labels = [feature[label_name] for feature in features] if label_name in features[0].keys() else None
+        labels = (
+            [feature[label_name] for feature in features]
+            if label_name in features[0].keys()
+            else None
+        )
 
         images = None
         if "images" in features[0]:
@@ -73,52 +83,84 @@ class DataCollatorForKeyValueExtraction(DataCollatorMixin):
 
         if images is not None:
             batch["images"] = images
-            batch = {k: torch.tensor(v, dtype=torch.int64) if isinstance(v[0], list) and k == 'attention_mask' else v
-                     for k, v in batch.items()}
-            visual_attention_mask = torch.ones((len(batch['input_ids']), IMAGE_LEN), dtype=torch.long)
-            batch["attention_mask"] = torch.cat([batch['attention_mask'], visual_attention_mask], dim=1)
+            batch = {
+                k: torch.tensor(v, dtype=torch.int64)
+                if isinstance(v[0], list) and k == "attention_mask"
+                else v
+                for k, v in batch.items()
+            }
+            visual_attention_mask = torch.ones(
+                (len(batch["input_ids"]), IMAGE_LEN), dtype=torch.long
+            )
+            batch["attention_mask"] = torch.cat(
+                [batch["attention_mask"], visual_attention_mask], dim=1
+            )
 
         if labels is None:
             return batch
 
         has_bbox_input = "bbox" in features[0]
         has_position_input = "position_ids" in features[0]
-        padding_idx=self.tokenizer.pad_token_id
+        padding_idx = self.tokenizer.pad_token_id
         sequence_length = torch.tensor(batch["input_ids"]).shape[1]
         padding_side = self.tokenizer.padding_side
         if padding_side == "right":
-            batch["labels"] = [label + [self.label_pad_token_id] * (sequence_length - len(label)) for label in labels]
+            batch["labels"] = [
+                label + [self.label_pad_token_id] * (sequence_length - len(label))
+                for label in labels
+            ]
             if has_bbox_input:
-                batch["bbox"] = [bbox + [[0, 0, 0, 0]] * (sequence_length - len(bbox)) for bbox in batch["bbox"]]
+                batch["bbox"] = [
+                    bbox + [[0, 0, 0, 0]] * (sequence_length - len(bbox))
+                    for bbox in batch["bbox"]
+                ]
             if has_position_input:
-                batch["position_ids"] = [position_id + [padding_idx] * (sequence_length - len(position_id))
-                                          for position_id in batch["position_ids"]]
+                batch["position_ids"] = [
+                    position_id + [padding_idx] * (sequence_length - len(position_id))
+                    for position_id in batch["position_ids"]
+                ]
 
         else:
-            batch["labels"] = [[self.label_pad_token_id] * (sequence_length - len(label)) + label for label in labels]
+            batch["labels"] = [
+                [self.label_pad_token_id] * (sequence_length - len(label)) + label
+                for label in labels
+            ]
             if has_bbox_input:
-                batch["bbox"] = [[[0, 0, 0, 0]] * (sequence_length - len(bbox)) + bbox for bbox in batch["bbox"]]
+                batch["bbox"] = [
+                    [[0, 0, 0, 0]] * (sequence_length - len(bbox)) + bbox
+                    for bbox in batch["bbox"]
+                ]
             if has_position_input:
-                batch["position_ids"] = [[padding_idx] * (sequence_length - len(position_id))
-                                          + position_id for position_id in batch["position_ids"]]
+                batch["position_ids"] = [
+                    [padding_idx] * (sequence_length - len(position_id)) + position_id
+                    for position_id in batch["position_ids"]
+                ]
 
-        if 'segment_ids' in batch:
-            assert 'position_ids' in batch
-            for i in range(len(batch['segment_ids'])):
-                batch['segment_ids'][i] = batch['segment_ids'][i] + [batch['segment_ids'][i][-1] + 1] * (sequence_length - len(batch['segment_ids'][i])) + [
-                    batch['segment_ids'][i][-1] + 2] * IMAGE_LEN
+        if "segment_ids" in batch:
+            assert "position_ids" in batch
+            for i in range(len(batch["segment_ids"])):
+                batch["segment_ids"][i] = (
+                    batch["segment_ids"][i]
+                    + [batch["segment_ids"][i][-1] + 1]
+                    * (sequence_length - len(batch["segment_ids"][i]))
+                    + [batch["segment_ids"][i][-1] + 2] * IMAGE_LEN
+                )
 
-        batch = {k: torch.tensor(v, dtype=torch.int64) if isinstance(v[0], list) else v for k, v in batch.items()}
+        batch = {
+            k: torch.tensor(v, dtype=torch.int64) if isinstance(v[0], list) else v
+            for k, v in batch.items()
+        }
 
-        if 'segment_ids' in batch:
-            valid_span = pre_calc_rel_mat(
-                segment_ids=batch['segment_ids']
-            )
-            batch['valid_span'] = valid_span
-            del batch['segment_ids']
+        if "segment_ids" in batch:
+            valid_span = pre_calc_rel_mat(segment_ids=batch["segment_ids"])
+            batch["valid_span"] = valid_span
+            del batch["segment_ids"]
 
         if images is not None:
-            visual_labels = torch.ones((len(batch['input_ids']), IMAGE_LEN), dtype=torch.long) * -100
-            batch["labels"] = torch.cat([batch['labels'], visual_labels], dim=1)
+            visual_labels = (
+                torch.ones((len(batch["input_ids"]), IMAGE_LEN), dtype=torch.long)
+                * -100
+            )
+            batch["labels"] = torch.cat([batch["labels"], visual_labels], dim=1)
 
         return batch

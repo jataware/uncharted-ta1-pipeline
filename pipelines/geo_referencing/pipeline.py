@@ -1,4 +1,3 @@
-
 from PIL.Image import Image as PILImage
 
 from tasks.geo_referencing.task import Task, TaskInput, TaskResult

@@ -1,7 +1,7 @@
 # coding=utf-8
-'''
+"""
 Reference: https://huggingface.co/datasets/nielsr/funsd/blob/main/funsd.py
-'''
+"""
 import json
 import os
 
@@ -45,7 +45,9 @@ class Funsd(datasets.GeneratorBasedBuilder):
     """Conll2003 dataset."""
 
     BUILDER_CONFIGS = [
-        FunsdConfig(name="funsd", version=datasets.Version("1.0.0"), description="FUNSD dataset"),
+        FunsdConfig(
+            name="funsd", version=datasets.Version("1.0.0"), description="FUNSD dataset"
+        ),
     ]
 
     def _info(self):
@@ -55,10 +57,20 @@ class Funsd(datasets.GeneratorBasedBuilder):
                 {
                     "id": datasets.Value("string"),
                     "tokens": datasets.Sequence(datasets.Value("string")),
-                    "bboxes": datasets.Sequence(datasets.Sequence(datasets.Value("int64"))),
+                    "bboxes": datasets.Sequence(
+                        datasets.Sequence(datasets.Value("int64"))
+                    ),
                     "ner_tags": datasets.Sequence(
                         datasets.features.ClassLabel(
-                            names=["O", "B-HEADER", "I-HEADER", "B-QUESTION", "I-QUESTION", "B-ANSWER", "I-ANSWER"]
+                            names=[
+                                "O",
+                                "B-HEADER",
+                                "I-HEADER",
+                                "B-QUESTION",
+                                "I-QUESTION",
+                                "B-ANSWER",
+                                "I-ANSWER",
+                            ]
                         )
                     ),
                     "image": datasets.Array3D(shape=(3, 224, 224), dtype="uint8"),
@@ -72,13 +84,17 @@ class Funsd(datasets.GeneratorBasedBuilder):
 
     def _split_generators(self, dl_manager):
         """Returns SplitGenerators."""
-        downloaded_file = dl_manager.download_and_extract("https://guillaumejaume.github.io/FUNSD/dataset.zip")
+        downloaded_file = dl_manager.download_and_extract(
+            "https://guillaumejaume.github.io/FUNSD/dataset.zip"
+        )
         return [
             datasets.SplitGenerator(
-                name=datasets.Split.TRAIN, gen_kwargs={"filepath": f"{downloaded_file}/dataset/training_data/"}
+                name=datasets.Split.TRAIN,
+                gen_kwargs={"filepath": f"{downloaded_file}/dataset/training_data/"},
             ),
             datasets.SplitGenerator(
-                name=datasets.Split.TEST, gen_kwargs={"filepath": f"{downloaded_file}/dataset/testing_data/"}
+                name=datasets.Split.TEST,
+                gen_kwargs={"filepath": f"{downloaded_file}/dataset/testing_data/"},
             ),
         ]
 
@@ -132,5 +148,11 @@ class Funsd(datasets.GeneratorBasedBuilder):
                 # box = normalize_bbox(item["box"], size)
                 # cur_line_bboxes = [box for _ in range(len(words))]
                 bboxes.extend(cur_line_bboxes)
-            yield guid, {"id": str(guid), "tokens": tokens, "bboxes": bboxes, "ner_tags": ner_tags,
-                         "image": image, "image_path": image_path}
+            yield guid, {
+                "id": str(guid),
+                "tokens": tokens,
+                "bboxes": bboxes,
+                "ner_tags": ner_tags,
+                "image": image,
+                "image_path": image_path,
+            }

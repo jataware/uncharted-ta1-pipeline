@@ -115,24 +115,39 @@ Run on multiple machines:
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
+    parser.add_argument(
+        "--config-file", default="", metavar="FILE", help="path to config file"
+    )
     parser.add_argument(
         "--resume",
         action="store_true",
         help="Whether to attempt to resume from the checkpoint directory. "
         "See documentation of `MyTrainer.resume_or_load()` for what it means.",
     )
-    parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
-    parser.add_argument("--num-gpus", type=int, default=1, help="number of gpus *per machine*")
-    parser.add_argument("--num-machines", type=int, default=1, help="total number of machines")
     parser.add_argument(
-        "--machine-rank", type=int, default=0, help="the rank of this machine (unique per machine)"
+        "--eval-only", action="store_true", help="perform evaluation only"
+    )
+    parser.add_argument(
+        "--num-gpus", type=int, default=1, help="number of gpus *per machine*"
+    )
+    parser.add_argument(
+        "--num-machines", type=int, default=1, help="total number of machines"
+    )
+    parser.add_argument(
+        "--machine-rank",
+        type=int,
+        default=0,
+        help="the rank of this machine (unique per machine)",
     )
 
     # PyTorch still may leave orphan processes in multi-gpu training.
     # Therefore we use a deterministic way to obtain port,
     # so that users are aware of orphan processes by seeing the port occupied.
-    port = 2 ** 15 + 2 ** 14 + hash(os.getuid() if sys.platform != "win32" else 1) % 2 ** 14
+    port = (
+        2**15
+        + 2**14
+        + hash(os.getuid() if sys.platform != "win32" else 1) % 2**14
+    )
     parser.add_argument(
         "--dist-url",
         default="tcp://127.0.0.1:{}".format(port),
@@ -200,7 +215,11 @@ def default_setup(cfg, args):
     setup_logger(output_dir, distributed_rank=rank, name="fvcore")
     logger = setup_logger(output_dir, distributed_rank=rank)
 
-    logger.info("Rank of current process: {}. World size: {}".format(rank, comm.get_world_size()))
+    logger.info(
+        "Rank of current process: {}. World size: {}".format(
+            rank, comm.get_world_size()
+        )
+    )
     logger.info("Environment info:\n" + collect_env_info())
 
     logger.info("Command line arguments: " + str(args))
@@ -208,7 +227,9 @@ def default_setup(cfg, args):
         logger.info(
             "Contents of args.config_file={}:\n{}".format(
                 args.config_file,
-                _highlight(PathManager.open(args.config_file, "r").read(), args.config_file),
+                _highlight(
+                    PathManager.open(args.config_file, "r").read(), args.config_file
+                ),
             )
         )
 
@@ -217,7 +238,9 @@ def default_setup(cfg, args):
         # config.yaml in output directory
         path = os.path.join(output_dir, "config.yaml")
         if isinstance(cfg, CfgNode):
-            logger.info("Running with full config:\n{}".format(_highlight(cfg.dump(), ".yaml")))
+            logger.info(
+                "Running with full config:\n{}".format(_highlight(cfg.dump(), ".yaml"))
+            )
             with PathManager.open(path, "w") as f:
                 f.write(cfg.dump())
         else:
@@ -458,7 +481,11 @@ class MyTrainer(TrainerBase):
         # This is not always the best: if checkpointing has a different frequency,
         # some checkpoints may have more precise statistics than others.
         if comm.is_main_process():
-            ret.append(hooks.PeriodicCheckpointer(self.checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD))
+            ret.append(
+                hooks.PeriodicCheckpointer(
+                    self.checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD
+                )
+            )
 
         def test_and_save_results():
             self._last_eval_results = self.test(self.cfg, self.model)
@@ -505,7 +532,9 @@ class MyTrainer(TrainerBase):
         if self.cfg.SOLVER.GRADIENT_ACCUMULATION_STEPS == 1:
             self._trainer.run_step()
         else:
-            self.run_step_grad_acc(gradient_accumulation_steps=self.cfg.SOLVER.GRADIENT_ACCUMULATION_STEPS)
+            self.run_step_grad_acc(
+                gradient_accumulation_steps=self.cfg.SOLVER.GRADIENT_ACCUMULATION_STEPS
+            )
 
     def run_step_grad_acc(self, gradient_accumulation_steps=1):
         """
@@ -513,8 +542,12 @@ class MyTrainer(TrainerBase):
         The batch at each step will be divided by this integer and
         gradient will be accumulated over gradient_accumulation_steps steps.
         """
-        assert self._trainer.model.training, "[AMPTrainer] model was changed to eval mode!"
-        assert torch.cuda.is_available(), "[AMPTrainer] CUDA is required for AMP training!"
+        assert (
+            self._trainer.model.training
+        ), "[AMPTrainer] model was changed to eval mode!"
+        assert (
+            torch.cuda.is_available()
+        ), "[AMPTrainer] CUDA is required for AMP training!"
         from torch.cuda.amp import autocast
 
         start = time.perf_counter()
@@ -534,7 +567,6 @@ class MyTrainer(TrainerBase):
         self._trainer.grad_scaler.scale(losses).backward()
 
         if (self._trainer.iter + 1) % gradient_accumulation_steps == 0:
-
             self._trainer._write_metrics(loss_dict, data_time)
 
             self._trainer.grad_scaler.step(self._trainer.optimizer)
@@ -576,14 +608,16 @@ class MyTrainer(TrainerBase):
             # detectron2 doesn't have full model gradient clipping now
             clip_norm_val = cfg.SOLVER.CLIP_GRADIENTS.CLIP_VALUE
             enable = (
-                    cfg.SOLVER.CLIP_GRADIENTS.ENABLED
-                    and cfg.SOLVER.CLIP_GRADIENTS.CLIP_TYPE == "full_model"
-                    and clip_norm_val > 0.0
+                cfg.SOLVER.CLIP_GRADIENTS.ENABLED
+                and cfg.SOLVER.CLIP_GRADIENTS.CLIP_TYPE == "full_model"
+                and clip_norm_val > 0.0
             )
 
             class FullModelGradientClippingOptimizer(optim):
                 def step(self, closure=None):
-                    all_params = itertools.chain(*[x["params"] for x in self.param_groups])
+                    all_params = itertools.chain(
+                        *[x["params"] for x in self.param_groups]
+                    )
                     torch.nn.utils.clip_grad_norm_(all_params, clip_norm_val)
                     super().step(closure=closure)
 
@@ -643,7 +677,7 @@ class MyTrainer(TrainerBase):
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
         if output_folder is None:
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
-        if 'icdar' not in dataset_name:
+        if "icdar" not in dataset_name:
             return COCOEvaluator(dataset_name, output_dir=output_folder)
         else:
             return ICDAREvaluator(dataset_name, output_dir=output_folder)
@@ -697,7 +731,9 @@ class MyTrainer(TrainerBase):
                 ), "Evaluator must return a dict on the main process. Got {} instead.".format(
                     results_i
                 )
-                logger.info("Evaluation results for {} in csv format:".format(dataset_name))
+                logger.info(
+                    "Evaluation results for {} in csv format:".format(dataset_name)
+                )
                 print_csv_format(results_i)
 
         if len(results) == 1:
@@ -760,7 +796,9 @@ class MyTrainer(TrainerBase):
         bs = cfg.SOLVER.IMS_PER_BATCH = int(round(cfg.SOLVER.IMS_PER_BATCH * scale))
         lr = cfg.SOLVER.BASE_LR = cfg.SOLVER.BASE_LR * scale
         max_iter = cfg.SOLVER.MAX_ITER = int(round(cfg.SOLVER.MAX_ITER / scale))
-        warmup_iter = cfg.SOLVER.WARMUP_ITERS = int(round(cfg.SOLVER.WARMUP_ITERS / scale))
+        warmup_iter = cfg.SOLVER.WARMUP_ITERS = int(
+            round(cfg.SOLVER.WARMUP_ITERS / scale)
+        )
         cfg.SOLVER.STEPS = tuple(int(round(s / scale)) for s in cfg.SOLVER.STEPS)
         cfg.TEST.EVAL_PERIOD = int(round(cfg.TEST.EVAL_PERIOD / scale))
         cfg.SOLVER.CHECKPOINT_PERIOD = int(round(cfg.SOLVER.CHECKPOINT_PERIOD / scale))

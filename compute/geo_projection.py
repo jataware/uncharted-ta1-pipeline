@@ -42,7 +42,6 @@ class GeoProjection:
     # estimate_pxl2geo_mapping
     #
     def estimate_pxl2geo_mapping(self, lon_coords, lat_coords, im_size):
-
         # Use polynomial regression to
         # estimate x-pxl -> longitude and y-pxl -> latitude mapping, independantly
         # BUT each mapping may depend on both x,y values for a given lon or lat value, respectively
@@ -64,7 +63,7 @@ class GeoProjection:
         lat_pts = []
         # x -> longitude
         for (lon, x), y in lon_results.items():
-            lon_xy.append([x,y])
+            lon_xy.append([x, y])
             lon_pts.append(lon)
         # y -> latitude
         for (lat, y), x in lat_results.items():
@@ -150,11 +149,13 @@ class GeoProjection:
 
         return deg_results
 
-    def _map_coordinates(self, coords: list[Coordinate]) -> dict[tuple[float, float], float]:
+    def _map_coordinates(
+        self, coords: list[Coordinate]
+    ) -> dict[tuple[float, float], float]:
         # create the coordinate structure needed for point finalization
         coords_mapped = {}
         for c in coords:
             k, v = c.to_deg_result()
             coords_mapped[k] = v
-        
+
         return coords_mapped

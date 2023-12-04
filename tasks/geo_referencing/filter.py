@@ -1,22 +1,22 @@
-
 import uuid
 
 from compute.geo_projection import PolyRegression
 from model.coordinate import Coordinate
-from tasks.common.task import (Task, TaskInput, TaskResult)
-from util.coordinates import (ocr_to_coordinates)
+from tasks.common.task import Task, TaskInput, TaskResult
+from util.coordinates import ocr_to_coordinates
+
 
 class FilterCoordinates(Task):
-    _coco_file_path:str = ''
+    _coco_file_path: str = ""
     _buffering_func = None
 
-    def __init__(self, task_id:str):
+    def __init__(self, task_id: str):
         super().__init__(task_id)
-    
-    def run(self, input:TaskInput) -> TaskResult:
+
+    def run(self, input: TaskInput) -> TaskResult:
         # get coordinates so far
-        lon_pts = input.get_data('lons')
-        lat_pts = input.get_data('lats')
+        lon_pts = input.get_data("lons")
+        lat_pts = input.get_data("lats")
 
         # filter the coordinates to retain only those that are deemed valid
         lon_pts_filtered = self._filter(input, lon_pts)
@@ -24,42 +24,45 @@ class FilterCoordinates(Task):
 
         # update the coordinates list
         return self._create_result(input, lon_pts_filtered, lat_pts_filtered)
-    
-    def _create_result(self, input:TaskInput, lons, lats) -> TaskResult:
+
+    def _create_result(self, input: TaskInput, lons, lats) -> TaskResult:
         result = super()._create_result(input)
 
-        result.output['lons'] = lons
-        result.output['lats'] = lats
+        result.output["lons"] = lons
+        result.output["lats"] = lats
 
         return result
-    
-    def _filter(self, input:TaskInput, coords):
+
+    def _filter(self, input: TaskInput, coords):
         return coords
 
-class OutlierFilter(FilterCoordinates):
 
-    def __init__(self, task_id:str):
+class OutlierFilter(FilterCoordinates):
+    def __init__(self, task_id: str):
         super().__init__(task_id)
-    
-    def _filter(self, input:TaskInput, coords):
-        print(f'outlier filter running against {coords}')
+
+    def _filter(self, input: TaskInput, coords):
+        print(f"outlier filter running against {coords}")
         updated_coords = coords
         test_length = 0
         while len(updated_coords) != test_length:
             test_length = len(updated_coords)
             updated_coords = self._filter_regression(input, updated_coords)
         return updated_coords
-    
-    def _filter_regression(self, input:TaskInput, coords):
+
+    def _filter_regression(self, input: TaskInput, coords):
         # use leave one out approach using linear regression model
 
         # reduce coordinate to (degree, constant dimension) where the constant dimension for lat is y and lon is x
         coords_representation = []
         for _, c in coords.items():
             coords_representation.append(c)
-        
+
         # get the regression quality when holding out each coordinate one at a time
-        reduced = [self._reduce(coords_representation, i) for i in range(len(coords_representation))]
+        reduced = [
+            self._reduce(coords_representation, i)
+            for i in range(len(coords_representation))
+        ]
 
         # identify potential outliers via the model quality (outliers should show a dip in the error)
         results = {}
@@ -69,18 +72,18 @@ class OutlierFilter(FilterCoordinates):
             # having a floor to the test prevents removing datapoints when the error is low due to points lining up correctly
             if test > 0.1 and reduced[i] < 0.5 * test:
                 self._add_param(
-                    input, 
-                    str(uuid.uuid4()), 
-                    'coordinate-excluded', 
-                    ocr_to_coordinates(coords_representation[i].get_bounding_box()), 
-                    f'excluded due to regression outlier detection- {coords_representation[i].get_text()}'
+                    input,
+                    str(uuid.uuid4()),
+                    "coordinate-excluded",
+                    ocr_to_coordinates(coords_representation[i].get_bounding_box()),
+                    f"excluded due to regression outlier detection- {coords_representation[i].get_text()}",
                 )
             else:
                 key, _ = coords_representation[i].to_deg_result()
                 results[key] = coords_representation[i]
         return results
-    
-    def _reduce(self, coords:list[Coordinate], index:int) -> float:
+
+    def _reduce(self, coords: list[Coordinate], index: int) -> float:
         # remove the point for which to calculate the model quality
         coords_work = coords.copy()
         coords_work.pop(index)
@@ -92,7 +95,7 @@ class OutlierFilter(FilterCoordinates):
         for c in coords_work:
             pixels.append(c.get_pixel_alignment())
             degrees.append(c.get_parsed_degree())
-        
+
         # do polynomial regression for x->longitude
         regression.fit_polynomial_regression(pixels, degrees)
         predictions = regression.predict_pts(pixels)

@@ -1,22 +1,31 @@
-
 class Coordinate:
     _type: str = ""
     _text: str = ""
     _parsed_degree: float = -1
     _is_lat: bool = False
     _bounding_box = None
-    _pixel_alignment:tuple[float,float] = (0, 0)
-    _confidence:float = 0
+    _pixel_alignment: tuple[float, float] = (0, 0)
+    _confidence: float = 0
 
-    def __init__(self, type:str, text:str, parsed_degree:float, is_lat:bool = False, bounding_box = None, 
-                 pixel_alignment = None, x_ranges:tuple[float, float] = (0,1), font_height:float = 0.0, confidence:float = 0):
+    def __init__(
+        self,
+        type: str,
+        text: str,
+        parsed_degree: float,
+        is_lat: bool = False,
+        bounding_box=None,
+        pixel_alignment=None,
+        x_ranges: tuple[float, float] = (0, 1),
+        font_height: float = 0.0,
+        confidence: float = 0,
+    ):
         self._type = type
         self._text = text
         self._bounding_box = bounding_box
         self._parsed_degree = parsed_degree
         self._is_lat = is_lat
         self._confidence = confidence
-        
+
         if pixel_alignment:
             self._pixel_alignment = pixel_alignment
         elif bounding_box:
@@ -35,19 +44,19 @@ class Coordinate:
 
     def get_bounding_box(self):
         return self._bounding_box
-    
+
     def get_parsed_degree(self):
         return self._parsed_degree
-    
+
     def get_confidence(self):
         return self._confidence
-    
+
     def get_constant_dimension(self):
         # lat coordinates should be aligned on y axis
         if self._is_lat:
             return self._pixel_alignment[1]
         return self._pixel_alignment[0]
-    
+
     def to_deg_result(self):
         if self._is_lat:
             return (

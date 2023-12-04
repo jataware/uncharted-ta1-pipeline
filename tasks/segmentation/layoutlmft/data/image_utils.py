@@ -9,6 +9,7 @@ import torch
 from detectron2.data.detection_utils import read_image
 from detectron2.data.transforms import ResizeTransform, TransformList
 
+
 def normalize_bbox(bbox, size):
     return [
         int(1000 * bbox[0] / size[0]),
@@ -23,7 +24,9 @@ def load_image(image_path):
     h = image.shape[0]
     w = image.shape[1]
     img_trans = TransformList([ResizeTransform(h=h, w=w, new_h=224, new_w=224)])
-    image = torch.tensor(img_trans.apply_image(image).copy()).permute(2, 0, 1)  # copy to make it writeable
+    image = torch.tensor(img_trans.apply_image(image).copy()).permute(
+        2, 0, 1
+    )  # copy to make it writeable
     return image, (w, h)
 
 
@@ -51,11 +54,15 @@ def resize(image, size, interpolation, boxes=None):
     if boxes is None:
         return rescaled_image, None
 
-    ratios = tuple(float(s) / float(s_orig) for s, s_orig in zip(rescaled_image.size, image.size))
+    ratios = tuple(
+        float(s) / float(s_orig) for s, s_orig in zip(rescaled_image.size, image.size)
+    )
     ratio_width, ratio_height = ratios
 
     # boxes = boxes.copy()
-    scaled_boxes = boxes * torch.as_tensor([ratio_width, ratio_height, ratio_width, ratio_height])
+    scaled_boxes = boxes * torch.as_tensor(
+        [ratio_width, ratio_height, ratio_width, ratio_height]
+    )
 
     return rescaled_image, scaled_boxes
 
@@ -80,16 +87,15 @@ def get_bb(bb, page_size):
         clamp(max(ys), 0, height - 1),
     ]
     return_bb = [
-            int(1000 * return_bb[0] / width),
-            int(1000 * return_bb[1] / height),
-            int(1000 * return_bb[2] / width),
-            int(1000 * return_bb[3] / height),
-        ]
+        int(1000 * return_bb[0] / width),
+        int(1000 * return_bb[1] / height),
+        int(1000 * return_bb[2] / width),
+        int(1000 * return_bb[3] / height),
+    ]
     return return_bb
 
 
 class ToNumpy:
-
     def __call__(self, pil_img):
         np_img = np.array(pil_img, dtype=np.uint8)
         if np_img.ndim < 3:
@@ -99,7 +105,6 @@ class ToNumpy:
 
 
 class ToTensor:
-
     def __init__(self, dtype=torch.float32):
         self.dtype = dtype
 
@@ -112,21 +117,21 @@ class ToTensor:
 
 
 _pil_interpolation_to_str = {
-    F.InterpolationMode.NEAREST: 'F.InterpolationMode.NEAREST',
-    F.InterpolationMode.BILINEAR: 'F.InterpolationMode.BILINEAR',
-    F.InterpolationMode.BICUBIC: 'F.InterpolationMode.BICUBIC',
-    F.InterpolationMode.LANCZOS: 'F.InterpolationMode.LANCZOS',
-    F.InterpolationMode.HAMMING: 'F.InterpolationMode.HAMMING',
-    F.InterpolationMode.BOX: 'F.InterpolationMode.BOX',
+    F.InterpolationMode.NEAREST: "F.InterpolationMode.NEAREST",
+    F.InterpolationMode.BILINEAR: "F.InterpolationMode.BILINEAR",
+    F.InterpolationMode.BICUBIC: "F.InterpolationMode.BICUBIC",
+    F.InterpolationMode.LANCZOS: "F.InterpolationMode.LANCZOS",
+    F.InterpolationMode.HAMMING: "F.InterpolationMode.HAMMING",
+    F.InterpolationMode.BOX: "F.InterpolationMode.BOX",
 }
 
 
 def _pil_interp(method):
-    if method == 'bicubic':
+    if method == "bicubic":
         return F.InterpolationMode.BICUBIC
-    elif method == 'lanczos':
+    elif method == "lanczos":
         return F.InterpolationMode.LANCZOS
-    elif method == 'hamming':
+    elif method == "hamming":
         return F.InterpolationMode.HAMMING
     else:
         # default bilinear, do we want to allow nearest?
@@ -183,8 +188,15 @@ class RandomResizedCropAndInterpolationWithTwoPic:
         interpolation: Default: PIL.Image.BILINEAR
     """
 
-    def __init__(self, size, second_size=None, scale=(0.08, 1.0), ratio=(3. / 4., 4. / 3.),
-                 interpolation='bilinear', second_interpolation='lanczos'):
+    def __init__(
+        self,
+        size,
+        second_size=None,
+        scale=(0.08, 1.0),
+        ratio=(3.0 / 4.0, 4.0 / 3.0),
+        interpolation="bilinear",
+        second_interpolation="lanczos",
+    ):
         if isinstance(size, tuple):
             self.size = size
         else:
@@ -257,28 +269,35 @@ class RandomResizedCropAndInterpolationWithTwoPic:
             img = F.crop(img, i, j, h, w)
             # img, box = crop(img, i, j, h, w, box)
         img = F.resize(img, self.size, self.interpolation)
-        second_img = F.resize(img, self.second_size, self.second_interpolation) \
-            if self.second_size is not None else None
+        second_img = (
+            F.resize(img, self.second_size, self.second_interpolation)
+            if self.second_size is not None
+            else None
+        )
         return img, second_img
 
     def __repr__(self):
         if isinstance(self.interpolation, (tuple, list)):
-            interpolate_str = ' '.join([_pil_interpolation_to_str[x] for x in self.interpolation])
+            interpolate_str = " ".join(
+                [_pil_interpolation_to_str[x] for x in self.interpolation]
+            )
         else:
             interpolate_str = _pil_interpolation_to_str[self.interpolation]
-        format_string = self.__class__.__name__ + '(size={0}'.format(self.size)
-        format_string += ', scale={0}'.format(tuple(round(s, 4) for s in self.scale))
-        format_string += ', ratio={0}'.format(tuple(round(r, 4) for r in self.ratio))
-        format_string += ', interpolation={0}'.format(interpolate_str)
+        format_string = self.__class__.__name__ + "(size={0}".format(self.size)
+        format_string += ", scale={0}".format(tuple(round(s, 4) for s in self.scale))
+        format_string += ", ratio={0}".format(tuple(round(r, 4) for r in self.ratio))
+        format_string += ", interpolation={0}".format(interpolate_str)
         if self.second_size is not None:
-            format_string += ', second_size={0}'.format(self.second_size)
-            format_string += ', second_interpolation={0}'.format(_pil_interpolation_to_str[self.second_interpolation])
-        format_string += ')'
+            format_string += ", second_size={0}".format(self.second_size)
+            format_string += ", second_interpolation={0}".format(
+                _pil_interpolation_to_str[self.second_interpolation]
+            )
+        format_string += ")"
         return format_string
 
 
 def pil_loader(path: str) -> Image.Image:
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         img = Image.open(f)
-        return img.convert('RGB')
+        return img.convert("RGB")

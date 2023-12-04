@@ -1,4 +1,3 @@
-
 import copy
 
 from PIL.Image import Image as PILImage
@@ -45,12 +44,12 @@ class TaskInput:
         self.params_used = []
         self.task_index = task_index
 
-    def get_data(self, key: str, default_value:Any=None) -> Any:
+    def get_data(self, key: str, default_value: Any = None) -> Any:
         if key in self.data:
             return self.data[key]
         return default_value
-    
-    def get_request_info(self, key:str, default_value:Any=None) -> Any:
+
+    def get_request_info(self, key: str, default_value: Any = None) -> Any:
         if key in self.request:
             return copy.deepcopy(self.request[key])
         return default_value
@@ -61,6 +60,7 @@ class TaskInput:
         self.params_used.append(
             TaskParameter(task_id, self.task_index, key, category, value, description)
         )
+
 
 class TaskResult:
     task_id = ""
