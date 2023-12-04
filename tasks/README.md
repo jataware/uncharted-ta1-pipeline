@@ -5,26 +5,20 @@ LARA Pipeline Tasks
 ### Installation
 
 * python=3.9 or higher is recommended
-* The module is pip install-able from this directory:
+* The task library is pip install-able from this directory:
 ```
 pip install -e .
 ```
 
-The image segmentation task relies on [LayoutLMV3](https://github.com/microsoft/unilm/tree/master/layoutlmv3), which is not `pip` installable due to transitive dependencies on specific verions of Pytorch and Detectron2.  Use of the image segmentation consequently requires manual installation of both libraries separately.
+The point detection and segmentation tasks both have extra dependencies that are quite extensive, so those are managed as a optional requirements.
+To install each run:
 
-For GPU support (requires CUDA version >= 11.1):
-
-```bash
-pip install torch==1.10.0+cu111 torchvision==0.11.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
-pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.10/index.html
+```
+pip install -e .[segmentation]
+pip install -e .[point]
 ```
 
-For software only:
-
-```bash
-pip install torch==1.10.0 torchvision==0.11.1 -f https://download.pytorch.org/whl/torch_stable.html
-pip install 'git+https://github.com/facebookresearch/detectron2.git'
-```
+*Depending on the shell used, the brackets may need to be escaped.*
 
 ### Image Text Extraction (OCR) Task
 
