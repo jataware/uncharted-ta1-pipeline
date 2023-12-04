@@ -152,7 +152,7 @@ class PointDirectionPredictor(Task):
     _VERSION = 1
     SUPPORTED_CLASSES = ["strike_and_dip"]
     TEMPLATE_PATH = "detection/templates/strike_dip_implied_transparent_black_north.jpg"
-    template = None
+    template: np.ndarray
 
     def load_template(self):
         template = np.array(Image.open(self.TEMPLATE_PATH))
@@ -161,7 +161,7 @@ class PointDirectionPredictor(Task):
         )  # Blacken template.
         self.template = template
 
-    def _check_size(self, label: MapPointLabel, template: np.ndarray = None):
+    def _check_size(self, label: MapPointLabel, template: np.ndarray) -> bool:
         """
         Used to palliate issues arising from tiling..
         Temporary fix which prevents propagating tiling errors to directionality pred.
@@ -196,7 +196,7 @@ class PointDirectionPredictor(Task):
         return mask
 
     @staticmethod
-    def rotate_image(image: np.ndarray, angle, border_color=255):
+    def rotate_image(image: np.ndarray, angle, border_color=(255, 255, 255)):
         if len(image.shape) == 3:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
