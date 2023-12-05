@@ -31,7 +31,9 @@ def build_transform_gen(cfg, is_train, aug_flip_crop=True):
         max_size = cfg.INPUT.MAX_SIZE_TEST
         sample_style = "choice"
     if sample_style == "range":
-        assert len(min_size) == 2, "more than 2 ({}) min_size(s) are provided for ranges".format(len(min_size))
+        assert (
+            len(min_size) == 2
+        ), "more than 2 ({}) min_size(s) are provided for ranges".format(len(min_size))
 
     logger = logging.getLogger(__name__)
     tfm_gens = []
@@ -60,7 +62,7 @@ class DetrDatasetMapper:
         self.img_format = cfg.INPUT.FORMAT
         self.is_train = is_train
 
-        self.layoutlmv3 = 'layoutlmv3' in cfg.MODEL.VIT.NAME
+        self.layoutlmv3 = "layoutlmv3" in cfg.MODEL.VIT.NAME
 
         if self.layoutlmv3:
             # We disable the flipping/cropping augmentation in layoutlmv3 to be consistent with pre-training
@@ -80,7 +82,9 @@ class DetrDatasetMapper:
         self.mask_on = cfg.MODEL.MASK_ON
         self.tfm_gens = build_transform_gen(cfg, is_train, aug_flip_crop)
         logging.getLogger(__name__).info(
-            "Full TransformGens used in training: {}, crop: {}".format(str(self.tfm_gens), str(self.crop_gen))
+            "Full TransformGens used in training: {}, crop: {}".format(
+                str(self.tfm_gens), str(self.crop_gen)
+            )
         )
 
     def __call__(self, dataset_dict):
@@ -111,7 +115,9 @@ class DetrDatasetMapper:
         # Pytorch's dataloader is efficient on torch.Tensor due to shared-memory,
         # but not efficient on large generic data structures due to the use of pickle & mp.Queue.
         # Therefore it's important to use torch.Tensor.
-        dataset_dict["image"] = torch.as_tensor(np.ascontiguousarray(image.transpose(2, 0, 1)))
+        dataset_dict["image"] = torch.as_tensor(
+            np.ascontiguousarray(image.transpose(2, 0, 1))
+        )
 
         if not self.is_train:
             # USER: Modify this if you want to keep them for some reason.

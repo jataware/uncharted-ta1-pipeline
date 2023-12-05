@@ -1,7 +1,7 @@
 import jsons
 import uuid
 
-from pipelines.geo_referencing.pipeline import (
+from tasks.common.pipeline import (
     ObjectOutput,
     Output,
     TabularOutput,
@@ -34,6 +34,7 @@ class GeoReferencingOutput(OutputCreator):
             "pixel_dist_yx",
             "pirxel_dist_yy",
             "pixel_dist_y",
+            "confidence",
         ]
 
         if "query_pts" not in pipeline_result.data:
@@ -47,6 +48,7 @@ class GeoReferencingOutput(OutputCreator):
                 "col": qp.xy[0],
                 "NAD83_x": qp.lonlat[0],
                 "NAD83_y": qp.lonlat[1],
+                "confidence": qp.confidence,
             }
             if qp.lonlat_gtruth:
                 o["actual_x"] = qp.lonlat_gtruth[0]
@@ -76,6 +78,8 @@ class DetailedOutput(OutputCreator):
             if "lons" in output.output:
                 print(f'lons: {output.output["lons"]}\nlats: {output.output["lats"]}')
 
+        return Output(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
+
 
 class SummaryOutput(OutputCreator):
     def __init__(self, id):
@@ -92,6 +96,7 @@ class SummaryOutput(OutputCreator):
             "lon",
             "extraction",
             "rmse",
+            "confidence",
         ]
 
         # obtain the rmse and other summary output
@@ -105,6 +110,7 @@ class SummaryOutput(OutputCreator):
                 "lon": "",
                 "extraction": "",
                 "rmse": pipeline_result.data["rmse"],
+                "confidence": pipeline_result.data["query_pts"][0].confidence,
             }
         ]
         return res
@@ -128,7 +134,7 @@ class CSVWriter:
     def __init__(self):
         pass
 
-    def output(self, output: list[Output], params={}):
+    def output(self, output: list[TabularOutput], params={}):
         if len(output) == 0:
             return
 
@@ -196,6 +202,8 @@ class GCPOutput(OutputCreator):
                 "x": qp.lonlat[0],
                 "y": qp.lonlat[1],
             }
+            if qp.properties and len(qp.properties) > 0:
+                o["properties"] = qp.properties
             res.data["gcps"].append(o)
         # for p in pipeline_result.params:
         #    res.data['levers'].append(p)

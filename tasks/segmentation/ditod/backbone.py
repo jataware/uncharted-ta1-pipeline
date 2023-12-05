@@ -20,7 +20,12 @@ from detectron2.layers import (
 from detectron2.modeling import Backbone, BACKBONE_REGISTRY, FPN
 from detectron2.modeling.backbone.fpn import LastLevelP6P7, LastLevelMaxPool
 
-from .beit import beit_base_patch16, dit_base_patch16, dit_large_patch16, beit_large_patch16
+from .beit import (
+    beit_base_patch16,
+    dit_base_patch16,
+    dit_large_patch16,
+    beit_large_patch16,
+)
 from .deit import deit_base_patch16, mae_base_patch16
 from tasks.segmentation.layoutlmft.models.layoutlmv3 import Layout_LMv3Model
 from transformers import AutoConfig
@@ -35,20 +40,50 @@ class VIT_Backbone(Backbone):
     Implement VIT backbone.
     """
 
-    def __init__(self, name, out_features, drop_path, img_size, pos_type, model_kwargs,
-                 config_path=None, image_only=False, cfg=None):
+    def __init__(
+        self,
+        name,
+        out_features,
+        drop_path,
+        img_size,
+        pos_type,
+        model_kwargs,
+        config_path=None,
+        image_only=False,
+        cfg=None,
+    ):
         super().__init__()
         self._out_features = out_features
-        if 'base' in name:
-            self._out_feature_strides = {"layer3": 4, "layer5": 8, "layer7": 16, "layer11": 32}
-            self._out_feature_channels = {"layer3": 768, "layer5": 768, "layer7": 768, "layer11": 768}
+        if "base" in name:
+            self._out_feature_strides = {
+                "layer3": 4,
+                "layer5": 8,
+                "layer7": 16,
+                "layer11": 32,
+            }
+            self._out_feature_channels = {
+                "layer3": 768,
+                "layer5": 768,
+                "layer7": 768,
+                "layer11": 768,
+            }
         else:
-            self._out_feature_strides = {"layer7": 4, "layer11": 8, "layer15": 16, "layer23": 32}
-            self._out_feature_channels = {"layer7": 1024, "layer11": 1024, "layer15": 1024, "layer23": 1024}
+            self._out_feature_strides = {
+                "layer7": 4,
+                "layer11": 8,
+                "layer15": 16,
+                "layer23": 32,
+            }
+            self._out_feature_channels = {
+                "layer7": 1024,
+                "layer11": 1024,
+                "layer15": 1024,
+                "layer23": 1024,
+            }
 
-        if name == 'beit_base_patch16':
+        if name == "beit_base_patch16":
             model_func = beit_base_patch16
-        elif name == 'dit_base_patch16':
+        elif name == "dit_base_patch16":
             model_func = dit_base_patch16
         elif name == "deit_base_patch16":
             model_func = deit_base_patch16
@@ -59,40 +94,49 @@ class VIT_Backbone(Backbone):
         elif name == "beit_large_patch16":
             model_func = beit_large_patch16
 
-        if 'beit' in name or 'dit' in name:
+        if "beit" in name or "dit" in name:
             if pos_type == "abs":
-                self.backbone = model_func(img_size=img_size,
-                                           out_features=out_features,
-                                           drop_path_rate=drop_path,
-                                           use_abs_pos_emb=True,
-                                           **model_kwargs)
+                self.backbone = model_func(
+                    img_size=img_size,
+                    out_features=out_features,
+                    drop_path_rate=drop_path,
+                    use_abs_pos_emb=True,
+                    **model_kwargs,
+                )
             elif pos_type == "shared_rel":
-                self.backbone = model_func(img_size=img_size,
-                                           out_features=out_features,
-                                           drop_path_rate=drop_path,
-                                           use_shared_rel_pos_bias=True,
-                                           **model_kwargs)
+                self.backbone = model_func(
+                    img_size=img_size,
+                    out_features=out_features,
+                    drop_path_rate=drop_path,
+                    use_shared_rel_pos_bias=True,
+                    **model_kwargs,
+                )
             elif pos_type == "rel":
-                self.backbone = model_func(img_size=img_size,
-                                           out_features=out_features,
-                                           drop_path_rate=drop_path,
-                                           use_rel_pos_bias=True,
-                                           **model_kwargs)
+                self.backbone = model_func(
+                    img_size=img_size,
+                    out_features=out_features,
+                    drop_path_rate=drop_path,
+                    use_rel_pos_bias=True,
+                    **model_kwargs,
+                )
             else:
                 raise ValueError()
         elif "layoutlmv3" in name:
-            #print(config_path)
-            config = AutoConfig.from_pretrained(config_path) #, local_files_only=True)
+            # print(config_path)
+            config = AutoConfig.from_pretrained(config_path)  # , local_files_only=True)
             # disable relative bias as DiT
             config.has_spatial_attention_bias = False
             config.has_relative_attention_bias = False
-            self.backbone = Layout_LMv3Model(config, detection=True,
-                                               out_features=out_features, image_only=image_only)
+            self.backbone = Layout_LMv3Model(
+                config, detection=True, out_features=out_features, image_only=image_only
+            )
         else:
-            self.backbone = model_func(img_size=img_size,
-                                       out_features=out_features,
-                                       drop_path_rate=drop_path,
-                                       **model_kwargs)
+            self.backbone = model_func(
+                img_size=img_size,
+                out_features=out_features,
+                drop_path_rate=drop_path,
+                **model_kwargs,
+            )
         self.name = name
 
     def forward(self, x):
@@ -111,13 +155,16 @@ class VIT_Backbone(Backbone):
                 attention_mask=x["attention_mask"] if "attention_mask" in x else None,
                 # output_hidden_states=True,
             )
-        assert x.dim() == 4, f"VIT takes an input of shape (N, C, H, W). Got {x.shape} instead!"
+        assert (
+            x.dim() == 4
+        ), f"VIT takes an input of shape (N, C, H, W). Got {x.shape} instead!"
         return self.backbone.forward_features(x)
 
     def output_shape(self):
         return {
             name: ShapeSpec(
-                channels=self._out_feature_channels[name], stride=self._out_feature_strides[name]
+                channels=self._out_feature_channels[name],
+                stride=self._out_feature_strides[name],
             )
             for name in self._out_features
         }

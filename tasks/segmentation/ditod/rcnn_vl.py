@@ -19,6 +19,7 @@ from detectron2.modeling.roi_heads.fast_rcnn import fast_rcnn_inference_single_i
 from contextlib import contextmanager
 from itertools import count
 
+
 @META_ARCH_REGISTRY.register()
 class VLGeneralizedRCNN(GeneralizedRCNN):
     """
@@ -65,7 +66,9 @@ class VLGeneralizedRCNN(GeneralizedRCNN):
         features = self.backbone(input)
 
         if self.proposal_generator is not None:
-            proposals, proposal_losses = self.proposal_generator(images, features, gt_instances)
+            proposals, proposal_losses = self.proposal_generator(
+                images, features, gt_instances
+            )
         else:
             assert "proposals" in batched_inputs[0]
             proposals = [x["proposals"].to(self.device) for x in batched_inputs]
@@ -122,11 +125,17 @@ class VLGeneralizedRCNN(GeneralizedRCNN):
             results, _ = self.roi_heads(images, features, proposals, None)
         else:
             detected_instances = [x.to(self.device) for x in detected_instances]
-            results = self.roi_heads.forward_with_given_boxes(features, detected_instances)
+            results = self.roi_heads.forward_with_given_boxes(
+                features, detected_instances
+            )
 
         if do_postprocess:
-            assert not torch.jit.is_scripting(), "Scripting is not supported for postprocess."
-            return GeneralizedRCNN._postprocess(results, batched_inputs, images.image_sizes)
+            assert (
+                not torch.jit.is_scripting()
+            ), "Scripting is not supported for postprocess."
+            return GeneralizedRCNN._postprocess(
+                results, batched_inputs, images.image_sizes
+            )
         else:
             return results
 

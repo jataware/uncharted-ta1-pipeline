@@ -52,7 +52,7 @@ class ICDAREvaluator(COCOEvaluator):
     def evaluate_table(self, predictions):
         xml_dir = self.convert_to_xml(predictions)
         results = calc_table_score(xml_dir)
-        self._results["wF1"] = results['wF1']
+        self._results["wF1"] = results["wF1"]
 
     def convert_to_xml(self, predictions):
         output_dir = osp.join(self._output_dir, "xml_results")
@@ -73,28 +73,34 @@ class ICDAREvaluator(COCOEvaluator):
         for image_id, tables in results_dict.items():
             file_name = f"cTDaR_t{image_id:05d}.jpg"
             doc = Document()
-            root = doc.createElement('document')
-            root.setAttribute('filename', file_name)
+            root = doc.createElement("document")
+            root.setAttribute("filename", file_name)
             doc.appendChild(root)
             for table_id, table in enumerate(tables, start=1):
-                nodeManager = doc.createElement('table')
-                nodeManager.setAttribute('id', str(table_id))
-                bbox = list(map(int, table['bbox']))
-                bbox_str = '{},{} {},{} {},{} {},{}'.format(bbox[0], bbox[1],
-                                                            bbox[0], bbox[1] + bbox[3],
-                                                            bbox[0] + bbox[2], bbox[1] + bbox[3],
-                                                            bbox[0] + bbox[2], bbox[1])
-                nodeCoords = doc.createElement('Coords')
-                nodeCoords.setAttribute('points', bbox_str)
+                nodeManager = doc.createElement("table")
+                nodeManager.setAttribute("id", str(table_id))
+                bbox = list(map(int, table["bbox"]))
+                bbox_str = "{},{} {},{} {},{} {},{}".format(
+                    bbox[0],
+                    bbox[1],
+                    bbox[0],
+                    bbox[1] + bbox[3],
+                    bbox[0] + bbox[2],
+                    bbox[1] + bbox[3],
+                    bbox[0] + bbox[2],
+                    bbox[1],
+                )
+                nodeCoords = doc.createElement("Coords")
+                nodeCoords.setAttribute("points", bbox_str)
                 nodeManager.appendChild(nodeCoords)
                 root.appendChild(nodeManager)
-            filename = '{}-result.xml'.format(file_name[:-4])
-            fp = open(os.path.join(output_dir, filename), 'w')
-            doc.writexml(fp, indent='', addindent='\t', newl='\n', encoding="utf-8")
+            filename = "{}-result.xml".format(file_name[:-4])
+            fp = open(os.path.join(output_dir, filename), "w")
+            doc.writexml(fp, indent="", addindent="\t", newl="\n", encoding="utf-8")
             fp.flush()
             fp.close()
         return output_dir
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass

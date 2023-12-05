@@ -6,13 +6,15 @@ from pipelines.geo_referencing.output import (
     UserLeverOutput,
     SummaryOutput,
 )
-from pipelines.geo_referencing.pipeline import Pipeline
+from tasks.common.pipeline import Pipeline
 from tasks.geo_referencing.coordinates_extractor import (
     GeocodeCoordinatesExtractor,
     GeoCoordinatesExtractor,
     UTMCoordinatesExtractor,
 )
+from tasks.geo_referencing.filter import OutlierFilter
 from tasks.geo_referencing.georeference import GeoReference
+from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.roi_extractor import (
     EntropyROIExtractor,
     ModelROIExtractor,
@@ -20,7 +22,6 @@ from tasks.geo_referencing.roi_extractor import (
     buffer_image_ratio,
     buffer_roi_ratio,
 )
-from tasks.geo_referencing.task import Task
 from tasks.geo_referencing.text_extraction import ResizeTextExtractor, TileTextExtractor
 
 
@@ -33,7 +34,8 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
     tasks.append(GeocodeCoordinatesExtractor("fifth"))
-    tasks.append(GeoReference("sixth", 1))
+    tasks.append(CreateGroundControlPoints("sixth"))
+    tasks.append(GeoReference("seventh", 1))
     p.append(
         Pipeline(
             "resize",
@@ -56,7 +58,8 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
     tasks.append(GeocodeCoordinatesExtractor("fifth"))
-    tasks.append(GeoReference("sixth", 1))
+    tasks.append(CreateGroundControlPoints("sixth"))
+    tasks.append(GeoReference("seventh", 1))
     p.append(
         Pipeline(
             "tile",
@@ -83,10 +86,13 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
             "/Users/phorne/projects/criticalmaas/data/challenge_1/legend_and_map_segmentation_results_20231025",
         )
     )
+    # tasks.append(ModelROIExtractor('model roi', buffer_fixed, '/Users/phorne/projects/criticalmaas/data/challenge_1/quick-seg'))
     tasks.append(GeoCoordinatesExtractor("third"))
-    tasks.append(UTMCoordinatesExtractor("fourth"))
-    tasks.append(GeocodeCoordinatesExtractor("fifth"))
-    tasks.append(GeoReference("sixth", 1))
+    tasks.append(OutlierFilter("fourth"))
+    tasks.append(UTMCoordinatesExtractor("fifth"))
+    tasks.append(GeocodeCoordinatesExtractor("sixth"))
+    tasks.append(CreateGroundControlPoints("seventh"))
+    tasks.append(GeoReference("eighth", 1))
     p.append(
         Pipeline(
             "roi poly fixed",
@@ -114,9 +120,11 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
         )
     )
     tasks.append(GeoCoordinatesExtractor("third"))
-    tasks.append(UTMCoordinatesExtractor("fourth"))
-    tasks.append(GeocodeCoordinatesExtractor("fifth"))
-    tasks.append(GeoReference("sixth", 1))
+    tasks.append(OutlierFilter("fourth"))
+    tasks.append(UTMCoordinatesExtractor("fifth"))
+    tasks.append(GeocodeCoordinatesExtractor("sixth"))
+    tasks.append(CreateGroundControlPoints("seventh"))
+    tasks.append(GeoReference("eighth", 1))
     p.append(
         Pipeline(
             "roi poly image",
@@ -144,9 +152,11 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
         )
     )
     tasks.append(GeoCoordinatesExtractor("third"))
-    tasks.append(UTMCoordinatesExtractor("fourth"))
-    tasks.append(GeocodeCoordinatesExtractor("fifth"))
-    tasks.append(GeoReference("sixth", 1))
+    tasks.append(OutlierFilter("fourth"))
+    tasks.append(UTMCoordinatesExtractor("fifth"))
+    tasks.append(GeocodeCoordinatesExtractor("sixth"))
+    tasks.append(CreateGroundControlPoints("seventh"))
+    tasks.append(GeoReference("eighth", 1))
     p.append(
         Pipeline(
             "roi poly roi",

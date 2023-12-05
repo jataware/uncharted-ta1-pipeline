@@ -6,7 +6,9 @@ from skimage.filters.rank import entropy
 from skimage.morphology import disk
 
 from compute.roi_mapping import determine_roi
-from tasks.geo_referencing.task import Task, TaskInput, TaskResult
+from tasks.common.task import Task, TaskInput, TaskResult
+
+from typing import Callable, List, Optional
 
 ROI_PXL_LIMIT = 2000
 SLICE_PERCENT = 0.05
@@ -39,17 +41,20 @@ class ROIExtractor(Task):
         result.output["roi"] = roi
         return result
 
+    def _extract_roi(self, input: TaskInput) -> Optional[List[tuple[float, float]]]:
+        return []
+
 
 class ModelROIExtractor(ROIExtractor):
     _coco_file_path: str = ""
-    _buffering_func = None
+    _buffering_func: Callable
 
     def __init__(self, task_id: str, buffering_func, coco_file_path=""):
         super().__init__(task_id)
         self._coco_file_path = coco_file_path
         self._buffering_func = buffering_func
 
-    def _extract_roi(self, input: TaskInput):
+    def _extract_roi(self, input: TaskInput) -> Optional[List[tuple[float, float]]]:
         poly_raw = determine_roi(self._coco_file_path, input.raster_id)
         if poly_raw is None:
             return None
@@ -58,7 +63,7 @@ class ModelROIExtractor(ROIExtractor):
         print(f"buffering roi by {buffer_size}")
 
         polygon = Polygon(poly_raw)
-        buffered = polygon.buffer(buffer_size, join_style=2)
+        buffered = polygon.buffer(buffer_size, join_style="mitre")
 
         # expand the polygon outward
         return list(buffered.exterior.coords)

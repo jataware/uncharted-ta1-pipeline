@@ -1,3 +1,5 @@
+import copy
+
 from PIL.Image import Image as PILImage
 from typing import Optional, List, Any, Dict
 
@@ -28,37 +30,28 @@ class TaskParameter:
 
 
 class TaskInput:
-    image: Optional[PILImage] = None
+    image: PILImage
     task_index: int
     raster_id: str = ""
-    request = {}
+    request: Dict[Any, Any] = {}
     data: Dict[Any, Any] = {}
     params_used: List[TaskParameter] = []
 
-    def __init__(
-        self,
-        task_index: int,
-        data: Dict[Any, Any] = {},
-        image: Optional[PILImage] = None,
-        raster_id: str = "",
-        request: Dict[Any, Any] = {},
-        params_used: List[TaskParameter] = [],
-    ):
-        self.data = data
-        self.image = image
-        self.raster_id = raster_id
-        self.request = request
-        self.params_used = params_used
+    def __init__(self, task_index: int):
+        self.data = {}
+        self.raster_id = ""
+        self.request = {}
+        self.params_used = []
         self.task_index = task_index
 
-    def get_data(self, key: str, default_value=None):
+    def get_data(self, key: str, default_value: Any = None) -> Any:
         if key in self.data:
             return self.data[key]
         return default_value
 
-    def get_request_info(self, key: str, default_value=None):
+    def get_request_info(self, key: str, default_value: Any = None) -> Any:
         if key in self.request:
-            return self.request[key]
+            return copy.deepcopy(self.request[key])
         return default_value
 
     def add_param(
@@ -74,12 +67,10 @@ class TaskResult:
     output: Dict[Any, Any] = {}
     parameters: List[TaskParameter] = []
 
-    def __init__(
-        self, task_id: str = "", output: Dict[Any, Any] = {}, parameters: List[Any] = []
-    ):
-        self.task_id = task_id
-        self.output = output
-        self.parameters = parameters
+    def __init__(self):
+        self.task_id = ""
+        self.output = {}
+        self.parameters = []
 
 
 class Task:
@@ -95,7 +86,7 @@ class Task:
         result.task_id = self._task_id
         return result
 
-    def _create_result(self, input: TaskInput):
+    def _create_result(self, input: TaskInput) -> TaskResult:
         result = TaskResult()
         result.task_id = self._task_id
         result.parameters = input.params_used.copy()

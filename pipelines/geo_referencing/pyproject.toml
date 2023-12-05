@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lara-georeferencing"
+version = "0.1.0"
+description = "LARA georeferencing pipeline and server"
+readme = "README.md"
+dependencies = ["python-dotenv", "lara-tasks"]
+
+[tool.setuptools.packages]
+find = {}

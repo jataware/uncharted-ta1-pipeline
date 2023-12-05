@@ -7,15 +7,14 @@ FOV_RANGE_KM = 700
 
 
 def split_lon_lat_degrees(
-    geofence, degrees: list[float, float, float]
-) -> (list[float], list[float]):
+    geofence, degrees: list[tuple[float, float, float]]
+) -> tuple[list[float], list[float]]:
     if len(degrees) == 0:
         return geofence
 
     # start with clustering approach
     # only need a few to cluster to determine lat and lon range
     data = np.array(list(map(lambda x: x[2], degrees))).reshape(-1, 1)
-    print(f"clustering data: {data}")
 
     db = DBSCAN(eps=0.3, min_samples=2).fit(data)
     labels = db.labels_
@@ -51,18 +50,22 @@ def split_lon_lat_degrees(
     elif len(cluster_list) == 1:
         ok, is_lat = cluster_is_lat(geofence, cluster_list[0])
         if ok:
-            degrees = list(map(lambda x: x[2], cluster_list[0]))
+            degrees_extracted = list(map(lambda x: x[2], cluster_list[0]))
             updated_geofence = (geofence[0], geofence[1])
             if is_lat:
                 print("lat determined")
                 updated_lat = narrow_geofence(
-                    (min(degrees), max(degrees)), geofence[0], FOV_RANGE_KM
+                    (min(degrees_extracted), max(degrees_extracted)),
+                    geofence[0],
+                    FOV_RANGE_KM,
                 )
                 updated_geofence = (geofence[0], updated_lat[1])
             else:
                 print("lon determined")
                 updated_lon = narrow_geofence(
-                    geofence[1], (min(degrees), max(degrees)), FOV_RANGE_KM
+                    geofence[1],
+                    (min(degrees_extracted), max(degrees_extracted)),
+                    FOV_RANGE_KM,
                 )
                 updated_geofence = (updated_lon[0], geofence[1])
             return updated_geofence
@@ -108,7 +111,9 @@ def split_lon_lat_degrees(
     return geofence
 
 
-def cluster_is_lat(geofence, degrees: list[float, float, float]) -> (bool, bool):
+def cluster_is_lat(
+    geofence, degrees: list[tuple[float, float, float]]
+) -> tuple[bool, bool]:
     print(f"lat check: {degrees}")
     # latitude cannot be over 90
     if abs(degrees[0][2]) > 90:
@@ -122,7 +127,24 @@ def cluster_is_lat(geofence, degrees: list[float, float, float]) -> (bool, bool)
     elif not in_lat_geofence and in_lon_geofence:
         return True, False
 
-    # determine if x or y changes within cluster values
+    # determine if x or y changes within cluster values when identical degrees
+    degrees_mapped = {}
+    for d in degrees:
+        if d[2] not in degrees_mapped:
+            degrees_mapped[d[2]] = []
+        degrees_mapped[d[2]].append(d)
+    for _, v in degrees_mapped.items():
+        if len(v) > 1:
+            x_diff = max(list(map(lambda x: x[0], v))) - min(
+                list(map(lambda x: x[0], v))
+            )
+            y_diff = max(list(map(lambda x: x[1], v))) - min(
+                list(map(lambda x: x[1], v))
+            )
+            if x_diff * 0.05 > y_diff:
+                return True, True
+            elif y_diff * 0.05 > x_diff:
+                return True, False
 
     # unable to determine direction
     return False, False
@@ -132,7 +154,9 @@ def is_in_geofence(geofence, degree: float) -> bool:
     return geofence[0] <= degree <= geofence[1]
 
 
-def narrow_geofence(lat: (float, float), lon: (float, float), fov_range_km: float):
+def narrow_geofence(
+    lat: tuple[float, float], lon: tuple[float, float], fov_range_km: float
+):
     dist_km = fov_range_km / 2.0  # distance from clue pt in all directions (N,E,S,W)
     fov_pt_north = geo_distance(kilometers=dist_km).destination(
         (lat[0], lon[0]), bearing=0

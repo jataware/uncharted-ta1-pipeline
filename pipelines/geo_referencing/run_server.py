@@ -2,11 +2,12 @@ import logging
 import os
 
 from flask import Flask, request, Response
+from PIL.Image import Image as PILImage
 from PIL import Image
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
-from pipelines.geo_referencing.output import JSONWriter
-from pipelines.geo_referencing.pipeline import PipelineInput
+from pipelines.geo_referencing.output import JSONWriter, ObjectOutput
+from tasks.common.pipeline import PipelineInput
 from tasks.geo_referencing.georeference import QueryPoint
 
 Image.MAX_IMAGE_PIXELS = 400000000
@@ -17,7 +18,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/credentials.json"
 app = Flask(__name__)
 
 
-def load_image(image_path: str) -> Image:
+def load_image(image_path: str) -> PILImage:
     # assume local file system for now
     return Image.open(image_path)
 
@@ -75,7 +76,7 @@ def process_input(raster_id: str, image_path: str, points):
     outputs = pipeline.run(input)
 
     # create the output assuming schema output is part of the pipeline
-    output_schema = outputs["schema"]
+    output_schema: ObjectOutput = outputs["schema"]
     writer_json = JSONWriter()
     return writer_json.output([output_schema], {})
 
