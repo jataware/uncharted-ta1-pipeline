@@ -149,7 +149,6 @@ class Pipeline:
     ) -> PipelineResult:
         # override result
         for k, v in task_result.output.items():
-            print(f"pipeline result merging key {k}")
             pipeline_result.data[k] = v
         pipeline_result.tasks[task_result.task_id] = task_result
 
@@ -176,7 +175,6 @@ class Pipeline:
         task_input.data = {}
         for k, v in pipeline_result.data.items():
             task_input.data[k] = v
-            print(f"creating input data copied key: {k}")
         for k, v in pipeline_input.params.items():
             task_input.request[k] = v
 
