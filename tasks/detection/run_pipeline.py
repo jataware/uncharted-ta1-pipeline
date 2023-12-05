@@ -15,7 +15,10 @@ def main():
         "--input_path", type=str, required=True, help="Path to input image."
     )
     parser.add_argument(
-        "--model_ckpt", type=str, required=True, help="Path to model checkpoint."
+        "--model", type=str, required=True, help="Path to model checkpoint."
+    )
+    parser.add_argument(
+        "--workdir", type=str, required=True, help="Path to local data directory."
     )
     parser.add_argument(
         "--output_path", type=str, required=True, help="Path to output json."
@@ -25,7 +28,7 @@ def main():
     pipeline = Pipeline(
         [
             Tiler(),
-            YOLOPointDetector(ckpt=args.model_ckpt),
+            YOLOPointDetector(args.model, args.workdir),
             Untiler(),
             PointDirectionPredictor(),
         ]

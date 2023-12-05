@@ -3,10 +3,14 @@ from detection.pytorch.mobilenet_rcnn import MobileNetRCNN
 from detection.pytorch.utils import PointInferenceDataset
 from detection.utils import LOCAL_CACHE_PATH, ensure_local_cache_and_file
 
+from tasks.common.s3_data_cache import S3DataCache
+
 import cv2
 import numpy as np
 import os
 import parmap
+from urllib.parse import urlparse
+from pathlib import Path
 from PIL import Image
 import torch
 from torch.utils.data import DataLoader, default_collate
@@ -397,17 +401,72 @@ class YOLOPointDetector(Task):
 
     _VERSION = 1
 
-    def __init__(self, ckpt: str):
-        ckpt_path = self._cache_model_weights(ckpt_name=ckpt)
-        self.model = YOLO(ckpt_path)
+    def __init__(self, model_data_path: str, cache_path: str):
+        local_data_path = self._prep_model_data(model_data_path, cache_path)
+        self.model = YOLO(local_data_path)
 
-    def _cache_model_weights(self, ckpt_name: str = "yolov8n_best.pt"):
+    def _prep_model_data(self, model_data_path: str, data_cache_path: str) -> Path:
         """
-        Checks if the model weights are cached locally. If not, downloads them from S3.
+        prepare local data cache and download model weights, if needed
+
+        Args:
+            model_data_path (str): The path to the folder containing the model weights
+            data_cache_path (str): The path to the local data cache
+
+        Returns:
+            Path: The path to the local copy of the model weights file
         """
-        s3_folder = "models/points/"
-        ensure_local_cache_and_file(LOCAL_CACHE_PATH, ckpt_name, "lara", s3_folder)
-        return os.path.join(LOCAL_CACHE_PATH, ckpt_name)
+
+        local_model_data_path = None
+
+        # check if path is a URL
+        if model_data_path.startswith("s3://") or model_data_path.startswith("http"):
+            # need to specify data cache path when fetching from S3
+            if data_cache_path == "":
+                raise ValueError(
+                    "'data_cache_path' must be specified when fetching model data from S3"
+                )
+
+            s3_host = ""
+            s3_path = ""
+            s3_bucket = ""
+
+            res = urlparse(model_data_path)
+            s3_host = res.scheme + "://" + res.netloc
+            s3_path = res.path.lstrip("/")
+            s3_bucket = s3_path.split("/")[0]
+            s3_path = s3_path.lstrip(s3_bucket)
+            s3_path = s3_path.lstrip("/")
+
+            # create local data cache, if doesn't exist, and connect to S3
+            s3_data_cache = S3DataCache(
+                data_cache_path,
+                s3_host,
+                s3_bucket,
+                aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", "<UNSET>"),
+                aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", "<UNSET>"),
+            )
+
+            # check for model weights and config files in the folder
+            s3_subfolder = s3_path[: s3_path.rfind("/")]
+            for s3_key in s3_data_cache.list_bucket_contents(s3_subfolder):
+                if s3_key.endswith(".pt"):
+                    local_model_data_path = Path(
+                        s3_data_cache.fetch_file_from_s3(s3_key, overwrite=False)
+                    )
+        else:
+            # check for model weights and config files in the folder
+            # iterate over files in folder
+            for f in Path(model_data_path).iterdir():
+                if f.is_file():
+                    if f.suffix == ".pth":
+                        local_model_data_path = f
+
+        # check that we have all the files we need
+        if not local_model_data_path or not local_model_data_path.is_file():
+            raise ValueError(f"Model weights file not found at {model_data_path}")
+
+        return local_model_data_path
 
     def process_output(self, predictions: Results) -> List[MapPointLabel]:
         pt_labels = []
