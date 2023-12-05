@@ -63,7 +63,7 @@ class ModelROIExtractor(ROIExtractor):
         print(f"buffering roi by {buffer_size}")
 
         polygon = Polygon(poly_raw)
-        buffered = polygon.buffer(buffer_size, join_style=2)
+        buffered = polygon.buffer(buffer_size, join_style='mitre')
 
         # expand the polygon outward
         return list(buffered.exterior.coords)
