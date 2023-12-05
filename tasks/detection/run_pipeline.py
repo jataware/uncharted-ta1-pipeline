@@ -4,7 +4,7 @@ from PIL import Image
 
 Image.MAX_IMAGE_PIXELS = 933120000
 
-from detection.entities import Pipeline, MapImage
+from detection.entities import Pipeline, MapImage, MapTile
 from detection.tiling import Tiler, Untiler
 from detection.point_detector import PointDirectionPredictor, YOLOPointDetector
 
@@ -30,10 +30,11 @@ def main():
             PointDirectionPredictor(),
         ]
     )
-    map_image = MapImage(path=args.input_path, image=Image.open(args.input_path))
+    map_image = MapImage(path=args.input_path)
     labeled_map = pipeline.process(map_image)
 
     with open(args.output_path, "w", encoding="utf-8") as f:
+        assert isinstance(labeled_map, MapImage)
         json.dump(labeled_map.serialize(), f)
 
 

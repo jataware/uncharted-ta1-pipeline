@@ -152,7 +152,7 @@ class PointDirectionPredictor(Task):
     _VERSION = 1
     SUPPORTED_CLASSES = ["strike_and_dip"]
     TEMPLATE_PATH = "detection/templates/strike_dip_implied_transparent_black_north.jpg"
-    template: np.ndarray
+    template: np.ndarray = np.empty((0, 0))
 
     def load_template(self):
         template = np.array(Image.open(self.TEMPLATE_PATH))
@@ -328,7 +328,7 @@ class PointDirectionPredictor(Task):
         - template (np.array): The template image.
         - base_image (np.array): The base image.
         """
-        if self.template is None:
+        if self.template.shape[0] == 0:
             self.load_template()
 
         base_image = self.global_thresholding(base_image)
@@ -360,7 +360,7 @@ class PointDirectionPredictor(Task):
         This modifies the MapImage object predictions inplace. Unit test this.
         """
 
-        if self.template is None:
+        if PointDirectionPredictor.template is None:
             self.load_template()
 
         map_image = map_image.model_copy()
@@ -412,6 +412,10 @@ class YOLOPointDetector(Task):
     def process_output(self, predictions: Results) -> List[MapPointLabel]:
         pt_labels = []
         for pred in predictions:
+            assert pred.boxes is not None
+            assert isinstance(pred.boxes.data, torch.Tensor)
+            assert isinstance(self.model.names, Dict)
+
             if len(pred.boxes.data) == 0:
                 continue
             for box in pred.boxes.data.detach().cpu().tolist():
@@ -432,7 +436,7 @@ class YOLOPointDetector(Task):
         return pt_labels
 
     def process(
-        self, tiles: List[MapTile], bsz: int = 26, device="auto"
+        self, tiles: List[MapTile], bsz: int = 15, device="auto"
     ) -> List[MapTile]:
         if device == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"

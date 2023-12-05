@@ -111,7 +111,7 @@ class Untiler(Task):
 
                 all_predictions.append(global_prediction)
 
-        return MapImage.load(map_path, labels=all_predictions)
+        return MapImage(path=map_path, labels=all_predictions)
 
     @property
     def input_type(self):

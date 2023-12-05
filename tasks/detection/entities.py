@@ -66,16 +66,6 @@ class MapImage(BaseModel):
         # TODO: Use polygonal segmask stored in self.map_bounds to filter the image and crop out the non-map regions.
         return img
 
-    @classmethod
-    def load(
-        cls,
-        path: str,
-        labels: Optional[List[MapPointLabel]] = None,
-        map_bounds: Optional[List[int]] = None,
-    ):
-        image = Image.open(path)
-        return cls(path=path, image=image, labels=labels, map_bounds=map_bounds)
-
     def _serialize_labels(self):
         if self.labels:
             labels = [label.serialize() for label in self.labels]
@@ -126,11 +116,6 @@ class MapTile(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
-
-    @classmethod
-    def load(cls, path: str, predictions: Optional[List[MapPointLabel]] = None):
-        image = Image.open(path)
-        return cls(path=path, image=image, predictions=predictions)
 
     def img_to_torchvision_tensor(self):
         return (
