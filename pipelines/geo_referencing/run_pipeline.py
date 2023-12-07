@@ -19,9 +19,10 @@ FOV_RANGE_KM = (
 LON_MINMAX = [-66.0, -180.0]  # fallback geo-fence (ALL of USA + Alaska)
 LAT_MINMAX = [24.0, 73.0]
 
-CLUE_PATH_IN = ""
-QUERY_PATH_IN = ""
-POINTS_PATH_IN = ""
+CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/clue_CSVs/"
+QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/AI4CMA_Map Georeferencing Challenge_Validation Answer Key/"
+# QUERY_PATH_IN = '/Users/phorne/projects/criticalmaas/data/challenge_1/quick/'
+POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/points/"
 IMG_FILE_EXT = "tif"
 CLUE_FILEN_SUFFIX = "_clue"
 
@@ -31,8 +32,9 @@ OCR_CACHE = "temp/ocr/"
 GEOCODE_CACHE = "temp/geocode/"
 os.makedirs(IMG_CACHE, exist_ok=True)
 os.makedirs(OCR_CACHE, exist_ok=True)
+os.makedirs("temp/text/cache", exist_ok=True)
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = ""
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/phorne/google-vision-lara.json"
 
 
 def create_input(

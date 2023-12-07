@@ -7,6 +7,7 @@ from skimage.morphology import disk
 
 from compute.roi_mapping import determine_roi
 from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 
 from typing import Callable, List, Optional
 
@@ -63,7 +64,7 @@ class ModelROIExtractor(ROIExtractor):
         print(f"buffering roi by {buffer_size}")
 
         polygon = Polygon(poly_raw)
-        buffered = polygon.buffer(buffer_size, join_style="mitre")
+        buffered = polygon.buffer(buffer_size, join_style=2)
 
         # expand the polygon outward
         return list(buffered.exterior.coords)
@@ -79,18 +80,20 @@ class EntropyROIExtractor(ROIExtractor):
     def _extract_roi(self, input: TaskInput):
         # convert PIL image to opencv
         image = cv.cvtColor(np.array(input.image), cv.COLOR_RGB2BGR)
-        ocr_blocks = input.get_data("ocr_blocks")
+        # ocr_blocks = input.get_data("ocr_blocks")
+        ocr_blocks: DocTextExtraction = input.parse_data(
+            TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
+        )
 
         # mask text blocks with median pixel values
         # (so entropy analysis focuses on non-text image features)
         if ocr_blocks:
-            for blk in ocr_blocks:
-                bpoly = blk["bounding_poly"]
-                xmin = bpoly.vertices[0].x
-                xmax = bpoly.vertices[0].x
-                ymin = bpoly.vertices[0].y
-                ymax = bpoly.vertices[0].y
-                for v in bpoly.vertices:
+            for blk in ocr_blocks.extractions:
+                xmin = blk.bounds[0].x
+                xmax = blk.bounds[0].x
+                ymin = blk.bounds[0].y
+                ymax = blk.bounds[0].y
+                for v in blk.bounds:
                     xmin = min(xmin, v.x)
                     xmax = max(xmax, v.x)
                     ymin = min(ymin, v.y)

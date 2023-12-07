@@ -10,8 +10,9 @@ import matplotlib.path as mpltPath
 from compute.geo_coordinates import split_lon_lat_degrees
 from model.coordinate import Coordinate
 from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 from util.cache import cache_geocode_data, load_geocode_cache
-from util.coordinates import ocr_to_coordinates
+from tasks.geo_referencing.util import ocr_to_coordinates
 
 # GeoCoordinates
 # pre-compiled regex patterns
@@ -146,7 +147,9 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         super().__init__(task_id)
 
     def _extract_coordinates(self, input: CoordinateInput):
-        ocr_blocks = input.input.get_data("ocr_blocks")
+        ocr_blocks: DocTextExtraction = input.input.parse_data(
+            TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
+        )
         lon_minmax = input.input.get_request_info("lon_minmax", [0, 180])
         lat_minmax = input.input.get_request_info("lat_minmax", [0, 180])
 
@@ -165,7 +168,11 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         return lon_pts, lat_pts
 
     def _extract_lonlat(
-        self, input: CoordinateInput, ocr_text_blocks, lon_minmax, lat_minmax
+        self,
+        input: CoordinateInput,
+        ocr_text_blocks: DocTextExtraction,
+        lon_minmax,
+        lat_minmax,
     ):
         print("starting extraction")
         lon_clue = (
@@ -180,29 +187,29 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         deg_matches = {}
         degmin_matches = {}
         minsec_matches = {}
-        for block in ocr_text_blocks:
+        for block in ocr_text_blocks.extractions:
             is_match = False
-            matches_iter = RE_DMS.finditer(block["text"])
+            matches_iter = RE_DMS.finditer(block.text)
             for m in matches_iter:
                 m_groups = m.groups()
                 if any(x for x in m_groups):
                     # valid match
                     is_match = True
-                    m_span = (m.start(), m.end(), len(block["text"]))
+                    m_span = (m.start(), m.end(), len(block.text))
                     ok, deg_parsed = self._parse_dms(m_groups)
                     if ok:
                         dms_matches[idx] = (m_groups, m_span, deg_parsed)
             if not is_match:
-                matches_iter = RE_DEGMIN.finditer(block["text"])
+                matches_iter = RE_DEGMIN.finditer(block.text)
                 for m in matches_iter:
                     m_groups = m.groups()
                     if any(x for x in m_groups):
                         # valid match
                         is_match = True
-                        m_span = (m.start(), m.end(), len(block["text"]))
+                        m_span = (m.start(), m.end(), len(block.text))
                         degmin_matches[idx] = (m_groups, m_span)
             if not is_match:
-                matches_iter = RE_DEG.finditer(block["text"])
+                matches_iter = RE_DEG.finditer(block.text)
                 for m in matches_iter:
                     m_groups = m.groups()
                     if not m_groups[0] or m_groups[0].startswith("0"):
@@ -210,10 +217,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     if any(x for x in m_groups):
                         # valid match
                         is_match = True
-                        m_span = (m.start(), m.end(), len(block["text"]))
+                        m_span = (m.start(), m.end(), len(block.text))
                         deg_matches[idx] = (m_groups, m_span)
             if not is_match:
-                matches_iter = RE_DEGDEC.finditer(block["text"])
+                matches_iter = RE_DEGDEC.finditer(block.text)
                 for m in matches_iter:
                     m_groups = m.groups()
                     # if block['text'] == '177⁹':
@@ -221,19 +228,19 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     if any(x for x in m_groups):
                         # valid match
                         is_match = True
-                        m_span = (m.start(), m.end(), len(block["text"]))
+                        m_span = (m.start(), m.end(), len(block.text))
                         deg_matches[idx] = (
                             m_groups,
                             m_span,
                         )  # put in same dict as deg_matches
             if not is_match:
-                matches_iter = RE_MINSSECS.finditer(block["text"])
+                matches_iter = RE_MINSSECS.finditer(block.text)
                 for m in matches_iter:
                     m_groups = m.groups()
                     if any(x for x in m_groups):
                         # valid match
                         is_match = True
-                        m_span = (m.start(), m.end(), len(block["text"]))
+                        m_span = (m.start(), m.end(), len(block.text))
                         minsec_matches[idx] = (m_groups, m_span)
             idx += 1
 
@@ -301,8 +308,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     input.input,
                     str(uuid.uuid4()),
                     "coordinate-excluded",
-                    ocr_to_coordinates(ocr_text_blocks[idx]["bounding_poly"]),
-                    f'excluded due to invalid increment - {ocr_text_blocks[idx]["text"]}',
+                    ocr_to_coordinates(ocr_text_blocks.extractions[idx].bounds),
+                    f"excluded due to invalid increment - {ocr_text_blocks.extractions[idx].text}",
                 )
                 continue
 
@@ -312,8 +319,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     input.input,
                     str(uuid.uuid4()),
                     "coordinate-excluded",
-                    ocr_to_coordinates(ocr_text_blocks[idx]["bounding_poly"]),
-                    f'excluded due to consecutive point - {ocr_text_blocks[idx]["text"]}',
+                    ocr_to_coordinates(ocr_text_blocks.extractions[idx].bounds),
+                    f"excluded due to consecutive point - {ocr_text_blocks.extractions[idx].text}",
                 )
                 continue
 
@@ -338,10 +345,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     )
                     coord = Coordinate(
                         "lat keypoint",
-                        ocr_text_blocks[idx]["text"],
+                        ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
                         True,
-                        ocr_text_blocks[idx]["bounding_poly"],
+                        ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
                         confidence=0.95,
                     )
@@ -359,8 +366,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         "coordinate-excluded",
-                        ocr_to_coordinates(ocr_text_blocks[idx]["bounding_poly"]),
-                        f'excluded candidate lat point - {ocr_text_blocks[idx]["text"]}',
+                        ocr_to_coordinates(ocr_text_blocks.extractions[idx].bounds),
+                        f"excluded candidate lat point - {ocr_text_blocks.extractions[idx].text}",
                     )
             else:
                 # longitude keypoint (x-axis)
@@ -373,10 +380,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     )
                     coord = Coordinate(
                         "lon keypoint",
-                        ocr_text_blocks[idx]["text"],
+                        ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
                         False,
-                        ocr_text_blocks[idx]["bounding_poly"],
+                        ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
                         confidence=0.95,
                     )
@@ -390,8 +397,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         "coordinate-excluded",
-                        ocr_to_coordinates(ocr_text_blocks[idx]["bounding_poly"]),
-                        f'excluded candidate lon point - {ocr_text_blocks[idx]["text"]}',
+                        ocr_to_coordinates(ocr_text_blocks.extractions[idx].bounds),
+                        f"excluded candidate lon point - {ocr_text_blocks.extractions[idx].text}",
                     )
 
         # ---- Check degrees-minutes extractions... (potentially more coarse/noisy)
@@ -416,8 +423,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     input.input,
                     str(uuid.uuid4()),
                     "coordinate-excluded",
-                    ocr_to_coordinates(ocr_text_blocks[idx]["bounding_poly"]),
-                    f'excluded due to consecutive point - {ocr_text_blocks[idx]["text"]}',
+                    ocr_to_coordinates(ocr_text_blocks.extractions[idx].bounds),
+                    f"excluded due to consecutive point - {ocr_text_blocks.extractions[idx].text}",
                 )
                 continue
 
@@ -432,10 +439,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     )
                     coord = Coordinate(
                         "lat keypoint",
-                        ocr_text_blocks[idx]["text"],
+                        ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
                         True,
-                        ocr_text_blocks[idx]["bounding_poly"],
+                        ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
                         confidence=0.9,
                     )
@@ -449,8 +456,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         "coordinate-excluded",
-                        ocr_to_coordinates(ocr_text_blocks[idx]["bounding_poly"]),
-                        f'excluded candidate lat point - {ocr_text_blocks[idx]["text"]}',
+                        ocr_to_coordinates(ocr_text_blocks.extractions[idx].bounds),
+                        f"excluded candidate lat point - {ocr_text_blocks.extractions[idx].text}",
                     )
             else:
                 # longitude keypoint (x-axis)
@@ -463,10 +470,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     )
                     coord = Coordinate(
                         "lon keypoint",
-                        ocr_text_blocks[idx]["text"],
+                        ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
                         False,
-                        ocr_text_blocks[idx]["bounding_poly"],
+                        ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
                         confidence=0.9,
                     )
@@ -480,8 +487,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         "coordinate-excluded",
-                        ocr_to_coordinates(ocr_text_blocks[idx]["bounding_poly"]),
-                        f'excluded candidate lon point - {ocr_text_blocks[idx]["text"]}',
+                        ocr_to_coordinates(ocr_text_blocks.extractions[idx].bounds),
+                        f"excluded candidate lon point - {ocr_text_blocks.extractions[idx].text}",
                     )
 
         # ideally, we should have 3 or more keypoints for latitude and longitude each
@@ -492,7 +499,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     input.input,
                     str(uuid.uuid4()),
                     f"coordinate-{c.get_type()}",
-                    ocr_to_coordinates(c.get_bounding_box()),
+                    ocr_to_coordinates(c.get_bounds()),
                     f"extracted coordinate - {c.get_text()} as {c.get_parsed_degree()}",
                 )
             return (coord_lon_results, coord_lat_results)
@@ -517,12 +524,12 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 # perhaps a corresponding minutes/seconds OCR block is available (next block after this degrees text)?
                 # also, check relative spacing between the two OCR groups (is one right below the other?)
                 font_height = (
-                    ocr_text_blocks[idx]["bounding_poly"].vertices[2].y
-                    - ocr_text_blocks[idx]["bounding_poly"].vertices[0].y
+                    ocr_text_blocks.extractions[idx].bounds[2].y
+                    - ocr_text_blocks.extractions[idx].bounds[0].y
                 )
                 blocks_y_separation = (
-                    ocr_text_blocks[idx + 1]["bounding_poly"].vertices[0].y
-                    - ocr_text_blocks[idx]["bounding_poly"].vertices[2].y
+                    ocr_text_blocks.extractions[idx + 1].bounds[0].y
+                    - ocr_text_blocks.extractions[idx].bounds[2].y
                 )
 
                 if blocks_y_separation < font_height:
@@ -559,10 +566,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     )
                     coord = Coordinate(
                         "lat keypoint",
-                        ocr_text_blocks[idx]["text"],
+                        ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
                         True,
-                        ocr_text_blocks[idx]["bounding_poly"],
+                        ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
                         font_height=font_height,
                         confidence=0.8,
@@ -576,8 +583,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         "coordinate-excluded",
-                        ocr_to_coordinates(ocr_text_blocks[idx]["bounding_poly"]),
-                        f'excluded candidate lat point - {ocr_text_blocks[idx]["text"]}',
+                        ocr_to_coordinates(ocr_text_blocks.extractions[idx].bounds),
+                        f"excluded candidate lat point - {ocr_text_blocks.extractions[idx].text}",
                     )
             else:
                 # longitude keypoint (x-axis)
@@ -590,10 +597,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     )
                     coord = Coordinate(
                         "lon keypoint",
-                        ocr_text_blocks[idx]["text"],
+                        ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
                         False,
-                        ocr_text_blocks[idx]["bounding_poly"],
+                        ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
                         font_height=font_height,
                         confidence=0.8,
@@ -607,8 +614,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         "coordinate-excluded",
-                        ocr_to_coordinates(ocr_text_blocks[idx]["bounding_poly"]),
-                        f'excluded candidate lon point - {ocr_text_blocks[idx]["text"]}',
+                        ocr_to_coordinates(ocr_text_blocks.extractions[idx].bounds),
+                        f"excluded candidate lon point - {ocr_text_blocks.extractions[idx].text}",
                     )
 
         for c in coord_results:
@@ -616,7 +623,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 input.input,
                 str(uuid.uuid4()),
                 f"coordinate-{c.get_type()}",
-                ocr_to_coordinates(c.get_bounding_box()),
+                ocr_to_coordinates(c.get_bounds()),
                 f"extracted coordinate - {c.get_text()} as {c.get_parsed_degree()}",
             )
 
@@ -667,7 +674,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         "coordinate-excluded",
-                        ocr_to_coordinates(coord.get_bounding_box()),
+                        ocr_to_coordinates(coord.get_bounds()),
                         f"excluded due to being outside roi - {coord.get_text()}",
                     )
             for (deg, x), coord in list(lon_results.items()):
@@ -680,7 +687,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         "coordinate-excluded",
-                        ocr_to_coordinates(coord.get_bounding_box()),
+                        ocr_to_coordinates(coord.get_bounds()),
                         f"excluded due to being outside roi - {coord.get_text()}",
                     )
 
@@ -824,7 +831,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         "coordinate-excluded",
-                        ocr_to_coordinates(v.get_bounding_box()),
+                        ocr_to_coordinates(v.get_bounds()),
                         f"excluded due to being an outlier - {v.get_text()}",
                     )
             return deg_results_clean
@@ -876,13 +883,13 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     coord_dropped[r] = coord_result[r]
         return coord_filtered, coord_dropped
 
-    def _get_geofence(self, geofence, dms_matches, ocr_text_blocks):
+    def _get_geofence(self, geofence, dms_matches, ocr_text_blocks: DocTextExtraction):
         degrees = []
         for idx, (_, _, deg_parsed) in dms_matches.items():
             # reduce parsed value to middle point
-            bounding_box = ocr_text_blocks[idx]["bounding_poly"]
-            (x, y) = (bounding_box.vertices[0].x + bounding_box.vertices[2].x) / 2, (
-                bounding_box.vertices[0].y + bounding_box.vertices[2].y
+            bounding_box = ocr_text_blocks.extractions[idx].bounds
+            (x, y) = (bounding_box[0].x + bounding_box[2].x) / 2, (
+                bounding_box[0].y + bounding_box[2].y
             ) / 2
             degrees.append((x, y, deg_parsed))
         updated_geofence = split_lon_lat_degrees(geofence, degrees)
@@ -950,13 +957,13 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
     def _extract_utm(
         self,
         input: CoordinateInput,
-        ocr_text_blocks,
+        ocr_text_blocks: DocTextExtraction,
         lonlat_results,
         lon_minmax,
         lat_minmax,
         lon_sign_factor=1.0,
     ):
-        if not ocr_text_blocks:
+        if not ocr_text_blocks or len(ocr_text_blocks.extractions) == 0:
             print("WARNING! No ocr text blocks available!")
             return ({}, {})
 
@@ -989,15 +996,15 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
 
         idx = 0
         ne_matches = []
-        for block in ocr_text_blocks:
+        for block in ocr_text_blocks.extractions:
             is_match = False
-            matches_iter = RE_NORTHEAST.finditer(block["text"])
+            matches_iter = RE_NORTHEAST.finditer(block.text)
             for m in matches_iter:
                 m_groups = m.groups()
                 if any(x for x in m_groups):
                     # valid match
                     is_match = True
-                    m_span = (m.start(), m.end(), len(block["text"]))
+                    m_span = (m.start(), m.end(), len(block.text))
                     ne_matches.append((idx, m_groups, m_span))
             idx += 1
 
@@ -1026,10 +1033,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     )
                     coord = Coordinate(
                         "lat keypoint",
-                        ocr_text_blocks[idx]["text"],
+                        ocr_text_blocks.extractions[idx].text,
                         latlon_pt[0],
                         True,
-                        ocr_text_blocks[idx]["bounding_poly"],
+                        ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
                         confidence=0.75,
                     )
@@ -1039,7 +1046,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         f"coordinate-{coord.get_type()}",
-                        ocr_to_coordinates(coord.get_bounding_box()),
+                        ocr_to_coordinates(coord.get_bounds()),
                         f"extracted northing utm coordinate - {coord.get_text()}",
                     )
                 elif utm_geofence_min[1] <= utm_dist <= utm_geofence_max[1]:
@@ -1056,10 +1063,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     )
                     coord = Coordinate(
                         "lat keypoint",
-                        ocr_text_blocks[idx]["text"],
+                        ocr_text_blocks.extractions[idx].text,
                         latlon_pt[0],
                         True,
-                        ocr_text_blocks[idx]["bounding_poly"],
+                        ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
                         confidence=0.75,
                     )
@@ -1069,7 +1076,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         f"coordinate-{coord.get_type()}",
-                        ocr_to_coordinates(coord.get_bounding_box()),
+                        ocr_to_coordinates(coord.get_bounds()),
                         f"extracted northing utm coordinate - {coord.get_text()}",
                     )
                 else:
@@ -1092,10 +1099,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     )
                     coord = Coordinate(
                         "lon keypoint",
-                        ocr_text_blocks[idx]["text"],
+                        ocr_text_blocks.extractions[idx].text,
                         latlon_pt[1] * lon_sign_factor,
                         False,
-                        ocr_text_blocks[idx]["bounding_poly"],
+                        ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
                         confidence=0.75,
                     )
@@ -1105,7 +1112,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         f"coordinate-{coord.get_type()}",
-                        ocr_to_coordinates(coord.get_bounding_box()),
+                        ocr_to_coordinates(coord.get_bounds()),
                         f"extracted easting utm coordinate - {coord.get_text()}",
                     )
                 elif utm_geofence_min[0] <= utm_dist <= utm_geofence_max[0]:
@@ -1122,10 +1129,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     )
                     coord = Coordinate(
                         "lon keypoint",
-                        ocr_text_blocks[idx]["text"],
+                        ocr_text_blocks.extractions[idx].text,
                         latlon_pt[1] * lon_sign_factor,
                         False,
-                        ocr_text_blocks[idx]["bounding_poly"],
+                        ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
                         confidence=0.75,
                     )
@@ -1135,7 +1142,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                         input.input,
                         str(uuid.uuid4()),
                         f"coordinate-{coord.get_type()}",
-                        ocr_to_coordinates(coord.get_bounding_box()),
+                        ocr_to_coordinates(coord.get_bounds()),
                         f"extracted easting utm coordinate - {coord.get_text()}",
                     )
                 else:
@@ -1174,7 +1181,7 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
 
     def _extract_places(
         self,
-        ocr_text_blocks,
+        ocr_text_blocks: DocTextExtraction,
         lonlat_results,
         lon_minmax,
         lat_minmax,
@@ -1183,7 +1190,7 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
         use_google_maps=True,
         geocode_path="",
     ):
-        if not ocr_text_blocks:
+        if not ocr_text_blocks or len(ocr_text_blocks.extractions) == 0:
             print("WARNING! No ocr text blocks available!")
             return ({}, {})
 
@@ -1203,7 +1210,7 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
         lat_minmax = [lat_clue - lat_range, lat_clue + lat_range]
 
         geocoder = None
-        timeout = 10
+        timeout = int(10)
         if using_google:
             geocoder = GoogleV3(api_key=google_api_key, domain="maps.googleapis.com")
         else:
@@ -1217,16 +1224,16 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
 
         lon_results, lat_results = lonlat_results
         geo_lonlat_results = []
-        for idx, block in enumerate(ocr_text_blocks):
-            if len(block["text"]) <= MIN_PLACENAME_LEN:
+        for idx, block in enumerate(ocr_text_blocks.extractions):
+            if len(block.text) <= MIN_PLACENAME_LEN:
                 continue
-            re_result = RE_LETTERS.search(block["text"])
+            re_result = RE_LETTERS.search(block.text)
             if not re_result:
                 continue
 
             if roi_xy:
-                x = self._get_center_x(block["bounding_poly"], (0.0, 1.0))
-                y = self._get_center_y(block["bounding_poly"])
+                x = self._get_center_x(block.bounds, (0.0, 1.0))
+                y = self._get_center_y(block.bounds)
                 if not self._in_bounds(x, roi_xy[0]) or not self._in_bounds(
                     y, roi_xy[1]
                 ):
@@ -1314,9 +1321,9 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
                 # choose match closest to 'clue' lat/lon pt
                 p_idx_match, p_dist_sq = min(place_dists, key=lambda x: x[1])
                 x_pixel = self._get_center_x(
-                    ocr_text_blocks[idx]["bounding_poly"], (0.0, 1.0)
+                    ocr_text_blocks.extractions[idx].bounds, (0.0, 1.0)
                 )
-                y_pixel = self._get_center_y(ocr_text_blocks[idx]["bounding_poly"])
+                y_pixel = self._get_center_y(ocr_text_blocks.extractions[idx].bounds)
                 lonlat_deg = (
                     places[p_idx_match].longitude * lon_sign_factor,
                     places[p_idx_match].latitude,

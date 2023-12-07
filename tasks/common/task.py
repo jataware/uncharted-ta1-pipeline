@@ -1,7 +1,8 @@
 import copy
 
 from PIL.Image import Image as PILImage
-from typing import Optional, List, Any, Dict
+
+from typing import Callable, Optional, List, Any, Dict
 
 
 class TaskParameter:
@@ -49,6 +50,9 @@ class TaskInput:
             return self.data[key]
         return default_value
 
+    def parse_data(self, key: str, parser: Callable) -> Any:
+        return parser(self.data[key])
+
     def get_request_info(self, key: str, default_value: Any = None) -> Any:
         if key in self.request:
             return copy.deepcopy(self.request[key])
@@ -71,6 +75,9 @@ class TaskResult:
         self.task_id = ""
         self.output = {}
         self.parameters = []
+
+    def add_output(self, key: str, data: Dict[Any, Any]):
+        self.output[key] = data
 
 
 class Task:

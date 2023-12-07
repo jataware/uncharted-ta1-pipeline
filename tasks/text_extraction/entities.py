@@ -4,6 +4,9 @@ from typing import Tuple
 from pydantic import BaseModel
 
 
+TEXT_EXTRACTION_OUTPUT_KEY = "ocr_blocks"
+
+
 class Point(BaseModel):
     x: int
     y: int

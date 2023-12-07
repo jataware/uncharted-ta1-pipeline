@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pipelines.geo_referencing.output import (
     DetailedOutput,
     GCPOutput,
@@ -22,14 +24,17 @@ from tasks.geo_referencing.roi_extractor import (
     buffer_image_ratio,
     buffer_roi_ratio,
 )
-from tasks.geo_referencing.text_extraction import ResizeTextExtractor, TileTextExtractor
+
+from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 
 
 def create_geo_referencing_pipelines() -> list[Pipeline]:
     p = []
 
     tasks = []
-    tasks.append(ResizeTextExtractor("first"))
+    tasks.append(
+        ResizeTextExtractor("first", Path("temp/text/cache"), False, True, 6000)
+    )
     tasks.append(EntropyROIExtractor("entropy roi"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
@@ -53,7 +58,7 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
     )
 
     tasks = []
-    tasks.append(TileTextExtractor("first"))
+    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
     tasks.append(EntropyROIExtractor("entropy roi"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
@@ -77,7 +82,7 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
     )
 
     tasks = []
-    tasks.append(TileTextExtractor("first"))
+    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
     # tasks.append(ModelROIExtractor('model roi', buffer_fixed, '/Users/phorne/projects/criticalmaas/data/challenge_1/map_legend_segmentation_labels/ch1_validation_evaluation_labels_coco.json'))
     tasks.append(
         ModelROIExtractor(
@@ -110,7 +115,7 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
     )
 
     tasks = []
-    tasks.append(TileTextExtractor("first"))
+    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
     # tasks.append(ModelROIExtractor('model roi', buffer_image_ratio, '/Users/phorne/projects/criticalmaas/data/challenge_1/map_legend_segmentation_labels/ch1_validation_evaluation_labels_coco.json'))
     tasks.append(
         ModelROIExtractor(
@@ -142,7 +147,7 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
     )
 
     tasks = []
-    tasks.append(TileTextExtractor("first"))
+    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
     # tasks.append(ModelROIExtractor('model roi', buffer_roi_ratio, '/Users/phorne/projects/criticalmaas/data/challenge_1/map_legend_segmentation_labels/ch1_validation_evaluation_labels_coco.json'))
     tasks.append(
         ModelROIExtractor(
@@ -178,7 +183,7 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
 
 def create_geo_referencing_pipeline() -> Pipeline:
     tasks = []
-    tasks.append(TileTextExtractor("ocr"))
+    tasks.append(TileTextExtractor("ocr", Path("temp/text/cache"), 6000))
     tasks.append(
         ModelROIExtractor(
             "model roi",
