@@ -6,7 +6,7 @@ import os
 
 from tasks.common.pipeline import BaseModelListOutput, PipelineInput, BaseModelOutput
 from pipelines.segmentation.segmentation_pipeline import SegmentationPipeline
-from common.io import ImageFileInputIterator, JSONFileWriter
+from tasks.common.io import ImageFileInputIterator, JSONFileWriter
 
 
 def main():

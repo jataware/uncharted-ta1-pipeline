@@ -5,8 +5,8 @@ from shapely.geometry import Polygon
 from skimage.filters.rank import entropy
 from skimage.morphology import disk
 
-from compute.roi_mapping import determine_roi
 from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 
 from typing import Callable, List, Optional
@@ -56,17 +56,28 @@ class ModelROIExtractor(ROIExtractor):
         self._buffering_func = buffering_func
 
     def _extract_roi(self, input: TaskInput) -> Optional[List[tuple[float, float]]]:
-        poly_raw = determine_roi(self._coco_file_path, input.raster_id)
+        # read segmentation output
+        segmentation_output: MapSegmentation = input.parse_data(
+            SEGMENTATION_OUTPUT_KEY, MapSegmentation.model_validate
+        )
+
+        # extract the polygon
+        poly_raw = None
+        conf = 0
+        for sr in segmentation_output.segments:
+            if sr.class_label == "map" and sr.confidence > conf:
+                poly_raw = sr.poly_bounds
+                conf = sr.confidence
         if poly_raw is None:
             return None
 
+        # expand the polygon outward
         buffer_size = self._buffering_func(poly_raw, input)
         print(f"buffering roi by {buffer_size}")
 
         polygon = Polygon(poly_raw)
         buffered = polygon.buffer(buffer_size, join_style=2)
 
-        # expand the polygon outward
         return list(buffered.exterior.coords)
 
 

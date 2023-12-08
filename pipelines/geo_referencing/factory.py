@@ -24,7 +24,7 @@ from tasks.geo_referencing.roi_extractor import (
     buffer_image_ratio,
     buffer_roi_ratio,
 )
-
+from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 
 
@@ -83,6 +83,14 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(
+        DetectronSegmenter(
+            "segmenter",
+            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_20230",
+            "temp/segmentation/cache",
+            confidence_thres=0.25,
+        )
+    )
     # tasks.append(ModelROIExtractor('model roi', buffer_fixed, '/Users/phorne/projects/criticalmaas/data/challenge_1/map_legend_segmentation_labels/ch1_validation_evaluation_labels_coco.json'))
     tasks.append(
         ModelROIExtractor(
@@ -116,6 +124,14 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(
+        DetectronSegmenter(
+            "segmenter",
+            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_20230",
+            "temp/segmentation/cache",
+            confidence_thres=0.25,
+        )
+    )
     # tasks.append(ModelROIExtractor('model roi', buffer_image_ratio, '/Users/phorne/projects/criticalmaas/data/challenge_1/map_legend_segmentation_labels/ch1_validation_evaluation_labels_coco.json'))
     tasks.append(
         ModelROIExtractor(
@@ -148,6 +164,14 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(
+        DetectronSegmenter(
+            "segmenter",
+            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_20230",
+            "temp/segmentation/cache",
+            confidence_thres=0.25,
+        )
+    )
     # tasks.append(ModelROIExtractor('model roi', buffer_roi_ratio, '/Users/phorne/projects/criticalmaas/data/challenge_1/map_legend_segmentation_labels/ch1_validation_evaluation_labels_coco.json'))
     tasks.append(
         ModelROIExtractor(

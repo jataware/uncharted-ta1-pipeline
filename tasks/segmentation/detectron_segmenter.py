@@ -10,11 +10,11 @@ from urllib.parse import urlparse
 from typing import List, Optional, Tuple, Sequence
 
 from .ditod import add_vit_config
-from .entities import SegmentationResult, MapSegmentation
+from .entities import SegmentationResult, MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
-from common.task import Task, TaskInput, TaskResult
-from common.s3_data_cache import S3DataCache
+from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.common.s3_data_cache import S3DataCache
 
 CONFIDENCE_THRES_DEFAULT = 0.25  # default confidence threshold (model will discard any regions with confidence < threshold)
 THING_CLASSES_DEFAULT = [
@@ -107,7 +107,7 @@ class DetectronSegmenter(Task):
         results = []
         if not predictions:
             logger.warn("No segmentation predictions for this image!")
-            return TaskResult(self._task_id)
+            return self._create_result(input)
 
         if (
             not predictions.has("scores")
@@ -117,7 +117,7 @@ class DetectronSegmenter(Task):
             logger.warn(
                 "Segmentation predictions are missing data or format is unexpected! Returning empty results"
             )
-            return TaskResult(self._task_id)
+            return self._create_result(input)
 
         # convert prediction masks to polygons and prepare results
         scores = predictions.scores.tolist()
@@ -145,7 +145,9 @@ class DetectronSegmenter(Task):
                     )
                     seg_results.append(seg_result)
         map_segmentation = MapSegmentation(doc_id=input.raster_id, segments=seg_results)
-        return TaskResult(task_id=self._task_id, output=map_segmentation.model_dump())
+        result = self._create_result(input)
+        result.add_output(SEGMENTATION_OUTPUT_KEY, map_segmentation.model_dump())
+        return result
 
     def run_inference_batch(self):
         """

@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import List, Tuple
 
+SEGMENTATION_OUTPUT_KEY = "segmentation"
+
 
 class SegmentationResult(BaseModel):
     """
