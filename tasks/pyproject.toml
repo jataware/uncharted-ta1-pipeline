@@ -20,7 +20,7 @@ dependencies = [
     "pillow",
     "geopy",
     "matplotlib",
-    "opencv-python",
+    "opencv-python>=4.8",
     "protobuf",
     "scikit_image",
     "scikit_learn",
