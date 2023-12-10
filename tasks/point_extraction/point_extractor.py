@@ -1,7 +1,6 @@
 from tasks.point_extraction.entities import MapTile, MapTiles, MapPointLabel, MapImage
 from tasks.point_extraction.pytorch.mobilenet_rcnn import MobileNetRCNN
 from tasks.point_extraction.pytorch.utils import PointInferenceDataset
-from tasks.point_extraction.utils import LOCAL_CACHE_PATH, ensure_local_cache_and_file
 
 from tasks.common.s3_data_cache import S3DataCache
 from tasks.common.task import Task, TaskInput, TaskResult
