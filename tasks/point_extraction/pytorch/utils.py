@@ -1,4 +1,4 @@
-from detection.entities import MapTile
+from tasks.point_extraction.entities import MapTile
 import numpy as np
 import torch
 from torch.utils.data import Dataset

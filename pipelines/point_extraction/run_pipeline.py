@@ -5,7 +5,7 @@ import os
 
 
 from tasks.common.pipeline import BaseModelListOutput, PipelineInput, BaseModelOutput
-from pipelines.segmentation.segmentation_pipeline import SegmentationPipeline
+from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter
 
 
@@ -15,7 +15,7 @@ def main():
         format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    logger = logging.getLogger("metadata_pipeline")
+    logger = logging.getLogger("point_extraction_pipeline")
 
     # parse command line args
     parser = argparse.ArgumentParser()
@@ -23,8 +23,6 @@ def main():
     parser.add_argument("--output", type=str, required=True)
     parser.add_argument("--workdir", type=str, required=True)
     parser.add_argument("--model", type=str, required=True)
-    parser.add_argument("--min_confidence", type=float, default=0.25)
-    parser.add_argument("--ta1_schema", type=bool, default=False)
     p = parser.parse_args()
 
     # setup an input stream
@@ -34,10 +32,9 @@ def main():
     file_writer = JSONFileWriter()
 
     # create the pipeline
-    pipeline = SegmentationPipeline(
+    pipeline = PointExtractionPipeline(
         p.model,
-        p.workdir,
-        p.min_confidence,
+        p.workdir        
     )
 
     # run the extraction pipeline

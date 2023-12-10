@@ -1,21 +1,23 @@
-from detection.entities import Task, MapTile, MapPointLabel, MapImage
-from detection.pytorch.mobilenet_rcnn import MobileNetRCNN
-from detection.pytorch.utils import PointInferenceDataset
-from detection.utils import LOCAL_CACHE_PATH, ensure_local_cache_and_file
+from tasks.point_extraction.entities import MapTile, MapTiles, MapPointLabel, MapImage
+from tasks.point_extraction.pytorch.mobilenet_rcnn import MobileNetRCNN
+from tasks.point_extraction.pytorch.utils import PointInferenceDataset
+from tasks.point_extraction.utils import LOCAL_CACHE_PATH, ensure_local_cache_and_file
 
 from tasks.common.s3_data_cache import S3DataCache
+from tasks.common.task import Task, TaskInput, TaskResult
 
-import cv2
-import numpy as np
 import os
-import parmap
 from urllib.parse import urlparse
 from pathlib import Path
+from typing import List, Dict
+
+import parmap
+import cv2
+import numpy as np
 from PIL import Image
 import torch
 from torch.utils.data import DataLoader, default_collate
 from tqdm import tqdm
-from typing import List, Dict
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
@@ -40,38 +42,33 @@ class MobileNetPointDetector(Task):
         "gravel_pit_pt": 7,
     }
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, task_id: str, path: str) -> None:
         self.model = self._PYTORCH_MODEL.from_pretrained(path)
         self.model.eval()
         self.model.to(self.device)
+        super().__init__(task_id)
 
     @staticmethod
-    def dataloader_factory(stage: str, images: List[MapTile]) -> DataLoader:
-        if stage == "inference":
-            dataset = PointInferenceDataset(tiles=images)
-            return DataLoader(
-                dataset=dataset,
-                batch_size=8,
-                shuffle=False,
-                num_workers=0,
-                collate_fn=default_collate,
-            )
-
-        if stage == "evaluation":
-            raise NotImplementedError("Evaluation not implemented for this model.")
-
-        raise ValueError(f"Unknown stage: {stage}")
+    def dataloader_factory(images: List[MapTile]) -> DataLoader:
+        dataset = PointInferenceDataset(tiles=images)
+        return DataLoader(
+            dataset=dataset,
+            batch_size=8,
+            shuffle=False,
+            num_workers=0,
+            collate_fn=default_collate,
+        )
 
     @staticmethod
     def model_factory(model_name: str):
         raise NotImplementedError
 
-    def reformat_output(self, output: Dict) -> List[Dict]:
+    def reformat_output(self, output: Dict) -> List[MapPointLabel]:
         """
         Reformats Pytorch model output to match the MapPointLabel schema.
         """
 
-        formatted_data = []
+        formatted_data: List[MapPointLabel] = []
 
         id_to_name = {v: k for k, v in self.LABEL_MAPPING.items()}
 
@@ -103,8 +100,8 @@ class MobileNetPointDetector(Task):
         self.model.to(device)
 
     @classmethod
-    def load(cls, path: str):
-        return cls(path)
+    def load(cls, task_id: str, path: str):
+        return cls(task_id, path)
 
     @property
     def version(self):
@@ -118,23 +115,19 @@ class MobileNetPointDetector(Task):
     def output_type(self):
         return List[MapTile]
 
-    def process(
+    def run(
         self,
-        images: List[MapTile],
-        stage: str = "inference",
-    ) -> List[MapTile]:
+        input: TaskInput,
+    ) -> TaskResult:
         """
         Prediction utility for inference and evaluation.
         """
+        map_tiles = MapTiles.model_validate(input.data["map_tiles"])
+        dataloader = self.dataloader_factory(images=map_tiles.tiles)
 
-        assert stage in ["inference", "evaluation"], f"Unknown stage: {stage}"
-        dataloader = self.dataloader_factory(stage=stage, images=images)
-
-        predictions = []
+        predictions: List[MapTile] = []
         with torch.no_grad():
-            for batch in tqdm(
-                dataloader, desc=f"Running {type(self).__name__} on {stage} data"
-            ):
+            for batch in tqdm(dataloader, desc=f"Running {type(self).__name__}"):
                 images, metadata = batch
                 outputs = self.model(images)
                 for idx, image in enumerate(images):
@@ -149,14 +142,21 @@ class MobileNetPointDetector(Task):
                             predictions=self.reformat_output(outputs[idx]),
                         )
                     )
-        return predictions
+        result_map_tiles = MapTiles(raster_id=map_tiles.raster_id, tiles=predictions)
+        return TaskResult(
+            task_id=self._task_id,
+            output={"map_tiles": result_map_tiles.model_dump()},
+        )
 
 
 class PointDirectionPredictor(Task):
     _VERSION = 1
     SUPPORTED_CLASSES = ["strike_and_dip"]
-    TEMPLATE_PATH = "detection/templates/strike_dip_implied_transparent_black_north.jpg"
+    TEMPLATE_PATH = "tasks/point_extraction/templates/strike_dip_implied_transparent_black_north.jpg"
     template: np.ndarray = np.empty((0, 0))
+
+    def __init__(self, task_id: str):
+        super().__init__(task_id)
 
     def load_template(self):
         template = np.array(Image.open(self.TEMPLATE_PATH))
@@ -357,19 +357,19 @@ class PointDirectionPredictor(Task):
 
         return 360 - best_angle
 
-    def process(self, map_image: MapImage):
+    def run(self, input: TaskInput) -> TaskResult:
         """
         Run batch predictions over a MapImage object.
 
         This modifies the MapImage object predictions inplace. Unit test this.
         """
 
-        if PointDirectionPredictor.template is None:
+        if PointDirectionPredictor.template.shape[0] == 0:
             self.load_template()
-
-        map_image = map_image.model_copy()
-        if map_image.labels is None:
-            raise RuntimeError("MapImage must have predictions to run batch_predict.")
+        input_map_image = MapImage.model_validate(
+            input.data["map_image"]
+        )  # todo should just use the task input
+        map_image = input_map_image.model_copy()
         if map_image.labels is None:
             raise RuntimeError("MapImage must have labels to run batch_predict.")
         match_candidates = self._fetch_template_match_candidates(
@@ -383,7 +383,9 @@ class PointDirectionPredictor(Task):
         direction_preds = parmap.map(self.predict, base_images, pm_pbar=True)
         for idx, direction in zip(idxs, direction_preds):
             map_image.labels[idx].directionality = direction
-        return map_image
+        return TaskResult(
+            task_id=self._task_id, output={"map_image": map_image.model_dump()}
+        )
 
     @property
     def input_type(self):
@@ -401,9 +403,20 @@ class YOLOPointDetector(Task):
 
     _VERSION = 1
 
-    def __init__(self, model_data_path: str, cache_path: str):
+    def __init__(
+        self,
+        task_id: str,
+        model_data_path: str,
+        cache_path: str,
+        bsz: int = 15,
+        device: str = "auto",
+    ):
         local_data_path = self._prep_model_data(model_data_path, cache_path)
         self.model = YOLO(local_data_path)
+        self.bsz = bsz
+        self.device = device
+
+        super().__init__(task_id)
 
     def _prep_model_data(self, model_data_path: str, data_cache_path: str) -> Path:
         """
@@ -481,7 +494,7 @@ class YOLOPointDetector(Task):
                 x1, y1, x2, y2, score, class_id = box
                 pt_labels.append(
                     MapPointLabel(
-                        classifier_name="unchartNet_point_detector",
+                        classifier_name="unchartNet_point_extractor",
                         classifier_version=self._VERSION,
                         class_id=int(class_id),
                         class_name=self.model.names[int(class_id)],
@@ -494,24 +507,27 @@ class YOLOPointDetector(Task):
                 )
         return pt_labels
 
-    def process(
-        self, tiles: List[MapTile], bsz: int = 15, device="auto"
-    ) -> List[MapTile]:
-        if device == "auto":
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-        if device not in ["cuda", "cpu"]:
-            raise ValueError(f"Invalid device: {device}")
+    def run(self, input: TaskInput) -> TaskResult:
+        map_tiles = MapTiles.model_validate(input.data["map_tiles"])
 
-        output = []
-        for i in tqdm(range(0, len(tiles), bsz)):
-            print(f"Processing batch {i} to {i + bsz}")
-            batch = tiles[i : i + bsz]
+        if self.device == "auto":
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        if self.device not in ["cuda", "cpu"]:
+            raise ValueError(f"Invalid device: {self.device}")
+
+        output: List[MapTile] = []
+        for i in tqdm(range(0, len(map_tiles.tiles), self.bsz)):
+            print(f"Processing batch {i} to {i + self.bsz}")
+            batch = map_tiles.tiles[i : i + self.bsz]
             images = [tile.image for tile in batch]
-            batch_preds = self.model.predict(images, imgsz=768, device=device)
+            batch_preds = self.model.predict(images, imgsz=768, device=self.device)
             for tile, preds in zip(batch, batch_preds):
                 tile.predictions = self.process_output(preds)
                 output.append(tile)
-        return output
+        result_map_tiles = MapTiles(raster_id=map_tiles.raster_id, tiles=output)
+        return TaskResult(
+            task_id=self._task_id, output={"map_tiles": result_map_tiles.model_dump()}
+        )
 
     @property
     def version(self):

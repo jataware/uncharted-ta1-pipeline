@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from matplotlib.mathtext import RasterParse
 import numpy as np
 from PIL import Image
 from pydantic import BaseModel, validator, model_serializer
@@ -25,10 +26,6 @@ class MapPointLabel(BaseModel):
     y2: int
     score: float
     directionality: Optional[Dict] = None
-
-    def serialize(self):
-        return dict(self)
-
 
 class MapImage(BaseModel):
     """
@@ -66,22 +63,6 @@ class MapImage(BaseModel):
         # TODO: Use polygonal segmask stored in self.map_bounds to filter the image and crop out the non-map regions.
         return img
 
-    def _serialize_labels(self):
-        if self.labels:
-            labels = [label.serialize() for label in self.labels]
-        else:
-            labels = None
-        return labels
-
-    @model_serializer
-    def serialize(self):
-        return {
-            "map_path": self.path,
-            "map_bounds": self.map_bounds,
-            "point_legend_bounds": self.point_legend_bounds,
-            "labels": self._serialize_labels(),
-        }
-
 
 class MapTile(BaseModel):
     """
@@ -97,7 +78,7 @@ class MapTile(BaseModel):
     height: int
     image: Any  # torch.Tensor or PIL.Image
     map_path: str  # Path to the original map image.
-    predictions: Union[Any, None] = None
+    predictions: Optional[List[MapPointLabel]] = None
 
     @validator("image", pre=True, always=True)
     def validate_image(cls, value):
@@ -123,53 +104,6 @@ class MapTile(BaseModel):
         )  # Convert from (H, W, C) to (C, H, W)
 
 
-## Pipeline Objects
-
-
-class Task(ABC):
-    """
-    Abstract class for preprocessing maps before prediction.
-    """
-
-    @abstractmethod
-    def process(self, *args, **kwargs) -> Union[MapImage, MapTile]:
-        pass
-
-    @property
-    @abstractmethod
-    def input_type(self):
-        pass
-
-    @property
-    @abstractmethod
-    def output_type(self):
-        pass
-
-
-class Pipeline:
-    def __init__(self, steps: List[Task]):
-        self.steps = steps
-        assert len(self.steps) > 0, "Pipeline must have at least one step."
-        self._validate_steps()
-
-    def _validate_steps(self):
-        """
-        Validate that the output of one step matches the input of the next.
-        """
-        for i in range(len(self.steps) - 1):
-            if len(self.steps) == 1:
-                print("Warning: Pipeline has only one step. This is not recommended.")
-                break
-            output_type = self.steps[i].output_type
-            input_type = self.steps[i + 1].input_type
-            assert (
-                output_type == input_type
-            ), f"Step {i} output type {output_type} does not match step {i + 1} input type {input_type}"
-
-    def process(self, image: Union[MapImage, MapTile]) -> Union[MapImage, MapTile]:
-        """
-        Process an image through the pipeline.
-        """
-        for step in self.steps:
-            image = step.process(image)
-        return image
+class MapTiles(BaseModel):
+    raster_id: str
+    tiles: List[MapTile]
