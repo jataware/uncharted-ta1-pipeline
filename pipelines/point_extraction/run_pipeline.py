@@ -32,10 +32,7 @@ def main():
     file_writer = JSONFileWriter()
 
     # create the pipeline
-    pipeline = PointExtractionPipeline(
-        p.model,
-        p.workdir        
-    )
+    pipeline = PointExtractionPipeline(p.model, p.workdir)
 
     # run the extraction pipeline
     for doc_id, image in input:
@@ -45,10 +42,10 @@ def main():
         # write the results out to the file system or s3 bucket
         for _, output_data in results.items():
             if isinstance(output_data, BaseModelOutput):
-                path = os.path.join(p.output, f"{doc_id}_map_segmentation.json")
+                path = os.path.join(p.output, f"{doc_id}_point_extraction.json")
                 file_writer.process(path, output_data.data)
             elif isinstance(output_data, BaseModelListOutput) and p.ta1_schema:
-                path = os.path.join(p.output, f"{doc_id}_map_segmentation_schema.json")
+                path = os.path.join(p.output, f"{doc_id}_point_extraction_schema.json")
                 file_writer.process(path, output_data.data)
 
 
