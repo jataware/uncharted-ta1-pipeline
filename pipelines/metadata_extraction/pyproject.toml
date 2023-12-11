@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lara-map-metadata-extraction"
+version = "0.1.0"
+description = "LARA map metadata extraction pipeline and server"
+readme = "README.md"
+dependencies = ["python-dotenv", "lara-tasks"]
+
+[tool.setuptools.packages]
+find = {}

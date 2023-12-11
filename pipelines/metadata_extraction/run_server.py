@@ -1,12 +1,12 @@
+from curses import meta
 from flask import Flask, request, Response
 import logging, json
-import numpy as np
-import cv2.cv2 as cv2
-from urllib.parse import urlparse
-from metadata_extraction_pipeline import MetadataExtractorPipeline, SchemaTransformer
 from hashlib import sha1
+from pathlib import Path
 from io import BytesIO
 from PIL import Image
+from metadata_extraction_pipeline import MetadataExtractorPipeline
+from tasks.common.pipeline import PipelineInput, BaseModelOutput
 
 app = Flask(__name__)
 
@@ -27,13 +27,23 @@ def process_image():
         # use the hash as the doc id since we don't have a filename
         doc_id = sha1(request.data).hexdigest()
 
-        # ran the image through the metadata extraction pipeline
-        data = iter([(doc_id, image)])
-        result = metadata_extraction.run(data)
-        map_json = json.dumps(SchemaTransformer().transform(result))
+        # run the image through the metadata extraction pipeline
+        pipeline_input = PipelineInput(image=image, raster_id=doc_id)
+        result = metadata_extraction.run(pipeline_input)
+        if len(result) == 0:
+            msg = "No metadata extracted"
+            logging.warning(msg)
+            return (msg, 500)
 
-        # convert result to a JSON array
-        return Response(map_json, status=200, mimetype="application/json")
+        metadata_result = result["metadata_extraction_output"]
+        if isinstance(metadata_result, BaseModelOutput):
+            # convert result to a JSON array
+            result_json = json.dumps(metadata_result.data.model_dump())
+            return Response(result_json, status=200, mimetype="application/json")
+        else:
+            msg = "No metadata extracted"
+            logging.warning(msg)
+            return (msg, 500)
 
     except Exception as e:
         msg = f"Error with process_image: {repr(e)}"
@@ -57,10 +67,10 @@ if __name__ == "__main__":
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     logger = logging.getLogger("segmenter app")
-    logger.info("*** Starting Legend and Map Segmenter App ***")
+    logger.info("*** Starting map metadata app ***")
 
     # init segmenter
-    metadata_extraction = MetadataExtractorPipeline("work_dir")
+    metadata_extraction = MetadataExtractorPipeline(Path("tmp/lara/workdir"))
 
     #### start flask server
     app.run(host="0.0.0.0", port=5000)

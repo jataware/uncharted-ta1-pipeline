@@ -1,7 +1,0 @@
-# requirements file for ocr text extraction pipeline
-
-# install lara_text_extraction 'tasks' from its local installation
--e ../../tasks/text_extraction/
-
-Flask==3.0.0
-python-dotenv==1.0.0

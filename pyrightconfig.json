@@ -1,0 +1,8 @@
+{
+    "ignore": [
+        "tasks/segmentation/layoutlmft",
+        "tasks/segmentation/ditod",
+    ],
+    "reportMissingImports": false,
+    "typeCheckingMode": "basic"
+}
