@@ -171,7 +171,8 @@ class DetectronSegmenter(Task):
         hierarchy = res[-1]
         if hierarchy is None:  # empty mask
             return [], False
-        has_holes = (hierarchy.reshape(-1, 4)[:, 3] >= 0).sum() > 0
+        reshaped: np.ndarray = hierarchy.reshape(-1, 4)
+        has_holes = (reshaped[:, 3] >= 0).sum() > 0
         return (res[-2], has_holes)
 
     def _get_id_model(self, model) -> str:

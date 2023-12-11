@@ -1,17 +1,22 @@
-from detection.entities import Task, MapTile, MapPointLabel, MapImage
-from detection.pytorch.mobilenet_rcnn import MobileNetRCNN
-from detection.pytorch.utils import PointInferenceDataset
-from detection.utils import LOCAL_CACHE_PATH, ensure_local_cache_and_file
+from tasks.point_extraction.entities import MapTile, MapTiles, MapPointLabel, MapImage
+from tasks.point_extraction.pytorch.mobilenet_rcnn import MobileNetRCNN
+from tasks.point_extraction.pytorch.utils import PointInferenceDataset
 
+from tasks.common.s3_data_cache import S3DataCache
+from tasks.common.task import Task, TaskInput, TaskResult
+
+import os
+from urllib.parse import urlparse
+from pathlib import Path
+from typing import List, Dict
+
+import parmap
 import cv2
 import numpy as np
-import os
-import parmap
 from PIL import Image
 import torch
 from torch.utils.data import DataLoader, default_collate
 from tqdm import tqdm
-from typing import List, Dict
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
@@ -36,38 +41,33 @@ class MobileNetPointDetector(Task):
         "gravel_pit_pt": 7,
     }
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, task_id: str, path: str) -> None:
         self.model = self._PYTORCH_MODEL.from_pretrained(path)
         self.model.eval()
         self.model.to(self.device)
+        super().__init__(task_id)
 
     @staticmethod
-    def dataloader_factory(stage: str, images: List[MapTile]) -> DataLoader:
-        if stage == "inference":
-            dataset = PointInferenceDataset(tiles=images)
-            return DataLoader(
-                dataset=dataset,
-                batch_size=8,
-                shuffle=False,
-                num_workers=0,
-                collate_fn=default_collate,
-            )
-
-        if stage == "evaluation":
-            raise NotImplementedError("Evaluation not implemented for this model.")
-
-        raise ValueError(f"Unknown stage: {stage}")
+    def dataloader_factory(images: List[MapTile]) -> DataLoader:
+        dataset = PointInferenceDataset(tiles=images)
+        return DataLoader(
+            dataset=dataset,
+            batch_size=8,
+            shuffle=False,
+            num_workers=0,
+            collate_fn=default_collate,
+        )
 
     @staticmethod
     def model_factory(model_name: str):
         raise NotImplementedError
 
-    def reformat_output(self, output: Dict) -> List[Dict]:
+    def reformat_output(self, output: Dict) -> List[MapPointLabel]:
         """
         Reformats Pytorch model output to match the MapPointLabel schema.
         """
 
-        formatted_data = []
+        formatted_data: List[MapPointLabel] = []
 
         id_to_name = {v: k for k, v in self.LABEL_MAPPING.items()}
 
@@ -99,8 +99,8 @@ class MobileNetPointDetector(Task):
         self.model.to(device)
 
     @classmethod
-    def load(cls, path: str):
-        return cls(path)
+    def load(cls, task_id: str, path: str):
+        return cls(task_id, path)
 
     @property
     def version(self):
@@ -114,23 +114,19 @@ class MobileNetPointDetector(Task):
     def output_type(self):
         return List[MapTile]
 
-    def process(
+    def run(
         self,
-        images: List[MapTile],
-        stage: str = "inference",
-    ) -> List[MapTile]:
+        input: TaskInput,
+    ) -> TaskResult:
         """
         Prediction utility for inference and evaluation.
         """
+        map_tiles = MapTiles.model_validate(input.data["map_tiles"])
+        dataloader = self.dataloader_factory(images=map_tiles.tiles)
 
-        assert stage in ["inference", "evaluation"], f"Unknown stage: {stage}"
-        dataloader = self.dataloader_factory(stage=stage, images=images)
-
-        predictions = []
+        predictions: List[MapTile] = []
         with torch.no_grad():
-            for batch in tqdm(
-                dataloader, desc=f"Running {type(self).__name__} on {stage} data"
-            ):
+            for batch in tqdm(dataloader, desc=f"Running {type(self).__name__}"):
                 images, metadata = batch
                 outputs = self.model(images)
                 for idx, image in enumerate(images):
@@ -145,14 +141,21 @@ class MobileNetPointDetector(Task):
                             predictions=self.reformat_output(outputs[idx]),
                         )
                     )
-        return predictions
+        result_map_tiles = MapTiles(raster_id=map_tiles.raster_id, tiles=predictions)
+        return TaskResult(
+            task_id=self._task_id,
+            output={"map_tiles": result_map_tiles.model_dump()},
+        )
 
 
 class PointDirectionPredictor(Task):
     _VERSION = 1
     SUPPORTED_CLASSES = ["strike_and_dip"]
-    TEMPLATE_PATH = "detection/templates/strike_dip_implied_transparent_black_north.jpg"
-    template = None
+    TEMPLATE_PATH = "tasks/point_extraction/templates/strike_dip_implied_transparent_black_north.jpg"
+    template: np.ndarray = np.empty((0, 0))
+
+    def __init__(self, task_id: str):
+        super().__init__(task_id)
 
     def load_template(self):
         template = np.array(Image.open(self.TEMPLATE_PATH))
@@ -161,7 +164,7 @@ class PointDirectionPredictor(Task):
         )  # Blacken template.
         self.template = template
 
-    def _check_size(self, label: MapPointLabel, template: np.ndarray = None):
+    def _check_size(self, label: MapPointLabel, template: np.ndarray) -> bool:
         """
         Used to palliate issues arising from tiling..
         Temporary fix which prevents propagating tiling errors to directionality pred.
@@ -196,7 +199,7 @@ class PointDirectionPredictor(Task):
         return mask
 
     @staticmethod
-    def rotate_image(image: np.ndarray, angle, border_color=255):
+    def rotate_image(image: np.ndarray, angle, border_color=(255, 255, 255)):
         if len(image.shape) == 3:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -328,7 +331,7 @@ class PointDirectionPredictor(Task):
         - template (np.array): The template image.
         - base_image (np.array): The base image.
         """
-        if self.template is None:
+        if self.template.shape[0] == 0:
             self.load_template()
 
         base_image = self.global_thresholding(base_image)
@@ -353,19 +356,19 @@ class PointDirectionPredictor(Task):
 
         return 360 - best_angle
 
-    def process(self, map_image: MapImage):
+    def run(self, input: TaskInput) -> TaskResult:
         """
         Run batch predictions over a MapImage object.
 
         This modifies the MapImage object predictions inplace. Unit test this.
         """
 
-        if self.template is None:
+        if PointDirectionPredictor.template.shape[0] == 0:
             self.load_template()
-
-        map_image = map_image.model_copy()
-        if map_image.labels is None:
-            raise RuntimeError("MapImage must have predictions to run batch_predict.")
+        input_map_image = MapImage.model_validate(
+            input.data["map_image"]
+        )  # todo should just use the task input
+        map_image = input_map_image.model_copy()
         if map_image.labels is None:
             raise RuntimeError("MapImage must have labels to run batch_predict.")
         match_candidates = self._fetch_template_match_candidates(
@@ -379,7 +382,9 @@ class PointDirectionPredictor(Task):
         direction_preds = parmap.map(self.predict, base_images, pm_pbar=True)
         for idx, direction in zip(idxs, direction_preds):
             map_image.labels[idx].directionality = direction
-        return map_image
+        return TaskResult(
+            task_id=self._task_id, output={"map_image": map_image.model_dump()}
+        )
 
     @property
     def input_type(self):
@@ -397,28 +402,98 @@ class YOLOPointDetector(Task):
 
     _VERSION = 1
 
-    def __init__(self, ckpt: str):
-        ckpt_path = self._cache_model_weights(ckpt_name=ckpt)
-        self.model = YOLO(ckpt_path)
+    def __init__(
+        self,
+        task_id: str,
+        model_data_path: str,
+        cache_path: str,
+        bsz: int = 15,
+        device: str = "auto",
+    ):
+        local_data_path = self._prep_model_data(model_data_path, cache_path)
+        self.model = YOLO(local_data_path)
+        self.bsz = bsz
+        self.device = device
 
-    def _cache_model_weights(self, ckpt_name: str = "yolov8n_best.pt"):
+        super().__init__(task_id)
+
+    def _prep_model_data(self, model_data_path: str, data_cache_path: str) -> Path:
         """
-        Checks if the model weights are cached locally. If not, downloads them from S3.
+        prepare local data cache and download model weights, if needed
+
+        Args:
+            model_data_path (str): The path to the folder containing the model weights
+            data_cache_path (str): The path to the local data cache
+
+        Returns:
+            Path: The path to the local copy of the model weights file
         """
-        s3_folder = "models/points/"
-        ensure_local_cache_and_file(LOCAL_CACHE_PATH, ckpt_name, "lara", s3_folder)
-        return os.path.join(LOCAL_CACHE_PATH, ckpt_name)
+
+        local_model_data_path = None
+
+        # check if path is a URL
+        if model_data_path.startswith("s3://") or model_data_path.startswith("http"):
+            # need to specify data cache path when fetching from S3
+            if data_cache_path == "":
+                raise ValueError(
+                    "'data_cache_path' must be specified when fetching model data from S3"
+                )
+
+            s3_host = ""
+            s3_path = ""
+            s3_bucket = ""
+
+            res = urlparse(model_data_path)
+            s3_host = res.scheme + "://" + res.netloc
+            s3_path = res.path.lstrip("/")
+            s3_bucket = s3_path.split("/")[0]
+            s3_path = s3_path.lstrip(s3_bucket)
+            s3_path = s3_path.lstrip("/")
+
+            # create local data cache, if doesn't exist, and connect to S3
+            s3_data_cache = S3DataCache(
+                data_cache_path,
+                s3_host,
+                s3_bucket,
+                aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", "<UNSET>"),
+                aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", "<UNSET>"),
+            )
+
+            # check for model weights and config files in the folder
+            s3_subfolder = s3_path[: s3_path.rfind("/")]
+            for s3_key in s3_data_cache.list_bucket_contents(s3_subfolder):
+                if s3_key.endswith(".pt"):
+                    local_model_data_path = Path(
+                        s3_data_cache.fetch_file_from_s3(s3_key, overwrite=False)
+                    )
+        else:
+            # check for model weights and config files in the folder
+            # iterate over files in folder
+            for f in Path(model_data_path).iterdir():
+                if f.is_file():
+                    if f.suffix == ".pth":
+                        local_model_data_path = f
+
+        # check that we have all the files we need
+        if not local_model_data_path or not local_model_data_path.is_file():
+            raise ValueError(f"Model weights file not found at {model_data_path}")
+
+        return local_model_data_path
 
     def process_output(self, predictions: Results) -> List[MapPointLabel]:
         pt_labels = []
         for pred in predictions:
+            assert pred.boxes is not None
+            assert isinstance(pred.boxes.data, torch.Tensor)
+            assert isinstance(self.model.names, Dict)
+
             if len(pred.boxes.data) == 0:
                 continue
             for box in pred.boxes.data.detach().cpu().tolist():
                 x1, y1, x2, y2, score, class_id = box
                 pt_labels.append(
                     MapPointLabel(
-                        classifier_name="unchartNet_point_detector",
+                        classifier_name="unchartNet_point_extractor",
                         classifier_version=self._VERSION,
                         class_id=int(class_id),
                         class_name=self.model.names[int(class_id)],
@@ -431,24 +506,27 @@ class YOLOPointDetector(Task):
                 )
         return pt_labels
 
-    def process(
-        self, tiles: List[MapTile], bsz: int = 26, device="auto"
-    ) -> List[MapTile]:
-        if device == "auto":
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-        if device not in ["cuda", "cpu"]:
-            raise ValueError(f"Invalid device: {device}")
+    def run(self, input: TaskInput) -> TaskResult:
+        map_tiles = MapTiles.model_validate(input.data["map_tiles"])
 
-        output = []
-        for i in tqdm(range(0, len(tiles), bsz)):
-            print(f"Processing batch {i} to {i + bsz}")
-            batch = tiles[i : i + bsz]
+        if self.device == "auto":
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        if self.device not in ["cuda", "cpu"]:
+            raise ValueError(f"Invalid device: {self.device}")
+
+        output: List[MapTile] = []
+        for i in tqdm(range(0, len(map_tiles.tiles), self.bsz)):
+            print(f"Processing batch {i} to {i + self.bsz}")
+            batch = map_tiles.tiles[i : i + self.bsz]
             images = [tile.image for tile in batch]
-            batch_preds = self.model.predict(images, imgsz=768, device=device)
+            batch_preds = self.model.predict(images, imgsz=768, device=self.device)
             for tile, preds in zip(batch, batch_preds):
                 tile.predictions = self.process_output(preds)
                 output.append(tile)
-        return output
+        result_map_tiles = MapTiles(raster_id=map_tiles.raster_id, tiles=output)
+        return TaskResult(
+            task_id=self._task_id, output={"map_tiles": result_map_tiles.model_dump()}
+        )
 
     @property
     def version(self):

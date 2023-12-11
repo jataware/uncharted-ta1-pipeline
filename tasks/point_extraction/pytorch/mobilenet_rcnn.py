@@ -34,7 +34,7 @@ class MobileNetRCNN(FasterRCNN):
         # Loading directly from third party hosted checkpoints is not supported.
 
         backbone = torchvision.models.mobilenet_v2().features
-        backbone.out_channels = 1280
+        backbone.out_channels = 1280  # type: ignore
 
         anchor_generator = AnchorGenerator(
             sizes=(config["anchor_sizes"],), aspect_ratios=(config["aspect_ratios"],)
@@ -66,7 +66,7 @@ class MobileNetRCNN(FasterRCNN):
         return cls(state_dict=state_dict, config=config)
 
     def _load_pretrained_state_dict(
-        self, state_dict: Union[Dict[str, torch.tensor], None] = None
+        self, state_dict: Union[Dict[str, torch.Tensor], None] = None
     ) -> None:
         if state_dict:
             self.load_state_dict(state_dict, strict=True)

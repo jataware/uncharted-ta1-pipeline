@@ -67,14 +67,15 @@ class TaskInput:
 
 
 class TaskResult:
-    task_id = ""
-    output: Dict[Any, Any] = {}
-    parameters: List[TaskParameter] = []
-
-    def __init__(self):
-        self.task_id = ""
-        self.output = {}
-        self.parameters = []
+    def __init__(
+        self,
+        task_id: str = "",
+        output: Dict[Any, Any] = {},
+        parameters: List[TaskParameter] = [],
+    ):
+        self.task_id = task_id
+        self.output = {} if output == {} else output
+        self.parameters = [] if parameters == [] else parameters
 
     def add_output(self, key: str, data: Dict[Any, Any]):
         self.output[key] = data

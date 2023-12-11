@@ -16,7 +16,7 @@ dependencies = [
     "google-cloud-vision",
     "grpcio",
     "boto3",
-    "mypy-boto3-s3",
+    "types-boto3",
     "pillow",
     "geopy",
     "matplotlib",
@@ -25,7 +25,9 @@ dependencies = [
     "scikit_image",
     "scikit_learn",
     "Shapely",
-    "utm"
+    "utm",
+    "parmap",
+    "scipy"
 ]
 
 [project.optional-dependencies]
@@ -39,6 +41,8 @@ segmentation=[
 point = [
     "torch==2.0.1",
     "torchvision==0.15.2",
+    "scipy",
+    "ultralytics"
 ]
 
 [tool.setuptools.packages]

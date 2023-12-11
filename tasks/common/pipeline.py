@@ -11,10 +11,15 @@ class PipelineInput:
     raster_id: str = ""
     params = {}
 
-    def __init__(self):
-        self.image = None
-        self.raster_id = ""
-        self.params = {}
+    def __init__(
+        self,
+        image: Optional[PILImage] = None,
+        raster_id: str = "",
+        params: Dict[str, Any] = {},
+    ):
+        self.image = image
+        self.raster_id = raster_id
+        self.params = {} if len(params) == 0 else params
 
 
 class PipelineResult:

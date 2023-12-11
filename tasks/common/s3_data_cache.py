@@ -2,7 +2,6 @@ import logging, os
 import boto3
 from botocore.exceptions import ClientError
 from pathlib import Path
-
 from mypy_boto3_s3 import S3ServiceResource
 
 logger = logging.getLogger(__name__)
@@ -89,10 +88,7 @@ class S3DataCache:
         resp = self.s3_resource.meta.client.list_objects_v2(  # type: ignore
             Bucket=self.s3_bucket, Prefix=path_prefix, MaxKeys=1000
         )
-        if "Contents" in resp:
-            return [x["Key"] for x in resp["Contents"]]
-        else:
-            return []
+        return [obj["Key"] for obj in resp.get("Contents", []) if "Key" in obj]
 
     @staticmethod
     def bucket_exists(s3_resource: S3ServiceResource, bucket_name: str) -> bool:

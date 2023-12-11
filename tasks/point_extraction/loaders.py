@@ -1,3 +1,4 @@
+from sympy import NDimArray
 from detection.label_map import LABEL_MAPPING
 from detection.utils import filename_to_id, filter_coco_images
 
@@ -82,7 +83,7 @@ class CompetitionCOCOLoader:
 
     @staticmethod
     def construct_bounding_boxes(
-        bitmask: Union[str, np.array], bounding_box_size: List[int] = [50, 50]
+        bitmask: Union[str, np.ndarray], bounding_box_size: List[int] = [50, 50]
     ) -> List[List[int]]:
         # this is slow, due to massive size of bitmask files.. the points labeled in the .json files are the legend icons.
         # not sure what to do about this.
@@ -91,7 +92,7 @@ class CompetitionCOCOLoader:
             bitmask = np.array(Image.open(bitmask))
         bitmask = bitmask > 0
 
-        labeled, num_features = scipy_label(bitmask)
+        labeled, num_features = scipy_label(bitmask)  # type: ignore
         bounding_boxes = []
 
         for i in range(

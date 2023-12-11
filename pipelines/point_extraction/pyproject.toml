@@ -3,11 +3,11 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "lara-map-segmentation"
+name = "lara-point-extraction"
 version = "0.1.0"
-description = "LARA map segmentation pipeline and server"
+description = "LARA point extraction pipeline and server"
 readme = "README.md"
-dependencies = ["flask", "mypy-boto3-s3", "lara-tasks[segmentation]"]
+dependencies = ["flask", "mypy-boto3-s3", "lara-tasks[point]"]
 
 [tool.setuptools.packages]
 find = {}
