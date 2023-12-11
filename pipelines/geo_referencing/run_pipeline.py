@@ -27,10 +27,9 @@ CLUE_FILEN_SUFFIX = "_clue"
 
 Image.MAX_IMAGE_PIXELS = 400000000
 IMG_CACHE = "temp/images/"
-OCR_CACHE = "temp/ocr/"
 GEOCODE_CACHE = "temp/geocode/"
 os.makedirs(IMG_CACHE, exist_ok=True)
-os.makedirs(OCR_CACHE, exist_ok=True)
+os.makedirs("temp/text/cache", exist_ok=True)
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = ""
 

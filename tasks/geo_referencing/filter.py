@@ -3,7 +3,7 @@ import uuid
 from compute.geo_projection import PolyRegression
 from model.coordinate import Coordinate
 from tasks.common.task import Task, TaskInput, TaskResult
-from util.coordinates import ocr_to_coordinates
+from tasks.geo_referencing.util import ocr_to_coordinates
 
 
 class FilterCoordinates(Task):
@@ -75,7 +75,7 @@ class OutlierFilter(FilterCoordinates):
                     input,
                     str(uuid.uuid4()),
                     "coordinate-excluded",
-                    ocr_to_coordinates(coords_representation[i].get_bounding_box()),
+                    ocr_to_coordinates(coords_representation[i].get_bounds()),
                     f"excluded due to regression outlier detection- {coords_representation[i].get_text()}",
                 )
             else:
@@ -96,7 +96,7 @@ class OutlierFilter(FilterCoordinates):
             pixels.append(c.get_pixel_alignment())
             degrees.append(c.get_parsed_degree())
 
-        # do polynomial regression for x->longitude
+        # do polynomial regression for axis
         regression.fit_polynomial_regression(pixels, degrees)
         predictions = regression.predict_pts(pixels)
 

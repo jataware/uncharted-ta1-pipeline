@@ -8,7 +8,13 @@ from pathlib import Path
 from PIL import Image
 from PIL.Image import Image as PILImage
 from .ocr.google_vision_ocr import GoogleVisionOCR
-from .entities import DocTextExtraction, TextExtraction, Point, Tile
+from .entities import (
+    DocTextExtraction,
+    TextExtraction,
+    Point,
+    Tile,
+    TEXT_EXTRACTION_OUTPUT_KEY,
+)
 from ..common.task import Task, TaskInput, TaskResult
 
 # ENV VARIABLE -- needed for google-vision API
@@ -76,7 +82,7 @@ class ResizeTextExtractor(TextExtractor):
     def run(self, input: TaskInput) -> TaskResult:
         # im_orig_size = im.size   #(width, height)
         if input.image is None:
-            return TaskResult(self._task_id)
+            return self._create_result(input)
 
         im_resized, im_resize_ratio = self._resize_image(input.image)
 
@@ -86,9 +92,12 @@ class ResizeTextExtractor(TextExtractor):
         # check cache and re-use existing file if present
         if os.path.isfile(doc_path):
             with open(doc_path, "rb") as f:
-                return TaskResult(
-                    self._task_id, DocTextExtraction(**json.load(f)).model_dump()
+                result = self._create_result(input)
+                result.add_output(
+                    TEXT_EXTRACTION_OUTPUT_KEY,
+                    DocTextExtraction(**json.load(f)).model_dump(),
                 )
+                return result
 
         ocr_blocks = self._extract_text(im_resized)
 
@@ -117,7 +126,9 @@ class ResizeTextExtractor(TextExtractor):
             json_model = doc_text_extraction.model_dump()
             json.dump(json_model, f)
 
-        return TaskResult(self._task_id, doc_text_extraction.model_dump())
+        result = self._create_result(input)
+        result.add_output(TEXT_EXTRACTION_OUTPUT_KEY, doc_text_extraction.model_dump())
+        return result
 
     def _resize_image(self, im: PILImage) -> Tuple[PILImage, float]:
         """
@@ -164,9 +175,8 @@ class TileTextExtractor(TextExtractor):
 
         # TODO -- this code could be modified to include overlap/stride len, etc.
         # (then, any overlapping OCR results need to be de-dup'd)
-
         if input.image is None:
-            return TaskResult(self._task_id)
+            return self._create_result(input)
 
         doc_key = f"{input.raster_id}_{self._model_id}"
         doc_path = os.path.join(self._cache_dir, f"{doc_key}.json")
@@ -174,9 +184,12 @@ class TileTextExtractor(TextExtractor):
         # check cache and re-use existing file if present
         if os.path.isfile(doc_path):
             with open(doc_path, "rb") as f:
-                return TaskResult(
-                    self._task_id, DocTextExtraction(**json.load(f)).model_dump()
+                result = self._create_result(input)
+                result.add_output(
+                    TEXT_EXTRACTION_OUTPUT_KEY,
+                    DocTextExtraction(**json.load(f)).model_dump(),
                 )
+                return result
 
         im_tiles = self._split_image(input.image, self.split_lim)
         logger.info(
@@ -213,7 +226,9 @@ class TileTextExtractor(TextExtractor):
             json_model = doc_text_extraction.model_dump()
             json.dump(json_model, f)
 
-        return TaskResult(self._task_id, doc_text_extraction.model_dump())
+        result = self._create_result(input)
+        result.add_output(TEXT_EXTRACTION_OUTPUT_KEY, doc_text_extraction.model_dump())
+        return result
 
     def _split_image(self, image: PILImage, size_limit: int) -> List[Tile]:
         """

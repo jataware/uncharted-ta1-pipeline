@@ -1,7 +1,7 @@
 from typing import List
 
 from schema.ta1_schema import PageExtraction, ExtractionIdentifier
-from segmentation.entities import MapSegmentation
+from tasks.segmentation.entities import MapSegmentation
 from tasks.common.pipeline import (
     Pipeline,
     PipelineResult,
