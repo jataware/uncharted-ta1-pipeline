@@ -30,10 +30,10 @@ def test_resize_text_extractor():
     # test process()
     doc_id = "test"
     im = image_io.load_pil_image("tasks/text_extraction/test/data/test.jpg")
-    
+
     input = TaskInput(0)
-    input.image=im
-    input.raster_id=doc_id
+    input.image = im
+    input.raster_id = doc_id
 
     result = rte.run(input)
     doc_text_extraction = DocTextExtraction.model_validate(result.output)
@@ -77,8 +77,8 @@ def test_tiling_text_extractor():
     doc_id = "test"
     im = image_io.load_pil_image("tasks/text_extraction/test/data/test.jpg")
     input = TaskInput(0)
-    input.image=im
-    input.raster_id=doc_id
+    input.image = im
+    input.raster_id = doc_id
     result = tte.run(input)
     doc_text_extraction = DocTextExtraction.model_validate(result.output)
 

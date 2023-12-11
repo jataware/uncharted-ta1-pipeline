@@ -34,7 +34,7 @@ class MobileNetRCNN(FasterRCNN):
         # Loading directly from third party hosted checkpoints is not supported.
 
         backbone = torchvision.models.mobilenet_v2().features
-        backbone.out_channels = 1280 # type: ignore
+        backbone.out_channels = 1280  # type: ignore
 
         anchor_generator = AnchorGenerator(
             sizes=(config["anchor_sizes"],), aspect_ratios=(config["aspect_ratios"],)

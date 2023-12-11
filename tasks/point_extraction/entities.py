@@ -27,6 +27,7 @@ class MapPointLabel(BaseModel):
     score: float
     directionality: Optional[Dict] = None
 
+
 class MapImage(BaseModel):
     """
     Represents a map image.

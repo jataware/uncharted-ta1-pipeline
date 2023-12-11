@@ -92,7 +92,7 @@ class CompetitionCOCOLoader:
             bitmask = np.array(Image.open(bitmask))
         bitmask = bitmask > 0
 
-        labeled, num_features = scipy_label(bitmask) # type: ignore
+        labeled, num_features = scipy_label(bitmask)  # type: ignore
         bounding_boxes = []
 
         for i in range(

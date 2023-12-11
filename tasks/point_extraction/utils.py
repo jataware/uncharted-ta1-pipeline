@@ -33,4 +33,3 @@ def filter_coco_images(coco_dict: Dict) -> Dict:
         f'Filtering {len(coco_dict["images"]) - len(filtered_coco_dict["images"])} out of {len(coco_dict["images"])} images without annotations'
     )
     return filtered_coco_dict
-
