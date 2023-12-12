@@ -1,12 +1,15 @@
-from curses import meta
+import os
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
 from pathlib import Path
 from io import BytesIO
 from PIL import Image
-from metadata_extraction_pipeline import MetadataExtractorPipeline
+from pipelines.metadata_extraction.metadata_extraction_pipeline import (
+    MetadataExtractorPipeline,
+)
 from tasks.common.pipeline import PipelineInput, BaseModelOutput
+from tasks.metadata_extraction.entities import METADATA_EXTRACTION_OUTPUT_KEY
 
 app = Flask(__name__)
 
@@ -34,8 +37,7 @@ def process_image():
             msg = "No metadata extracted"
             logging.warning(msg)
             return (msg, 500)
-
-        metadata_result = result["metadata_extraction_output"]
+        metadata_result = result[METADATA_EXTRACTION_OUTPUT_KEY]
         if isinstance(metadata_result, BaseModelOutput):
             # convert result to a JSON array
             result_json = json.dumps(metadata_result.data.model_dump())
@@ -66,7 +68,7 @@ if __name__ == "__main__":
         format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    logger = logging.getLogger("segmenter app")
+    logger = logging.getLogger("metadata extraction app")
     logger.info("*** Starting map metadata app ***")
 
     # init segmenter

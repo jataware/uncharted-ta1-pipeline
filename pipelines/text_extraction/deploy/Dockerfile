@@ -13,6 +13,6 @@ COPY tasks tasks
 
 # install lara packages - including point detection extras
 RUN pip install -e ./tasks
-RUN pip install -e ./pipelines/metadata_extraction
+RUN pip install -e ./pipelines/text_extraction
 
-ENTRYPOINT ["python3", "-m", "pipelines.metadata_extraction.run_server"]
+ENTRYPOINT ["python3", "-m", "pipelines.text_extraction.run_server"]

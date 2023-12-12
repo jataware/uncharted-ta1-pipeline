@@ -3,7 +3,10 @@ from pathlib import Path
 from tasks.metadata_extraction.metadata_extraction import (
     MetadataExtractor,
 )
-from tasks.metadata_extraction.entities import MetadataExtraction
+from tasks.metadata_extraction.entities import (
+    MetadataExtraction,
+    METADATA_EXTRACTION_OUTPUT_KEY,
+)
 from tasks.text_extraction.text_extractor import ResizeTextExtractor
 from tasks.common.pipeline import (
     BaseModelOutput,
@@ -51,7 +54,9 @@ class MetadataExtractionOutput(OutputCreator):
         Returns:
             MetadataExtraction: The metadata extraction object.
         """
-        metadata_extraction = MetadataExtraction.model_validate(pipeline_result.data)
+        metadata_extraction = MetadataExtraction.model_validate(
+            pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
+        )
         return BaseModelOutput(
             pipeline_result.pipeline_id,
             pipeline_result.pipeline_name,
@@ -64,7 +69,9 @@ class IntegrationOutput(OutputCreator):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult):
-        metadata_extraction = MetadataExtraction.model_validate(pipeline_result.data)
+        metadata_extraction = MetadataExtraction.model_validate(
+            pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
+        )
         schema_map = Map(
             name=metadata_extraction.title,
             source_url="",

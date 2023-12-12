@@ -2,6 +2,9 @@ from typing import List
 from pydantic import BaseModel, ConfigDict
 
 
+METADATA_EXTRACTION_OUTPUT_KEY = "metadata_extraction_output"
+
+
 class MetadataExtraction(BaseModel):
     model_config = ConfigDict(coerce_numbers_to_str=True)
 

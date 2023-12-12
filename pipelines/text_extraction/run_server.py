@@ -6,8 +6,6 @@ from hashlib import sha1
 import io
 from PIL import Image
 
-import env_defaults as env
-
 from .text_extraction_pipeline import TextExtractionPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput
 

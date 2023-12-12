@@ -5,4 +5,4 @@ docker run \
     -v $GOOGLE_APPLICATION_CREDENTIALS:/credentials.json \
     -v $1:/workdir \
     -p 5000:5000 \
-    docker.uncharted.software/metadata-extraction:latest
+    docker.uncharted.software/text-extraction:latest
