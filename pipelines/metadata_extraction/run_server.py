@@ -1,11 +1,12 @@
-from curses import meta
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
 from pathlib import Path
 from io import BytesIO
 from PIL import Image
-from metadata_extraction_pipeline import MetadataExtractorPipeline
+from pipelines.metadata_extraction.metadata_extraction_pipeline import (
+    MetadataExtractorPipeline,
+)
 from tasks.common.pipeline import PipelineInput, BaseModelOutput
 
 app = Flask(__name__)
