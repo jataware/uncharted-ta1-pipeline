@@ -1,11 +1,15 @@
+import argparse
+from pathlib import Path
+import logging
 import os
-import glob
 
 from geopy.distance import distance as geo_distance
+from PIL.Image import Image as PILIMAGE
 from PIL import Image
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipelines
 from pipelines.geo_referencing.output import CSVWriter, JSONWriter
+from tasks.common.io import ImageFileInputIterator
 from tasks.common.pipeline import PipelineInput
 from tasks.geo_referencing.georeference import QueryPoint
 from util.coordinates import absolute_minmax
@@ -19,26 +23,50 @@ FOV_RANGE_KM = (
 LON_MINMAX = [-66.0, -180.0]  # fallback geo-fence (ALL of USA + Alaska)
 LAT_MINMAX = [24.0, 73.0]
 
-CLUE_PATH_IN = ""
-QUERY_PATH_IN = ""
-POINTS_PATH_IN = ""
+CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/clue_CSVs/"
+QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/AI4CMA_Map Georeferencing Challenge_Validation Answer Key/"
+# QUERY_PATH_IN = '/Users/phorne/projects/criticalmaas/data/challenge_1/quick/'
+POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/points/"
 IMG_FILE_EXT = "tif"
 CLUE_FILEN_SUFFIX = "_clue"
 
 Image.MAX_IMAGE_PIXELS = 400000000
 IMG_CACHE = "temp/images/"
+OCR_CACHE = "temp/ocr/"
 GEOCODE_CACHE = "temp/geocode/"
 os.makedirs(IMG_CACHE, exist_ok=True)
-os.makedirs("temp/text/cache", exist_ok=True)
+os.makedirs(OCR_CACHE, exist_ok=True)
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = ""
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/phorne/google-vision-lara.json"
 
+
+def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    logger = logging.getLogger("georeferencing_pipeline")
+
+    # parse command line args
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--output", type=str, required=True)
+    parser.add_argument("--workdir", type=Path, default=None)
+    parser.add_argument("--verbose", type=bool, default=False)
+    parser.add_argument("--ta1_schema", type=bool, default=False)
+    p = parser.parse_args()
+
+    # setup an input stream
+    input = ImageFileInputIterator(p.input)
+
+    run_pipelines(p, input)
 
 def create_input(
-    raster_id: str, image_path: str, points_path: str, query_path: str, clue_path: str
+    raster_id: str, image: PILIMAGE, points_path: str, query_path: str, clue_path: str
 ):
     input = PipelineInput()
-    input.image = Image.open(image_path)
+    input.image = image
     input.raster_id = raster_id
 
     lon_minmax, lat_minmax, lon_sign_factor = get_params(clue_path, use_abs=False)
@@ -53,22 +81,9 @@ def create_input(
 
     return input
 
-
-def process_folder(image_folder: str):
+def run_pipelines(parsed, input_data: ImageFileInputIterator):
     # get the pipelines
     pipelines = create_geo_referencing_pipelines()
-
-    img_path_tmp = os.path.join(image_folder, "*." + IMG_FILE_EXT)
-    image_filenames = glob.glob(img_path_tmp)
-    image_filenames.sort()
-    print(f"found {len(image_filenames)} images to process")
-    if len(image_filenames) == 0:
-        # check nested folders for images
-        print("no images found, checking nested folders")
-        img_path_tmp = os.path.join(image_folder, "*", "*." + IMG_FILE_EXT)
-        image_filenames = glob.glob(img_path_tmp)
-        image_filenames.sort()
-        print(f"found {len(image_filenames)} nested images to process")
 
     results = {}
     results_summary = {}
@@ -84,21 +99,16 @@ def process_folder(image_folder: str):
         results_gcps[p.id] = []
         results_integration[p.id] = []
 
-    for image_path in image_filenames:
-        print(f"processing {image_path}")
-        image_base_filename = os.path.basename(image_path)
-        image_base_filename = os.path.splitext(image_base_filename)[0]
-        raster_id = os.path.splitext(image_path[len(image_folder) :])[0].replace(
-            "/", "-"
-        )
+    for raster_id, image in input_data:
+        print(f"processing {raster_id}")
 
         clue_path = os.path.join(
-            CLUE_PATH_IN, image_base_filename + CLUE_FILEN_SUFFIX + ".csv"
+            CLUE_PATH_IN, raster_id + CLUE_FILEN_SUFFIX + ".csv"
         )
-        query_path = os.path.join(QUERY_PATH_IN, image_base_filename + ".csv")
+        query_path = os.path.join(QUERY_PATH_IN, raster_id + ".csv")
         points_path = os.path.join(POINTS_PATH_IN, f"pipeline_output_{raster_id}.json")
 
-        input = create_input(raster_id, image_path, points_path, query_path, clue_path)
+        input = create_input(raster_id, image, points_path, query_path, clue_path)
 
         for pipeline in pipelines:
             print(f"running pipeline {pipeline.id}")
@@ -111,35 +121,34 @@ def process_folder(image_folder: str):
             print(f"done pipeline {pipeline.id}\n\n")
 
         for p in pipelines:
-            writer_csv.output(results[p.id], {"path": f"output/test-{p.id}.csv"})
+            writer_csv.output(results[p.id], {"path": os.path.join(parsed.output, f"test-{p.id}.csv")})
             writer_csv.output(
-                results_summary[p.id], {"path": f"output/test_summary-{p.id}.csv"}
+                results_summary[p.id], {"path": os.path.join(parsed.output, f"test_summary-{p.id}.csv")}
             )
             writer_json.output(
-                results_levers[p.id], {"path": f"output/test_levers-{p.id}.json"}
+                results_levers[p.id], {"path": os.path.join(parsed.output, f"test_levers-{p.id}.json")}
             )
             writer_json.output(
-                results_gcps[p.id], {"path": f"output/test_gcps-{p.id}.json"}
+                results_gcps[p.id], {"path": os.path.join(parsed.output, f"test_gcps-{p.id}.json")}
             )
             writer_json.output(
-                results_integration[p.id], {"path": f"output/test_schema-{p.id}.json"}
+                results_integration[p.id], {"path": os.path.join(parsed.output, f"test_schema-{p.id}.json")}
             )
 
     for p in pipelines:
-        writer_csv.output(results[p.id], {"path": f"output/test-{p.id}.csv"})
+        writer_csv.output(results[p.id], {"path": os.path.join(parsed.output, f"test-{p.id}.csv")})
         writer_csv.output(
-            results_summary[p.id], {"path": f"output/test_summary-{p.id}.csv"}
+            results_summary[p.id], {"path": os.path.join(parsed.output, f"test_summary-{p.id}.csv")}
         )
         writer_json.output(
-            results_levers[p.id], {"path": f"output/test_levers-{p.id}.json"}
+            results_levers[p.id], {"path": os.path.join(parsed.output, f"test_levers-{p.id}.json")}
         )
         writer_json.output(
-            results_gcps[p.id], {"path": f"output/test_gcps-{p.id}.json"}
+            results_gcps[p.id], {"path": os.path.join(parsed.output, f"test_gcps-{p.id}.json")}
         )
         writer_json.output(
-            results_integration[p.id], {"path": f"output/test_schema-{p.id}.json"}
+            results_integration[p.id], {"path": os.path.join(parsed.output, f"test_schema-{p.id}.json")}
         )
-
 
 def get_geofence(
     csv_clue_file,
@@ -303,3 +312,7 @@ def parse_clue_file(csv_clue_file):
         print(e)
 
     return (lon, lat, got_clue)
+
+
+if __name__ == "__main__":
+    main()

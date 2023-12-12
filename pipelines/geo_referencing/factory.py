@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from pipelines.geo_referencing.output import (
-    DetailedOutput,
     GCPOutput,
     GeoReferencingOutput,
     IntegrationOutput,
@@ -47,7 +46,6 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
             "resize",
             [
                 GeoReferencingOutput("geo"),
-                DetailedOutput("detailed"),
                 SummaryOutput("summary"),
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
@@ -71,7 +69,6 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
             "tile",
             [
                 GeoReferencingOutput("geo"),
-                DetailedOutput("detailed"),
                 SummaryOutput("summary"),
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
@@ -112,7 +109,6 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
             "roi poly",
             [
                 GeoReferencingOutput("geo"),
-                DetailedOutput("detailed"),
                 SummaryOutput("summary"),
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
@@ -152,7 +148,6 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
             "roi poly",
             [
                 GeoReferencingOutput("geo"),
-                DetailedOutput("detailed"),
                 SummaryOutput("summary"),
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
@@ -192,7 +187,6 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
             "roi poly",
             [
                 GeoReferencingOutput("geo"),
-                DetailedOutput("detailed"),
                 SummaryOutput("summary"),
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
