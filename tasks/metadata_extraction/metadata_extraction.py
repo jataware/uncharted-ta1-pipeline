@@ -4,19 +4,15 @@ import pprint
 import json
 import os
 from common.task import TaskInput, TaskResult
-import openai
+from openai import OpenAI
 import tiktoken
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.common.pipeline import Task
-
-
-# env var for openai api key
-openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
 class MetadataExtractor(Task):
@@ -62,6 +58,9 @@ class MetadataExtractor(Task):
     ):
         super().__init__(id)
         self._verbose = verbose
+        self._openai_client = (
+            OpenAI()
+        )  # will read key from "OPENAI_API_KEY" env variable
 
     def run(self, input: TaskInput) -> TaskResult:
         """Processes a directory of OCR files and writes the metadata to a json file"""
@@ -99,9 +98,7 @@ class MetadataExtractor(Task):
                 print(f"Found {num_tokens} tokens.")
 
             if num_tokens < self.TOKEN_LIMIT:
-                response = openai.ChatCompletion.create(  # type: ignore
-                    model="gpt-3.5-turbo",
-                    # model="gpt-4",
+                completion = self._openai_client.chat.completions.create(
                     messages=[
                         {
                             "role": "system",
@@ -109,12 +106,16 @@ class MetadataExtractor(Task):
                         },
                         {"role": "user", "content": prompt_str},
                     ],
+                    model="gpt-3.5-turbo",
                     temperature=0.1,
                 )
 
-                content_str = response["choices"][0]["message"]["content"]  # type: ignore
-                content_dict = json.loads(content_str)
-                content_dict["map_id"] = doc_text_extraction.doc_id
+                message_content = completion.choices[0].message.content
+                if message_content is not None:
+                    content_dict: Dict[str, Any] = json.loads(message_content)
+                    content_dict["map_id"] = doc_text_extraction.doc_id
+                else:
+                    content_dict = {"map_id": doc_text_extraction.doc_id}
                 extraction = MetadataExtraction(**content_dict)
                 return extraction
 
