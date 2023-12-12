@@ -1,7 +1,7 @@
 from typing import List
 
 from schema.ta1_schema import PageExtraction, ExtractionIdentifier
-from tasks.segmentation.entities import MapSegmentation
+from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.common.pipeline import (
     Pipeline,
     PipelineResult,
@@ -63,7 +63,9 @@ class MapSegmentationOutput(OutputCreator):
         Returns:
             MapSegmentation: The map segmentation extraction object.
         """
-        map_segmentation = MapSegmentation.model_validate(pipeline_result.data)
+        map_segmentation = MapSegmentation.model_validate(
+            pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
+        )
         return BaseModelOutput(
             pipeline_result.pipeline_id,
             pipeline_result.pipeline_name,
@@ -95,7 +97,9 @@ class IntegrationOutput(OutputCreator):
         Returns:
             Output: The output of the pipeline.
         """
-        map_segmentation = MapSegmentation.model_validate(pipeline_result.data)
+        map_segmentation = MapSegmentation.model_validate(
+            pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
+        )
 
         page_extractions: List[PageExtraction] = []
         for segment in map_segmentation.segments:
