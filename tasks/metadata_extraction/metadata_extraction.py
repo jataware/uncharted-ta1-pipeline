@@ -4,17 +4,15 @@ import pprint
 import json
 import os
 from common.task import TaskInput, TaskResult
-import openai
+from openai import OpenAI
 import tiktoken
-from typing import List, Optional, Any
-import boto3
-from tasks.metadata_extraction.entities import MetadataExtraction
-from tasks.text_extraction.entities import DocTextExtraction
-from schema.ta1_schema import Map, MapFeatureExtractions, ProjectionMeta
+from typing import List, Optional, Dict, Any
+from tasks.metadata_extraction.entities import (
+    MetadataExtraction,
+    METADATA_EXTRACTION_OUTPUT_KEY,
+)
+from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.common.pipeline import Task
-
-# env var for openai api key
-openai.api_key = os.environ["OPENAI_API_KEY"]
 
 
 class MetadataExtractor(Task):
@@ -60,11 +58,15 @@ class MetadataExtractor(Task):
     ):
         super().__init__(id)
         self._verbose = verbose
+        self._openai_client = (
+            OpenAI()
+        )  # will read key from "OPENAI_API_KEY" env variable
 
     def run(self, input: TaskInput) -> TaskResult:
         """Processes a directory of OCR files and writes the metadata to a json file"""
         # extract metadata from ocr output
-        doc_text = DocTextExtraction.model_validate(input.data)
+        text_data = input.data[TEXT_EXTRACTION_OUTPUT_KEY]
+        doc_text = DocTextExtraction.model_validate(text_data)
         task_result = TaskResult(self._task_id)
 
         metadata = self._process_doc_text_extraction(doc_text, verbose=self._verbose)
@@ -74,7 +76,9 @@ class MetadataExtractor(Task):
 
             # normalize quadrangle
             metadata.quadrangle = self._normalize_quadrangle(metadata.quadrangle)
-            task_result.output = metadata.model_dump()
+            task_result.add_output(
+                METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
+            )
 
         return task_result
 
@@ -94,9 +98,7 @@ class MetadataExtractor(Task):
                 print(f"Found {num_tokens} tokens.")
 
             if num_tokens < self.TOKEN_LIMIT:
-                response = openai.ChatCompletion.create(  # type: ignore
-                    model="gpt-3.5-turbo",
-                    # model="gpt-4",
+                completion = self._openai_client.chat.completions.create(
                     messages=[
                         {
                             "role": "system",
@@ -104,12 +106,16 @@ class MetadataExtractor(Task):
                         },
                         {"role": "user", "content": prompt_str},
                     ],
+                    model="gpt-3.5-turbo",
                     temperature=0.1,
                 )
 
-                content_str = response["choices"][0]["message"]["content"]  # type: ignore
-                content_dict = json.loads(content_str)
-                content_dict["map_id"] = doc_text_extraction.doc_id
+                message_content = completion.choices[0].message.content
+                if message_content is not None:
+                    content_dict: Dict[str, Any] = json.loads(message_content)
+                    content_dict["map_id"] = doc_text_extraction.doc_id
+                else:
+                    content_dict = {"map_id": doc_text_extraction.doc_id}
                 extraction = MetadataExtraction(**content_dict)
                 return extraction
 

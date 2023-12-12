@@ -1,18 +1,18 @@
 FROM python:3.9-slim
 
 RUN mkdir /app
-RUN mkdir /input
-RUN mkdir /output
 RUN mkdir /workdir
 WORKDIR /app
+
+# install git and build tools ffmpeg etc.for opencv
+RUN apt-get update && apt-get install -y git build-essential ffmpeg libsm6 libxext6
 
 COPY schema schema
 COPY pipelines pipelines
 COPY tasks tasks
 
+# install lara packages - including point detection extras
 RUN pip install -e ./tasks
 RUN pip install -e ./pipelines/metadata_extraction
 
-ENV GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
-
-CMD ["python3", "-m", "pipelines.metadata_extraction.run_pipeline", "--input", "/input", "--output", "/output", "--workdir", "/workdir"]
+ENTRYPOINT ["python3", "-m", "pipelines.metadata_extraction.run_server"]

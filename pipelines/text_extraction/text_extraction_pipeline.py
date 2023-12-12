@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
-from tasks.text_extraction.entities import DocTextExtraction
+from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.common.pipeline import (
     Pipeline,
     BaseModelListOutput,
@@ -64,7 +64,9 @@ class IntegrationOutput(OutputCreator):
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         """Validates the pipeline result and converts into the TA1 schema representation"""
-        doc_text_extraction = DocTextExtraction.model_validate(pipeline_result.data)
+        doc_text_extraction = DocTextExtraction.model_validate(
+            pipeline_result.data[TEXT_EXTRACTION_OUTPUT_KEY]
+        )
 
         page_extractions: List[PageExtraction] = []
         for text_extraction in doc_text_extraction.extractions:
@@ -103,7 +105,9 @@ class DocTextExtractionOutput(OutputCreator):
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         """Validates the pipeline result and converts into the TA1 schema representation"""
-        doc_text_extraction = DocTextExtraction.model_validate(pipeline_result.data)
+        doc_text_extraction = DocTextExtraction.model_validate(
+            pipeline_result.data[TEXT_EXTRACTION_OUTPUT_KEY]
+        )
         return BaseModelOutput(
             pipeline_result.pipeline_id,
             pipeline_result.pipeline_name,

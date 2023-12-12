@@ -1,8 +1,7 @@
 import argparse
 import os
 from pathlib import Path
-from typing import List, Any, Dict
-from common.io import ImageFileInputIterator, JSONFileWriter
+from tasks.common.io import ImageFileInputIterator, JSONFileWriter
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from .text_extraction_pipeline import TextExtractionPipeline
 

@@ -89,6 +89,10 @@ class ResizeTextExtractor(TextExtractor):
         doc_key = f"{input.raster_id}_{self._model_id}"
         doc_path = os.path.join(self._cache_dir, f"{doc_key}.json")
 
+        # create the cache dir if it doesn't exist
+        if not os.path.isdir(self._cache_dir):
+            os.makedirs(self._cache_dir)
+
         # check cache and re-use existing file if present
         if os.path.isfile(doc_path):
             with open(doc_path, "rb") as f:
@@ -180,6 +184,10 @@ class TileTextExtractor(TextExtractor):
 
         doc_key = f"{input.raster_id}_{self._model_id}"
         doc_path = os.path.join(self._cache_dir, f"{doc_key}.json")
+
+        # create the cache dir if it doesn't exist
+        if not os.path.isdir(self._cache_dir):
+            os.makedirs(self._cache_dir)
 
         # check cache and re-use existing file if present
         if os.path.isfile(doc_path):
