@@ -7,7 +7,7 @@ name = "lara-text-extraction"
 version = "0.1.0"
 description = "LARA text extraction pipeline and server"
 readme = "README.md"
-dependencies = ["python-dotenv", "lara-tasks"]
+dependencies = ["lara-tasks", "flask"]
 
 [tool.setuptools.packages]
 find = {}
