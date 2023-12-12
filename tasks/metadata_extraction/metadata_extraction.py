@@ -6,12 +6,14 @@ import os
 from common.task import TaskInput, TaskResult
 import openai
 import tiktoken
-from typing import List, Optional, Any
-import boto3
-from tasks.metadata_extraction.entities import MetadataExtraction
-from tasks.text_extraction.entities import DocTextExtraction
-from schema.ta1_schema import Map, MapFeatureExtractions, ProjectionMeta
+from typing import List, Optional
+from tasks.metadata_extraction.entities import (
+    MetadataExtraction,
+    METADATA_EXTRACTION_OUTPUT_KEY,
+)
+from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.common.pipeline import Task
+
 
 # env var for openai api key
 openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -64,7 +66,8 @@ class MetadataExtractor(Task):
     def run(self, input: TaskInput) -> TaskResult:
         """Processes a directory of OCR files and writes the metadata to a json file"""
         # extract metadata from ocr output
-        doc_text = DocTextExtraction.model_validate(input.data)
+        text_data = input.data[TEXT_EXTRACTION_OUTPUT_KEY]
+        doc_text = DocTextExtraction.model_validate(text_data)
         task_result = TaskResult(self._task_id)
 
         metadata = self._process_doc_text_extraction(doc_text, verbose=self._verbose)
@@ -74,7 +77,9 @@ class MetadataExtractor(Task):
 
             # normalize quadrangle
             metadata.quadrangle = self._normalize_quadrangle(metadata.quadrangle)
-            task_result.output = metadata.model_dump()
+            task_result.add_output(
+                METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
+            )
 
         return task_result
 
