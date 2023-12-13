@@ -8,11 +8,11 @@ from geopy.point import Point
 import matplotlib.path as mpltPath
 
 from compute.geo_coordinates import split_lon_lat_degrees
-from model.coordinate import Coordinate
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
-from util.cache import cache_geocode_data, load_geocode_cache
+from tasks.geo_referencing.entities import Coordinate
 from tasks.geo_referencing.util import ocr_to_coordinates
+from util.cache import cache_geocode_data, load_geocode_cache
 
 from typing import Any, Dict, List, Tuple
 

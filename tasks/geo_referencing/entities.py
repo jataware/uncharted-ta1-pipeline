@@ -1,6 +1,6 @@
 from tasks.text_extraction.entities import Point
 
-from typing import List
+from typing import List, Tuple
 
 
 class Coordinate:
@@ -9,7 +9,7 @@ class Coordinate:
     _parsed_degree: float = -1
     _is_lat: bool = False
     _bounds: List[Point] = []
-    _pixel_alignment: tuple[float, float] = (0, 0)
+    _pixel_alignment: Tuple[float, float] = (0, 0)
     _confidence: float = 0
 
     def __init__(
@@ -20,7 +20,7 @@ class Coordinate:
         is_lat: bool = False,
         bounds: List[Point] = [],
         pixel_alignment=None,
-        x_ranges: tuple[float, float] = (0, 1),
+        x_ranges: Tuple[float, float] = (0, 1),
         font_height: float = 0.0,
         confidence: float = 0,
     ):
@@ -38,7 +38,7 @@ class Coordinate:
                 bounds, x_ranges, font_height
             )
 
-    def get_pixel_alignment(self) -> tuple[float, float]:
+    def get_pixel_alignment(self) -> Tuple[float, float]:
         return self._pixel_alignment
 
     def get_type(self) -> str:
@@ -50,19 +50,19 @@ class Coordinate:
     def get_bounds(self) -> List[Point]:
         return self._bounds
 
-    def get_parsed_degree(self):
+    def get_parsed_degree(self) -> float:
         return self._parsed_degree
 
-    def get_confidence(self):
+    def get_confidence(self) -> float:
         return self._confidence
 
-    def get_constant_dimension(self):
+    def get_constant_dimension(self) -> float:
         # lat coordinates should be aligned on y axis
         if self._is_lat:
             return self._pixel_alignment[1]
         return self._pixel_alignment[0]
 
-    def to_deg_result(self):
+    def to_deg_result(self) -> Tuple[Tuple[float, float], float]:
         if self._is_lat:
             return (
                 self._parsed_degree,
@@ -73,9 +73,9 @@ class Coordinate:
     def _calculate_pixel_alignment(
         self,
         bounds: List[Point],
-        x_ranges: tuple[float, float],
+        x_ranges: Tuple[float, float],
         font_height: float = 0.0,
-    ) -> tuple[float, float]:
+    ) -> Tuple[float, float]:
         x_pixel = self._get_center_x(bounds, x_ranges)
         y_pixel = self._get_center_y(bounds) + font_height / 2
 
@@ -87,7 +87,7 @@ class Coordinate:
         return (min_y + max_y) / 2.0
 
     def _get_center_x(
-        self, bounds: List[Point], x_ranges: tuple[float, float]
+        self, bounds: List[Point], x_ranges: Tuple[float, float]
     ) -> float:
         min_x = bounds[0].x
         max_x = bounds[2].x
