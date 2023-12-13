@@ -12,6 +12,7 @@ COPY pipelines pipelines
 COPY tasks tasks
 
 # install lara packages - including segmentation extras (timm, transformers)
+RUN pip install torch==2.0.1
 RUN pip install -e ./tasks[segmentation]
 RUN pip install -e ./pipelines/segmentation
 
