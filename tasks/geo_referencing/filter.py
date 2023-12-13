@@ -5,6 +5,8 @@ from model.coordinate import Coordinate
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.util import ocr_to_coordinates
 
+from typing import Dict, Tuple
+
 
 class FilterCoordinates(Task):
     _coco_file_path: str = ""
@@ -25,7 +27,12 @@ class FilterCoordinates(Task):
         # update the coordinates list
         return self._create_result(input, lon_pts_filtered, lat_pts_filtered)
 
-    def _create_result(self, input: TaskInput, lons, lats) -> TaskResult:
+    def _create_result(
+        self,
+        input: TaskInput,
+        lons: Dict[Tuple[float, float], Coordinate],
+        lats: Dict[Tuple[float, float], Coordinate],
+    ) -> TaskResult:
         result = super()._create_result(input)
 
         result.output["lons"] = lons
@@ -33,7 +40,7 @@ class FilterCoordinates(Task):
 
         return result
 
-    def _filter(self, input: TaskInput, coords):
+    def _filter(self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]):
         return coords
 
 
@@ -41,7 +48,7 @@ class OutlierFilter(FilterCoordinates):
     def __init__(self, task_id: str):
         super().__init__(task_id)
 
-    def _filter(self, input: TaskInput, coords):
+    def _filter(self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]):
         print(f"outlier filter running against {coords}")
         updated_coords = coords
         test_length = 0
@@ -50,7 +57,9 @@ class OutlierFilter(FilterCoordinates):
             updated_coords = self._filter_regression(input, updated_coords)
         return updated_coords
 
-    def _filter_regression(self, input: TaskInput, coords):
+    def _filter_regression(
+        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
+    ):
         # use leave one out approach using linear regression model
 
         # reduce coordinate to (degree, constant dimension) where the constant dimension for lat is y and lon is x

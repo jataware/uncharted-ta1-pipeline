@@ -65,6 +65,7 @@ class GeoReferencingOutput(OutputCreator):
             res.data.append(o)
         return res
 
+
 class SummaryOutput(OutputCreator):
     def __init__(self, id):
         super().__init__(id)

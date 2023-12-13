@@ -15,7 +15,7 @@ from tasks.geo_referencing.georeference import QueryPoint
 from util.coordinates import absolute_minmax
 from util.json import read_json_file
 
-from typing import Union
+from typing import List, Optional, Tuple
 
 FOV_RANGE_KM = (
     700  # [km] max range of a image's field-of-view (around the clue coord pt)
@@ -31,11 +31,7 @@ IMG_FILE_EXT = "tif"
 CLUE_FILEN_SUFFIX = "_clue"
 
 Image.MAX_IMAGE_PIXELS = 400000000
-IMG_CACHE = "temp/images/"
-OCR_CACHE = "temp/ocr/"
 GEOCODE_CACHE = "temp/geocode/"
-os.makedirs(IMG_CACHE, exist_ok=True)
-os.makedirs(OCR_CACHE, exist_ok=True)
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/phorne/google-vision-lara.json"
 
@@ -62,14 +58,15 @@ def main():
 
     run_pipelines(p, input)
 
+
 def create_input(
     raster_id: str, image: PILIMAGE, points_path: str, query_path: str, clue_path: str
-):
+) -> PipelineInput:
     input = PipelineInput()
     input.image = image
     input.raster_id = raster_id
 
-    lon_minmax, lat_minmax, lon_sign_factor = get_params(clue_path, use_abs=False)
+    lon_minmax, lat_minmax, lon_sign_factor = get_params(clue_path)
     input.params["lon_minmax"] = lon_minmax
     input.params["lat_minmax"] = lat_minmax
     input.params["lon_sign_factor"] = lon_sign_factor
@@ -80,6 +77,7 @@ def create_input(
     input.params["query_pts"] = query_pts
 
     return input
+
 
 def run_pipelines(parsed, input_data: ImageFileInputIterator):
     # get the pipelines
@@ -102,9 +100,7 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
     for raster_id, image in input_data:
         print(f"processing {raster_id}")
 
-        clue_path = os.path.join(
-            CLUE_PATH_IN, raster_id + CLUE_FILEN_SUFFIX + ".csv"
-        )
+        clue_path = os.path.join(CLUE_PATH_IN, raster_id + CLUE_FILEN_SUFFIX + ".csv")
         query_path = os.path.join(QUERY_PATH_IN, raster_id + ".csv")
         points_path = os.path.join(POINTS_PATH_IN, f"pipeline_output_{raster_id}.json")
 
@@ -121,42 +117,54 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
             print(f"done pipeline {pipeline.id}\n\n")
 
         for p in pipelines:
-            writer_csv.output(results[p.id], {"path": os.path.join(parsed.output, f"test-{p.id}.csv")})
             writer_csv.output(
-                results_summary[p.id], {"path": os.path.join(parsed.output, f"test_summary-{p.id}.csv")}
+                results[p.id], {"path": os.path.join(parsed.output, f"test-{p.id}.csv")}
+            )
+            writer_csv.output(
+                results_summary[p.id],
+                {"path": os.path.join(parsed.output, f"test_summary-{p.id}.csv")},
             )
             writer_json.output(
-                results_levers[p.id], {"path": os.path.join(parsed.output, f"test_levers-{p.id}.json")}
+                results_levers[p.id],
+                {"path": os.path.join(parsed.output, f"test_levers-{p.id}.json")},
             )
             writer_json.output(
-                results_gcps[p.id], {"path": os.path.join(parsed.output, f"test_gcps-{p.id}.json")}
+                results_gcps[p.id],
+                {"path": os.path.join(parsed.output, f"test_gcps-{p.id}.json")},
             )
             writer_json.output(
-                results_integration[p.id], {"path": os.path.join(parsed.output, f"test_schema-{p.id}.json")}
+                results_integration[p.id],
+                {"path": os.path.join(parsed.output, f"test_schema-{p.id}.json")},
             )
 
     for p in pipelines:
-        writer_csv.output(results[p.id], {"path": os.path.join(parsed.output, f"test-{p.id}.csv")})
         writer_csv.output(
-            results_summary[p.id], {"path": os.path.join(parsed.output, f"test_summary-{p.id}.csv")}
+            results[p.id], {"path": os.path.join(parsed.output, f"test-{p.id}.csv")}
+        )
+        writer_csv.output(
+            results_summary[p.id],
+            {"path": os.path.join(parsed.output, f"test_summary-{p.id}.csv")},
         )
         writer_json.output(
-            results_levers[p.id], {"path": os.path.join(parsed.output, f"test_levers-{p.id}.json")}
+            results_levers[p.id],
+            {"path": os.path.join(parsed.output, f"test_levers-{p.id}.json")},
         )
         writer_json.output(
-            results_gcps[p.id], {"path": os.path.join(parsed.output, f"test_gcps-{p.id}.json")}
+            results_gcps[p.id],
+            {"path": os.path.join(parsed.output, f"test_gcps-{p.id}.json")},
         )
         writer_json.output(
-            results_integration[p.id], {"path": os.path.join(parsed.output, f"test_schema-{p.id}.json")}
+            results_integration[p.id],
+            {"path": os.path.join(parsed.output, f"test_schema-{p.id}.json")},
         )
 
+
 def get_geofence(
-    csv_clue_file,
-    fov_range_km,
-    lon_limits=(-66.0, -180.0),
-    lat_limits=(24.0, 73.0),
-    use_abs=True,
-):
+    csv_clue_file: str,
+    fov_range_km: float,
+    lon_limits: List[float] = [-66.0, -180.0],
+    lat_limits: List[float] = [24.0, 73.0],
+) -> Tuple[List[float], List[float], float]:
     # parse clue CSV file
     (clue_lon, clue_lat, clue_ok) = parse_clue_file(csv_clue_file)
     if clue_ok:
@@ -187,7 +195,9 @@ def get_geofence(
     return (absolute_minmax(lon_minmax), absolute_minmax(lat_minmax), lon_sign_factor)
 
 
-def parse_query_file(csv_query_file, image_size=None):
+def parse_query_file(
+    csv_query_file: str, image_size: Optional[Tuple[float, float]] = None
+) -> List[QueryPoint]:
     """
     Expected schema is of the form:
     raster_ID,row,col,NAD83_x,NAD83_y
@@ -245,7 +255,7 @@ def parse_query_file(csv_query_file, image_size=None):
 
 def query_points_from_points(
     raster_id: str, points_file: str
-) -> Union[None, list[QueryPoint]]:
+) -> Optional[list[QueryPoint]]:
     return None
     if not os.path.isfile(points_file):
         return None
@@ -262,17 +272,16 @@ def query_points_from_points(
     return query_points
 
 
-def get_params(clue_path: str, use_abs: bool = True):
+def get_params(clue_path: str):
     return get_geofence(
         clue_path,
         fov_range_km=FOV_RANGE_KM,
         lon_limits=LON_MINMAX,
         lat_limits=LAT_MINMAX,
-        use_abs=use_abs,
     )
 
 
-def parse_clue_file(csv_clue_file):
+def parse_clue_file(csv_clue_file: str) -> Tuple[float, float, bool]:
     """
     Expected schema is of the form:
     raster_ID,NAD83_x,NAD83_y

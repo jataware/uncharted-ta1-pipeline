@@ -37,22 +37,22 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
     def __next__(self) -> Tuple[str, PILImage]:
         """Loads the next image in the list of images"""
         if self._index < len(self._image_files):
-                image_path = self._image_files[self._index]
-                self._index += 1
-                if self._verify_is_image(image_path):
-                    image = Image.open(image_path)
-                    doc_id = image_path.stem
-                    return (doc_id, image)
-                return self.__next__()
+            image_path = self._image_files[self._index]
+            self._index += 1
+            if self._verify_is_image(image_path):
+                image = Image.open(image_path)
+                doc_id = image_path.stem
+                return (doc_id, image)
+            return self.__next__()
         else:
             raise StopIteration
-    
-    def _verify_is_image(self, image_path:Path) -> bool:
+
+    def _verify_is_image(self, image_path: Path) -> bool:
         try:
             im = Image.open(image_path)
             im.verify()
             im.close()
-            im = Image.open(image_path) 
+            im = Image.open(image_path)
             im.transpose(Image.FLIP_LEFT_RIGHT)
             im.close()
             return True

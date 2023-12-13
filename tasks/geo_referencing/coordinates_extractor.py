@@ -14,6 +14,8 @@ from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OU
 from util.cache import cache_geocode_data, load_geocode_cache
 from tasks.geo_referencing.util import ocr_to_coordinates
 
+from typing import Any, Dict, List, Tuple
+
 # GeoCoordinates
 # pre-compiled regex patterns
 RE_DMS = re.compile(
@@ -76,7 +78,7 @@ LOC_TYPES_PASSLIST_NOM = [
 
 class CoordinateInput:
     input: TaskInput
-    updated_output = {}
+    updated_output: Dict[Any, Any] = {}
 
     def __init__(self, input: TaskInput):
         self.input = input
@@ -97,8 +99,12 @@ class CoordinatesExtractor(Task):
         # add the extracted coordinates to the result
         return self._create_coordinate_result(input_coord, lons, lats)
 
-    def _extract_coordinates(self, input: CoordinateInput):
-        return [], []
+    def _extract_coordinates(
+        self, input: CoordinateInput
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
+        return {}, {}
 
     def _create_coordinate_result(
         self, input: CoordinateInput, lons, lats
@@ -120,24 +126,12 @@ class CoordinatesExtractor(Task):
         print(f"num keypoints: {num_keypoints}")
         return num_keypoints < 2
 
-    def _get_center_y(self, bounding_poly):
-        min_y = bounding_poly.vertices[0].y
-        max_y = bounding_poly.vertices[3].y
-        return (min_y + max_y) / 2.0
-
-    def _get_center_x(self, bounding_poly, x_ranges):
-        min_x = bounding_poly.vertices[0].x
-        max_x = bounding_poly.vertices[2].x
-        if x_ranges[0] > 0.0 or x_ranges[1] < 1.0:
-            x_span = max_x - min_x
-            min_x += x_span * x_ranges[0]
-            max_x -= x_span * (1.0 - x_ranges[1])
-        return (min_x + max_x) / 2.0
-
-    def _in_bounds(self, value: float, bounds: tuple):
+    def _in_bounds(self, value: float, bounds: tuple) -> bool:
         return value >= bounds[0] and value <= bounds[1]
 
-    def _in_polygon(self, point, polygon) -> bool:
+    def _in_polygon(
+        self, point: Tuple[float, float], polygon: List[Tuple[float]]
+    ) -> bool:
         path = mpltPath.Path(polygon)
         return path.contains_point(point)
 
@@ -146,7 +140,11 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
     def __init__(self, task_id: str):
         super().__init__(task_id)
 
-    def _extract_coordinates(self, input: CoordinateInput):
+    def _extract_coordinates(
+        self, input: CoordinateInput
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
         ocr_blocks: DocTextExtraction = input.input.parse_data(
             TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
         )
@@ -171,9 +169,11 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         self,
         input: CoordinateInput,
         ocr_text_blocks: DocTextExtraction,
-        lon_minmax,
-        lat_minmax,
-    ):
+        lon_minmax: List[float],
+        lat_minmax: List[float],
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
         print("starting extraction")
         lon_clue = (
             lon_minmax[0] + lon_minmax[1]
@@ -635,7 +635,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
             minutes * 60 + seconds
         ) % 300 == 0
 
-    def _check_consecutive(self, deg, minutes, seconds):
+    def _check_consecutive(self, deg: float, minutes: float, seconds: float) -> bool:
         # checks if lat/lon extraction is a series of consecutive numbers
         # eg 49, 50, 51
         is_consecutive = False
@@ -650,8 +650,15 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         return is_consecutive
 
     def _validate_lonlat_extractions(
-        self, input: CoordinateInput, lon_results, lat_results, im_size, roi_xy=[]
-    ):
+        self,
+        input: CoordinateInput,
+        lon_results: Dict[Tuple[float, float], Coordinate],
+        lat_results: Dict[Tuple[float, float], Coordinate],
+        im_size: Tuple[float, float],
+        roi_xy: List[Tuple[float]] = [],
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
         print("validating lonlat")
 
         num_lat_pts = len(lat_results)
@@ -883,7 +890,12 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     coord_dropped[r] = coord_result[r]
         return coord_filtered, coord_dropped
 
-    def _get_geofence(self, geofence, dms_matches, ocr_text_blocks: DocTextExtraction):
+    def _get_geofence(
+        self,
+        geofence: List[List[float]],
+        dms_matches,
+        ocr_text_blocks: DocTextExtraction,
+    ):
         degrees = []
         for idx, (_, _, deg_parsed) in dms_matches.items():
             # reduce parsed value to middle point
@@ -959,10 +971,12 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         input: CoordinateInput,
         ocr_text_blocks: DocTextExtraction,
         lonlat_results,
-        lon_minmax,
-        lat_minmax,
-        lon_sign_factor=1.0,
-    ):
+        lon_minmax: List[float],
+        lat_minmax: List[float],
+        lon_sign_factor: float = 1.0,
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
         if not ocr_text_blocks or len(ocr_text_blocks.extractions) == 0:
             print("WARNING! No ocr text blocks available!")
             return ({}, {})
@@ -1156,7 +1170,11 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
     def __init__(self, task_id: str):
         super().__init__(task_id)
 
-    def _extract_coordinates(self, input: CoordinateInput):
+    def _extract_coordinates(
+        self, input: CoordinateInput
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
         roi_xy = input.input.get_data("roi")
         ocr_blocks = input.input.get_data("ocr_blocks")
         lon_minmax = input.input.get_request_info("lon_minmax", [0, 180])
@@ -1189,7 +1207,9 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
         roi_xy=[],
         use_google_maps=True,
         geocode_path="",
-    ):
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
         if not ocr_text_blocks or len(ocr_text_blocks.extractions) == 0:
             print("WARNING! No ocr text blocks available!")
             return ({}, {})
@@ -1378,3 +1398,17 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
                 lat_results[(lat_deg, y)] = coord
 
         return lon_results, lat_results
+
+    def _get_center_y(self, bounding_poly):
+        min_y = bounding_poly.vertices[0].y
+        max_y = bounding_poly.vertices[3].y
+        return (min_y + max_y) / 2.0
+
+    def _get_center_x(self, bounding_poly, x_ranges):
+        min_x = bounding_poly.vertices[0].x
+        max_x = bounding_poly.vertices[2].x
+        if x_ranges[0] > 0.0 or x_ranges[1] < 1.0:
+            x_span = max_x - min_x
+            min_x += x_span * x_ranges[0]
+            max_x -= x_span * (1.0 - x_ranges[1])
+        return (min_x + max_x) / 2.0
