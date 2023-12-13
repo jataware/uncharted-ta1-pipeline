@@ -32,9 +32,12 @@ dependencies = [
 
 [project.optional-dependencies]
 segmentation=[
-    "torch==2.0.1",
-    "torchvision==0.15.2",
+    # torch is left out here because detectron requires it be present before pip
+    # install runs - it should be installed manually as a precondition
+    # (see https://github.com/facebookresearch/detectron2/issues/4472)#
+    # "torch==2.0.1",
     "detectron2 @ git+https://github.com/facebookresearch/detectron2.git",
+    "torchvision==0.15.2",
     "transformers",
     "timm"
 ]
@@ -47,13 +50,3 @@ point = [
 
 [tool.setuptools.packages]
 find = {}
-
-
-[tool.pyright]
-ignore = [
-    "**/segmentation/ditod",
-    "**/segmentation/layoutlmft"
-]
-# ignoring missing imports because of the optinal dependencies and manual
-# detectron installation
-reportMissingImports = false
