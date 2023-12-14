@@ -50,8 +50,10 @@ class TaskInput:
             return self.data[key]
         return default_value
 
-    def parse_data(self, key: str, parser: Callable) -> Any:
-        return parser(self.data[key])
+    def parse_data(self, key: str, parser: Callable, default_value: Any = None) -> Any:
+        if key in self.data:
+            return parser(self.data[key])
+        return default_value
 
     def get_request_info(self, key: str, default_value: Any = None) -> Any:
         if key in self.request:

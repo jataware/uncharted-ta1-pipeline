@@ -4,6 +4,10 @@ from geopy.distance import geodesic
 
 from compute.geo_projection import GeoProjection
 from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.metadata_extraction.entities import (
+    MetadataExtraction,
+    METADATA_EXTRACTION_OUTPUT_KEY,
+)
 
 from typing import Any, List, Optional
 
@@ -90,10 +94,13 @@ class GeoReference(Task):
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
         rmse = self._score_query_points(query_pts)
+        crs = self._determine_crs(input)
+        print(f"crs: {crs}")
 
         result = super()._create_result(input)
         result.output["query_pts"] = results
         result.output["rmse"] = rmse
+        result.output["crs"] = crs
         return result
 
     def _calculate_confidence(self, lons, lats) -> float:
@@ -235,6 +242,19 @@ class GeoReference(Task):
             )
 
         return query_pts
+
+    def _determine_crs(self, input: TaskInput) -> str:
+        # parse extracted metadata
+        metadata = input.parse_data(
+            METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
+        )
+
+        # make sure there is at least one coordinate system extracted
+        if not metadata or len(metadata.coordinate_systems) < 1:
+            return ""
+
+        # return the first coordinate system extracted
+        return metadata.coordinate_systems[0]
 
     def _add_fallback(self, query_pts: list, lon_minmax: tuple, lat_minmax: tuple):
         print(f"adding fallback when georeferencing using {lon_minmax} & {lat_minmax}")
