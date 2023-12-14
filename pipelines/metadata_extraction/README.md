@@ -44,7 +44,7 @@ pip install -e .
 
 * Pipeline is defined in `metdata_extraction_pipeline.py` and is suitable for integration into other systems
 * Input is a image (ie binary image file buffer)
-* Ouput is extracted metadata as a JSON object, either as a `MetadataExtraction` object or a `Map` object (the latter being part of the CMA TA1 schema)
+* Output is extracted metadata as a JSON object, either as a `MetadataExtraction` object or a `Map` object (the latter being part of the CMA TA1 schema)
 
 ### Command Line Execution ###
 `run_pipeline.py` provides a command line wrapper around the map extraction pipeline, and allows for a directory map images to be processed serially.
@@ -62,7 +62,7 @@ python3 -m pipelines.metadata_extraction.run_pipeline \
 
 ### REST Service ###
 `run_server.py` provides the pipeline as a REST service with the following endpoints:
-* ```POST:  /api/process_image``` - Sends an image (as binary file buffer) to the segmenter pipeline for analysis. Results are JSON string.
+* ```POST:  /api/process_image``` - Sends an image (as binary file buffer) to the metadata extraction pipeline for analysis. Results are JSON string.
 * ```GET /healthcheck``` - Healthcheck endpoint
 
 To start the server:
