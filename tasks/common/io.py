@@ -29,6 +29,7 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
         for root, _, files in os.walk(image_path):
             for file in files:
                 self._image_files.append(Path(os.path.join(root, file)))
+        self._image_files.sort()
 
     def __iter__(self):
         return self
@@ -37,12 +38,26 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
         """Loads the next image in the list of images"""
         if self._index < len(self._image_files):
             image_path = self._image_files[self._index]
-            image = Image.open(image_path)
-            doc_id = image_path.stem
             self._index += 1
-            return (doc_id, image)
+            if self._verify_is_image(image_path):
+                image = Image.open(image_path)
+                doc_id = image_path.stem
+                return (doc_id, image)
+            return self.__next__()
         else:
             raise StopIteration
+
+    def _verify_is_image(self, image_path: Path) -> bool:
+        try:
+            im = Image.open(image_path)
+            im.verify()
+            im.close()
+            im = Image.open(image_path)
+            im.transpose(Image.FLIP_LEFT_RIGHT)
+            im.close()
+            return True
+        except:
+            return False
 
 
 class JSONFileWriter:

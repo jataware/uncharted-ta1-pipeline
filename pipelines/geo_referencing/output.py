@@ -66,21 +66,6 @@ class GeoReferencingOutput(OutputCreator):
         return res
 
 
-class DetailedOutput(OutputCreator):
-    def __init__(self, id):
-        super().__init__(id)
-
-    def create_output(self, pipeline_result: PipelineResult) -> Output:
-        for id, output in pipeline_result.tasks.items():
-            print(id)
-            for k, v in output.output.items():
-                print(k)
-            if "lons" in output.output:
-                print(f'lons: {output.output["lons"]}\nlats: {output.output["lats"]}')
-
-        return Output(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
-
-
 class SummaryOutput(OutputCreator):
     def __init__(self, id):
         super().__init__(id)

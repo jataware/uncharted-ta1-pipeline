@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 
-from model.coordinate import Coordinate
+from tasks.geo_referencing.entities import Coordinate
 
 
 class PolyRegression:
