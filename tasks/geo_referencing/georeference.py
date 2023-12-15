@@ -9,7 +9,7 @@ from tasks.metadata_extraction.entities import (
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 
 class QueryPoint:
@@ -94,13 +94,14 @@ class GeoReference(Task):
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
         rmse = self._score_query_points(query_pts)
-        crs = self._determine_crs(input)
-        print(f"crs: {crs}")
+        datum, projection = self._determine_projection(input)
+        print(f"datum: {datum}\tprojection: {projection}")
 
         result = super()._create_result(input)
         result.output["query_pts"] = results
         result.output["rmse"] = rmse
-        result.output["crs"] = crs
+        result.output["datum"] = datum
+        result.output["projection"] = projection
         return result
 
     def _calculate_confidence(self, lons, lats) -> float:
@@ -243,18 +244,18 @@ class GeoReference(Task):
 
         return query_pts
 
-    def _determine_crs(self, input: TaskInput) -> str:
+    def _determine_projection(self, input: TaskInput) -> Tuple[str, str]:
         # parse extracted metadata
         metadata = input.parse_data(
             METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
         )
 
-        # make sure there is at least one coordinate system extracted
-        if not metadata or len(metadata.coordinate_systems) < 1:
-            return ""
+        # make sure there is metadata
+        if not metadata:
+            return "", ""
 
-        # return the first coordinate system extracted
-        return metadata.coordinate_systems[0]
+        # return the datum and the projection
+        return metadata.datum, metadata.projection
 
     def _add_fallback(self, query_pts: list, lon_minmax: tuple, lat_minmax: tuple):
         print(f"adding fallback when georeferencing using {lon_minmax} & {lat_minmax}")
