@@ -3,7 +3,7 @@ import os
 import pprint
 import json
 import os
-from common.task import TaskInput, TaskResult
+from tasks.common.task import TaskInput, TaskResult
 from openai import OpenAI
 import tiktoken
 from typing import List, Optional, Dict, Any

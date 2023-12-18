@@ -51,6 +51,7 @@ def main():
     parser.add_argument("--workdir", type=Path, default=None)
     parser.add_argument("--verbose", type=bool, default=False)
     parser.add_argument("--ta1_schema", type=bool, default=False)
+    parser.add_argument("--extract_metadata", type=bool, default=False)
     p = parser.parse_args()
 
     # setup an input stream
@@ -81,7 +82,7 @@ def create_input(
 
 def run_pipelines(parsed, input_data: ImageFileInputIterator):
     # get the pipelines
-    pipelines = create_geo_referencing_pipelines()
+    pipelines = create_geo_referencing_pipelines(parsed.extract_metadata)
 
     results = {}
     results_summary = {}
