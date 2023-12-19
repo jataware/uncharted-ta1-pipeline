@@ -104,10 +104,15 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
     def _file_init(self, path: str):
         """Initializes the iterator with a list of local image files"""
 
-        # recursivley traverse the input directory and find all image files
-        for root, _, files in os.walk(path):
-            for file in files:
-                self._image_files.append(os.path.join(root, file))
+        # recursivley traverse the input directory and find all image files, or
+        # add the single file to the list of image files
+        path_obj = Path(path)
+        if path_obj.is_dir():
+            for root, _, files in os.walk(path):
+                for file in files:
+                    self._image_files.append(os.path.join(root, file))
+        else:
+            self._image_files.append(path)
         self._image_files.sort()
 
     def _s3_init(self, path: str):

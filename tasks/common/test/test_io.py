@@ -4,6 +4,7 @@ import json
 from io import BytesIO
 from pathlib import Path
 from PIL import Image
+from cv2 import exp
 from pydantic import BaseModel
 from typing import Dict, List
 import boto3
@@ -16,7 +17,7 @@ class TestData(BaseModel):
     color: str
 
 
-def test_image_file_input_iterator_filesystem():
+def image_file_input_iterator_filesystem(test_path: str):
     # Create a temporary directory and save some test images
     test_dir = Path("tasks/common/test/data")
     test_dir.mkdir(parents=True, exist_ok=True)
@@ -28,12 +29,12 @@ def test_image_file_input_iterator_filesystem():
     image2.save(image2_path)
 
     # Initialize the ImageFileInputIterator with the test directory
-    iterator = ImageFileInputIterator(str(test_dir))
+    iterator = ImageFileInputIterator(str(test_path))
 
     # Iterate over the images and verify the results
     expected_images = [(image1_path.stem, image1), (image2_path.stem, image2)]
-    for expected_doc_id, expected_image in expected_images:
-        doc_id, image = next(iterator)
+    for doc_id, image in iterator:
+        expected_doc_id, expected_image = expected_images.pop(0)
         assert doc_id == expected_doc_id
         assert list(image.getdata()) == list(expected_image.getdata())
 
@@ -48,6 +49,14 @@ def test_image_file_input_iterator_filesystem():
     image1_path.unlink()
     image2_path.unlink()
     test_dir.rmdir()
+
+
+def test_image_file_input_iterator_filesystem_file():
+    image_file_input_iterator_filesystem("tasks/common/test/data/image1.png")
+
+
+def test_image_file_input_iterator_filesystem_dir():
+    image_file_input_iterator_filesystem("tasks/common/test/data")
 
 
 # add a test for s3 input iterator
@@ -85,8 +94,8 @@ def image_file_input_iterator_s3(input_path: str):
         ("image1", image1),
         ("image2", image2),
     ]
-    for expected_doc_id, expected_image in expected_images:
-        doc_id, image = next(iterator)
+    for doc_id, image in iterator:
+        expected_doc_id, expected_image = expected_images.pop(0)
         assert doc_id == expected_doc_id
         assert list(image.getdata()) == list(expected_image.getdata())
 
@@ -98,14 +107,16 @@ def image_file_input_iterator_s3(input_path: str):
         pass
 
 
-def test_json_file_writer_s3_uri():
+def test_image_file_iterator_s3_uri():
     # Initialize the ImageFileInputIterator with the test directory
     image_file_input_iterator_s3("s3://test-bucket/data")
+    image_file_input_iterator_s3("s3://test-bucket/data/image1.png")
 
 
-def test_json_file_writer_s3_url():
+def test_image_file_iterator_s3_url():
     # Initialize the ImageFileInputIterator with the test directory
     image_file_input_iterator_s3("https://buckets.com/test-bucket/data")
+    image_file_input_iterator_s3("https://buckets.com/test-bucket/data/image1.png")
 
 
 def test_json_file_writer_filesystem():
