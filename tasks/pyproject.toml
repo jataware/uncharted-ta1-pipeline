@@ -49,7 +49,8 @@ point = [
 ]
 development = [
     "pytest",
-    "pyright"
+    "pyright",
+    "moto"
 ]
 
 [tool.setuptools.packages]
