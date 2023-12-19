@@ -52,7 +52,7 @@ def test_image_file_input_iterator_filesystem():
 
 # add a test for s3 input iterator
 @mock_s3
-def image_file_input_iterator_s3(iterator: ImageFileInputIterator):
+def image_file_input_iterator_s3(input_path: str):
     # Create a temporary directory and save some test images
     test_prefix = "data"
     test_bucket = "test-bucket"
@@ -80,6 +80,7 @@ def image_file_input_iterator_s3(iterator: ImageFileInputIterator):
     )
 
     # Iterate over the images and verify the results
+    iterator = ImageFileInputIterator(input_path)
     expected_images = [
         ("image1", image1),
         ("image2", image2),
@@ -99,14 +100,12 @@ def image_file_input_iterator_s3(iterator: ImageFileInputIterator):
 
 def test_json_file_writer_s3_uri():
     # Initialize the ImageFileInputIterator with the test directory
-    image_file_input_iterator_s3(ImageFileInputIterator(str("s3://test-bucket/data")))
+    image_file_input_iterator_s3("s3://test-bucket/data")
 
 
 def test_json_file_writer_s3_url():
     # Initialize the ImageFileInputIterator with the test directory
-    image_file_input_iterator_s3(
-        ImageFileInputIterator(str("https://buckets/test-bucket/data"))
-    )
+    image_file_input_iterator_s3("https://buckets.com/test-bucket/data")
 
 
 def test_json_file_writer_filesystem():

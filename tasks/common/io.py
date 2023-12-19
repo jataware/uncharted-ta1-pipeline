@@ -15,7 +15,7 @@ import boto3
 Image.MAX_IMAGE_PIXELS = 400000000  # to allow PIL to load large images
 
 # regex for matching s3 uris
-S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.-]+$")
+S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.\-_]{1,255}/.*$")
 
 
 class Mode(Enum):
@@ -53,7 +53,7 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
             mode = self._get_file_source(image_path)
             if mode == Mode.S3_URI or mode == Mode.URL:
                 # process the image from s3
-                image = self._load_s3(image_path)
+                image = self._load_s3(image_path, mode)
                 doc_id = image_path.split("/")[-1].split(".")[0]
                 return (doc_id, image)
             elif self._verify_is_image(Path(image_path)):
@@ -69,17 +69,28 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
         """Loads an image file into memory as a PIL image object"""
         return Image.open(path)
 
-    def _load_s3(self, path: str) -> PILImage:
+    def _load_s3(self, path: str, mode: Mode) -> PILImage:
         """Loads an image file from s3 into memory as a PIL image object"""
         # extract bucket and prefix string from path
-        bucket = path.split("/")[3]
-        key = "/".join(path.split("/")[4:])
+        bucket, key = self._get_bucket_key(path, mode)
         # load image from s3
         s3 = boto3.resource("s3")
         obj = s3.Object(bucket, key)
         img_bytes_io = io.BytesIO(obj.get()["Body"].read())
         image = Image.open(img_bytes_io)
         return image
+
+    def _get_bucket_key(self, path: str, mode: Mode) -> Tuple[str, str]:
+        """Extracts the bucket and key from an s3 uri"""
+        if mode == Mode.S3_URI:
+            bucket = path.split("/")[2]
+            key = "/".join(path.split("/")[3:])
+        elif mode == Mode.URL:
+            bucket = path.split("/")[3]
+            key = "/".join(path.split("/")[4:])
+        else:
+            raise ValueError(f"Invalid mode {mode}")
+        return (bucket, key)
 
     def _get_file_source(self, path: str) -> Mode:
         """Checks if the path is a file, s3 uri, or url"""
@@ -112,7 +123,7 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
             bucket = split_path[3]
             prefix = "/".join(split_path[4:])
         else:
-            source = "s3"
+            source = "s3:/"
             bucket = split_path[2]
             prefix = "/".join(split_path[3:])
 
