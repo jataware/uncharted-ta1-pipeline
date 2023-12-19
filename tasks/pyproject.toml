@@ -47,6 +47,10 @@ point = [
     "scipy",
     "ultralytics"
 ]
+development = [
+    "pytest",
+    "pyright"
+]
 
 [tool.setuptools.packages]
 find = {}

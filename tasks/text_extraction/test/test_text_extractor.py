@@ -1,9 +1,6 @@
-from tasks.text_extraction.text_extractor import (
-    ResizeTextExtractor,
-    TileTextExtractor,
-    DocTextExtraction,
-)
-from common import image_io
+from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
+from tasks.text_extraction.entities import DocTextExtraction
+from tasks.common import image_io
 from pathlib import Path
 from tasks.common.task import TaskInput
 

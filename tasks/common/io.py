@@ -94,6 +94,7 @@ class JSONFileWriter:
             if isinstance(data, Sequence):
                 for d in data:
                     json.dump(d.model_dump(), outfile)
+                    outfile.write("\n")
             else:
                 json.dump(data.model_dump(), outfile)
 
