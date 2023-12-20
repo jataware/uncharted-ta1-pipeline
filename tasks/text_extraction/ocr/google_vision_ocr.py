@@ -181,21 +181,24 @@ class GoogleVisionOCR:
             return poly2
         if poly2 is None:
             return poly1
-        
+
         # use Shapely to combine polygons together
-        p1_coords = [(v.x,v.y) for v in poly1.vertices]
+        p1_coords = [(v.x, v.y) for v in poly1.vertices]
         p1 = Polygon(p1_coords)
-        p2_coords = [(v.x,v.y) for v in poly2.vertices]
+        p2_coords = [(v.x, v.y) for v in poly2.vertices]
         p2 = Polygon(p2_coords)
         p_union = unary_union([p1, p2])
 
-        if p_union.geom_type == 'MultiPolygon':
+        if p_union.geom_type == "MultiPolygon":
             # input polygons don't overlap, so merge into one single 'parent' polygon using concave hull
             p_union = concave_hull(p_union, ratio=0.0)
 
         # convert shapely polygon result back to Google Vision BoundingPoly object
-        verts = [Vertex({'x': int(x), 'y': int(y)}) for x,y in zip(p_union.exterior.xy[0], p_union.exterior.xy[1])]     
-        poly_combined = BoundingPoly({'vertices': verts})
+        verts = [
+            Vertex({"x": int(x), "y": int(y)})
+            for x, y in zip(p_union.exterior.xy[0], p_union.exterior.xy[1])
+        ]
+        poly_combined = BoundingPoly({"vertices": verts})
 
         return poly_combined
 
