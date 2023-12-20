@@ -381,6 +381,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                                 ocr_text_blocks.extractions[idx].bounds
                             ),
                             "text": ocr_text_blocks.extractions[idx].text,
+                            "type": "latitude",
                         },
                         "excluded candidate lat point",
                     )
@@ -417,6 +418,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                                 ocr_text_blocks.extractions[idx].bounds
                             ),
                             "text": ocr_text_blocks.extractions[idx].text,
+                            "type": "longitude",
                         },
                         "excluded candidate lon point",
                     )
@@ -486,6 +488,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                                 ocr_text_blocks.extractions[idx].bounds
                             ),
                             "text": ocr_text_blocks.extractions[idx].text,
+                            "type": "latitude",
                         },
                         "excluded candidate lat point",
                     )
@@ -522,6 +525,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                                 ocr_text_blocks.extractions[idx].bounds
                             ),
                             "text": ocr_text_blocks.extractions[idx].text,
+                            "type": "longitude",
                         },
                         "excluded candidate lon point",
                     )
@@ -538,6 +542,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "bounds": ocr_to_coordinates(c.get_bounds()),
                         "text": c.get_text(),
                         "parsed": c.get_parsed_degree(),
+                        "type": "latitude" if c.is_lat() else "longitude",
+                        "pixel_alignment": c.get_pixel_alignment(),
                     },
                     "extracted coordinate",
                 )
@@ -627,6 +633,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                                 ocr_text_blocks.extractions[idx].bounds
                             ),
                             "text": ocr_text_blocks.extractions[idx].text,
+                            "type": "latitude",
                         },
                         "excluded candidate lat point",
                     )
@@ -663,6 +670,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                                 ocr_text_blocks.extractions[idx].bounds
                             ),
                             "text": ocr_text_blocks.extractions[idx].text,
+                            "type": "longitude",
                         },
                         "excluded candidate lon point",
                     )
@@ -676,6 +684,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     "bounds": ocr_to_coordinates(c.get_bounds()),
                     "text": c.get_text(),
                     "parsed": c.get_parsed_degree(),
+                    "type": "latitude" if c.is_lat() else "longitude",
+                    "pixel_alignment": c.get_pixel_alignment(),
                 },
                 "extracted coordinate",
             )
@@ -737,6 +747,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         {
                             "bounds": ocr_to_coordinates(coord.get_bounds()),
                             "text": coord.get_text(),
+                            "type": "latitude" if coord.is_lat() else "longitude",
+                            "pixel_alignment": coord.get_pixel_alignment(),
                         },
                         "excluded due to being outside roi",
                     )
@@ -753,6 +765,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         {
                             "bounds": ocr_to_coordinates(coord.get_bounds()),
                             "text": coord.get_text(),
+                            "type": "latitude" if coord.is_lat() else "longitude",
+                            "pixel_alignment": coord.get_pixel_alignment(),
                         },
                         "excluded due to being outside roi",
                     )
@@ -900,6 +914,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         {
                             "bounds": ocr_to_coordinates(v.get_bounds()),
                             "text": v.get_text(),
+                            "type": "latitude" if v.is_lat() else "longitude",
+                            "pixel_alignment": v.get_pixel_alignment(),
                         },
                         "excluded due to being an outlier",
                     )
@@ -1125,6 +1141,8 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                         {
                             "bounds": ocr_to_coordinates(coord.get_bounds()),
                             "text": coord.get_text(),
+                            "type": "latitude" if coord.is_lat() else "longitude",
+                            "pixel_alignment": coord.get_pixel_alignment(),
                         },
                         "extracted northing utm coordinate",
                     )
@@ -1158,6 +1176,8 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                         {
                             "bounds": ocr_to_coordinates(coord.get_bounds()),
                             "text": coord.get_text(),
+                            "type": "latitude" if coord.is_lat() else "longitude",
+                            "pixel_alignment": coord.get_pixel_alignment(),
                         },
                         "extracted northing utm coordinate",
                     )
@@ -1197,6 +1217,8 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                         {
                             "bounds": ocr_to_coordinates(coord.get_bounds()),
                             "text": coord.get_text(),
+                            "type": "latitude" if coord.is_lat() else "longitude",
+                            "pixel_alignment": coord.get_pixel_alignment(),
                         },
                         "extracted easting utm coordinate",
                     )
@@ -1230,6 +1252,8 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                         {
                             "bounds": ocr_to_coordinates(coord.get_bounds()),
                             "text": coord.get_text(),
+                            "type": "latitude" if coord.is_lat() else "longitude",
+                            "pixel_alignment": coord.get_pixel_alignment(),
                         },
                         "extracted easting utm coordinate",
                     )

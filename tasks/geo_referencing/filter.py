@@ -89,6 +89,12 @@ class OutlierFilter(FilterCoordinates):
                             coords_representation[i].get_bounds()
                         ),
                         "text": coords_representation[i].get_text(),
+                        "type": "latitude"
+                        if coords_representation[i].is_lat()
+                        else "longitude",
+                        "pixel_alignment": coords_representation[
+                            i
+                        ].get_pixel_alignment(),
                     },
                     "excluded due to regression outlier detection",
                 )
