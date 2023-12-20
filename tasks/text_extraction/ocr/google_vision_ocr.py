@@ -1,11 +1,13 @@
 from google.cloud.vision import ImageAnnotatorClient
 from google.cloud.vision import Image as VisionImage
-from google.cloud.vision_v1.types.geometry import BoundingPoly
+from google.cloud.vision_v1.types.geometry import BoundingPoly, Vertex
 from PIL.Image import Image as PILImage
 import cv2 as cv
 import numpy as np
 import io, copy, logging
 from typing import List, Dict, Any, Optional, Tuple
+from shapely.geometry import Polygon
+from shapely import unary_union, concave_hull
 
 logger = logging.getLogger(__name__)
 
@@ -173,45 +175,27 @@ class GoogleVisionOCR:
     ) -> Optional[BoundingPoly]:
         """
         Adds two google vision 'bounding polygon' objects together to create a new bounding polygon that contains both
-        NOTE: this returns a bounding box, as opposed to a arbitrary-shaped polygon
         """
-
-        # TODO -- could return a polygon of merged bounding polygons
-        # e.g., using Shapely 'union' funcs
 
         if poly1 is None:
             return poly2
         if poly2 is None:
             return poly1
+        
+        # use Shapely to combine polygons together
+        p1_coords = [(v.x,v.y) for v in poly1.vertices]
+        p1 = Polygon(p1_coords)
+        p2_coords = [(v.x,v.y) for v in poly2.vertices]
+        p2 = Polygon(p2_coords)
+        p_union = unary_union([p1, p2])
 
-        min_x = poly1.vertices[0].x  # type: ignore
-        min_x = poly1.vertices[0].x  # type: ignore
-        min_y = poly1.vertices[0].y  # type: ignore
-        max_x = poly1.vertices[0].x  # type: ignore
-        max_y = poly1.vertices[0].y  # type: ignore
+        if p_union.geom_type == 'MultiPolygon':
+            # input polygons don't overlap, so merge into one single 'parent' polygon using concave hull
+            p_union = concave_hull(p_union, ratio=0.0)
 
-        for vertex in poly1.vertices:  # type: ignore
-            min_x = min(min_x, vertex.x)
-            min_y = min(min_y, vertex.y)
-            max_x = max(max_x, vertex.x)
-            max_y = max(max_y, vertex.y)
-
-        for vertex in poly2.vertices:  # type: ignore
-            min_x = min(min_x, vertex.x)
-            min_y = min(min_y, vertex.y)
-            max_x = max(max_x, vertex.x)
-            max_y = max(max_y, vertex.y)
-
-        poly_combined = copy.deepcopy(poly1)
-        poly_combined.vertices[0].x = min_x  # type: ignore
-        poly_combined.vertices[1].x = max_x  # type: ignore
-        poly_combined.vertices[2].x = max_x  # type: ignore
-        poly_combined.vertices[3].x = min_x  # type: ignore
-
-        poly_combined.vertices[0].y = min_y  # type: ignore
-        poly_combined.vertices[1].y = min_y  # type: ignore
-        poly_combined.vertices[2].y = max_y  # type: ignore
-        poly_combined.vertices[3].y = max_y  # type: ignore
+        # convert shapely polygon result back to Google Vision BoundingPoly object
+        verts = [Vertex({'x': int(x), 'y': int(y)}) for x,y in zip(p_union.exterior.xy[0], p_union.exterior.xy[1])]     
+        poly_combined = BoundingPoly({'vertices': verts})
 
         return poly_combined
 
