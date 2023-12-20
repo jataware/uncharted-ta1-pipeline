@@ -84,8 +84,13 @@ class OutlierFilter(FilterCoordinates):
                     input,
                     str(uuid.uuid4()),
                     "coordinate-excluded",
-                    ocr_to_coordinates(coords_representation[i].get_bounds()),
-                    f"excluded due to regression outlier detection- {coords_representation[i].get_text()}",
+                    {
+                        "bounds": ocr_to_coordinates(
+                            coords_representation[i].get_bounds()
+                        ),
+                        "text": coords_representation[i].get_text(),
+                    },
+                    "excluded due to regression outlier detection",
                 )
             else:
                 key, _ = coords_representation[i].to_deg_result()
