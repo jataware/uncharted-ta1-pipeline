@@ -244,15 +244,15 @@ class DetectronSegmenter(Task):
             # check for model weights and config files in the folder
             s3_subfolder = s3_path[: s3_path.rfind("/")]
             for s3_key in s3_data_cache.list_bucket_contents(s3_subfolder):
-                if s3_key.endswith(".pth"):
+                if s3_key.endswith("model_final.pth"):
                     local_model_data_path = Path(
                         s3_data_cache.fetch_file_from_s3(s3_key, overwrite=False)
                     )
-                elif s3_key.endswith(".yaml"):
+                elif s3_key.endswith("config.yaml"):
                     local_lm_config_path = Path(
                         s3_data_cache.fetch_file_from_s3(s3_key, overwrite=False)
                     )
-                elif s3_key.endswith(".json"):
+                elif s3_key.endswith("config.json"):
                     local_det_config_path = Path(
                         s3_data_cache.fetch_file_from_s3(s3_key, overwrite=False)
                     )
@@ -261,11 +261,11 @@ class DetectronSegmenter(Task):
             # iterate over files in folder
             for f in Path(model_data_path).iterdir():
                 if f.is_file():
-                    if f.suffix == ".pth":
+                    if f.name.endswith("model_final.pth"):
                         local_model_data_path = f
-                    elif f.suffix == ".yaml":
+                    elif f.name.endswith("config.yaml"):
                         local_lm_config_path = f
-                    elif f.suffix == ".json":
+                    elif f.name.endswith("config.json"):
                         local_det_config_path = f
 
         # check that we have all the files we need
