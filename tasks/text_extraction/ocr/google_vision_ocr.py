@@ -192,12 +192,17 @@ class GoogleVisionOCR:
         if p_union.geom_type == "MultiPolygon":
             # input polygons don't overlap, so merge into one single 'parent' polygon using concave hull
             p_union = concave_hull(p_union, ratio=0.0)
+        # remove any redundant vertices in final polygon
+        p_union = p_union.simplify(0.0)
 
         # convert shapely polygon result back to Google Vision BoundingPoly object
         verts = [
             Vertex({"x": int(x), "y": int(y)})
             for x, y in zip(p_union.exterior.xy[0], p_union.exterior.xy[1])
         ]
+        if verts[0].x == verts[-1].x and verts[0].y == verts[-1].y:
+            # first and last vertices are duplicates - so, ok to remove last vertex (redundant)
+            verts.pop()
         poly_combined = BoundingPoly({"vertices": verts})
 
         return poly_combined
