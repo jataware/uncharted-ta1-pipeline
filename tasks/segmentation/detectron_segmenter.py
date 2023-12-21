@@ -18,6 +18,7 @@ from tasks.common.s3_data_cache import S3DataCache
 
 CONFIDENCE_THRES_DEFAULT = 0.25  # default confidence threshold (model will discard any regions with confidence < threshold)
 THING_CLASSES_DEFAULT = [
+    "cross_section",
     "legend_points_lines",
     "legend_polygons",
     "map",
@@ -62,6 +63,15 @@ class DetectronSegmenter(Task):
         self.cfg.merge_from_file(self.config_file)  # config yml file
         self.model_name = self.cfg.MODEL.VIT.get("NAME", "")
 
+        if self.cfg.MODEL.ROI_HEADS.NUM_CLASSES == 3 and len(self.class_labels) > 3:
+            # backwards compatibility for older 3-class segmentation model
+            # (ie without map cross-section segmentation)
+            self.class_labels = [
+                "legend_points_lines",
+                "legend_polygons",
+                "map",
+            ]
+
         # add model weights URL to config
         self.cfg.MODEL.WEIGHTS = (
             self.model_weights
@@ -104,7 +114,6 @@ class DetectronSegmenter(Task):
         predictions = self.predictor(np.array(input.image))["instances"]
         predictions = predictions.to("cpu")
 
-        results = []
         if not predictions:
             logger.warn("No segmentation predictions for this image!")
             return self._create_result(input)
