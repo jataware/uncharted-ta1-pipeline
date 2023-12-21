@@ -10,6 +10,15 @@ from tasks.common.pipeline import (
 )
 
 
+def get_projection(datum: str) -> str:
+    # get espg code via basic lookup of the two frequently seen datums
+    if "83" in datum:
+        return "ESPG:4269"
+    elif "27" in datum:
+        return "ESPG:4267"
+    return ""
+
+
 class GeoReferencingOutput(OutputCreator):
     def __init__(self, id):
         super().__init__(id)
@@ -167,20 +176,24 @@ class GCPOutput(OutputCreator):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
-        # capture query points as output
+        query_points = pipeline_result.data["query_pts"]
+        projection_raw = pipeline_result.data["projection"]
+        datum_raw = pipeline_result.data["datum"]
+        projection_mapped = get_projection(datum_raw)
+
         res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
 
-        # extract the levers available via params
         res.data = {
             "map": pipeline_result.raster_id,
-            "crs": ["EPSG:4267", "EPSG:4269"],
+            "crs": [projection_mapped],
+            "datum_raw": datum_raw,
+            "projection_raw": projection_raw,
             "gcps": [],
             "levers": [],
         }
-        query_points = pipeline_result.data["query_pts"]
         for qp in query_points:
             o = {
-                "crs": "EPSG:4267",
+                "crs": projection_mapped,
                 "gcp_id": uuid.uuid4(),
                 "rowb": qp.xy[1],
                 "coll": qp.xy[0],
@@ -190,8 +203,10 @@ class GCPOutput(OutputCreator):
             if qp.properties and len(qp.properties) > 0:
                 o["properties"] = qp.properties
             res.data["gcps"].append(o)
-        # for p in pipeline_result.params:
-        #    res.data['levers'].append(p)
+
+        # extract the levers available via params
+        for p in pipeline_result.params:
+            res.data["levers"].append(p)
         return res
 
 
@@ -202,6 +217,9 @@ class IntegrationOutput(OutputCreator):
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         # capture query points as output
         query_points = pipeline_result.data["query_pts"]
+        projection_raw = pipeline_result.data["projection"]
+        datum_raw = pipeline_result.data["datum"]
+        projection_mapped = get_projection(datum_raw)
 
         res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
 
@@ -222,7 +240,12 @@ class IntegrationOutput(OutputCreator):
         res.data = {
             "map": {
                 "name": pipeline_result.raster_id,
-                "projection_info": {"projection": "EPSG:4267", "gcps": gcps},
+                "projection_info": {
+                    "projection": projection_mapped,
+                    "datum_raw": datum_raw,
+                    "projection_raw": projection_raw,
+                    "gcps": gcps,
+                },
             }
         }
 
