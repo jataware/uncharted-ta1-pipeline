@@ -3,6 +3,7 @@ import re
 import utm
 import uuid
 
+from copy import deepcopy
 from geopy.geocoders import Nominatim, GoogleV3
 from geopy.point import Point
 import matplotlib.path as mpltPath
@@ -11,7 +12,7 @@ from compute.geo_coordinates import split_lon_lat_degrees
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.geo_referencing.entities import Coordinate
-from tasks.geo_referencing.util import ocr_to_coordinates
+from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
 from util.cache import cache_geocode_data, load_geocode_cache
 
 from typing import Any, Dict, List, Tuple
@@ -156,6 +157,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         )
         num_keypoints = min(len(lon_pts), len(lat_pts))
         if num_keypoints > 0:
+            print(f"filtering via roi")
             # ----- do Region-of-Interest analysis (automatic cropping)
             roi_xy = input.input.get_data("roi")
             self._add_param(input.input, str(uuid.uuid4()), "roi", {"bounds": roi_xy})
@@ -168,12 +170,16 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
     def _extract_lonlat(
         self,
         input: CoordinateInput,
-        ocr_text_blocks: DocTextExtraction,
+        ocr_text_blocks_raw: DocTextExtraction,
         lon_minmax: List[float],
         lat_minmax: List[float],
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
+        ocr_text_blocks = deepcopy(ocr_text_blocks_raw)
+        for e in ocr_text_blocks.extractions:
+            e.bounds = get_bounds_bounding_box(e.bounds)
+
         print("starting extraction")
         lon_clue = (
             lon_minmax[0] + lon_minmax[1]
@@ -1047,7 +1053,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
     def _extract_utm(
         self,
         input: CoordinateInput,
-        ocr_text_blocks: DocTextExtraction,
+        ocr_text_blocks_raw: DocTextExtraction,
         lonlat_results,
         lon_minmax: List[float],
         lat_minmax: List[float],
@@ -1055,9 +1061,13 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
-        if not ocr_text_blocks or len(ocr_text_blocks.extractions) == 0:
+        if not ocr_text_blocks_raw or len(ocr_text_blocks_raw.extractions) == 0:
             print("WARNING! No ocr text blocks available!")
             return ({}, {})
+
+        ocr_text_blocks = deepcopy(ocr_text_blocks_raw)
+        for e in ocr_text_blocks.extractions:
+            e.bounds = get_bounds_bounding_box(e.bounds)
 
         lon_clue = (
             lon_minmax[0] + lon_minmax[1]

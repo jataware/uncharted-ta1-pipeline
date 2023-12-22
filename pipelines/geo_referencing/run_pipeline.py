@@ -46,9 +46,9 @@ def main():
 
     # parse command line args
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
-    parser.add_argument("--workdir", type=Path, default=None)
+    parser.add_argument("--workdir", type=str, default=None)
     parser.add_argument("--verbose", type=bool, default=False)
     parser.add_argument("--ta1_schema", type=bool, default=False)
     parser.add_argument("--extract_metadata", type=bool, default=False)

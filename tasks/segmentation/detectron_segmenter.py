@@ -140,7 +140,7 @@ class DetectronSegmenter(Task):
                         bbox=list(cv2.boundingRect(contour)),
                         area=cv2.contourArea(contour),
                         confidence=scores[i],
-                        class_label=self.class_labels[classes[i]],
+                        class_label=self.class_labels[classes[i] - 1],
                         id_model=self.id_model,
                     )
                     seg_results.append(seg_result)
