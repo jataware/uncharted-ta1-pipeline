@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from typing import Iterator, List, Tuple, Sequence, Union
 from PIL.Image import Image as PILImage
 from PIL import Image
+from tasks.common.image_io import normalize_image_format
 import boto3
 
 # https://stackoverflow.com/questions/51152059/pillow-in-python-wont-let-me-open-image-exceeds-limit
@@ -54,11 +55,13 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
             if mode == Mode.S3_URI or mode == Mode.URL:
                 # process the image from s3
                 image = self._load_s3(image_path, mode)
+                image = normalize_image_format(image)
                 doc_id = image_path.split("/")[-1].split(".")[0]
                 return (doc_id, image)
             elif self._verify_is_image(Path(image_path)):
                 # process the image from the local file system
                 image = self._load_file(image_path)
+                image = normalize_image_format(image)
                 doc_id = image_path.split("/")[-1].split(".")[0]
                 return (doc_id, image)
             return self.__next__()
