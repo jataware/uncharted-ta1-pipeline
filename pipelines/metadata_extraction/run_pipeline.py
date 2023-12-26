@@ -22,19 +22,20 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output", type=str, required=True)
-    parser.add_argument("--workdir", type=Path, default=None)
+    parser.add_argument("--workdir", type=str, default=None)
+    parser.add_argument("--model", type=str, default=None)
     parser.add_argument("--verbose", type=bool, default=False)
     parser.add_argument("--ta1_schema", type=bool, default=False)
     p = parser.parse_args()
 
     # setup an input stream
-    input = ImageFileInputIterator(p.input)
+    input = ImageFileInputIterator(str(p.input))
 
     # setup an output writer
     file_writer = JSONFileWriter()
 
     # create the pipeline
-    pipeline = MetadataExtractorPipeline(p.workdir, p.verbose)
+    pipeline = MetadataExtractorPipeline(p.workdir, p.model, p.verbose)
 
     # run the extraction pipeline
     for doc_id, image in input:

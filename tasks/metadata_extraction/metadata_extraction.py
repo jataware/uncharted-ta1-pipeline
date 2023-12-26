@@ -1,8 +1,7 @@
+import logging
 import re
-import os
 import pprint
 import json
-import os
 from tasks.common.task import TaskInput, TaskResult
 from openai import OpenAI
 import tiktoken
@@ -13,6 +12,9 @@ from tasks.metadata_extraction.entities import (
 )
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.common.pipeline import Task
+
+
+logger = logging.getLogger("metadata_extractor")
 
 
 class MetadataExtractor(Task):
@@ -69,7 +71,7 @@ class MetadataExtractor(Task):
         doc_text = DocTextExtraction.model_validate(text_data)
         task_result = TaskResult(self._task_id)
 
-        metadata = self._process_doc_text_extraction(doc_text, verbose=self._verbose)
+        metadata = self._process_doc_text_extraction(doc_text)
         if metadata:
             # normalize scale
             metadata.scale = self._normalize_scale(metadata.scale)
@@ -83,19 +85,19 @@ class MetadataExtractor(Task):
         return task_result
 
     def _process_doc_text_extraction(
-        self, doc_text_extraction: DocTextExtraction, verbose=False
+        self, doc_text_extraction: DocTextExtraction
     ) -> Optional[MetadataExtraction]:
         """Extracts metadata from a single OCR file"""
         try:
-            text = self._extract_text(doc_text_extraction, verbose=verbose)
+            text = [text_entry.text for text_entry in doc_text_extraction.extractions]
             prompt_str = self._to_prompt_str("\n".join(text))
-
             num_tokens = self._count_tokens(prompt_str, "cl100k_base")
 
-            if verbose:
-                print("Prompt string:\n")
-                print(prompt_str)
-                print(f"Found {num_tokens} tokens.")
+            logger.info(f"Processing '{doc_text_extraction.doc_id}'")
+            logger.info(f"Found {num_tokens} tokens.")
+
+            logger.debug("Prompt string:\n")
+            logger.debug(prompt_str)
 
             if num_tokens < self.TOKEN_LIMIT:
                 completion = self._openai_client.chat.completions.create(
@@ -119,35 +121,18 @@ class MetadataExtractor(Task):
                 extraction = MetadataExtraction(**content_dict)
                 return extraction
 
+            logger.warn(
+                "skipping extraction '{doc_text_extraction.doc_id}' exceeded to token limit"
+            )
             return None
 
         except Exception as e:
             # print exception stack trace
-            print(
-                f"Error: An exception occurred while processing '{doc_text_extraction.doc_id}': {str(e)}"
+            logger.exception(
+                f"Error: An exception occurred while processing '{doc_text_extraction.doc_id}'",
+                exc_info=True,
             )
             return None
-
-    def _extract_text(
-        self, doc_text_extraction: DocTextExtraction, verbose=False
-    ) -> List[str]:
-        """Extracts text from OCR output"""
-        text_dims = []
-        for text_entry in doc_text_extraction.extractions:
-            text = text_entry.text
-            if (
-                self.ALPHANUMERIC_PATTERN.match(text)
-                and len(text) >= 4
-                and len(text) <= 400
-                and len(text.split(" ")) > 1
-            ):
-                text_dims.append(text)
-
-        if verbose:
-            print("Extracted text:\n")
-            pprint.pprint(text_dims)
-            print()
-        return text_dims
 
     def _count_tokens(self, input_str: str, encoding_name: str) -> int:
         """Counts the number of tokens in a input string using a given encoding"""

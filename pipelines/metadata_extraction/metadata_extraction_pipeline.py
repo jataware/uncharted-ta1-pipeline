@@ -1,13 +1,14 @@
 import os
+import os.path as path
 from pathlib import Path
-from tasks.metadata_extraction.metadata_extraction import (
-    MetadataExtractor,
-)
+from tasks.metadata_extraction.metadata_extraction import MetadataExtractor
+from tasks.metadata_extraction.text_filter import TextFilter
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.text_extraction.text_extractor import ResizeTextExtractor
+from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.common.pipeline import (
     BaseModelOutput,
     Pipeline,
@@ -20,12 +21,21 @@ from schema.ta1_schema import Map, MapFeatureExtractions, ProjectionMeta
 class MetadataExtractorPipeline(Pipeline):
     def __init__(
         self,
-        work_dir: Path,
+        work_dir: str,
+        model_data_path: str,
         verbose=False,
     ):
-        # extract text from image and then extract metadata using an LLM
+        # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
-            ResizeTextExtractor("resize_text", work_dir, False, True, 6000),
+            ResizeTextExtractor(
+                "resize_text", Path(work_dir).joinpath("text"), False, True, 6000
+            ),
+            DetectronSegmenter(
+                "detectron_segmenter",
+                model_data_path,
+                str(Path(work_dir).joinpath("segmentation")),
+            ),
+            TextFilter("text_filter"),
             MetadataExtractor("metadata_extractor", verbose),
         ]
 
