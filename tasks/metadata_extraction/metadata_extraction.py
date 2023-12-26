@@ -1,6 +1,5 @@
 import logging
 import re
-import pprint
 import json
 from tasks.common.task import TaskInput, TaskResult
 from openai import OpenAI
@@ -28,8 +27,13 @@ class MetadataExtractor(Task):
     # quadrangle normalization
     QUADRANGLE_PATTERN = re.compile(re.escape("quadrangle"), re.IGNORECASE)
 
-    # max number of tokens allowed by openai api
-    TOKEN_LIMIT = 4096
+    # max number of tokens allowed by openai api, leaving enough for output
+    TOKEN_LIMIT = 3500
+
+    # OCR text filtering control
+    MAX_TEXT_FILTER_LENGTH = 1000
+    MIN_TEXT_FILTER_LENGTH = 100
+    TEXT_FILTER_DECREMENT = 100
 
     # json structure for prompt
     EXAMPLE_JSON = json.dumps(
@@ -53,13 +57,8 @@ class MetadataExtractor(Task):
         indent=4,
     )
 
-    def __init__(
-        self,
-        id: str,
-        verbose=False,
-    ):
+    def __init__(self, id: str):
         super().__init__(id)
-        self._verbose = verbose
         self._openai_client = (
             OpenAI()
         )  # will read key from "OPENAI_API_KEY" env variable
@@ -89,12 +88,30 @@ class MetadataExtractor(Task):
     ) -> Optional[MetadataExtraction]:
         """Extracts metadata from a single OCR file"""
         try:
-            text = [text_entry.text for text_entry in doc_text_extraction.extractions]
-            prompt_str = self._to_prompt_str("\n".join(text))
-            num_tokens = self._count_tokens(prompt_str, "cl100k_base")
-
             logger.info(f"Processing '{doc_text_extraction.doc_id}'")
-            logger.info(f"Found {num_tokens} tokens.")
+
+            max_text_length = self.MAX_TEXT_FILTER_LENGTH
+            num_tokens = 0
+            prompt_str = ""
+            text = []
+            while max_text_length > self.MIN_TEXT_FILTER_LENGTH:
+                # extract text from OCR output using rule-based filtering
+                text = self._extract_text(doc_text_extraction, max_text_length)
+
+                # convert text to prompt string and compute token count
+                prompt_str = self._to_prompt_str("\n".join(text))
+                num_tokens = self._count_tokens(prompt_str, "cl100k_base")
+
+                # if the token count is greater than the limit, reduce the max text length
+                # and try again
+                if num_tokens <= self.TOKEN_LIMIT:
+                    break
+                logger.info(
+                    f"Token count after filtering exceeds limit - reducing max text length to {max_text_length}"
+                )
+                max_text_length = max_text_length - self.TEXT_FILTER_DECREMENT
+
+            logger.info(f"Processing {num_tokens} tokens.")
 
             logger.debug("Prompt string:\n")
             logger.debug(prompt_str)
@@ -114,7 +131,14 @@ class MetadataExtractor(Task):
 
                 message_content = completion.choices[0].message.content
                 if message_content is not None:
-                    content_dict: Dict[str, Any] = json.loads(message_content)
+                    try:
+                        content_dict: Dict[str, Any] = json.loads(message_content)
+                    except json.JSONDecodeError as e:
+                        logger.error(
+                            f"Skipping extraction '{doc_text_extraction.doc_id}' - error parsing json response from openai api likely due to token limit",
+                            exc_info=True,
+                        )
+                        return self._create_empty_extraction(doc_text_extraction.doc_id)
                     content_dict["map_id"] = doc_text_extraction.doc_id
                 else:
                     content_dict = {"map_id": doc_text_extraction.doc_id}
@@ -122,17 +146,17 @@ class MetadataExtractor(Task):
                 return extraction
 
             logger.warn(
-                "skipping extraction '{doc_text_extraction.doc_id}' exceeded to token limit"
+                f"Skipping extraction '{doc_text_extraction.doc_id}' - input token count {num_tokens} is greater than limit {self.TOKEN_LIMIT}"
             )
-            return None
+            return self._create_empty_extraction(doc_text_extraction.doc_id)
 
         except Exception as e:
             # print exception stack trace
-            logger.exception(
-                f"Error: An exception occurred while processing '{doc_text_extraction.doc_id}'",
+            logger.error(
+                f"Skipping extraction '{doc_text_extraction.doc_id}' - unexpected error during processing",
                 exc_info=True,
             )
-            return None
+            return self._create_empty_extraction(doc_text_extraction.doc_id)
 
     def _count_tokens(self, input_str: str, encoding_name: str) -> int:
         """Counts the number of tokens in a input string using a given encoding"""
@@ -164,6 +188,23 @@ class MetadataExtractor(Task):
             + "The term grid ticks should not be included in coordinate system output.\n"
         )
 
+    def _extract_text(
+        self, doc_text_extraction: DocTextExtraction, max_text_length=800
+    ) -> List[str]:
+        """Extracts text from OCR output - filters to alphanumeric strings between 4 and 400 characters long
+        that contain at least one space"""
+        text_dims = []
+        for text_entry in doc_text_extraction.extractions:
+            text = text_entry.text
+            if (
+                self.ALPHANUMERIC_PATTERN.match(text)
+                and len(text) >= 4
+                and len(text) <= max_text_length
+                and len(text.split(" ")) > 1
+            ):
+                text_dims.append(text)
+        return text_dims
+
     def _normalize_scale(self, scale_str: str) -> str:
         """Normalizes the scale string to the format 1:xxxxx"""
         if scale_str != "NULL":
@@ -176,3 +217,20 @@ class MetadataExtractor(Task):
     def _normalize_quadrangle(self, quadrangle_str: str) -> str:
         """Normalizes the quadrangle string by removing the word quadrangle"""
         return re.sub(self.QUADRANGLE_PATTERN, "", quadrangle_str).strip()
+
+    @staticmethod
+    def _create_empty_extraction(doc_id: str) -> MetadataExtraction:
+        """Creates an empty metadata extraction object"""
+        return MetadataExtraction(
+            map_id=doc_id,
+            title="",
+            authors=[],
+            year="",
+            scale="",
+            quadrangle="",
+            datum="",
+            vertical_datum="",
+            projection="",
+            coordinate_systems=[],
+            base_map="",
+        )

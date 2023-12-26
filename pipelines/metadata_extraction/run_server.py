@@ -74,6 +74,7 @@ if __name__ == "__main__":
     # init segmenter
     metadata_extraction = MetadataExtractorPipeline(
         "tmp/lara/workdir",
+        "tmp/lara/models",
     )
 
     #### start flask server

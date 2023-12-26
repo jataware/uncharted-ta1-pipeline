@@ -36,7 +36,7 @@ class MetadataExtractorPipeline(Pipeline):
                 str(Path(work_dir).joinpath("segmentation")),
             ),
             TextFilter("text_filter"),
-            MetadataExtractor("metadata_extractor", verbose),
+            MetadataExtractor("metadata_extractor"),
         ]
 
         outputs = [
