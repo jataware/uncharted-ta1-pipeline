@@ -17,7 +17,7 @@ class S3DataCache:
     def __init__(
         self,
         local_cache_path: str,
-        s3_url: str,
+        s3_url: str = "",
         s3_bucket: str = "lara",
         aws_region_name: str = "",
         aws_access_key_id: str = "",
@@ -65,7 +65,7 @@ class S3DataCache:
         logger.info(f"Connecting to S3 at {s3_url}")
         self.s3_resource = boto3.resource(
             service_name="s3",
-            endpoint_url=s3_url,
+            endpoint_url=s3_url if s3_url != "" else None,
             region_name=aws_region_name,
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
@@ -126,7 +126,7 @@ class S3DataCache:
         try:
             # check if bucket exists
 
-            # s3_resource.meta.client.head_bucket(Bucket=bucket_name)  # type: ignore
+            s3_resource.meta.client.head_bucket(Bucket=bucket_name)  # type: ignore
             logger.debug("Bucket {} exists.".format(bucket_name))
             exists = True
         except ClientError as e:
