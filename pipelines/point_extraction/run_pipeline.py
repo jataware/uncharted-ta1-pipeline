@@ -19,7 +19,7 @@ def main():
 
     # parse command line args
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
     parser.add_argument("--workdir", type=str, required=True)
     parser.add_argument("--model", type=str, required=True)

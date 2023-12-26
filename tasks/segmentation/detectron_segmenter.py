@@ -2,6 +2,7 @@ import logging
 import cv2
 from cv2.typing import MatLike
 import numpy as np
+from sympy import LM
 import torch
 import hashlib
 from pathlib import Path
@@ -9,20 +10,30 @@ import os
 from urllib.parse import urlparse
 from typing import List, Optional, Tuple, Sequence
 
-from .ditod import add_vit_config
-from .entities import SegmentationResult, MapSegmentation, SEGMENTATION_OUTPUT_KEY
+from tasks.segmentation.ditod import add_vit_config
+from tasks.segmentation.entities import (
+    SegmentationResult,
+    MapSegmentation,
+    SEGMENTATION_OUTPUT_KEY,
+)
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.common.s3_data_cache import S3DataCache
 
 CONFIDENCE_THRES_DEFAULT = 0.25  # default confidence threshold (model will discard any regions with confidence < threshold)
+
 THING_CLASSES_DEFAULT = [
     "cross_section",
     "legend_points_lines",
     "legend_polygons",
     "map",
 ]  # default mapping of segmentation classes -> labels
+
+# model support files
+MODEL_FILENAME = "model_final.pth"
+LM_CONFIG_FILENAME = "config.yaml"
+DET_CONFIG_FILENAME = "config.json"
 
 logger = logging.getLogger(__name__)
 
@@ -242,17 +253,17 @@ class DetectronSegmenter(Task):
             )
 
             # check for model weights and config files in the folder
-            model_key = os.path.join(s3_path, "model_final.pth")
+            model_key = os.path.join(s3_path, MODEL_FILENAME)
             local_model_data_path = Path(
                 s3_data_cache.fetch_file_from_s3(model_key, overwrite=False)
             )
 
-            lm_config_key = os.path.join(s3_path, "config.yaml")
+            lm_config_key = os.path.join(s3_path, LM_CONFIG_FILENAME)
             local_lm_config_path = Path(
                 s3_data_cache.fetch_file_from_s3(lm_config_key, overwrite=False)
             )
 
-            det_config_key = os.path.join(s3_path, "config.json")
+            det_config_key = os.path.join(s3_path, DET_CONFIG_FILENAME)
             local_det_config_path = Path(
                 s3_data_cache.fetch_file_from_s3(det_config_key, overwrite=False)
             )
@@ -261,11 +272,11 @@ class DetectronSegmenter(Task):
             # iterate over files in folder
             for f in Path(model_data_path).iterdir():
                 if f.is_file():
-                    if f.name.endswith("model_final.pth"):
+                    if f.name.endswith(MODEL_FILENAME):
                         local_model_data_path = f
-                    elif f.name.endswith("config.yaml"):
+                    elif f.name.endswith(LM_CONFIG_FILENAME):
                         local_lm_config_path = f
-                    elif f.name.endswith("config.json"):
+                    elif f.name.endswith(DET_CONFIG_FILENAME):
                         local_det_config_path = f
 
         # check that we have all the files we need
