@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from PIL import ImageDraw
-from tasks.metadata_extraction.metadata_extraction import MetadataExtractor
+from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.text_filter import TextFilter, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
@@ -26,7 +26,13 @@ from schema.ta1_schema import Map, MapFeatureExtractions, ProjectionMeta
 
 
 class MetadataExtractorPipeline(Pipeline):
-    def __init__(self, work_dir: str, model_data_path: str, debug_images=False):
+    def __init__(
+        self,
+        work_dir: str,
+        model_data_path: str,
+        debug_images=False,
+        model=LLM.GPT_3_5_TURBO,
+    ):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
             ResizeTextExtractor(
@@ -38,7 +44,7 @@ class MetadataExtractorPipeline(Pipeline):
                 str(Path(work_dir).joinpath("segmentation")),
             ),
             TextFilter("text_filter"),
-            MetadataExtractor("metadata_extractor"),
+            MetadataExtractor("metadata_extractor", model=model),
         ]
 
         outputs = [
