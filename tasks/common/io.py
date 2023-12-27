@@ -203,22 +203,69 @@ class JSONFileWriter:
         """Writes metadata to an s3 bucket"""
 
         # create s3 client
-        client = boto3.client("s3")
+        client = boto3.client("s3")  # type: ignore
 
         # extract bucket from s3 uri
         bucket = output_uri.split("/")[2]
+        key = "/".join(output_uri.split("/")[3:])
 
         # write data to the bucket
         if isinstance(data, Sequence):
-            model_list = [d.model_dump() for d in data]
-            model_str = json.dumps(model_list)
+            output_str = ""
+            for d in data:
+                output_str += d.model_dump_json() + "\n"
             client.put_object(
-                Body=bytes(model_str.encode("utf-8")), Bucket=bucket, Key=output_uri
+                Body=bytes(output_str.encode("utf-8")), Bucket=bucket, Key=key
             )
         else:
             json_model = data.model_dump_json()
             client.put_object(
                 Body=bytes(json_model.encode("utf-8")),
                 Bucket=bucket,
-                Key=output_uri,
+                Key=key,
             )
+
+
+class ImageFileWriter:
+    """Writes a PIL image to either the local file system or an s3 bucket"""
+
+    def process(self, output_location: str, image: PILImage) -> None:
+        """Writes an image to a file on the local file system or to an s3 bucket based
+        on the output location format"""
+
+        # check to see if path is an s3 uri - otherwise treat it as a file path
+        if S3_URI_MATCHER.match(output_location):
+            self._write_to_s3(image, output_location)
+        else:
+            self._write_to_file(image, Path(output_location))
+
+    @staticmethod
+    def _write_to_file(image: PILImage, output_location: Path) -> None:
+        """Writes an image to a file"""
+
+        # get the director of the file
+        if output_location.is_dir():
+            raise ValueError(f"Output location {output_location} is not a file.")
+
+        output_dir = output_location.parent
+        if not output_dir.exists():
+            os.makedirs(output_dir)
+
+        # write the data to the output file
+        image.save(output_location)
+
+    @staticmethod
+    def _write_to_s3(image: PILImage, output_uri: str) -> None:
+        """Writes an image to an s3 bucket"""
+
+        # create s3 client
+        client = boto3.client("s3")  # type: ignore
+
+        # extract bucket from s3 uri
+        bucket = output_uri.split("/")[2]
+        key = "/".join(output_uri.split("/")[3:])
+
+        # write data to the bucket
+        with io.BytesIO() as output:
+            image.save(output, format="PNG")
+            client.put_object(Body=output.getvalue(), Bucket=bucket, Key=key)

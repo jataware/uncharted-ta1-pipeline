@@ -31,7 +31,7 @@ class MetadataExtractor(Task):
     TOKEN_LIMIT = 3500
 
     # OCR text filtering control
-    MAX_TEXT_FILTER_LENGTH = 1000
+    MAX_TEXT_FILTER_LENGTH = 600
     MIN_TEXT_FILTER_LENGTH = 100
     TEXT_FILTER_DECREMENT = 100
 
@@ -182,7 +182,7 @@ class MetadataExtractor(Task):
             + "\n"
             + 'If any string value is not present the field should be set to "NULL"\n'
             + "All author names should be in the format: <last name, first iniital, middle initial>.  Example of author name: Bailey, D. K.\n"
-            + "References and citations should be ignored when extracting authors.\n"
+            + "References, citations and geology attribution should be ignored when extracting authors.\n"
             + "Authors, title and year are normally grouped together.\n"
             + "The year should be the most recent value and should be a single 4 digit number.\n"
             + "The term grid ticks should not be included in coordinate system output.\n"

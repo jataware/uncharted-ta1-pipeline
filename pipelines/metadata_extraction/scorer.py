@@ -176,17 +176,3 @@ class Scorer:
         s = " ".join(s.split())
 
         return s
-
-
-if __name__ == "__main__":
-    # parse command line args
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--truth", type=Path, required=True)
-    parser.add_argument("--predictions", type=Path, required=True)
-    parser.add_argument("--verbose", type=bool, default=False)
-    p = parser.parse_args()
-
-    scorer = Scorer(p.truth, p.predictions, p.verbose)
-    scorer.score()
-    # scorer.print_results()
-    scorer.print_scores()

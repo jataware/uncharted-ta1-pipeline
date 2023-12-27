@@ -6,6 +6,7 @@ from tasks.text_extraction.entities import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
+from tasks.segmentation.detectron_segmenter import THING_CLASSES_DEFAULT
 from enum import Enum
 from shapely.geometry import Polygon
 from typing import Dict
@@ -45,11 +46,7 @@ class TextFilter(Task):
             # loop over map segments and check if the text intersects with any of them
             for segment in map_segmentation.segments:
                 # create
-                if (
-                    segment.class_label == "legend_points_lines"
-                    or segment.class_label == "legend_polygon"
-                    or segment.class_label == "map"
-                ):
+                if segment.class_label in THING_CLASSES_DEFAULT:
                     segment_poly = Polygon(segment.poly_bounds)
                     if (
                         self._filter_mode == FilterMode.EXCLUDE
