@@ -13,9 +13,12 @@ class MetadataExtraction(BaseModel):
     authors: List[str]
     year: str  # should be an int, but there's a chance somethign else is (incorrectly) extracted
     scale: str  # of the format 1:24000
-    quadrangle: str
+    quadrangles: List[str]
     datum: str
     vertical_datum: str
     projection: str
     coordinate_systems: List[str]
     base_map: str
+    counties: List[str]
+    states: List[str]
+    country: str
