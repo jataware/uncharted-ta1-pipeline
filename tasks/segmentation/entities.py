@@ -10,7 +10,7 @@ class SegmentationResult(BaseModel):
     """
 
     poly_bounds: List[
-        Tuple
+        Tuple[float, float]
     ]  # segmentation polygon, list of xy co-ords (in pixel units)
     area: float  # segmentation area
     bbox: List[float]  # bounding box

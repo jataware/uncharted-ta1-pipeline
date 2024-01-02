@@ -1,8 +1,9 @@
-from typing import List, Dict, Union
-from pathlib import Path
-import json
-from nltk.translate.meteor_score import single_meteor_score
 import os
+import argparse
+import json
+from typing import List, Dict
+from pathlib import Path
+from nltk.translate.meteor_score import single_meteor_score
 from tasks.metadata_extraction.entities import MetadataExtraction
 
 MetadataScore = Dict[str, float]
@@ -25,7 +26,7 @@ class Scorer:
             exit()
 
         for map_key, map_value in truth.items():
-            prediction_filename = f"{map_key}.json"
+            prediction_filename = f"{map_key}_metadata_extraction.json"
             prediction_path = Path(os.path.join(self._predictions, prediction_filename))
             if prediction_path.exists():
                 with open(prediction_path, "r") as predictions:

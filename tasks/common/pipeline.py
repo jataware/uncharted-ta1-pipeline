@@ -1,4 +1,5 @@
 from PIL import Image
+import PIL
 
 from .task import Task, TaskInput, TaskResult
 from typing import Optional, List, Dict, Any, Sequence
@@ -68,6 +69,14 @@ class ObjectOutput(Output):
     def __init__(self, pipeline_id: str, pipeline_name: str):
         super().__init__(pipeline_id, pipeline_name)
         self.data = {}
+
+
+class ImageOutput(Output):
+    data: PILImage
+
+    def __init__(self, pipeline_id: str, pipeline_name: str, data: PILImage):
+        super().__init__(pipeline_id, pipeline_name)
+        self.data = data
 
 
 class ListOutput(Output):
