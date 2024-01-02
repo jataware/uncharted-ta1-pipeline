@@ -62,7 +62,10 @@ class MetadataExtractor(Task):
             "year": "<publication year>",
             "publisher": "<publisher>",
             "base_map": "<base map>",
-            "quadrangle": "<quadrangle>",
+            "quadrangles": ["<quadrangle>", "<quadrangle>", "<quadrangle>"],
+            "counties": ["<county>", "<county>", "<county>"],
+            "states": ["<state>", "<state>", "<state>"],
+            "country": "<country>",
         },
         indent=4,
     )
@@ -88,7 +91,7 @@ class MetadataExtractor(Task):
             metadata.scale = self._normalize_scale(metadata.scale)
 
             # normalize quadrangle
-            metadata.quadrangle = self._normalize_quadrangle(metadata.quadrangle)
+            metadata.quadrangles = self._normalize_quadrangle(metadata.quadrangles)
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
@@ -192,7 +195,20 @@ class MetadataExtractor(Task):
             "The following blocks of text were extracted from a map using an OCR process:\n"
             + text_str
             + "\n\n"
-            + " Find the map title, scale, projection, geoditic datum, vertical datum, coordinate systems, authors, year, base map, quadrangle\n"
+            + " Find the following:\n"
+            + " - map title\n"
+            + " - scale\n"
+            + " - projection\n"
+            + " - geoditic datum\n"
+            + " - vertical datum\n"
+            + " - coordinate systems\n"
+            + " - authors\n"
+            + " - year\n"
+            + " - base map info\n"
+            + " - quadrangles\n"
+            + " - counties\n"
+            + " - states\n"
+            + " - country\n"
             + " Examples of vertical datums: mean sea level, vertical datum of 1901\n"
             + " Examples of datums: North American Datum of 1927, NAD83, WGS 84\n"
             + " Examples of projections: Polyconic, Lambert, Transverse Mercator\n"
@@ -205,7 +221,7 @@ class MetadataExtractor(Task):
             + 'If any string value is not present the field should be set to "NULL"\n'
             + "All author names should be in the format: <last name, first iniital, middle initial>.  Example of author name: Bailey, D. K.\n"
             + "References, citations and geology attribution should be ignored when extracting authors.\n"
-            + "A singel author is allowed.\n"
+            + "A single author is allowed.\n"
             + "Authors, title and year are normally grouped together.\n"
             + "The year should be the most recent value and should be a single 4 digit number.\n"
             + "The term grid ticks should not be included in coordinate system output.\n"
@@ -237,9 +253,12 @@ class MetadataExtractor(Task):
             return normalized_scale
         return scale_str
 
-    def _normalize_quadrangle(self, quadrangle_str: str) -> str:
+    def _normalize_quadrangle(self, quadrangles_str: List[str]) -> List[str]:
         """Normalizes the quadrangle string by removing the word quadrangle"""
-        return re.sub(self.QUADRANGLE_PATTERN, "", quadrangle_str).strip()
+        return [
+            re.sub(self.QUADRANGLE_PATTERN, "", quad_str).strip()
+            for quad_str in quadrangles_str
+        ]
 
     @staticmethod
     def _create_empty_extraction(doc_id: str) -> MetadataExtraction:
@@ -250,10 +269,13 @@ class MetadataExtractor(Task):
             authors=[],
             year="",
             scale="",
-            quadrangle="",
+            quadrangles=[],
             datum="",
             vertical_datum="",
             projection="",
             coordinate_systems=[],
             base_map="",
+            counties=[],
+            states=[],
+            country="",
         )
