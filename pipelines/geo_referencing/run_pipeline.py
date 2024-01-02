@@ -12,7 +12,7 @@ from pipelines.geo_referencing.output import CSVWriter, JSONWriter
 from tasks.common.io import ImageFileInputIterator
 from tasks.common.pipeline import PipelineInput
 from tasks.geo_referencing.georeference import QueryPoint
-from util.coordinates import absolute_minmax
+from tasks.geo_referencing.util import absolute_minmax
 from util.json import read_json_file
 
 from typing import List, Optional, Tuple

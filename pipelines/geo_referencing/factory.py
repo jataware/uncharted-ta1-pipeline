@@ -11,8 +11,8 @@ from tasks.common.pipeline import Pipeline
 from tasks.geo_referencing.coordinates_extractor import (
     GeocodeCoordinatesExtractor,
     GeoCoordinatesExtractor,
-    UTMCoordinatesExtractor,
 )
+from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
 from tasks.geo_referencing.filter import OutlierFilter
 from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints

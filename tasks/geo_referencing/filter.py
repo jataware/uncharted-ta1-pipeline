@@ -1,8 +1,8 @@
 import uuid
 
-from compute.geo_projection import PolyRegression
 from tasks.geo_referencing.entities import Coordinate
 from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.geo_referencing.geo_projection import PolyRegression
 from tasks.geo_referencing.util import ocr_to_coordinates
 
 from typing import Dict, Tuple

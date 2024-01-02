@@ -2,8 +2,8 @@ import math
 
 from geopy.distance import geodesic
 
-from compute.geo_projection import GeoProjection
 from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.geo_referencing.geo_projection import GeoProjection
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
