@@ -10,6 +10,8 @@ from pipelines.geo_referencing.output import JSONWriter, ObjectOutput
 from tasks.common.pipeline import PipelineInput
 from tasks.geo_referencing.georeference import QueryPoint
 
+from typing import Dict, Tuple
+
 Image.MAX_IMAGE_PIXELS = 400000000
 
 
@@ -23,7 +25,11 @@ def load_image(image_path: str) -> PILImage:
     return Image.open(image_path)
 
 
-def get_geofence(lon_limits=(-66.0, -180.0), lat_limits=(24.0, 73.0), use_abs=True):
+def get_geofence(
+    lon_limits: Tuple[float, float] = (-66.0, -180.0),
+    lat_limits: Tuple[float, float] = (24.0, 73.0),
+    use_abs: bool = True,
+):
     lon_minmax = lon_limits
     lat_minmax = lat_limits
     lon_sign_factor = 1.0
@@ -45,11 +51,13 @@ def get_geofence(lon_limits=(-66.0, -180.0), lat_limits=(24.0, 73.0), use_abs=Tr
     return (lon_minmax, lat_minmax, lon_sign_factor)
 
 
-def create_query_points(raster_id: str, points) -> list[QueryPoint]:
+def create_query_points(raster_id: str, points: Dict[str, float]) -> list[QueryPoint]:
     return [QueryPoint(raster_id, (p["x"], p["y"]), None) for p in points]
 
 
-def create_input(raster_id: str, image_path: str, points) -> PipelineInput:
+def create_input(
+    raster_id: str, image_path: str, points: Dict[str, float]
+) -> PipelineInput:
     input = PipelineInput()
     input.image = load_image(image_path)
     input.raster_id = raster_id
@@ -65,7 +73,7 @@ def create_input(raster_id: str, image_path: str, points) -> PipelineInput:
     return input
 
 
-def process_input(raster_id: str, image_path: str, points):
+def process_input(raster_id: str, image_path: str, points: Dict[str, float]):
     # create the input for the pipeline
     input = create_input(raster_id, image_path, points)
 

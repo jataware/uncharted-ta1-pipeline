@@ -256,7 +256,7 @@ def parse_query_file(
 
 def query_points_from_points(
     raster_id: str, points_file: str
-) -> Optional[list[QueryPoint]]:
+) -> Optional[List[QueryPoint]]:
     return None
     if not os.path.isfile(points_file):
         return None
@@ -273,7 +273,7 @@ def query_points_from_points(
     return query_points
 
 
-def get_params(clue_path: str):
+def get_params(clue_path: str) -> Tuple[List[float], List[float], float]:
     return get_geofence(
         clue_path,
         fov_range_km=FOV_RANGE_KM,

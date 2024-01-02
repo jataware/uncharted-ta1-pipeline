@@ -27,8 +27,10 @@ from tasks.metadata_extraction.metadata_extraction import MetadataExtractor
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 
+from typing import List
 
-def create_geo_referencing_pipelines(extract_metadata: bool) -> list[Pipeline]:
+
+def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
     p = []
 
     tasks = []
