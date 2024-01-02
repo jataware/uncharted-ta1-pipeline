@@ -1,19 +1,29 @@
 import logging
 import re
 import json
-from tasks.common.task import TaskInput, TaskResult
+from typing import List, Optional, Dict, Any
+from enum import Enum
 from openai import OpenAI
 import tiktoken
-from typing import List, Optional, Dict, Any
+from tasks.common.task import TaskInput, TaskResult
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.common.pipeline import Task
-
+from typing import List, Dict, Any
 
 logger = logging.getLogger("metadata_extractor")
+
+
+class LLM(str, Enum):
+    GPT_3_5_TURBO = "gpt-3.5-turbo"
+    GPT_4_TURBO = "gpt-4-1106-preview"
+    GPT_4 = "gpt-4"
+
+    def __str__(self):
+        return self.value
 
 
 class MetadataExtractor(Task):
@@ -57,11 +67,13 @@ class MetadataExtractor(Task):
         indent=4,
     )
 
-    def __init__(self, id: str):
+    def __init__(self, id: str, model=LLM.GPT_3_5_TURBO):
         super().__init__(id)
         self._openai_client = (
             OpenAI()
         )  # will read key from "OPENAI_API_KEY" env variable
+        self._model = model
+        logger.info(f"Using model: {self._model.value}")
 
     def run(self, input: TaskInput) -> TaskResult:
         """Processes a directory of OCR files and writes the metadata to a json file"""
@@ -84,7 +96,7 @@ class MetadataExtractor(Task):
         return task_result
 
     def _process_doc_text_extraction(
-        self, doc_text_extraction: DocTextExtraction
+        self, doc_text_extraction: DocTextExtraction, model: str = "gpt-3.5-turbo"
     ) -> Optional[MetadataExtraction]:
         """Extracts metadata from a single OCR file"""
         try:
@@ -106,10 +118,10 @@ class MetadataExtractor(Task):
                 # and try again
                 if num_tokens <= self.TOKEN_LIMIT:
                     break
+                max_text_length = max_text_length - self.TEXT_FILTER_DECREMENT
                 logger.info(
                     f"Token count after filtering exceeds limit - reducing max text length to {max_text_length}"
                 )
-                max_text_length = max_text_length - self.TEXT_FILTER_DECREMENT
 
             logger.info(f"Processing {num_tokens} tokens.")
 
@@ -117,17 +129,27 @@ class MetadataExtractor(Task):
             logger.debug(prompt_str)
 
             if num_tokens < self.TOKEN_LIMIT:
-                completion = self._openai_client.chat.completions.create(
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
-                        },
-                        {"role": "user", "content": prompt_str},
-                    ],
-                    model="gpt-3.5-turbo",
-                    temperature=0.1,
-                )
+                messages: List[Any] = [
+                    {
+                        "role": "system",
+                        "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
+                    },
+                    {"role": "user", "content": prompt_str},
+                ]
+                # GPT-4-turbo allows for an explicit response format setting for JSON output
+                if self._model == LLM.GPT_4_TURBO:
+                    completion = self._openai_client.chat.completions.create(
+                        messages=messages,
+                        model=self._model.value,
+                        response_format={"type": "json_object"},
+                        temperature=0.1,
+                    )
+                else:
+                    completion = self._openai_client.chat.completions.create(
+                        messages=messages,
+                        model=self._model.value,
+                        temperature=0.1,
+                    )
 
                 message_content = completion.choices[0].message.content
                 if message_content is not None:
@@ -174,7 +196,7 @@ class MetadataExtractor(Task):
             + " Examples of vertical datums: mean sea level, vertical datum of 1901\n"
             + " Examples of datums: North American Datum of 1927, NAD83, WGS 84\n"
             + " Examples of projections: Polyconic, Lambert, Transverse Mercator\n"
-            + " Examples of coordinate systems: Utah coordinate system central zone, UTM Zone 15, Universal Transverse Mercator zone 12, New Mexico coordinate system, north zone\n"
+            + " Examples of coordinate systems: Utah coordinate system central zone, UTM Zone 15, Universal Transverse Mercator zone 12, New Mexico coordinate system, north zone, Carter Coordinate System"
             + ' Examples of base maps: "U.S. Geological Survey 1954", "U.S. Geological Survey 1:62,500, Vidal (1949) Rice and Turtle Mountains (1954) Savahia Peak (1975)"\n'
             + " Return the data as a JSON structure.\n"
             + " Here is an example of the structure to use: \n"
@@ -183,6 +205,7 @@ class MetadataExtractor(Task):
             + 'If any string value is not present the field should be set to "NULL"\n'
             + "All author names should be in the format: <last name, first iniital, middle initial>.  Example of author name: Bailey, D. K.\n"
             + "References, citations and geology attribution should be ignored when extracting authors.\n"
+            + "A singel author is allowed.\n"
             + "Authors, title and year are normally grouped together.\n"
             + "The year should be the most recent value and should be a single 4 digit number.\n"
             + "The term grid ticks should not be included in coordinate system output.\n"

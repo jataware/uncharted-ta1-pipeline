@@ -10,6 +10,7 @@ from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
 from tasks.common.io import ImageFileInputIterator, ImageFileWriter, JSONFileWriter
+from tasks.metadata_extraction.metadata_extraction import LLM
 
 
 def main():
@@ -26,8 +27,9 @@ def main():
     parser.add_argument("--output", type=str, required=True)
     parser.add_argument("--workdir", type=str, default=None)
     parser.add_argument("--model", type=str, default=None)
-    parser.add_argument("--verbose", type=bool, default=False)
     parser.add_argument("--ta1_schema", type=bool, default=False)
+    parser.add_argument("--debug_images", type=bool, default=False)
+    parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_3_5_TURBO)
     p = parser.parse_args()
 
     # setup an input stream
@@ -38,7 +40,7 @@ def main():
     image_writer = ImageFileWriter()
 
     # create the pipeline
-    pipeline = MetadataExtractorPipeline(p.workdir, p.model, p.verbose)
+    pipeline = MetadataExtractorPipeline(p.workdir, p.model, p.debug_images, p.llm)
 
     # run the extraction pipeline
     for doc_id, image in input:
