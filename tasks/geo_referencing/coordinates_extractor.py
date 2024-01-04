@@ -126,7 +126,7 @@ class CoordinatesExtractor(Task):
     def _in_polygon(
         self, point: Tuple[float, float], polygon: List[Tuple[float, float]]
     ) -> bool:
-        path = mpltPath.Path(polygon)
+        path = mpltPath.Path(polygon) # type: ignore
         return path.contains_point(point)
 
 
