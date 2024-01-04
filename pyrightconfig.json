@@ -2,7 +2,6 @@
     "ignore": [
         "**/segmentation/layoutlmft",
         "**/segmentation/ditod",
-        "**/geo_referencing"
     ],
     "reportMissingImports": false,
     "typeCheckingMode": "basic"

@@ -9,6 +9,8 @@ from tasks.common.pipeline import (
     PipelineResult,
 )
 
+from typing import Any, Dict, List
+
 
 def get_projection(datum: str) -> str:
     # get espg code via basic lookup of the two frequently seen datums
@@ -128,7 +130,7 @@ class CSVWriter:
     def __init__(self):
         pass
 
-    def output(self, output: list[TabularOutput], params={}):
+    def output(self, output: List[TabularOutput], params: Dict[Any, Any] = {}):
         if len(output) == 0:
             return
 
@@ -156,7 +158,7 @@ class JSONWriter:
     def __init__(self):
         pass
 
-    def output(self, output: list[ObjectOutput], params={}) -> str:
+    def output(self, output: List[ObjectOutput], params: Dict[Any, Any] = {}) -> str:
         output_target = []
         for o in output:
             output_target.append(o.data)

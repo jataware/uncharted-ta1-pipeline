@@ -11,8 +11,8 @@ from tasks.common.pipeline import Pipeline
 from tasks.geo_referencing.coordinates_extractor import (
     GeocodeCoordinatesExtractor,
     GeoCoordinatesExtractor,
-    UTMCoordinatesExtractor,
 )
+from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
 from tasks.geo_referencing.filter import OutlierFilter
 from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
@@ -27,8 +27,10 @@ from tasks.metadata_extraction.metadata_extraction import MetadataExtractor
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 
+from typing import List
 
-def create_geo_referencing_pipelines(extract_metadata: bool) -> list[Pipeline]:
+
+def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
     p = []
 
     tasks = []
@@ -37,7 +39,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> list[Pipeline]:
     )
     tasks.append(EntropyROIExtractor("entropy roi"))
     if extract_metadata:
-        tasks.append(MetadataExtractor("metadata_extractor", True))
+        tasks.append(MetadataExtractor("metadata_extractor", False))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
     tasks.append(GeocodeCoordinatesExtractor("fifth"))
@@ -62,7 +64,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> list[Pipeline]:
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
     tasks.append(EntropyROIExtractor("entropy roi"))
     if extract_metadata:
-        tasks.append(MetadataExtractor("metadata_extractor", True))
+        tasks.append(MetadataExtractor("metadata_extractor", False))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
     tasks.append(GeocodeCoordinatesExtractor("fifth"))
@@ -103,7 +105,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> list[Pipeline]:
     )
     # tasks.append(ModelROIExtractor('model roi', buffer_fixed, '/Users/phorne/projects/criticalmaas/data/challenge_1/quick-seg'))
     if extract_metadata:
-        tasks.append(MetadataExtractor("metadata_extractor", True))
+        tasks.append(MetadataExtractor("metadata_extractor", False))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
@@ -144,7 +146,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> list[Pipeline]:
         )
     )
     if extract_metadata:
-        tasks.append(MetadataExtractor("metadata_extractor", True))
+        tasks.append(MetadataExtractor("metadata_extractor", False))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
@@ -185,7 +187,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> list[Pipeline]:
         )
     )
     if extract_metadata:
-        tasks.append(MetadataExtractor("metadata_extractor", True))
+        tasks.append(MetadataExtractor("metadata_extractor", False))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
