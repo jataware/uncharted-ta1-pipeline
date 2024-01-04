@@ -25,7 +25,7 @@ def get_bounds_bounding_box(bounds: List[Point]) -> List[Point]:
     ]
 
 
-def absolute_minmax(minmax: list[float]) -> list[float]:
+def absolute_minmax(minmax: List[float]) -> List[float]:
     minmax_abs = minmax.copy()
     # if the min max crosses 0, need to have it span from 0 to the furthest value
     if minmax_abs[0] < 0 and minmax_abs[1] >= 0:

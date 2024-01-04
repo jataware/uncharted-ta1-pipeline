@@ -9,21 +9,21 @@ from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Tuple
 
 ROI_PXL_LIMIT = 2000
 SLICE_PERCENT = 0.05
 
 
-def buffer_fixed(vertices, input: TaskInput):
+def buffer_fixed(vertices: List[Tuple[float, float]], input: TaskInput) -> float:
     return 150
 
 
-def buffer_image_ratio(vertices, input: TaskInput):
+def buffer_image_ratio(vertices: List[Tuple[float, float]], input: TaskInput) -> float:
     return max(input.image.size) * 0.03
 
 
-def buffer_roi_ratio(vertices, input: TaskInput) -> float:
+def buffer_roi_ratio(vertices: List[Tuple[float, float]], input: TaskInput) -> float:
     xs = [v[0] for v in vertices]
     x_size = max(xs) - min(xs)
     ys = [v[1] for v in vertices]
@@ -50,12 +50,14 @@ class ModelROIExtractor(ROIExtractor):
     _coco_file_path: str = ""
     _buffering_func: Callable
 
-    def __init__(self, task_id: str, buffering_func, coco_file_path=""):
+    def __init__(
+        self, task_id: str, buffering_func: Callable, coco_file_path: str = ""
+    ):
         super().__init__(task_id)
         self._coco_file_path = coco_file_path
         self._buffering_func = buffering_func
 
-    def _extract_roi(self, input: TaskInput) -> Optional[List[tuple[float, float]]]:
+    def _extract_roi(self, input: TaskInput) -> Optional[List[Tuple[float, float]]]:
         # read segmentation output
         segmentation_output: MapSegmentation = input.parse_data(
             SEGMENTATION_OUTPUT_KEY, MapSegmentation.model_validate
@@ -76,7 +78,7 @@ class ModelROIExtractor(ROIExtractor):
         print(f"buffering roi by {buffer_size}")
 
         polygon = Polygon(poly_raw)
-        buffered = polygon.buffer(buffer_size, join_style=2)
+        buffered = polygon.buffer(buffer_size, join_style=2)  # type: ignore
 
         return list(buffered.exterior.coords)
 
@@ -84,11 +86,11 @@ class ModelROIExtractor(ROIExtractor):
 class EntropyROIExtractor(ROIExtractor):
     _entropy_thres_buffer = 0.1
 
-    def __init__(self, task_id: str, _entropy_thres_buffer=0.1):
+    def __init__(self, task_id: str, _entropy_thres_buffer: float = 0.1):
         super().__init__(task_id)
         self._entropy_thres_buffer = _entropy_thres_buffer
 
-    def _extract_roi(self, input: TaskInput):
+    def _extract_roi(self, input: TaskInput) -> List[Tuple[int, int]]:
         # convert PIL image to opencv
         image = cv.cvtColor(np.array(input.image), cv.COLOR_RGB2BGR)
         # ocr_blocks = input.get_data("ocr_blocks")
@@ -168,7 +170,9 @@ class EntropyROIExtractor(ROIExtractor):
             (roi_x[0], roi_y[1]),
         ]
 
-    def _get_slice_avgs(self, img, axis=0, s_width=0.05):
+    def _get_slice_avgs(
+        self, img: np.ndarray, axis: int = 0, s_width: float = 0.05
+    ) -> Tuple[List[float], List[float]]:
         if axis != 0 and axis != 1:
             print("ERROR! not supported!")
         len0 = img.shape[axis]
@@ -194,7 +198,9 @@ class EntropyROIExtractor(ROIExtractor):
 
         return avg_vals, p_vals
 
-    def _find_roi_bounds(self, avg_vals, p_vals, e_thres, p_len):
+    def _find_roi_bounds(
+        self, avg_vals: List[float], p_vals: List[float], e_thres: float, p_len: int
+    ) -> List[int]:
         # find region of interest bounds (starting from bottem or right first,
         # then top or left)
         buffer = (

@@ -40,7 +40,9 @@ class FilterCoordinates(Task):
 
         return result
 
-    def _filter(self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]):
+    def _filter(
+        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[Tuple[float, float], Coordinate]:
         return coords
 
 
@@ -59,7 +61,7 @@ class OutlierFilter(FilterCoordinates):
 
     def _filter_regression(
         self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
-    ):
+    ) -> Dict[Tuple[float, float], Coordinate]:
         # use leave one out approach using linear regression model
 
         # reduce coordinate to (degree, constant dimension) where the constant dimension for lat is y and lon is x

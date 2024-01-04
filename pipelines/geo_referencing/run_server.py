@@ -10,7 +10,7 @@ from pipelines.geo_referencing.output import JSONWriter, ObjectOutput
 from tasks.common.pipeline import PipelineInput
 from tasks.geo_referencing.georeference import QueryPoint
 
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 Image.MAX_IMAGE_PIXELS = 400000000
 
@@ -51,12 +51,14 @@ def get_geofence(
     return (lon_minmax, lat_minmax, lon_sign_factor)
 
 
-def create_query_points(raster_id: str, points: Dict[str, float]) -> list[QueryPoint]:
+def create_query_points(
+    raster_id: str, points: List[Dict[str, float]]
+) -> list[QueryPoint]:
     return [QueryPoint(raster_id, (p["x"], p["y"]), None) for p in points]
 
 
 def create_input(
-    raster_id: str, image_path: str, points: Dict[str, float]
+    raster_id: str, image_path: str, points: List[Dict[str, float]]
 ) -> PipelineInput:
     input = PipelineInput()
     input.image = load_image(image_path)
@@ -73,7 +75,7 @@ def create_input(
     return input
 
 
-def process_input(raster_id: str, image_path: str, points: Dict[str, float]):
+def process_input(raster_id: str, image_path: str, points: List[Dict[str, float]]):
     # create the input for the pipeline
     input = create_input(raster_id, image_path, points)
 
@@ -84,7 +86,7 @@ def process_input(raster_id: str, image_path: str, points: Dict[str, float]):
     outputs = pipeline.run(input)
 
     # create the output assuming schema output is part of the pipeline
-    output_schema: ObjectOutput = outputs["schema"]
+    output_schema: ObjectOutput = outputs["schema"]  # type: ignore
     writer_json = JSONWriter()
     return writer_json.output([output_schema], {})
 
@@ -93,6 +95,7 @@ def process_input(raster_id: str, image_path: str, points: Dict[str, float]):
 def process_image():
     # get input values
     data = request.json
+    assert data is not None
     raster_id = data["id"]
     image_path = data["image_path"]
     points = data["points"]

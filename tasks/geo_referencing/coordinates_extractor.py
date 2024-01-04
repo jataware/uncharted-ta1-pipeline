@@ -8,7 +8,11 @@ from geopy.point import Point
 import matplotlib.path as mpltPath
 
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
+from tasks.text_extraction.entities import (
+    DocTextExtraction,
+    Point as TPoint,
+    TEXT_EXTRACTION_OUTPUT_KEY,
+)
 from tasks.geo_referencing.entities import Coordinate
 from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
 from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
@@ -45,16 +49,6 @@ RE_LETTERS = re.compile(r"[a-zA-Z]+")  # matches one or more letters
 MINUTES_PASSLIST = [0, 15, 30, 45]
 
 MIN_PLACENAME_LEN = 3
-
-# UTM coordinates
-# pre-compiled regex patterns
-RE_NORTHEAST = re.compile(
-    r"^|\b([1-9]?[ ,.]?[0-9]{3}[ ,.]?[0-9]00) ?m?(N|North|E|East)?($|\b)"
-)
-
-RE_NONNUMERIC = re.compile(r"[^0-9]")
-
-FOV_RANGE_METERS = 200000  # fallback search range (meters)
 
 # Geocode coordinates
 GEOCODE_CACHE = "temp/geocode/"
@@ -107,7 +101,10 @@ class CoordinatesExtractor(Task):
         return {}, {}
 
     def _create_coordinate_result(
-        self, input: CoordinateInput, lons, lats
+        self,
+        input: CoordinateInput,
+        lons: Dict[Tuple[float, float], Coordinate],
+        lats: Dict[Tuple[float, float], Coordinate],
     ) -> TaskResult:
         result = super()._create_result(input.input)
 
@@ -125,9 +122,6 @@ class CoordinatesExtractor(Task):
         num_keypoints = min(len(lons), len(lats))
         print(f"num keypoints: {num_keypoints}")
         return num_keypoints < 2
-
-    def _in_bounds(self, value: float, bounds: tuple) -> bool:
-        return value >= bounds[0] and value <= bounds[1]
 
     def _in_polygon(
         self, point: Tuple[float, float], polygon: List[Tuple[float]]
@@ -188,9 +182,9 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         ) / 2  # (used below to determine if a extracted pt is lon or lat)
 
         idx = 0
-        dms_matches = {}
-        deg_matches = {}
-        degmin_matches = {}
+        dms_matches: Dict[int, Tuple[Any, Tuple[int, int, int], float]] = {}
+        deg_matches: Dict[int, Tuple[Any, Tuple[int, int, int]]] = {}
+        degmin_matches: Dict[int, Tuple[Any, Tuple[int, int, int]]] = {}
         minsec_matches = {}
         for block in ocr_text_blocks.extractions:
             is_match = False
@@ -852,7 +846,13 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
         return (lon_results, lat_results)
 
-    def _remove_outlier_pts(self, input: CoordinateInput, deg_results, i_max, j_max):
+    def _remove_outlier_pts(
+        self,
+        input: CoordinateInput,
+        deg_results: Dict[Tuple[float, float], Coordinate],
+        i_max: int,
+        j_max: int,
+    ):
         deg_results_mapped = {}
         for k, v in deg_results.items():
             deg_results_mapped[k] = v.to_deg_result()[1]
@@ -928,10 +928,14 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
         return deg_results
 
-    def _filter_secondary_map(self, coord_result):
+    def _filter_secondary_map(
+        self, coord_result: Dict[Tuple[float, float], Coordinate]
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
         # remove lat & lon points that are part of a secondary map
         if len(coord_result) == 0:
-            return coord_result, []
+            return coord_result, {}
 
         # determine the min & max lon and lat values
         min_coord, max_coord = min(coord_result, key=lambda x: x[1]), max(
@@ -948,7 +952,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
             # use the widest range possible to determine the ratio of pixels to degrees
             delta_deg = min_coord[0] - max_coord[0]
             if delta_deg == 0:
-                return coord_result, []
+                return coord_result, {}
 
             delta_pixel = max_coord[1] - min_coord[1]
             delta_pixel_deg = delta_pixel / delta_deg
@@ -976,9 +980,9 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
     def _get_geofence(
         self,
         geofence: List[List[float]],
-        dms_matches,
+        dms_matches: Dict[int, Tuple[Any, Tuple[int, int, int], float]],
         ocr_text_blocks: DocTextExtraction,
-    ):
+    ) -> List[List[float]]:
         degrees = []
         for idx, (_, _, deg_parsed) in dms_matches.items():
             # reduce parsed value to middle point
@@ -991,7 +995,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
         return updated_geofence
 
-    def _parse_dms(self, groups) -> tuple[bool, float]:
+    def _parse_dms(self, groups: Any) -> Tuple[bool, float]:
         try:
             deg = RE_NONNUMERIC.sub("", groups[0])
             deg = float(deg)
@@ -1053,13 +1057,15 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
     def _extract_places(
         self,
         ocr_text_blocks: DocTextExtraction,
-        lonlat_results,
-        lon_minmax,
-        lat_minmax,
-        lon_sign_factor=1.0,
-        roi_xy=[],
-        use_google_maps=True,
-        geocode_path="",
+        lonlat_results: Tuple[
+            Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+        ],
+        lon_minmax: List[float],
+        lat_minmax: List[float],
+        lon_sign_factor: float = 1.0,
+        roi_xy: List[Tuple[float, float]] = [],
+        use_google_maps: bool = True,
+        geocode_path: str = "",
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
@@ -1083,12 +1089,12 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
         lat_minmax = [lat_clue - lat_range, lat_clue + lat_range]
 
         geocoder = None
-        timeout = int(10)
+        timeout = 10
         if using_google:
             geocoder = GoogleV3(api_key=google_api_key, domain="maps.googleapis.com")
         else:
             geocoder = Nominatim(
-                timeout=timeout, user_agent="uncharted-cma-challenge-geocoder"
+                timeout=timeout, user_agent="uncharted-cma-challenge-geocoder"  # type: ignore
             )
 
         geocode_cache = {}
@@ -1118,37 +1124,37 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
                 Point(lat_minmax[0], lon_sign_factor * lon_minmax[0]),
             ]
 
-            places = geocode_cache.get(block["text"], None)
+            places = geocode_cache.get(block.text, None)
             if places is None:
                 if using_google:
                     # run Google geo-coder
                     places = geocoder.geocode(
-                        block["text"],
-                        exactly_one=False,
-                        timeout=timeout,
-                        region="us",
-                        bounds=viewbox,
+                        block.text,  # type: ignore
+                        exactly_one=False,  # type: ignore
+                        timeout=timeout,  # type: ignore
+                        region="us",  # type: ignore
+                        bounds=viewbox,  # type: ignore
                     )
                 else:
                     # run Nominatim geo-coder
                     # featuretype='settlement' #'city,settlement'
                     places = geocoder.geocode(
-                        block["text"],
-                        exactly_one=False,
-                        limit=4,
-                        country_codes="us",
-                        viewbox=viewbox,
+                        block.text,  # type: ignore
+                        exactly_one=False,  # type: ignore
+                        limit=4,  # type: ignore
+                        country_codes="us",  # type: ignore
+                        viewbox=viewbox,  # type: ignore
                     )  # featuretype=featuretype)
                 if places:
-                    geocode_cache[block["text"]].extend(places)
+                    geocode_cache[block.text].extend(places)  # type: ignore
                 else:
-                    geocode_cache[block["text"]].append(None)
+                    geocode_cache[block.text].append(None)
 
             if places is None:
                 continue
 
             place_dists = []
-            for p_idx, place in enumerate(places):
+            for p_idx, place in enumerate(places):  # type: ignore
                 if place is None:
                     continue
 
@@ -1198,8 +1204,8 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
                 )
                 y_pixel = self._get_center_y(ocr_text_blocks.extractions[idx].bounds)
                 lonlat_deg = (
-                    places[p_idx_match].longitude * lon_sign_factor,
-                    places[p_idx_match].latitude,
+                    places[p_idx_match].longitude * lon_sign_factor,  # type: ignore
+                    places[p_idx_match].latitude,  # type: ignore
                 )
 
                 geo_lonlat_results.append((lonlat_deg, (x_pixel, y_pixel), p_dist_sq))
@@ -1252,16 +1258,21 @@ class GeocodeCoordinatesExtractor(CoordinatesExtractor):
 
         return lon_results, lat_results
 
-    def _get_center_y(self, bounding_poly):
-        min_y = bounding_poly.vertices[0].y
-        max_y = bounding_poly.vertices[3].y
+    def _get_center_y(self, bounding_poly: List[TPoint]) -> float:
+        min_y = bounding_poly[0].y
+        max_y = bounding_poly[3].y
         return (min_y + max_y) / 2.0
 
-    def _get_center_x(self, bounding_poly, x_ranges):
-        min_x = bounding_poly.vertices[0].x
-        max_x = bounding_poly.vertices[2].x
+    def _get_center_x(
+        self, bounding_poly: List[TPoint], x_ranges: Tuple[float, float]
+    ) -> float:
+        min_x = bounding_poly[0].x
+        max_x = bounding_poly[2].x
         if x_ranges[0] > 0.0 or x_ranges[1] < 1.0:
             x_span = max_x - min_x
             min_x += x_span * x_ranges[0]
             max_x -= x_span * (1.0 - x_ranges[1])
         return (min_x + max_x) / 2.0
+
+    def _in_bounds(self, value: float, bounds: Tuple[float, float]) -> bool:
+        return value >= bounds[0] and value <= bounds[1]

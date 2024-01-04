@@ -1,9 +1,9 @@
+import re
 import utm
 import uuid
 
 from copy import deepcopy
 
-from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.coordinates_extractor import (
     CoordinatesExtractor,
     CoordinateInput,
@@ -14,12 +14,26 @@ from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_b
 
 from typing import Any, Dict, List, Tuple
 
+# UTM coordinates
+# pre-compiled regex patterns
+RE_NORTHEAST = re.compile(
+    r"^|\b([1-9]?[ ,.]?[0-9]{3}[ ,.]?[0-9]00) ?m?(N|North|E|East)?($|\b)"
+)
+
+RE_NONNUMERIC = re.compile(r"[^0-9]")
+
+FOV_RANGE_METERS = 200000  # fallback search range (meters)
+
 
 class UTMCoordinatesExtractor(CoordinatesExtractor):
     def __init__(self, task_id: str):
         super().__init__(task_id)
 
-    def _extract_coordinates(self, input: CoordinateInput):
+    def _extract_coordinates(
+        self, input: CoordinateInput
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
         ocr_blocks = input.input.get_data("ocr_blocks")
         lon_minmax = input.input.get_request_info("lon_minmax", [0, 180])
         lat_minmax = input.input.get_request_info("lat_minmax", [-80, 84])
@@ -49,7 +63,9 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         self,
         input: CoordinateInput,
         ocr_text_blocks_raw: DocTextExtraction,
-        lonlat_results,
+        lonlat_results: Tuple[
+            Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+        ],
         lon_minmax: List[float],
         lat_minmax: List[float],
         lon_sign_factor: float = 1.0,
@@ -92,15 +108,13 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         utm_geofence_max = utm.from_latlon(lat_minmax[1], lon_minmax[1])
 
         idx = 0
-        ne_matches = []
+        ne_matches: List[Tuple[int, Any, Tuple[int, int, int]]] = []
         for block in ocr_text_blocks.extractions:
-            is_match = False
             matches_iter = RE_NORTHEAST.finditer(block.text)
             for m in matches_iter:
                 m_groups = m.groups()
                 if any(x for x in m_groups):
                     # valid match
-                    is_match = True
                     m_span = (m.start(), m.end(), len(block.text))
                     ne_matches.append((idx, m_groups, m_span))
             idx += 1
