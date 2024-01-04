@@ -124,7 +124,7 @@ class CoordinatesExtractor(Task):
         return num_keypoints < 2
 
     def _in_polygon(
-        self, point: Tuple[float, float], polygon: List[Tuple[float]]
+        self, point: Tuple[float, float], polygon: List[Tuple[float, float]]
     ) -> bool:
         path = mpltPath.Path(polygon)
         return path.contains_point(point)
@@ -717,7 +717,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         lon_results: Dict[Tuple[float, float], Coordinate],
         lat_results: Dict[Tuple[float, float], Coordinate],
         im_size: Tuple[float, float],
-        roi_xy: List[Tuple[float]] = [],
+        roi_xy: List[Tuple[float, float]] = [],
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
