@@ -118,7 +118,7 @@ class EntropyROIExtractor(ROIExtractor):
                     ymin:ymax, xmin:xmax, :
                 ]  # TODO - or just get median val along the top?
                 if ocr_pxl_slice.size > 0:
-                    med_val = np.median(ocr_pxl_slice, axis=[0, 1]) # type: ignore
+                    med_val = np.median(ocr_pxl_slice, axis=[0, 1])  # type: ignore
                     ocr_pxl_slice[:, :, 0] = med_val[0]
                     ocr_pxl_slice[:, :, 1] = med_val[1]
                     ocr_pxl_slice[:, :, 2] = med_val[2]
