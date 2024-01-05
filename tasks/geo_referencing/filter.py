@@ -97,6 +97,7 @@ class OutlierFilter(FilterCoordinates):
                         "pixel_alignment": coords_representation[
                             i
                         ].get_pixel_alignment(),
+                        "confidence": coords_representation[i].get_confidence(),
                     },
                     "excluded due to regression outlier detection",
                 )
