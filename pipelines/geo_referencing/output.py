@@ -192,7 +192,7 @@ class GCPOutput(OutputCreator):
             "datum_raw": datum_raw,
             "projection_raw": projection_raw,
             "image_height": pipeline_result.image.size[1],
-            "image_width": pipeline_result.image.size[1],
+            "image_width": pipeline_result.image.size[0],
             "gcps": [],
             "levers": [],
         }
