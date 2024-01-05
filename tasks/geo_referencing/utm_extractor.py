@@ -162,6 +162,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                             "text": coord.get_text(),
                             "type": "latitude" if coord.is_lat() else "longitude",
                             "pixel_alignment": coord.get_pixel_alignment(),
+                            "confidence": coord.get_confidence(),
                         },
                         "extracted northing utm coordinate",
                     )
@@ -197,6 +198,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                             "text": coord.get_text(),
                             "type": "latitude" if coord.is_lat() else "longitude",
                             "pixel_alignment": coord.get_pixel_alignment(),
+                            "confidence": coord.get_confidence(),
                         },
                         "extracted northing utm coordinate",
                     )
@@ -238,6 +240,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                             "text": coord.get_text(),
                             "type": "latitude" if coord.is_lat() else "longitude",
                             "pixel_alignment": coord.get_pixel_alignment(),
+                            "confidence": coord.get_confidence(),
                         },
                         "extracted easting utm coordinate",
                     )
@@ -273,6 +276,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                             "text": coord.get_text(),
                             "type": "latitude" if coord.is_lat() else "longitude",
                             "pixel_alignment": coord.get_pixel_alignment(),
+                            "confidence": coord.get_confidence(),
                         },
                         "extracted easting utm coordinate",
                     )

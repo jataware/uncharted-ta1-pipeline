@@ -543,6 +543,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "parsed": c.get_parsed_degree(),
                         "type": "latitude" if c.is_lat() else "longitude",
                         "pixel_alignment": c.get_pixel_alignment(),
+                        "confidence": c.get_confidence(),
                     },
                     "extracted coordinate",
                 )
@@ -685,6 +686,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     "parsed": c.get_parsed_degree(),
                     "type": "latitude" if c.is_lat() else "longitude",
                     "pixel_alignment": c.get_pixel_alignment(),
+                    "confidence": c.get_confidence(),
                 },
                 "extracted coordinate",
             )
@@ -748,6 +750,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                             "text": coord.get_text(),
                             "type": "latitude" if coord.is_lat() else "longitude",
                             "pixel_alignment": coord.get_pixel_alignment(),
+                            "confidence": coord.get_confidence(),
                         },
                         "excluded due to being outside roi",
                     )
@@ -766,6 +769,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                             "text": coord.get_text(),
                             "type": "latitude" if coord.is_lat() else "longitude",
                             "pixel_alignment": coord.get_pixel_alignment(),
+                            "confidence": coord.get_confidence(),
                         },
                         "excluded due to being outside roi",
                     )
@@ -921,6 +925,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                             "text": v.get_text(),
                             "type": "latitude" if v.is_lat() else "longitude",
                             "pixel_alignment": v.get_pixel_alignment(),
+                            "confidence": v.get_confidence(),
                         },
                         "excluded due to being an outlier",
                     )

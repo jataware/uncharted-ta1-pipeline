@@ -178,6 +178,7 @@ class GCPOutput(OutputCreator):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
+        assert pipeline_result.image is not None
         query_points = pipeline_result.data["query_pts"]
         projection_raw = pipeline_result.data["projection"]
         datum_raw = pipeline_result.data["datum"]
@@ -190,6 +191,8 @@ class GCPOutput(OutputCreator):
             "crs": [projection_mapped],
             "datum_raw": datum_raw,
             "projection_raw": projection_raw,
+            "image_height": pipeline_result.image.size[1],
+            "image_width": pipeline_result.image.size[1],
             "gcps": [],
             "levers": [],
         }
