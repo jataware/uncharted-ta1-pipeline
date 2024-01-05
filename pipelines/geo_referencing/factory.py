@@ -90,7 +90,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_20230",
+            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -132,7 +132,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_20230",
+            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -173,7 +173,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_20230",
+            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
