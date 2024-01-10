@@ -14,6 +14,7 @@ from tasks.geo_referencing.coordinates_extractor import (
 )
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
 from tasks.geo_referencing.filter import OutlierFilter
+from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.roi_extractor import (
@@ -23,6 +24,7 @@ from tasks.geo_referencing.roi_extractor import (
     buffer_image_ratio,
     buffer_roi_ratio,
 )
+from tasks.metadata_extraction.geocoder import Geocoder, NominatimGeocoder
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
@@ -106,6 +108,8 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
     # tasks.append(ModelROIExtractor('model roi', buffer_fixed, '/Users/phorne/projects/criticalmaas/data/challenge_1/quick-seg'))
     if extract_metadata:
         tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
+    tasks.append(Geocoder("geo", NominatimGeocoder(10)))
+    tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(UTMCoordinatesExtractor("fifth"))

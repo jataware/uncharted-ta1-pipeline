@@ -142,7 +142,7 @@ class Pipeline:
                 pipeline_result = self._merge_result(pipeline_result, task_result)
             except Exception as e:
                 print(
-                    f"EXCEPTION executing pipeline at step {task_input.task_index} for raster {input.raster_id}"
+                    f"EXCEPTION executing pipeline at step {t.get_task_id()} ({task_input.task_index}) for raster {input.raster_id}"
                 )
                 print(e)
 

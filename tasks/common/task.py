@@ -101,6 +101,9 @@ class Task:
         result.task_id = self._task_id
         return result
 
+    def get_task_id(self) -> str:
+        return self._task_id
+
     def _create_result(self, input: TaskInput) -> TaskResult:
         result = TaskResult()
         result.task_id = self._task_id

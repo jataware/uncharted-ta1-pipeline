@@ -3,6 +3,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 METADATA_EXTRACTION_OUTPUT_KEY = "metadata_extraction_output"
+GEOCODED_PLACES_OUTPUT_KEY = "geocoded_places_output"
 
 
 class MetadataExtraction(BaseModel):
@@ -22,3 +23,26 @@ class MetadataExtraction(BaseModel):
     counties: List[str]
     states: List[str]
     country: str
+
+
+class GeocodedCoordinate(BaseModel):
+    pixel_x: int
+    pixel_y: int
+    geo_x: float
+    geo_y: float
+
+
+class GeocodedPlace(BaseModel):
+    model_config = ConfigDict(coerce_numbers_to_str=True)
+
+    place_name: str
+    place_location_restriction: str  # restrict the search space when geocoding to the country or the state to reduce noise
+    place_type: str  # either bound for places that are not on the map but restrict the coordinate space, or point / line / polygon
+    coordinates: List[
+        GeocodedCoordinate
+    ]  # bounds will not have the pixel coordinates defined
+
+
+class DocGeocodedPlaces(BaseModel):
+    map_id: str
+    places: List[GeocodedPlace] = []
