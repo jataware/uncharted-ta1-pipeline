@@ -13,7 +13,7 @@ from tasks.text_extraction.entities import (
     Point as TPoint,
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
-from tasks.geo_referencing.entities import Coordinate
+from tasks.geo_referencing.entities import Coordinate, DocGeoFence, GEOFENCE_OUTPUT_KEY
 from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
 from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
 from util.cache import cache_geocode_data, load_geocode_cache
@@ -100,6 +100,26 @@ class CoordinatesExtractor(Task):
     ]:
         return {}, {}
 
+    def _get_input_geofence(
+        self, input: CoordinateInput
+    ) -> Tuple[List[float], List[float], bool]:
+        geofence: DocGeoFence = input.input.parse_data(
+            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
+        )
+
+        if geofence is None:
+            return (
+                input.input.get_request_info("lon_minmax", [0, 180]),
+                input.input.get_request_info("lat_minmax", [0, 180]),
+                True,
+            )
+
+        return (
+            geofence.geofence.lon_minmax,
+            geofence.geofence.lat_minmax,
+            geofence.geofence.defaulted,
+        )
+
     def _create_coordinate_result(
         self,
         input: CoordinateInput,
@@ -142,11 +162,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         ocr_blocks: DocTextExtraction = input.input.parse_data(
             TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
         )
-        lon_minmax = input.input.get_request_info("lon_minmax", [0, 180])
-        lat_minmax = input.input.get_request_info("lat_minmax", [0, 180])
+        lon_minmax, lat_minmax, defaulted = self._get_input_geofence(input)
 
         lon_pts, lat_pts = self._extract_lonlat(
-            input, ocr_blocks, lon_minmax, lat_minmax
+            input, ocr_blocks, lon_minmax, lat_minmax, defaulted
         )
         num_keypoints = min(len(lon_pts), len(lat_pts))
         if num_keypoints > 0:
@@ -166,6 +185,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         ocr_text_blocks_raw: DocTextExtraction,
         lon_minmax: List[float],
         lat_minmax: List[float],
+        default_geofence: bool,
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
@@ -243,27 +263,28 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         minsec_matches[idx] = (m_groups, m_span)
             idx += 1
 
-        updated_geofence = self._get_geofence(
-            [lon_minmax, lat_minmax], dms_matches, ocr_text_blocks
-        )
-        # the updated geofence should only narrow the existing one so make sure it falls within the initial geofence
-        if (
-            updated_geofence[0][0] >= lon_minmax[0]
-            and updated_geofence[0][1] <= lon_minmax[1]
-        ):
-            lon_minmax = updated_geofence[0]
-            input.updated_output["lon_minmax"] = lon_minmax
-            lon_clue = (lon_minmax[0] + lon_minmax[1]) / 2
-        if (
-            updated_geofence[1][0] >= lat_minmax[0]
-            and updated_geofence[1][1] <= lat_minmax[1]
-        ):
-            lat_minmax = updated_geofence[1]
-            input.updated_output["lat_minmax"] = lat_minmax
-            lat_clue = (lat_minmax[0] + lat_minmax[1]) / 2
-        print(
-            f"new geo fence: {updated_geofence}\tlon clue: {lon_clue}\tlat clue: {lat_clue}"
-        )
+        if default_geofence:
+            updated_geofence = self._get_geofence(
+                [lon_minmax, lat_minmax], dms_matches, ocr_text_blocks
+            )
+            # the updated geofence should only narrow the existing one so make sure it falls within the initial geofence
+            if (
+                updated_geofence[0][0] >= lon_minmax[0]
+                and updated_geofence[0][1] <= lon_minmax[1]
+            ):
+                lon_minmax = updated_geofence[0]
+                input.updated_output["lon_minmax"] = lon_minmax
+                lon_clue = (lon_minmax[0] + lon_minmax[1]) / 2
+            if (
+                updated_geofence[1][0] >= lat_minmax[0]
+                and updated_geofence[1][1] <= lat_minmax[1]
+            ):
+                lat_minmax = updated_geofence[1]
+                input.updated_output["lat_minmax"] = lat_minmax
+                lat_clue = (lat_minmax[0] + lat_minmax[1]) / 2
+            print(
+                f"new geo fence: {updated_geofence}\tlon clue: {lon_clue}\tlat clue: {lat_clue}"
+            )
 
         # ---- finalize lat/lon results
         coord_results = []

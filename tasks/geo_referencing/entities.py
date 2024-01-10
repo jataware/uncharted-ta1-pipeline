@@ -1,6 +1,21 @@
 from tasks.text_extraction.entities import Point
 
 from typing import List, Tuple
+from pydantic import BaseModel, ConfigDict
+
+
+GEOFENCE_OUTPUT_KEY = "geofence_output"
+
+
+class GeoFence(BaseModel):
+    lat_minmax: List[float]
+    lon_minmax: List[float]
+    defaulted: bool
+
+
+class DocGeoFence(BaseModel):
+    map_id: str
+    geofence: GeoFence
 
 
 class Coordinate:
