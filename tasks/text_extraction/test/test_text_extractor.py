@@ -1,14 +1,12 @@
-from tasks.text_extraction.text_extractor import (
-    ResizeTextExtractor,
-    TileTextExtractor,
-    DocTextExtraction,
-)
-from common import image_io
+from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
+from tasks.text_extraction.entities import DocTextExtraction
+from tasks.common import image_io
 from pathlib import Path
 from tasks.common.task import TaskInput
+import pytest
 
 
-# @pytest.mark.skip(reason="requires google vision credentials")
+@pytest.mark.skip(reason="requires google vision credentials")
 def test_resize_text_extractor():
     """
     Test function for ResizeTextExtractor class.
@@ -58,7 +56,7 @@ def test_resize_text_extractor():
     cache_file.unlink()
 
 
-# @pytest.mark.skip(reason="requires google vision credentials")
+@pytest.mark.skip(reason="requires google vision credentials")
 def test_tiling_text_extractor():
     """
     Test function for TilingTextExtractor class.

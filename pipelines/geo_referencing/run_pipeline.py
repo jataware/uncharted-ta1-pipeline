@@ -12,7 +12,7 @@ from pipelines.geo_referencing.output import CSVWriter, JSONWriter
 from tasks.common.io import ImageFileInputIterator
 from tasks.common.pipeline import PipelineInput
 from tasks.geo_referencing.georeference import QueryPoint
-from util.coordinates import absolute_minmax
+from util.coordinate import absolute_minmax
 from util.json import read_json_file
 
 from typing import List, Optional, Tuple
@@ -46,11 +46,12 @@ def main():
 
     # parse command line args
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
-    parser.add_argument("--workdir", type=Path, default=None)
+    parser.add_argument("--workdir", type=str, default=None)
     parser.add_argument("--verbose", type=bool, default=False)
     parser.add_argument("--ta1_schema", type=bool, default=False)
+    parser.add_argument("--extract_metadata", type=bool, default=False)
     p = parser.parse_args()
 
     # setup an input stream
@@ -81,7 +82,7 @@ def create_input(
 
 def run_pipelines(parsed, input_data: ImageFileInputIterator):
     # get the pipelines
-    pipelines = create_geo_referencing_pipelines()
+    pipelines = create_geo_referencing_pipelines(parsed.extract_metadata)
 
     results = {}
     results_summary = {}
@@ -255,7 +256,7 @@ def parse_query_file(
 
 def query_points_from_points(
     raster_id: str, points_file: str
-) -> Optional[list[QueryPoint]]:
+) -> Optional[List[QueryPoint]]:
     return None
     if not os.path.isfile(points_file):
         return None
@@ -272,7 +273,7 @@ def query_points_from_points(
     return query_points
 
 
-def get_params(clue_path: str):
+def get_params(clue_path: str) -> Tuple[List[float], List[float], float]:
     return get_geofence(
         clue_path,
         fov_range_km=FOV_RANGE_KM,

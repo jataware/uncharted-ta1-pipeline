@@ -11,9 +11,10 @@ from tasks.common.pipeline import Pipeline
 from tasks.geo_referencing.coordinates_extractor import (
     GeocodeCoordinatesExtractor,
     GeoCoordinatesExtractor,
-    UTMCoordinatesExtractor,
 )
+from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
 from tasks.geo_referencing.filter import OutlierFilter
+from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.roi_extractor import (
@@ -23,11 +24,15 @@ from tasks.geo_referencing.roi_extractor import (
     buffer_image_ratio,
     buffer_roi_ratio,
 )
+from tasks.metadata_extraction.geocoder import Geocoder, NominatimGeocoder
+from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 
+from typing import List
 
-def create_geo_referencing_pipelines() -> list[Pipeline]:
+
+def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
     p = []
 
     tasks = []
@@ -35,6 +40,8 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
         ResizeTextExtractor("first", Path("temp/text/cache"), False, True, 6000)
     )
     tasks.append(EntropyROIExtractor("entropy roi"))
+    if extract_metadata:
+        tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
     tasks.append(GeocodeCoordinatesExtractor("fifth"))
@@ -58,6 +65,8 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
     tasks.append(EntropyROIExtractor("entropy roi"))
+    if extract_metadata:
+        tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
     tasks.append(GeocodeCoordinatesExtractor("fifth"))
@@ -83,7 +92,7 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_20230",
+            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -97,6 +106,10 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
         )
     )
     # tasks.append(ModelROIExtractor('model roi', buffer_fixed, '/Users/phorne/projects/criticalmaas/data/challenge_1/quick-seg'))
+    if extract_metadata:
+        tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
+    tasks.append(Geocoder("geo", NominatimGeocoder(10)))
+    tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
@@ -123,7 +136,7 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_20230",
+            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -136,6 +149,8 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
             "/Users/phorne/projects/criticalmaas/data/challenge_1/legend_and_map_segmentation_results_20231025",
         )
     )
+    if extract_metadata:
+        tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
@@ -162,7 +177,7 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_20230",
+            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -175,6 +190,8 @@ def create_geo_referencing_pipelines() -> list[Pipeline]:
             "/Users/phorne/projects/criticalmaas/data/challenge_1/legend_and_map_segmentation_results_20231025",
         )
     )
+    if extract_metadata:
+        tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(UTMCoordinatesExtractor("fifth"))

@@ -9,9 +9,9 @@ from .text_extraction_pipeline import TextExtractionPipeline
 def main():
     # parse command line args
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
-    parser.add_argument("--workdir", type=Path, default=None)
+    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--ta1_schema", action="store_true")
     parser.add_argument("--tile", action="store_true")

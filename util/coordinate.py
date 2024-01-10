@@ -1,11 +1,7 @@
-def ocr_to_coordinates(ocr_bounding_poly):
-    mapped = []
-    for v in ocr_bounding_poly.vertices:
-        mapped.append([v.x, v.y])
-    return mapped
+from typing import List
 
 
-def absolute_minmax(minmax: list[float]) -> list[float]:
+def absolute_minmax(minmax: List[float]) -> List[float]:
     minmax_abs = minmax.copy()
     # if the min max crosses 0, need to have it span from 0 to the furthest value
     if minmax_abs[0] < 0 and minmax_abs[1] >= 0:

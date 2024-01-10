@@ -11,38 +11,38 @@ See more info on pipeline tasks here: [../../tasks/README.md](../../tasks/README
 ### Pipelines
 As it stands, there are 5 pipelines that are executed for each map. The pipelines follow the same general process, with slight variations as not all maps are created equal. The differences are in how the OCR process handles larger images and how the Region Of Interest is obtained.
 
-** Resize **
+**Resize**
 The Resize pipeline will resize images to fit under the maximum allowable size limit for the OCR processing. The Region Of Interest is determined via an entropy based approach.
 
-** Tile **
+**Tile**
 The Tile pipeline will tile the image using the minimum amount of tiles necessary to have them all fit under the allowable size limit for the OCR processing. The Region Of Interest is determined via an entropy based approach.
 
-** Fixed ROI **
+**Fixed ROI**
 The Tile pipeline will tile the image using the minimum amount of tiles necessary to have them all fit under the allowable size limit for the OCR processing. The Region Of Interest is determined by the image segmentation model, with the map area being buffered by a fixed amount of pixels (150 for now)
 
-** Image ROI **
+**Image ROI**
 The Tile pipeline will tile the image using the minimum amount of tiles necessary to have them all fit under the allowable size limit for the OCR processing. The Region Of Interest is determined by the image segmentation model, with the map area being buffered by a percentage of the overall image size (3% for now)
 
-** ROI ROI **
+**ROI ROI**
 The Tile pipeline will tile the image using the minimum amount of tiles necessary to have them all fit under the allowable size limit for the OCR processing. The Region Of Interest is determined by the image segmentation model, with the map area being buffered by a percentage of the ROI size (5% for now)
 
 ### Output
 
 5 different outputs are produced when georeferencing is executed at the command line.
 
-** GCP  List **
+**GCP  List**
 A list of georeferenced GCPs along with distance from ground truth and other error indications if available. The data is output as a CSV file with the filename being `test-{pipeline name}.csv`.
 
-** Summary **
+**Summary**
 A list of maps with their RMSE if available output as a CSV file with the name `test_summary-{pipeline name}.csv`.
 
-** Schema **
+**Schema**
 A list of projections of maps containing the input GCPs georeferenced. The data is output following the specified TA1 schema in a JSON file named `test_schema-{pipeline name}.json`.
 
-** Levers **
+**Levers**
 All data that can be manipulated by the user to control or influence the georeferencing of maps. These can be the raw text and locations of parsed coordinates or the region of interest (map area). Future potential levers include extracted metadata, derived geofence, or hemisphere. The file is named `test_levers-{pipeline name}.json`.
 
-** GCPs **
+**GCPs**
 A list of georeferenced gcps output specifically for downstream integration containing only the bare minimum information for user validation. The file is named `test_gcps-{pipeline name}.json`.
 
 ### Installation

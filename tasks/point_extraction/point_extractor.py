@@ -20,6 +20,8 @@ from tqdm import tqdm
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
+from tasks.segmentation.detectron_segmenter import MODEL_FILENAME
+
 
 class MobileNetPointDetector(Task):
     """
@@ -422,7 +424,7 @@ class YOLOPointDetector(Task):
         prepare local data cache and download model weights, if needed
 
         Args:
-            model_data_path (str): The path to the folder containing the model weights
+            model_data_path (str): The path to the model weights file
             data_cache_path (str): The path to the local data cache
 
         Returns:
@@ -459,20 +461,13 @@ class YOLOPointDetector(Task):
                 aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", "<UNSET>"),
             )
 
-            # check for model weights and config files in the folder
-            s3_subfolder = s3_path[: s3_path.rfind("/")]
-            for s3_key in s3_data_cache.list_bucket_contents(s3_subfolder):
-                if s3_key.endswith(".pt"):
-                    local_model_data_path = Path(
-                        s3_data_cache.fetch_file_from_s3(s3_key, overwrite=False)
-                    )
+            # get teh model weights file either from the locally cached copy or from S3
+            local_model_data_path = Path(
+                s3_data_cache.fetch_file_from_s3(s3_path, overwrite=False)
+            )
         else:
-            # check for model weights and config files in the folder
-            # iterate over files in folder
-            for f in Path(model_data_path).iterdir():
-                if f.is_file():
-                    if f.suffix == ".pth":
-                        local_model_data_path = f
+            # load the model weights file from the local filesystem
+            local_model_data_path = Path(model_data_path)
 
         # check that we have all the files we need
         if not local_model_data_path or not local_model_data_path.is_file():

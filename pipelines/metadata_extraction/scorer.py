@@ -1,8 +1,9 @@
-from typing import List, Dict, Union
-from pathlib import Path
-import json
-from nltk.translate.meteor_score import single_meteor_score
 import os
+import argparse
+import json
+from typing import List, Dict
+from pathlib import Path
+from nltk.translate.meteor_score import single_meteor_score
 from tasks.metadata_extraction.entities import MetadataExtraction
 
 MetadataScore = Dict[str, float]
@@ -25,7 +26,7 @@ class Scorer:
             exit()
 
         for map_key, map_value in truth.items():
-            prediction_filename = f"{map_key}.json"
+            prediction_filename = f"{map_key}_metadata_extraction.json"
             prediction_path = Path(os.path.join(self._predictions, prediction_filename))
             if prediction_path.exists():
                 with open(prediction_path, "r") as predictions:
@@ -104,8 +105,8 @@ class Scorer:
                 if isinstance(field_prediction, list) and isinstance(field_truth, list):
                     score = self._score_list(field_prediction, field_truth)
                 elif isinstance(field_prediction, str) and isinstance(field_truth, str):
-                    # if field_key[0] == "title":
-                    #     score = self._score_meteor(field_prediction, field_truth)
+                    if field_key[0] == "title":
+                        score = self._score_meteor(field_prediction, field_truth)
                     if (
                         field_key[0] == "quadrangle"
                     ):  # normalization is now in the pipeline but this is here for legacy data
@@ -172,6 +173,9 @@ class Scorer:
         s = "".join([c for c in s if c.isalnum() or c.isspace()])
 
         # allow a maximum of one space between words
-        s = " ".join(s.split())
+        # s = " ".join(s.split())
+
+        # remoove whitespace
+        s = s.replace(" ", "")
 
         return s

@@ -1,8 +1,8 @@
 import uuid
 
-from compute.geo_projection import PolyRegression
 from tasks.geo_referencing.entities import Coordinate
 from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.geo_referencing.geo_projection import PolyRegression
 from tasks.geo_referencing.util import ocr_to_coordinates
 
 from typing import Dict, Tuple
@@ -40,7 +40,9 @@ class FilterCoordinates(Task):
 
         return result
 
-    def _filter(self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]):
+    def _filter(
+        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[Tuple[float, float], Coordinate]:
         return coords
 
 
@@ -59,7 +61,7 @@ class OutlierFilter(FilterCoordinates):
 
     def _filter_regression(
         self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
-    ):
+    ) -> Dict[Tuple[float, float], Coordinate]:
         # use leave one out approach using linear regression model
 
         # reduce coordinate to (degree, constant dimension) where the constant dimension for lat is y and lon is x
@@ -84,8 +86,20 @@ class OutlierFilter(FilterCoordinates):
                     input,
                     str(uuid.uuid4()),
                     "coordinate-excluded",
-                    ocr_to_coordinates(coords_representation[i].get_bounds()),
-                    f"excluded due to regression outlier detection- {coords_representation[i].get_text()}",
+                    {
+                        "bounds": ocr_to_coordinates(
+                            coords_representation[i].get_bounds()
+                        ),
+                        "text": coords_representation[i].get_text(),
+                        "type": "latitude"
+                        if coords_representation[i].is_lat()
+                        else "longitude",
+                        "pixel_alignment": coords_representation[
+                            i
+                        ].get_pixel_alignment(),
+                        "confidence": coords_representation[i].get_confidence(),
+                    },
+                    "excluded due to regression outlier detection",
                 )
             else:
                 key, _ = coords_representation[i].to_deg_result()

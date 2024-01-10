@@ -11,7 +11,7 @@ class TaskParameter:
     key: str = ""
     category: str = ""
     description: str = ""
-    value: Any = None
+    values: Dict[str, Any] = {}
 
     def __init__(
         self,
@@ -19,14 +19,14 @@ class TaskParameter:
         task_index: int,
         key: str,
         category: str,
-        value: Any,
+        values: Dict[str, Any],
         description: str = "",
     ):
         self.task_id = task_id
         self.task_index = task_index
         self.key = key
         self.category = category
-        self.value = value
+        self.values = values
         self.description = description
 
 
@@ -50,8 +50,10 @@ class TaskInput:
             return self.data[key]
         return default_value
 
-    def parse_data(self, key: str, parser: Callable) -> Any:
-        return parser(self.data[key])
+    def parse_data(self, key: str, parser: Callable, default_value: Any = None) -> Any:
+        if key in self.data:
+            return parser(self.data[key])
+        return default_value
 
     def get_request_info(self, key: str, default_value: Any = None) -> Any:
         if key in self.request:
@@ -59,10 +61,15 @@ class TaskInput:
         return default_value
 
     def add_param(
-        self, task_id: str, key: str, category: str, value: Any, description: str = ""
+        self,
+        task_id: str,
+        key: str,
+        category: str,
+        values: Dict[str, Any],
+        description: str = "",
     ):
         self.params_used.append(
-            TaskParameter(task_id, self.task_index, key, category, value, description)
+            TaskParameter(task_id, self.task_index, key, category, values, description)
         )
 
 
@@ -94,6 +101,9 @@ class Task:
         result.task_id = self._task_id
         return result
 
+    def get_task_id(self) -> str:
+        return self._task_id
+
     def _create_result(self, input: TaskInput) -> TaskResult:
         result = TaskResult()
         result.task_id = self._task_id
@@ -106,7 +116,7 @@ class Task:
         input: TaskInput,
         key: str,
         category: str,
-        value: Any,
+        values: Dict[str, Any],
         description: str = "",
     ):
-        input.add_param(self._task_id, key, category, value, description)
+        input.add_param(self._task_id, key, category, values, description)

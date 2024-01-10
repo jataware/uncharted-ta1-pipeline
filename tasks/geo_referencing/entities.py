@@ -1,6 +1,21 @@
 from tasks.text_extraction.entities import Point
 
 from typing import List, Tuple
+from pydantic import BaseModel, ConfigDict
+
+
+GEOFENCE_OUTPUT_KEY = "geofence_output"
+
+
+class GeoFence(BaseModel):
+    lat_minmax: List[float]
+    lon_minmax: List[float]
+    defaulted: bool
+
+
+class DocGeoFence(BaseModel):
+    map_id: str
+    geofence: GeoFence
 
 
 class Coordinate:
@@ -55,6 +70,9 @@ class Coordinate:
 
     def get_confidence(self) -> float:
         return self._confidence
+
+    def is_lat(self) -> bool:
+        return self._is_lat
 
     def get_constant_dimension(self) -> float:
         # lat coordinates should be aligned on y axis

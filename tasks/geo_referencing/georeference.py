@@ -2,28 +2,33 @@ import math
 
 from geopy.distance import geodesic
 
-from compute.geo_projection import GeoProjection
 from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.geo_referencing.entities import Coordinate
+from tasks.geo_referencing.geo_projection import GeoProjection
+from tasks.metadata_extraction.entities import (
+    MetadataExtraction,
+    METADATA_EXTRACTION_OUTPUT_KEY,
+)
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class QueryPoint:
     id: str
-    xy: tuple[float, float]
-    lonlat_gtruth: Optional[tuple[float, float]]
-    properties: dict[str, Any]
-    lonlat: tuple[float, float]
-    lonlat_xp: tuple[float, float]
-    lonlat_yp: tuple[float, float]
-    error_lonlat: tuple[float, float]
+    xy: Tuple[float, float]
+    lonlat_gtruth: Optional[Tuple[float, float]]
+    properties: Dict[str, Any]
+    lonlat: Tuple[float, float]
+    lonlat_xp: Tuple[float, float]
+    lonlat_yp: Tuple[float, float]
+    error_lonlat: Tuple[float, float]
 
     def __init__(
         self,
         id: str,
-        xy: tuple[float, float],
-        lonlat_gtruth: Optional[tuple[float, float]],
-        properties={},
+        xy: Tuple[float, float],
+        lonlat_gtruth: Optional[Tuple[float, float]],
+        properties: Dict[str, Any] = {},
         confidence: float = 0,
     ):
         self.id = id
@@ -90,13 +95,21 @@ class GeoReference(Task):
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
         rmse = self._score_query_points(query_pts)
+        datum, projection = self._determine_projection(input)
+        print(f"datum: {datum}\tprojection: {projection}")
 
         result = super()._create_result(input)
         result.output["query_pts"] = results
         result.output["rmse"] = rmse
+        result.output["datum"] = datum
+        result.output["projection"] = projection
         return result
 
-    def _calculate_confidence(self, lons, lats) -> float:
+    def _calculate_confidence(
+        self,
+        lons: Dict[Tuple[float, float], Coordinate],
+        lats: Dict[Tuple[float, float], Coordinate],
+    ) -> float:
         # start with lon confidence
         lon_count = 0
         lon_conf = 1.0
@@ -124,13 +137,13 @@ class GeoReference(Task):
 
     def _process_query_points(
         self,
-        query_pts: list,
+        query_pts: List[QueryPoint],
         im_resize_ratio: float,
         geo_projn: Optional[GeoProjection],
-        lon_minmax: tuple,
-        lat_minmax: tuple,
+        lon_minmax: List[float],
+        lat_minmax: List[float],
         confidence: float,
-    ):
+    ) -> List[QueryPoint]:
         if geo_projn is None:
             return self._add_fallback(query_pts, lon_minmax, lat_minmax)
 
@@ -139,15 +152,15 @@ class GeoReference(Task):
         try:
             xy_queries = (
                 [
-                    [qp.xy[0] * im_resize_ratio, qp.xy[1] * im_resize_ratio]
+                    (qp.xy[0] * im_resize_ratio, qp.xy[1] * im_resize_ratio)
                     for qp in query_pts
                 ],
                 [
-                    [qp.xy[0] * im_resize_ratio + 1, qp.xy[1] * im_resize_ratio]
+                    (qp.xy[0] * im_resize_ratio + 1, qp.xy[1] * im_resize_ratio)
                     for qp in query_pts
                 ],
                 [
-                    [qp.xy[0] * im_resize_ratio, qp.xy[1] * im_resize_ratio + 1]
+                    (qp.xy[0] * im_resize_ratio, qp.xy[1] * im_resize_ratio + 1)
                     for qp in query_pts
                 ],
             )
@@ -173,10 +186,10 @@ class GeoReference(Task):
 
     def _clip_query_pts(
         self,
-        query_pts: list[QueryPoint],
+        query_pts: List[QueryPoint],
         lon_minmax: List[float],
-        lat_minmax: list[float],
-    ) -> list[QueryPoint]:
+        lat_minmax: List[float],
+    ) -> List[QueryPoint]:
         if lon_minmax and lat_minmax:
             for qp in query_pts:
                 # ensure query pt results are within expected field-of-view range
@@ -196,8 +209,8 @@ class GeoReference(Task):
         return query_pts
 
     def _determine_hemispheres(
-        self, query_pts: list[QueryPoint]
-    ) -> tuple[float, float]:
+        self, query_pts: List[QueryPoint]
+    ) -> Tuple[float, float]:
         # function assumes that north is up and that the image is not skewed
         # set east - west hemisphere by seeing how longitude changes when x increases
         lon_multiplier = 1
@@ -218,8 +231,8 @@ class GeoReference(Task):
         return lon_multiplier, lat_multiplier
 
     def _update_hemispheres(
-        self, query_pts: list[QueryPoint], lon_multiplier: float, lat_multiplier: float
-    ) -> list[QueryPoint]:
+        self, query_pts: List[QueryPoint], lon_multiplier: float, lat_multiplier: float
+    ) -> List[QueryPoint]:
         for qp in query_pts:
             qp.lonlat = (
                 abs(qp.lonlat[0]) * lon_multiplier,
@@ -236,7 +249,25 @@ class GeoReference(Task):
 
         return query_pts
 
-    def _add_fallback(self, query_pts: list, lon_minmax: tuple, lat_minmax: tuple):
+    def _determine_projection(self, input: TaskInput) -> Tuple[str, str]:
+        # parse extracted metadata
+        metadata = input.parse_data(
+            METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
+        )
+
+        # make sure there is metadata
+        if not metadata:
+            return "", ""
+
+        # return the datum and the projection
+        return metadata.datum, metadata.projection
+
+    def _add_fallback(
+        self,
+        query_pts: List[QueryPoint],
+        lon_minmax: List[float],
+        lat_minmax: List[float],
+    ) -> List[QueryPoint]:
         print(f"adding fallback when georeferencing using {lon_minmax} & {lat_minmax}")
         results = []
         # no geographic-projection polynomial available,
@@ -256,7 +287,7 @@ class GeoReference(Task):
     def _clip(self, value: float, lower: float, upper: float) -> float:
         return lower if value < lower else upper if value > upper else value
 
-    def _score_query_points(self, query_pts: list[QueryPoint]) -> float:
+    def _score_query_points(self, query_pts: List[QueryPoint]) -> float:
         print("scoring...")
         # if ground truth lon/lat info exists, calculate the
         # RMSE of geodesic error distances (in km) for all

@@ -3,6 +3,8 @@ from random import randint
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.georeference import QueryPoint
 
+from typing import List, Tuple
+
 
 class CreateGroundControlPoints(Task):
     def __init__(self, task_id: str):
@@ -28,7 +30,7 @@ class CreateGroundControlPoints(Task):
 
         return result
 
-    def _create_query_points(self, input: TaskInput) -> list[QueryPoint]:
+    def _create_query_points(self, input: TaskInput) -> List[QueryPoint]:
         # create 10 ground control points roughly around the middle of the ROI (or failing that the middle of the image)
         min_x = min_y = max_x = max_y = 0
         roi = input.get_data("roi")
@@ -57,7 +59,7 @@ class CreateGroundControlPoints(Task):
         max_y: float,
         n: int = 10,
         buffer: float = 0.25,
-    ) -> list[tuple[int, int]]:
+    ) -> List[Tuple[int, int]]:
         # randomize x & y coordinates fitting between boundaries
         range_x = max_x - min_x
         range_y = max_y - min_y

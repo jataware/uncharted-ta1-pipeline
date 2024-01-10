@@ -1,4 +1,5 @@
 from PIL import Image
+import PIL
 
 from .task import Task, TaskInput, TaskResult
 from typing import Optional, List, Dict, Any, Sequence
@@ -70,6 +71,14 @@ class ObjectOutput(Output):
         self.data = {}
 
 
+class ImageOutput(Output):
+    data: PILImage
+
+    def __init__(self, pipeline_id: str, pipeline_name: str, data: PILImage):
+        super().__init__(pipeline_id, pipeline_name)
+        self.data = data
+
+
 class ListOutput(Output):
     data = []
 
@@ -133,7 +142,7 @@ class Pipeline:
                 pipeline_result = self._merge_result(pipeline_result, task_result)
             except Exception as e:
                 print(
-                    f"EXCEPTION executing pipeline at step {task_input.task_index} for raster {input.raster_id}"
+                    f"EXCEPTION executing pipeline at step {t.get_task_id()} ({task_input.task_index}) for raster {input.raster_id}"
                 )
                 print(e)
 

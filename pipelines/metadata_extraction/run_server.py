@@ -72,7 +72,10 @@ if __name__ == "__main__":
     logger.info("*** Starting map metadata app ***")
 
     # init segmenter
-    metadata_extraction = MetadataExtractorPipeline(Path("tmp/lara/workdir"))
+    metadata_extraction = MetadataExtractorPipeline(
+        "tmp/lara/workdir",
+        "tmp/lara/models",
+    )
 
     #### start flask server
     app.run(host="0.0.0.0", port=5000)
