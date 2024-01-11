@@ -1,6 +1,4 @@
 from tasks.point_extraction.entities import MapTile, MapTiles, MapPointLabel
-from tasks.point_extraction.pytorch.mobilenet_rcnn import MobileNetRCNN
-from tasks.point_extraction.pytorch.utils import PointInferenceDataset
 
 from tasks.common.s3_data_cache import S3DataCache
 from tasks.common.task import Task, TaskInput, TaskResult
@@ -11,137 +9,9 @@ from pathlib import Path
 from typing import List, Dict
 
 import torch
-from torch.utils.data import DataLoader, default_collate
 from tqdm import tqdm
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
-
-
-class MobileNetPointDetector(Task):
-    """
-    Model for detecting points in images. Predicts the location of points using a Pytorch model.
-    Predicts directionality features of each point, if necessary, using a separate model.
-    """
-
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    _VERSION = 1
-    _PYTORCH_MODEL = MobileNetRCNN
-
-    LABEL_MAPPING = {
-        "mine_pt": 1,
-        "stike_and_dip": 2,
-        "strikedip": 3,
-        "strike_dip": 4,
-        "inclined_bedding": 5,
-        "overturned_bedding": 6,
-        "gravel_pit_pt": 7,
-    }
-
-    def __init__(self, task_id: str, path: str) -> None:
-        self.model = self._PYTORCH_MODEL.from_pretrained(path)
-        self.model.eval()
-        self.model.to(self.device)
-        super().__init__(task_id)
-
-    @staticmethod
-    def dataloader_factory(images: List[MapTile]) -> DataLoader:
-        dataset = PointInferenceDataset(tiles=images)
-        return DataLoader(
-            dataset=dataset,
-            batch_size=8,
-            shuffle=False,
-            num_workers=0,
-            collate_fn=default_collate,
-        )
-
-    @staticmethod
-    def model_factory(model_name: str):
-        raise NotImplementedError
-
-    def reformat_output(self, output: Dict) -> List[MapPointLabel]:
-        """
-        Reformats Pytorch model output to match the MapPointLabel schema.
-        """
-
-        formatted_data: List[MapPointLabel] = []
-
-        id_to_name = {v: k for k, v in self.LABEL_MAPPING.items()}
-
-        boxes = output["boxes"].cpu().numpy()
-        labels = output["labels"].cpu().numpy()
-        scores = output["scores"].cpu().numpy()
-
-        for box, label, score in zip(boxes, labels, scores):
-            x1, y1, x2, y2 = box
-            formatted_data.append(
-                MapPointLabel(
-                    classifier_name=type(self).__name__,
-                    classifier_version=self._VERSION,
-                    class_id=label,
-                    class_name=id_to_name[label],
-                    x1=int(x1),
-                    y1=int(y1),
-                    x2=int(x2),
-                    y2=int(y2),
-                    score=float(score),
-                )
-            )
-        return formatted_data
-
-    def to(self, device: str) -> None:
-        """
-        Move underlying Pytorch model to specified device.
-        """
-        self.model.to(device)
-
-    @classmethod
-    def load(cls, task_id: str, path: str):
-        return cls(task_id, path)
-
-    @property
-    def version(self):
-        return self._VERSION
-
-    @property
-    def input_type(self):
-        return List[MapTile]
-
-    @property
-    def output_type(self):
-        return List[MapTile]
-
-    def run(
-        self,
-        input: TaskInput,
-    ) -> TaskResult:
-        """
-        Prediction utility for inference and evaluation.
-        """
-        map_tiles = MapTiles.model_validate(input.data["map_tiles"])
-        dataloader = self.dataloader_factory(images=map_tiles.tiles)
-
-        predictions: List[MapTile] = []
-        with torch.no_grad():
-            for batch in tqdm(dataloader, desc=f"Running {type(self).__name__}"):
-                images, metadata = batch
-                outputs = self.model(images)
-                for idx, image in enumerate(images):
-                    predictions.append(
-                        MapTile(
-                            x_offset=int(metadata["x_offset"][idx].item()),
-                            y_offset=int(metadata["y_offset"][idx].item()),
-                            width=int(metadata["width"][idx].item()),
-                            height=int(metadata["height"][idx].item()),
-                            image=image,
-                            map_path=metadata["map_path"][idx],
-                            predictions=self.reformat_output(outputs[idx]),
-                        )
-                    )
-        result_map_tiles = MapTiles(raster_id=map_tiles.raster_id, tiles=predictions)
-        return TaskResult(
-            task_id=self._task_id,
-            output={"map_tiles": result_map_tiles.model_dump()},
-        )
 
 
 class YOLOPointDetector(Task):

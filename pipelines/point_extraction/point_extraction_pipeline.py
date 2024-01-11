@@ -9,7 +9,6 @@ from tasks.common.pipeline import (
     PipelineResult,
     OutputCreator,
 )
-from schema.ta1_schema import Map, MapFeatureExtractions, ProjectionMeta
 
 
 class PointExtractionPipeline(Pipeline):
