@@ -1,8 +1,6 @@
 from pathlib import Path
-from tasks.point_extraction.point_extractor import (
-    PointDirectionPredictor,
-    YOLOPointDetector,
-)
+from tasks.point_extraction.point_extractor import YOLOPointDetector
+from tasks.point_extraction.point_orientation_extractor import PointDirectionPredictor
 from tasks.point_extraction.tiling import Tiler, Untiler
 from tasks.point_extraction.entities import MapImage
 from tasks.common.pipeline import (
