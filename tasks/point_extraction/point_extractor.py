@@ -20,8 +20,6 @@ from tqdm import tqdm
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
-from tasks.segmentation.detectron_segmenter import MODEL_FILENAME
-
 
 class MobileNetPointDetector(Task):
     """

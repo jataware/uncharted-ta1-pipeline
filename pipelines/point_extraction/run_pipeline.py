@@ -21,7 +21,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
-    parser.add_argument("--workdir", type=str, required=True)
+    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     p = parser.parse_args()
 
