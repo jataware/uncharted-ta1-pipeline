@@ -1,8 +1,7 @@
 from tasks.point_extraction.entities import MapTile, MapTiles, MapPointLabel
-
 from tasks.common.s3_data_cache import S3DataCache
 from tasks.common.task import Task, TaskInput, TaskResult
-
+import logging
 import os
 from urllib.parse import urlparse
 from pathlib import Path
@@ -12,6 +11,8 @@ import torch
 from tqdm import tqdm
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
+
+logger = logging.getLogger(__name__)
 
 
 class YOLOPointDetector(Task):
@@ -84,7 +85,7 @@ class YOLOPointDetector(Task):
             )
         else:
             # load the model weights file from the local filesystem
-            print(f"Loading model weights from local path: {model_data_path}")
+            logger.info(f"Loading model weights from local path: {model_data_path}")
             local_model_data_path = Path(model_data_path)
 
         # check that we have all the files we need
@@ -137,7 +138,7 @@ class YOLOPointDetector(Task):
         output: List[MapTile] = []
         # run batch model inference...
         for i in tqdm(range(0, len(map_tiles.tiles), self.bsz)):
-            print(f"Processing batch {i} to {i + self.bsz}")
+            logger.info(f"Processing batch {i} to {i + self.bsz}")
             batch = map_tiles.tiles[i : i + self.bsz]
             images = [tile.image for tile in batch]
             # note: ideally tile sizes used should be the same size as used during model training
