@@ -10,8 +10,18 @@ from tasks.point_extraction.entities import MapTile, MapTiles, MapImage, MapPoin
 
 
 class Tiler(Task):
+    """
+    Decomposes a full image into smaller tiles
+
+    NOTE: for point extractor inference, for best results it is recommended
+    to use the same size tiles that were used during model training
+    e.g., 1024x1024
+    """
+
+    # TODO: recommend keep overlap=0 for now.
+    # More work is needed to de-dup detection results for regions where tiles overlap
     # TODO: handle case where image already has labels attached to it.
-    def __init__(self, task_id="", tile_size=(512, 512), overlap=0.25):
+    def __init__(self, task_id="", tile_size=(1024, 1024), overlap=0.0):
         self.tile_size = tile_size
         self.overlap = overlap
         super().__init__(task_id)

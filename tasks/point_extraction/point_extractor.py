@@ -84,6 +84,7 @@ class YOLOPointDetector(Task):
             )
         else:
             # load the model weights file from the local filesystem
+            print(f"Loading model weights from local path: {model_data_path}")
             local_model_data_path = Path(model_data_path)
 
         # check that we have all the files we need
@@ -93,6 +94,10 @@ class YOLOPointDetector(Task):
         return local_model_data_path
 
     def process_output(self, predictions: Results) -> List[MapPointLabel]:
+        """
+        Convert point detection inference results from YOLO model format
+        to a list of MapPointLabel objects
+        """
         pt_labels = []
         for pred in predictions:
             assert pred.boxes is not None
@@ -119,6 +124,9 @@ class YOLOPointDetector(Task):
         return pt_labels
 
     def run(self, input: TaskInput) -> TaskResult:
+        """
+        run YOLO model inference for point symbol detection
+        """
         map_tiles = MapTiles.model_validate(input.data["map_tiles"])
 
         if self.device == "auto":
@@ -127,11 +135,15 @@ class YOLOPointDetector(Task):
             raise ValueError(f"Invalid device: {self.device}")
 
         output: List[MapTile] = []
+        # run batch model inference...
         for i in tqdm(range(0, len(map_tiles.tiles), self.bsz)):
             print(f"Processing batch {i} to {i + self.bsz}")
             batch = map_tiles.tiles[i : i + self.bsz]
             images = [tile.image for tile in batch]
-            batch_preds = self.model.predict(images, imgsz=768, device=self.device)
+            # note: ideally tile sizes used should be the same size as used during model training
+            # tiles can be resized during inference pre-processing, if needed using 'imgsz' param
+            # (e.g., predict(... imgsz=[1024,1024]))
+            batch_preds = self.model.predict(images, device=self.device)
             for tile, preds in zip(batch, batch_preds):
                 tile.predictions = self.process_output(preds)
                 output.append(tile)
