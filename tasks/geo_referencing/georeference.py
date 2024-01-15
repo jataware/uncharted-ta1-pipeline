@@ -88,7 +88,13 @@ class GeoReference(Task):
 
         # ----- Get lon/lat results for query points for this image
         results = self._process_query_points(
-            query_pts, im_resize_ratio, geo_projn, lon_minmax, lat_minmax, confidence
+            input,
+            query_pts,
+            im_resize_ratio,
+            geo_projn,
+            lon_minmax,
+            lat_minmax,
+            confidence,
         )
         lon_multiplier, lat_multiplier = self._determine_hemispheres(input, query_pts)
         results = self._clip_query_pts(query_pts, lon_minmax, lat_minmax)
@@ -137,6 +143,7 @@ class GeoReference(Task):
 
     def _process_query_points(
         self,
+        input: TaskInput,
         query_pts: List[QueryPoint],
         im_resize_ratio: float,
         geo_projn: Optional[GeoProjection],
@@ -145,7 +152,7 @@ class GeoReference(Task):
         confidence: float,
     ) -> List[QueryPoint]:
         if geo_projn is None:
-            return self._add_fallback(query_pts, lon_minmax, lat_minmax)
+            return self._add_fallback(input, query_pts, lon_minmax, lat_minmax)
 
         # use geographic-projection polynomial to estimate lon/lat for query points
         results = []
@@ -180,7 +187,7 @@ class GeoReference(Task):
         except Exception as e:
             print(f"EXCEPTION geo projecting")
             print(e)
-            return self._add_fallback(query_pts, lon_minmax, lat_minmax)
+            return self._add_fallback(input, query_pts, lon_minmax, lat_minmax)
 
         return results
 
@@ -305,12 +312,22 @@ class GeoReference(Task):
 
     def _add_fallback(
         self,
+        input: TaskInput,
         query_pts: List[QueryPoint],
         lon_minmax: List[float],
         lat_minmax: List[float],
     ) -> List[QueryPoint]:
         print(f"adding fallback when georeferencing using {lon_minmax} & {lat_minmax}")
         results = []
+
+        # use the geofence if it was not defaulted and lat/lon minmax not clue point based
+        geofence: DocGeoFence = input.parse_data(
+            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
+        )
+        if geofence is not None and not geofence.geofence.defaulted:
+            lon_minmax = geofence.geofence.lon_minmax
+            lat_minmax = geofence.geofence.lat_minmax
+
         # no geographic-projection polynomial available,
         # just use the 'clue' midpoint as a fallback answer for any query points
         lon_clue = (
