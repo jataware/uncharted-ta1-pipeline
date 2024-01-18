@@ -54,7 +54,7 @@ class PointOrientationExtractor(Task):
         """
         templates = {}
         for point_class, template_path in self.POINT_TEMPLATES.items():
-            self.templates[point_class] = np.array(Image.open(template_path))
+            templates[point_class] = np.array(Image.open(template_path))
         return templates
 
     def _dip_magnitude_extraction(
@@ -277,6 +277,7 @@ class PointOrientationExtractor(Task):
             # save "best orientation angle" results for this point class
             for idx, (_, best_angle) in xcorr_results.items():
                 map_image.labels[idx].direction = best_angle
+            logger.info(f"Finished point orientation analysis for class {c}")
 
         return TaskResult(
             task_id=self._task_id, output={"map_image": map_image.model_dump()}
