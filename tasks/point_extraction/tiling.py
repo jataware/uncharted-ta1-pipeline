@@ -1,4 +1,3 @@
-from unittest import result
 from PIL import Image
 import numpy as np
 from tqdm import tqdm
@@ -11,9 +10,10 @@ from common.task import Task, TaskInput, TaskResult
 from tasks.point_extraction.entities import MapTile, MapTiles, MapImage, MapPointLabel
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 
-SEGMENT_MAP_CLASS = "map"   # class label for map area segmentation
+SEGMENT_MAP_CLASS = "map"  # class label for map area segmentation
 
 logger = logging.getLogger(__name__)
+
 
 class Tiler(Task):
     """
@@ -43,14 +43,20 @@ class Tiler(Task):
 
         # use image segmentation to restrict point extraction to map area only
         if SEGMENTATION_OUTPUT_KEY in task_input.data:
-            segments = MapSegmentation.model_validate(task_input.data[SEGMENTATION_OUTPUT_KEY]).segments
+            segments = MapSegmentation.model_validate(
+                task_input.data[SEGMENTATION_OUTPUT_KEY]
+            ).segments
             # filter segments for class "map"
-            segments = list(filter(lambda s: (s.class_label == SEGMENT_MAP_CLASS), segments))
+            segments = list(
+                filter(lambda s: (s.class_label == SEGMENT_MAP_CLASS), segments)
+            )
             if not segments:
-                logger.warning('No map area segment found. Tiling whole image')
+                logger.warning("No map area segment found. Tiling whole image")
                 poly_xy = None
             elif len(segments) > 1:
-                logger.warning(f'{len(segments)} map segments found. Using segment with highest confidence for tiling')
+                logger.warning(
+                    f"{len(segments)} map segments found. Using segment with highest confidence for tiling"
+                )
                 # TODO: or could use largest map segment?
                 segments.sort(key=lambda s: s.confidence, reverse=True)
                 poly_xy = segments[0].poly_bounds
@@ -160,7 +166,8 @@ class Untiler(Task):
                     x2=x2 + x_offset,
                     y2=y2 + y_offset,
                     score=score,
-                    directionality=pred.directionality,
+                    direction=pred.direction,
+                    dip=pred.dip,
                 )
 
                 all_predictions.append(global_prediction)

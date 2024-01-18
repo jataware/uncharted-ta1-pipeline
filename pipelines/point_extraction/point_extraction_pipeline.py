@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 from tasks.point_extraction.point_extractor import YOLOPointDetector
-from tasks.point_extraction.point_orientation_extractor import PointDirectionPredictor
+from tasks.point_extraction.point_orientation_extractor import PointOrientationExtractor
 from tasks.point_extraction.tiling import Tiler, Untiler
 from tasks.point_extraction.entities import MapImage
 from tasks.common.pipeline import (
@@ -66,9 +66,11 @@ class PointExtractionPipeline(Pipeline):
         tasks.extend(
             [
                 Tiler("tiling"),
-                YOLOPointDetector("point_detection", model_path, work_dir),
+                YOLOPointDetector(
+                    "point_detection", model_path, work_dir, batch_size=20
+                ),
                 Untiler("untiling"),
-                PointDirectionPredictor("point_direction_prediction"),
+                PointOrientationExtractor("point_orientation_extraction"),
             ]
         )
 

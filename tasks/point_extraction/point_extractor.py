@@ -1,6 +1,7 @@
 from tasks.point_extraction.entities import MapTile, MapTiles, MapPointLabel
 from tasks.common.s3_data_cache import S3DataCache
 from tasks.common.task import Task, TaskInput, TaskResult
+from enum import Enum
 import logging
 import os
 from urllib.parse import urlparse
@@ -12,7 +13,18 @@ from tqdm import tqdm
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
+
 logger = logging.getLogger(__name__)
+
+
+class POINT_CLASS(str, Enum):
+    STRIKE_AND_DIP = "strike_and_dip"  # aka inclined bedding
+    HORIZONTAL_BEDDING = "horizontal_bedding"
+    OVERTURNED_BEDDING = "overturned_bedding"
+    VERTICAL_BEDDING = "vertical_bedding"
+
+    def __str__(self):
+        return self.value
 
 
 class YOLOPointDetector(Task):
@@ -27,12 +39,12 @@ class YOLOPointDetector(Task):
         task_id: str,
         model_data_path: str,
         cache_path: str,
-        bsz: int = 15,
+        batch_size: int = 20,
         device: str = "auto",
     ):
         local_data_path = self._prep_model_data(model_data_path, cache_path)
         self.model = YOLO(local_data_path)
-        self.bsz = bsz
+        self.bsz = batch_size
         self.device = device
 
         super().__init__(task_id)
