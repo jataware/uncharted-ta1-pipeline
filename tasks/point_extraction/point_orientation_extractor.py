@@ -1,247 +1,283 @@
-from tasks.point_extraction.entities import MapPointLabel, MapImage
+from tasks.point_extraction.entities import MapImage
 from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.point_extraction.point_extractor import POINT_CLASS
+from tasks.point_extraction.task_config import PointOrientationConfig
+from tasks.point_extraction import point_extractor_utils
+from tasks.text_extraction.entities import (
+    TextExtraction,
+    DocTextExtraction,
+    TEXT_EXTRACTION_OUTPUT_KEY,
+)
 
-from typing import List
-import parmap
+from typing import Dict, List
 import cv2
+import logging
+import math
 import numpy as np
+import re
 from PIL import Image
+from collections import defaultdict
+from shapely.geometry import box
+from shapely.strtree import STRtree
+from shapely import distance
+from scipy import ndimage
 
 
-class PointDirectionPredictor(Task):
+logger = logging.getLogger(__name__)
+
+RE_NONNUMERIC = re.compile(r"[^0-9]")  # matches non-numeric chars
+
+
+class PointOrientationExtractor(Task):
     _VERSION = 1
-    SUPPORTED_CLASSES = ["strike_and_dip"]
-    TEMPLATE_PATH = "tasks/point_extraction/templates/strike_dip_implied_transparent_black_north.jpg"
-    template: np.ndarray = np.empty((0, 0))
+    # supported point classes and corresponding template image paths
+    POINT_TEMPLATES = {
+        str(
+            POINT_CLASS.STRIKE_AND_DIP
+        ): "tasks/point_extraction/templates/strike_dip_black_on_white_north_synthetic.png"
+    }
+    # task config per point class
+    POINT_CONFIGS = {
+        str(POINT_CLASS.STRIKE_AND_DIP): PointOrientationConfig(
+            point_class=str(POINT_CLASS.STRIKE_AND_DIP), mirroring_correction=True
+        )
+    }
 
     def __init__(self, task_id: str):
+        self.templates = self._load_templates()
+
         super().__init__(task_id)
 
-    def load_template(self):
-        template = np.array(Image.open(self.TEMPLATE_PATH))
-        self.template = self.global_thresholding(
-            template, otsu=False, threshold_value=225
-        )  # Blacken template.
-        self.template = template
-
-    def _check_size(self, label: MapPointLabel, template: np.ndarray) -> bool:
+    def _load_templates(self) -> Dict:
         """
-        Used to palliate issues arising from tiling..
-        Temporary fix which prevents propagating tiling errors to directionality pred.
+        Load template image for all supported point symbol types
         """
-        x1, y1, x2, y2 = label.x1, label.y1, label.x2, label.y2
-        template_size = template.shape[:2]
-        label_size = (x2 - x1, y2 - y1)
-        if label_size[0] < template_size[0] or label_size[1] < template_size[1]:
-            return False
-        return True
+        templates = {}
+        for point_class, template_path in self.POINT_TEMPLATES.items():
+            self.templates[point_class] = np.array(Image.open(template_path))
+        return templates
 
-    @staticmethod
-    def create_mask(template: np.ndarray, ignore_color=[255, 255, 255]):
+    def _dip_magnitude_extraction(
+        self,
+        matches: List,
+        ocr_polygon_index: STRtree,
+        text_extractions: List[TextExtraction],
+    ) -> Dict:
         """
-        Creates a binary mask where pixels equal to ignore_color are set to 0, and all others are set to 1.
-
-        Parameters:
-        - template (np.array): The template image.
-        - ignore_color (list of int): The RGB color to ignore. Default is white, [255, 255, 255].
-
-        Returns:
-        np.array: The binary mask.
+        Extract dip magnitudes for point symbols, based on nearby OCR text labels
         """
-        # Check if the image is grayscale
-        if len(template.shape) == 2:
-            # If it's grayscale, create a simple binary mask
-            mask = np.ones_like(template, dtype=np.uint8) * 255
-        else:
-            # If it's not grayscale, create a mask ignoring a specific color
-            mask = np.all(template != ignore_color, axis=-1).astype(np.uint8) * 255
 
-        return mask
+        dip_magnitudes = {}  # point symbol idx -> (extracted dip angle, (x,y centroid))
 
-    @staticmethod
-    def rotate_image(image: np.ndarray, angle, border_color=(255, 255, 255)):
-        if len(image.shape) == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-        (h, w) = image.shape[:2]
-        center = (w // 2, h // 2)
-        M = cv2.getRotationMatrix2D(center, angle, 1.0)
-
-        cos_theta = np.abs(M[0, 0])
-        sin_theta = np.abs(M[0, 1])
-        new_w = int(h * sin_theta + w * cos_theta)
-        new_h = int(h * cos_theta + w * sin_theta)
-
-        M[0, 2] += (new_w / 2) - center[0]
-        M[1, 2] += (new_h / 2) - center[1]
-
-        rotated = cv2.warpAffine(
-            image,
-            M,
-            (new_w, new_h),
-            borderMode=cv2.BORDER_CONSTANT,
-            borderValue=border_color,
-        )
-
-        return rotated
-
-    @staticmethod
-    def crop_edges(img: np.ndarray, size=(70, 70)):
-        h, w = img.shape[:2]
-        h_crop, w_crop = size
-        h_offset, w_offset = (h - h_crop) // 2, (w - w_crop) // 2
-        return img[h_offset : h_offset + h_crop, w_offset : w_offset + w_crop]
-
-    def match_template(self, base_image: np.ndarray, template: np.ndarray):
-        if len(template.shape) == 3:
-            template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-
-        base_image = base_image.astype(np.float32)
-        template = template.astype(np.float32)
-
-        diag_length = int(
-            np.ceil(np.sqrt(template.shape[0] ** 2 + template.shape[1] ** 2))
-        )
-        pad_y = max(diag_length - base_image.shape[0], base_image.shape[0])
-        pad_x = max(diag_length - base_image.shape[1], base_image.shape[1])
-        base_image = self.pad_image(
-            base_image,
-            pad_size=(base_image.shape[0] + pad_y, base_image.shape[1] + pad_x),
-        )
-        if len(base_image.shape) == 3:
-            base_image = cv2.cvtColor(base_image, cv2.COLOR_BGR2GRAY)
-        base_image = base_image.astype(np.float32)
-        mask = self.create_mask(template)
-        result = cv2.matchTemplate(base_image, template, cv2.TM_CCOEFF, mask=mask)
-        return result
-
-    @staticmethod
-    def global_thresholding(img: np.ndarray, threshold_value=50, otsu=False):
-        """
-        Applies global thresholding to an image and displays the original and thresholded image.
-
-        Parameters:
-        - img (np.array): The input image in NumPy array format.
-        - threshold_value (int): The global threshold value.
-        """
-        # Handle images with alpha channels.
-        if len(img.shape) > 2 and img.shape[2] == 4:
-            # Separate the alpha channel
-            bgr, alpha = img[..., :3], img[..., 3]
-            gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-
-        elif len(img.shape) > 2 and img.shape[2] == 3:
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            alpha = None
-        else:
-            gray = img.copy()
-            alpha = None
-
-        thresh = cv2.THRESH_BINARY
-
-        if otsu:
-            thresh = cv2.THRESH_OTSU
-
-        _, thresh_img = cv2.threshold(gray, threshold_value, 255, thresh)
-
-        # If the image has an alpha channel, merge the thresholded image and the alpha channel
-        if alpha is not None and img.shape[2] == 4:
-            thresh_img = cv2.merge((thresh_img, thresh_img, thresh_img, alpha))
-
-        return thresh_img
-
-    def _fetch_template_match_candidates(
-        self, labels: List[MapPointLabel], class_name="strike_and_dip"
-    ):
-        if class_name not in self.SUPPORTED_CLASSES:
-            raise RuntimeError(
-                f"Class {class_name} is not supported by this predictor."
+        for pt_idx, map_pt_label in matches:
+            # bbox around point location
+            xy_box = box(
+                map_pt_label.x1, map_pt_label.y1, map_pt_label.x2, map_pt_label.y2
             )
-        return [(i, p) for i, p in enumerate(labels) if p.class_name == class_name]
+            # find text blocks that intersect with point's bbox
+            hits = ocr_polygon_index.query(xy_box, predicate="intersects")  #'overlaps')
+            if hits.size > 0:
+                matches_text = []
+                matches_idx = []
+                for idx in hits.flat:
+                    ocr_text_match = RE_NONNUMERIC.sub(
+                        "", text_extractions[idx].text
+                    ).strip()
+                    if ocr_text_match:
+                        # 1 or 2 digit numbers only!
+                        ocr_text_match = float(ocr_text_match[:2])
+                        if ocr_text_match > 90:
+                            # extracted dip magnitude must be <= 90 degrees
+                            continue
+                        matches_text.append(ocr_text_match)
+                        matches_idx.append(idx)
+                        # break
+                if len(matches_idx) == 1:
+                    this_poly = ocr_polygon_index.geometries.item(matches_idx[0])
+                    dip_magnitudes[pt_idx] = (
+                        matches_text[0],
+                        (this_poly.centroid.x, this_poly.centroid.y),
+                    )
 
-    def _construct_base_candidates(self, labels: List[MapPointLabel], img: MapImage):
-        return [
-            np.array(img.image.crop((p.x1, p.y1, p.x2, p.y2)))
-            for p in labels
-            if self._check_size(p, template=self.template)
-        ]
-
-    def pad_image(self, img: np.ndarray, pad_size=(100, 100)):
-        h, w = img.shape[:2]
-        h_pad, w_pad = pad_size
-        h_offset, w_offset = (h_pad - h) // 2, (w_pad - w) // 2
-
-        if len(img.shape) == 3:
-            num_channels = img.shape[2]
-        else:
-            num_channels = 1
-
-        if num_channels == 3:
-            padded_img = np.ones((h_pad, w_pad, 3), dtype=np.uint8) * 255
-            padded_img[h_offset : h_offset + h, w_offset : w_offset + w, :] = img
-        else:
-            padded_img = np.ones((h_pad, w_pad), dtype=np.uint8) * 255
-            padded_img[h_offset : h_offset + h, w_offset : w_offset + w] = img
-
-        return padded_img
-
-    def predict(self, base_image: np.ndarray):
-        """
-        Parameters:
-        - template (np.array): The template image.
-        - base_image (np.array): The base image.
-        """
-        if self.template.shape[0] == 0:
-            self.load_template()
-
-        base_image = self.global_thresholding(base_image)
-
-        deg = []
-        score = []
-        best_score = -np.inf
-        best_angle = 0
-
-        for i in range(0, 360, 1):
-            rotated_template = self.rotate_image(self.template[:, :], i)
-            result = self.match_template(base_image, rotated_template)
-            base_image_midpoint = np.array(base_image.shape[:2]) // 2
-            result = result[base_image_midpoint[0] - 10 : base_image_midpoint[0] + 10]
-            max_score = result.max()
-
-            if max_score > best_score:
-                best_score = max_score
-                best_angle = i
-            deg.append(i)
-            score.append(max_score)
-
-        return 360 - best_angle
+                elif len(matches_idx) > 1:
+                    # multiple matches! choose the one closest to symbol centroid!
+                    min_dist = 999999999.0  # init large
+                    min_idx = 0
+                    for ii, m_idx in enumerate(matches_idx):
+                        this_dist = distance(
+                            xy_box.centroid,
+                            ocr_polygon_index.geometries.item(m_idx).centroid,
+                        )
+                        if this_dist < min_dist:
+                            min_dist = this_dist
+                            min_idx = ii
+                    this_poly = ocr_polygon_index.geometries.item(matches_idx[min_idx])
+                    dip_magnitudes[pt_idx] = (
+                        matches_text[min_idx],
+                        (this_poly.centroid.x, this_poly.centroid.y),
+                    )
+        return dip_magnitudes
 
     def run(self, input: TaskInput) -> TaskResult:
         """
         Run batch predictions over a MapImage object.
 
-        This modifies the MapImage object predictions inplace. Unit test this.
+        This modifies the MapImage object predictions in-place.
         """
 
-        if PointDirectionPredictor.template.shape[0] == 0:
-            self.load_template()
-        input_map_image = MapImage.model_validate(
-            input.data["map_image"]
-        )  # todo should just use the task input
-        map_image = input_map_image.model_copy()
+        # get result from point extractor task (with point symbol predictions)
+        map_image = MapImage.model_validate(input.data["map_image"])
         if map_image.labels is None:
-            raise RuntimeError("MapImage must have labels to run batch_predict.")
-        match_candidates = self._fetch_template_match_candidates(
-            map_image.labels
-        )  # [[idx, label], ...] Use idx to add direction to labels.
-        idxs = [idx for idx, _ in match_candidates]
-        labels_with_direction = [label for _, label in match_candidates]
-        base_images = self._construct_base_candidates(
-            labels_with_direction, map_image
-        )  # Crop map to regions of interest.
-        direction_preds = parmap.map(self.predict, base_images, pm_pbar=True)
-        for idx, direction in zip(idxs, direction_preds):
-            map_image.labels[idx].directionality = direction
+            raise RuntimeError("MapImage must have labels to run batch_predict")
+        if len(map_image.labels) == 0:
+            logger.warning(
+                "No point symbol extractions found. Skipping Point orientation extraction."
+            )
+            TaskResult(
+                task_id=self._task_id, output={"map_image": map_image.model_dump()}
+            )
+
+        # get OCR output
+        img_text = DocTextExtraction.model_validate(
+            input.data[TEXT_EXTRACTION_OUTPUT_KEY]
+        )
+
+        # build OCR tree index
+        ocr_polygon_index = point_extractor_utils.build_ocr_index(img_text.extractions)
+
+        # group point extractions by class label
+        match_candidates = defaultdict(list)  # class name -> list of tuples
+        for i, p in enumerate(map_image.labels):
+            # tuple of (original extraction id, pt extraction object)
+            match_candidates[p.class_name].append((i, p))
+
+        # --- perform symbol orientation analysis for each point class...
+        supported_classes = list(self.POINT_TEMPLATES.keys())
+        for c in supported_classes:
+            if c not in match_candidates:
+                # no points found for this class
+                continue
+            matches = match_candidates[c]
+            task_config = self.POINT_CONFIGS[c]  # task config for this point class
+            bbox_half = int(task_config.bbox_size / 2)
+            bbox_size = bbox_half * 2  # (bbox_half = int so bbox_size must = even num)
+            logger.info(
+                f"Performing point orientation analysis for {len(matches)} point symbols of class {c}"
+            )
+
+            # ---- 1. extract dip magnitude per point (from nearby OCR text)
+            dip_magnitudes = {}
+            if task_config.dip_number_extraction:
+                dip_magnitudes = self._dip_magnitude_extraction(
+                    matches, ocr_polygon_index, img_text.extractions
+                )
+                logger.info(
+                    f"Dip magntiudes extracted for {len(dip_magnitudes)} / {len(matches)} points"
+                )
+                # save dip angle results for this point class
+                for idx, (dip_angle, _) in dip_magnitudes.items():
+                    map_image.labels[idx].dip = dip_angle
+
+            # --- 2. estimate symbol orientation (using template matching)
+            # --- pre-process the main image and template image, before template matching
+            im, im_templ = point_extractor_utils.template_pre_processing(
+                np.array(input.image.copy()), self.templates[c]
+            )
+
+            # convert to gray and get foregnd mask for template
+            templ_thres, fore_mask = cv2.threshold(
+                cv2.cvtColor(im_templ, cv2.COLOR_RGB2GRAY),
+                0,
+                255,
+                cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU,
+            )  # TODO could also just crop/re-size the fore mask here too?
+
+            # --- template matching
+            # loop through rotational intervals...
+            xcorr_results = {}
+            for rot_deg in range(0, 360, task_config.template_rotate_interval):
+                logger.debug("template rotation: {}".format(rot_deg))  #
+                # get rotated template
+                if rot_deg > 0:
+                    im_templ_rot = ndimage.rotate(im_templ, rot_deg, cval=255)
+                else:
+                    im_templ_rot = im_templ.copy()
+                # get rotated foregnd mask
+                fore_mask_rot = (
+                    ndimage.rotate(fore_mask, rot_deg, cval=0)
+                    if rot_deg > 0
+                    else fore_mask.copy()
+                )
+                # crop rotated template
+                im_templ_rot = point_extractor_utils.crop_template(
+                    im_templ_rot, fore_mask_rot, crop_buffer=5
+                )
+
+                if (
+                    im_templ_rot.shape[0] > bbox_size
+                    or im_templ_rot.shape[1] > bbox_size
+                ):
+                    # template image cannot be larger than candidate image swatch (will cause an opencv exception)
+                    h = min(im_templ_rot.shape[0], bbox_size)
+                    w = min(im_templ_rot.shape[1], bbox_size)
+                    # TODO ideally this slice should be centered!
+                    im_templ_rot = im_templ_rot[0:h, 0:w]
+
+                # --- loop through all point locations and do template matching for this angle...
+                for pt_idx, map_pt_label in matches:
+                    # get thumbnail image around predicted point symbol
+                    xc = int((map_pt_label.x2 + map_pt_label.x1) / 2)
+                    yc = int((map_pt_label.y2 + map_pt_label.y1) / 2)
+                    im_thumbnail = im[
+                        yc - bbox_half : yc + bbox_half, xc - bbox_half : xc + bbox_half
+                    ]
+
+                    max_val, max_idx = point_extractor_utils.template_matching(
+                        im_thumbnail, im_templ_rot, task_config.xcorr_search_range
+                    )
+
+                    # update the 'best' orientation match for this point symbol location
+                    if pt_idx in xcorr_results:
+                        if max_val > xcorr_results[pt_idx][0]:
+                            xcorr_results[pt_idx] = (max_val, rot_deg)
+                    else:
+                        xcorr_results[pt_idx] = (max_val, rot_deg)
+            # finished checking all angles
+
+            if task_config.mirroring_correction and dip_magnitudes:
+                # --- correct x-corr results based on OCR label position (to prevent 180-deg mirror confusion)...
+                for pt_idx, map_pt_label in matches:
+                    if pt_idx in dip_magnitudes:
+                        # get center location of dip label associated with this point
+                        xc_ocr, yc_ocr = dip_magnitudes[pt_idx][1]
+                        # get center location of point symbol
+                        xc = int((map_pt_label.x2 + map_pt_label.x1) / 2)
+                        yc = int((map_pt_label.y2 + map_pt_label.y1) / 2)
+                        # get current point orientation angle
+                        (max_val, rot_deg) = xcorr_results[pt_idx]
+
+                        xc_ocr -= xc
+                        yc_ocr -= yc
+                        yc_ocr *= -1
+                        ocr_deg = math.atan2(yc, xc) * 180 / math.pi
+                        if ocr_deg < 0:
+                            ocr_deg += 360
+                        if not point_extractor_utils.angle_in_range(
+                            ocr_deg, rot_deg, rot_deg + 180
+                        ):
+                            # possible orientation mirroring confusion!
+                            rot_deg_corr = rot_deg - 180
+                            if rot_deg_corr < 0:
+                                rot_deg_corr += 360
+                            xcorr_results[pt_idx] = (max_val, rot_deg_corr)
+                            logger.debug(
+                                f"Correcting angle for symbol index {pt_idx}, was {rot_deg}, now {rot_deg_corr}"
+                            )
+
+            # save "best orientation angle" results for this point class
+            for idx, (_, best_angle) in xcorr_results.items():
+                map_image.labels[idx].direction = best_angle
+
         return TaskResult(
             task_id=self._task_id, output={"map_image": map_image.model_dump()}
         )
