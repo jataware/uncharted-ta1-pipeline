@@ -78,11 +78,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, required=True)
     parser.add_argument("--model", type=str, required=True)
+    parser.add_argument("--model_segmenter", type=str, default=None)
     parser.add_argument("--debug", type=float, default=False)
     p = parser.parse_args()
 
     # init segmenter
-    point_extraction_pipeline = PointExtractionPipeline(p.model, p.workdir)
+    point_extraction_pipeline = PointExtractionPipeline(
+        p.model, p.model_segmenter, p.workdir
+    )
 
     #### start flask server
     if p.debug:
