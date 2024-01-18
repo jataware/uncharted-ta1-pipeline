@@ -13,8 +13,6 @@ from tasks.metadata_extraction.entities import (
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
 
-from util.coordinate import absolute_minmax
-
 from typing import List
 
 
@@ -51,10 +49,11 @@ class NominatimGeocoder(GeocodingService):
             return place_copy
 
         # bounding box returned is a list of strings [x1, x2, y1, y2]
+        # these should not be absolute but rather the actual bounding boxes.
         bb_coords_raw = list(map(lambda x: float(x), res[0].raw["boundingbox"]))  # type: ignore
         bb_coords = [
-            absolute_minmax(bb_coords_raw[:2]),
-            absolute_minmax(bb_coords_raw[2:]),
+            bb_coords_raw[:2],
+            bb_coords_raw[2:],
         ]
 
         # build the coordinate bounding box via 4 points

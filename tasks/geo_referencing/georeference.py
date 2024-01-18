@@ -3,7 +3,7 @@ import math
 from geopy.distance import geodesic
 
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.geo_referencing.entities import Coordinate
+from tasks.geo_referencing.entities import Coordinate, DocGeoFence, GEOFENCE_OUTPUT_KEY
 from tasks.geo_referencing.geo_projection import GeoProjection
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
@@ -88,9 +88,15 @@ class GeoReference(Task):
 
         # ----- Get lon/lat results for query points for this image
         results = self._process_query_points(
-            query_pts, im_resize_ratio, geo_projn, lon_minmax, lat_minmax, confidence
+            input,
+            query_pts,
+            im_resize_ratio,
+            geo_projn,
+            lon_minmax,
+            lat_minmax,
+            confidence,
         )
-        lon_multiplier, lat_multiplier = self._determine_hemispheres(query_pts)
+        lon_multiplier, lat_multiplier = self._determine_hemispheres(input, query_pts)
         results = self._clip_query_pts(query_pts, lon_minmax, lat_minmax)
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
@@ -137,6 +143,7 @@ class GeoReference(Task):
 
     def _process_query_points(
         self,
+        input: TaskInput,
         query_pts: List[QueryPoint],
         im_resize_ratio: float,
         geo_projn: Optional[GeoProjection],
@@ -145,7 +152,7 @@ class GeoReference(Task):
         confidence: float,
     ) -> List[QueryPoint]:
         if geo_projn is None:
-            return self._add_fallback(query_pts, lon_minmax, lat_minmax)
+            return self._add_fallback(input, query_pts, lon_minmax, lat_minmax)
 
         # use geographic-projection polynomial to estimate lon/lat for query points
         results = []
@@ -180,7 +187,7 @@ class GeoReference(Task):
         except Exception as e:
             print(f"EXCEPTION geo projecting")
             print(e)
-            return self._add_fallback(query_pts, lon_minmax, lat_minmax)
+            return self._add_fallback(input, query_pts, lon_minmax, lat_minmax)
 
         return results
 
@@ -209,24 +216,65 @@ class GeoReference(Task):
         return query_pts
 
     def _determine_hemispheres(
-        self, query_pts: List[QueryPoint]
+        self, input: TaskInput, query_pts: List[QueryPoint]
     ) -> Tuple[float, float]:
+        lon_multiplier = 1
+        lon_determined = False
+        lat_multiplier = 1
+        lat_determined = False
+
+        # use the geofence if it was not defaulted and indicates a clear hemisphere
+        geofence: DocGeoFence = input.parse_data(
+            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
+        )
+        if geofence is not None and not geofence.geofence.defaulted:
+            # check if longitude min and max are both in the same hemisphere
+            if (
+                geofence.geofence.lon_minmax[0] <= 0
+                and geofence.geofence.lon_minmax[1] <= 0
+            ):
+                lon_multiplier = -1
+                lon_determined = True
+            elif (
+                geofence.geofence.lon_minmax[0] >= 0
+                and geofence.geofence.lon_minmax[1] >= 0
+            ):
+                lon_determined = True
+
+            # check if latitude min and max are both in the same hemisphere
+            if (
+                geofence.geofence.lat_minmax[0] <= 0
+                and geofence.geofence.lat_minmax[1] <= 0
+            ):
+                lat_multiplier = -1
+                lat_determined = True
+            elif (
+                geofence.geofence.lat_minmax[0] >= 0
+                and geofence.geofence.lat_minmax[1] >= 0
+            ):
+                lat_determined = True
+
+            if lat_determined and lon_determined:
+                return lon_multiplier, lat_multiplier
+
         # function assumes that north is up and that the image is not skewed
         # set east - west hemisphere by seeing how longitude changes when x increases
-        lon_multiplier = 1
-        qps_sorted_x = sorted(query_pts, key=lambda x: x.xy[0])
-        if abs(qps_sorted_x[0].lonlat[0]) > abs(qps_sorted_x[-1].lonlat[0]):
-            # x increased but lon decreased so it is negative
-            lon_multiplier = -1
-        print(f"hemi update lon: {qps_sorted_x[0].lonlat}\t{qps_sorted_x[-1].lonlat}")
-        print(f"hemi update lon: {qps_sorted_x[0].xy}\t{qps_sorted_x[-1].xy}")
+        if not lon_determined:
+            qps_sorted_x = sorted(query_pts, key=lambda x: x.xy[0])
+            if abs(qps_sorted_x[0].lonlat[0]) > abs(qps_sorted_x[-1].lonlat[0]):
+                # x increased but lon decreased so it is negative
+                lon_multiplier = -1
+            print(
+                f"hemi update lon: {qps_sorted_x[0].lonlat}\t{qps_sorted_x[-1].lonlat}"
+            )
+            print(f"hemi update lon: {qps_sorted_x[0].xy}\t{qps_sorted_x[-1].xy}")
 
         # set north - south hemisphere by seeing how latitude changes when y increases
-        lat_multiplier = 1
-        qps_sorted_y = sorted(query_pts, key=lambda x: x.xy[1])
-        if abs(qps_sorted_y[0].lonlat[1]) < abs(qps_sorted_y[-1].lonlat[1]):
-            # y increased and lat increased so it is negative
-            lat_multiplier = -1
+        if not lat_determined:
+            qps_sorted_y = sorted(query_pts, key=lambda x: x.xy[1])
+            if abs(qps_sorted_y[0].lonlat[1]) < abs(qps_sorted_y[-1].lonlat[1]):
+                # y increased and lat increased so it is negative
+                lat_multiplier = -1
 
         return lon_multiplier, lat_multiplier
 
@@ -264,12 +312,22 @@ class GeoReference(Task):
 
     def _add_fallback(
         self,
+        input: TaskInput,
         query_pts: List[QueryPoint],
         lon_minmax: List[float],
         lat_minmax: List[float],
     ) -> List[QueryPoint]:
         print(f"adding fallback when georeferencing using {lon_minmax} & {lat_minmax}")
         results = []
+
+        # use the geofence if it was not defaulted and lat/lon minmax not clue point based
+        geofence: DocGeoFence = input.parse_data(
+            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
+        )
+        if geofence is not None and not geofence.geofence.defaulted:
+            lon_minmax = geofence.geofence.lon_minmax
+            lat_minmax = geofence.geofence.lat_minmax
+
         # no geographic-projection polynomial available,
         # just use the 'clue' midpoint as a fallback answer for any query points
         lon_clue = (

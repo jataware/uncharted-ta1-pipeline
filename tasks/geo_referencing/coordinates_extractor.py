@@ -17,6 +17,7 @@ from tasks.geo_referencing.entities import Coordinate, DocGeoFence, GEOFENCE_OUT
 from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
 from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
 from util.cache import cache_geocode_data, load_geocode_cache
+from util.coordinate import absolute_minmax
 
 from typing import Any, Dict, List, Tuple
 
@@ -114,9 +115,10 @@ class CoordinatesExtractor(Task):
                 True,
             )
 
+        # when parsing, only the absolute range matters as coordinates may or may not have the negative sign
         return (
-            geofence.geofence.lon_minmax,
-            geofence.geofence.lat_minmax,
+            absolute_minmax(geofence.geofence.lon_minmax),
+            absolute_minmax(geofence.geofence.lat_minmax),
             geofence.geofence.defaulted,
         )
 
