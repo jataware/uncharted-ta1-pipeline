@@ -10,9 +10,13 @@ from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
-from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
+from tasks.text_extraction.entities import (
+    DocTextExtraction,
+    TextExtraction,
+    TEXT_EXTRACTION_OUTPUT_KEY,
+)
 from tasks.common.pipeline import Task
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 
 logger = logging.getLogger("metadata_extractor")
 
@@ -70,20 +74,38 @@ class MetadataExtractor(Task):
         indent=4,
     )
 
-    def __init__(self, id: str, model=LLM.GPT_3_5_TURBO):
+    def __init__(
+        self, id: str, model=LLM.GPT_3_5_TURBO, text_key=TEXT_EXTRACTION_OUTPUT_KEY
+    ):
         super().__init__(id)
         self._openai_client = (
             OpenAI()
         )  # will read key from "OPENAI_API_KEY" env variable
         self._model = model
+        self._text_key = text_key
         logger.info(f"Using model: {self._model.value}")
 
     def run(self, input: TaskInput) -> TaskResult:
         """Processes a directory of OCR files and writes the metadata to a json file"""
         # extract metadata from ocr output
-        text_data = input.data[TEXT_EXTRACTION_OUTPUT_KEY]
+        text_data = input.data[self._text_key]
         doc_text = DocTextExtraction.model_validate(text_data)
         task_result = TaskResult(self._task_id)
+
+        # check if metadata already exists
+        metadata_raw = input.get_data(METADATA_EXTRACTION_OUTPUT_KEY)
+        if metadata_raw:
+            metadata = MetadataExtraction.model_validate(metadata_raw)
+            text_data = input.data[TEXT_EXTRACTION_OUTPUT_KEY]
+            doc_text = DocTextExtraction.model_validate(text_data)
+            # add the place extraction
+            # TODO: THIS IS A TEMPORARY HACK UNTIL REFACTORED TO WORK WITH LANGCHAIN
+            doc_text = DocTextExtraction.model_validate(text_data)
+            metadata.places = self._process_map_area_extractions(doc_text)
+            task_result.add_output(
+                METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
+            )
+            return task_result
 
         metadata = self._process_doc_text_extraction(doc_text)
         if metadata:
@@ -99,7 +121,7 @@ class MetadataExtractor(Task):
         return task_result
 
     def _process_doc_text_extraction(
-        self, doc_text_extraction: DocTextExtraction, model: str = "gpt-3.5-turbo"
+        self, doc_text_extraction: DocTextExtraction
     ) -> Optional[MetadataExtraction]:
         """Extracts metadata from a single OCR file"""
         try:
@@ -167,6 +189,7 @@ class MetadataExtractor(Task):
                     content_dict["map_id"] = doc_text_extraction.doc_id
                 else:
                     content_dict = {"map_id": doc_text_extraction.doc_id}
+                content_dict["places"] = []
                 extraction = MetadataExtraction(**content_dict)
                 return extraction
 
@@ -182,6 +205,82 @@ class MetadataExtractor(Task):
                 exc_info=True,
             )
             return self._create_empty_extraction(doc_text_extraction.doc_id)
+
+    def _process_map_area_extractions(
+        self, doc_text_extraction: DocTextExtraction
+    ) -> List[TextExtraction]:
+        logger.info(
+            f"extracting point places from the map area of '{doc_text_extraction.doc_id}'"
+        )
+        places = []
+        try:
+            text_indices = self._extract_text_with_index(doc_text_extraction)
+
+            # convert text to prompt string and compute token count
+            prompt_str = self._to_point_prompt_str(
+                self._text_extractions_to_str(text_indices)
+            )
+            messages: List[Any] = [
+                {
+                    "role": "system",
+                    "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
+                },
+                {"role": "user", "content": prompt_str},
+            ]
+            if self._model == LLM.GPT_4_TURBO:
+                completion = self._openai_client.chat.completions.create(
+                    messages=messages,
+                    model=self._model.value,
+                    response_format={"type": "json_object"},
+                    temperature=0.1,
+                )
+            else:
+                completion = self._openai_client.chat.completions.create(
+                    messages=messages,
+                    model=self._model.value,
+                    temperature=0.1,
+                )
+
+            message_content = completion.choices[0].message.content
+            if message_content is not None:
+                try:
+                    places_raw: List[Dict[str, Any]] = json.loads(message_content)[
+                        "points"
+                    ]
+                    places = self._map_text_coordinates(places_raw, doc_text_extraction)
+                except json.JSONDecodeError as e:
+                    logger.error(
+                        f"Skipping extraction '{doc_text_extraction.doc_id}' - error parsing json response from api likely due to token limit",
+                        exc_info=True,
+                    )
+                    places = []
+        except Exception as e:
+            # print exception stack trace
+            logger.error(
+                f"Skipping extraction '{doc_text_extraction.doc_id}' - unexpected error during processing",
+                exc_info=True,
+            )
+            places = []
+        return places
+
+    def _extract_text_with_index(
+        self, doc_text_extraction: DocTextExtraction
+    ) -> List[Tuple[str, int]]:
+        # map all text with index
+        return [(d.text, i) for i, d in enumerate(doc_text_extraction.extractions)]
+
+    def _text_extractions_to_str(self, extractions: List[Tuple[str, int]]) -> str:
+        # want to end up with a list of (text, coordinate) having each entry be a new line
+        items = [f"({r[0]}, {i})" for i, r in enumerate(extractions)]
+
+        return "\n".join(items)
+
+    def _map_text_coordinates(
+        self, places: List[Dict[str, Any]], extractions: DocTextExtraction
+    ) -> List[TextExtraction]:
+        # want to use the index to filter the extractions
+        # TODO: MAY WANT TO CHECK THE TEXT LINES UP JUST IN CASE THE LLM HAD A BIT OF FUN
+        return [extractions.extractions[p["index"]] for p in places]  # type: ignore
 
     def _count_tokens(self, input_str: str, encoding_name: str) -> int:
         """Counts the number of tokens in a input string using a given encoding"""
@@ -225,6 +324,25 @@ class MetadataExtractor(Task):
             + "Authors, title and year are normally grouped together.\n"
             + "The year should be the most recent value and should be a single 4 digit number.\n"
             + "The term grid ticks should not be included in coordinate system output.\n"
+        )
+
+    def _to_point_prompt_str(self, text_str: str) -> str:
+        return (
+            "The following blocks of text were extracted from a map using an OCR process, specified as a list with (text, index):\n"
+            + text_str
+            + "\n\n"
+            + "Return the places that are points. The following types of places are points: \n"
+            + " - mountains\n"
+            + " - peaks\n"
+            + " - trailheads\n"
+            + " - hills\n"
+            + " - summits\n\n"
+            + "Ignore places that are not points. The following types of places are not points: \n"
+            + " - pond\n"
+            + " - brook\n"
+            + " - lake\n"
+            + " - river\n\n"
+            + "The response should be in JSON format. In the response, include the index and the name as part of a tuple in a json formatted list with each item being {name: 'name', index: 'index'}."
         )
 
     def _extract_text(
@@ -278,4 +396,5 @@ class MetadataExtractor(Task):
             counties=[],
             states=[],
             country="",
+            places=[],
         )

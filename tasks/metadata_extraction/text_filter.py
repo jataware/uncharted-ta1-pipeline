@@ -9,7 +9,7 @@ from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.segmentation.detectron_segmenter import THING_CLASSES_DEFAULT
 from enum import Enum
 from shapely.geometry import Polygon
-from typing import Dict
+from typing import Dict, List
 
 
 class FilterMode(Enum):
@@ -22,9 +22,17 @@ class TextFilter(Task):
     Filter out text in map areas and legends
     """
 
-    def __init__(self, task_id: str, filter_mode=FilterMode.EXCLUDE):
+    def __init__(
+        self,
+        task_id: str,
+        filter_mode=FilterMode.EXCLUDE,
+        output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
+        classes: List[str] = THING_CLASSES_DEFAULT,
+    ):
         self._filter_mode = filter_mode
-        super().__init__("text_filter")
+        self._output_key = output_key
+        self._filering_classes = classes
+        super().__init__(task_id)
 
     def run(self, input: TaskInput) -> TaskResult:
         # get OCR output
@@ -46,7 +54,7 @@ class TextFilter(Task):
             # loop over map segments and check if the text intersects with any of them
             for segment in map_segmentation.segments:
                 # create
-                if segment.class_label in THING_CLASSES_DEFAULT:
+                if segment.class_label in self._filering_classes:
                     segment_poly = Polygon(segment.poly_bounds)
                     if (
                         self._filter_mode == FilterMode.EXCLUDE
@@ -71,5 +79,5 @@ class TextFilter(Task):
 
         doc_text.extractions = list(output_text.values())
         result = self._create_result(input)
-        result.add_output(TEXT_EXTRACTION_OUTPUT_KEY, doc_text.model_dump())
+        result.add_output(self._output_key, doc_text.model_dump())
         return result

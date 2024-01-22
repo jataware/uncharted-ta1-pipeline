@@ -1,4 +1,6 @@
-from typing import List
+from tasks.text_extraction.entities import TextExtraction
+
+from typing import List, Tuple
 from pydantic import BaseModel, ConfigDict
 
 
@@ -23,6 +25,9 @@ class MetadataExtraction(BaseModel):
     counties: List[str]
     states: List[str]
     country: str
+    places: List[
+        TextExtraction
+    ]  # a list of places, each place having a name and coordinates
 
 
 class GeocodedCoordinate(BaseModel):

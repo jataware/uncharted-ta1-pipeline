@@ -82,6 +82,7 @@ class Geocoder(Task):
         self._geocoding_service = geocoding_service
 
     def run(self, input: TaskInput) -> TaskResult:
+        print(f"running geocoding task with id {self._task_id}")
         to_geocode = self._get_places(input)
 
         geocoded = self._geocode(input, to_geocode)
