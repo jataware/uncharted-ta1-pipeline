@@ -9,9 +9,10 @@ def main():
     parser.add_argument("--truth", type=Path, required=True)
     parser.add_argument("--predictions", type=Path, default="")
     parser.add_argument("--verbose", default=False)
+    parser.add_argument("--approx_long", default=False)
     p = parser.parse_args()
 
-    scorer = Scorer(p.truth, p.predictions, p.verbose)
+    scorer = Scorer(p.truth, p.predictions, p.approx_long, p.verbose)
     scorer.score()
     scorer.print_scores()
 
