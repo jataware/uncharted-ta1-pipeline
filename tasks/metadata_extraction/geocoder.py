@@ -150,8 +150,6 @@ class Geocoder(Task):
         )
         if metadata is None:
             return []
-        print(f"METADATA COUNTRY: {metadata.country}")
-        print(f"METADATA STATE: {metadata.states}")
 
         places: List[GeocodedPlace] = []
         country = ""

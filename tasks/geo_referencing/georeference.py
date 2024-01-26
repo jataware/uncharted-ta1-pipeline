@@ -97,7 +97,6 @@ class GeoReference(Task):
             confidence,
         )
         lon_multiplier, lat_multiplier = self._determine_hemispheres(input, query_pts)
-        print(f"HEMI CHECK\tLON: {lon_multiplier}\tLAT: {lat_multiplier}")
         results = self._clip_query_pts(query_pts, lon_minmax, lat_minmax)
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
@@ -265,10 +264,6 @@ class GeoReference(Task):
             if abs(qps_sorted_x[0].lonlat[0]) > abs(qps_sorted_x[-1].lonlat[0]):
                 # x increased but lon decreased so it is negative
                 lon_multiplier = -1
-            print(
-                f"hemi update lon: {qps_sorted_x[0].lonlat}\t{qps_sorted_x[-1].lonlat}"
-            )
-            print(f"hemi update lon: {qps_sorted_x[0].xy}\t{qps_sorted_x[-1].xy}")
 
         # set north - south hemisphere by seeing how latitude changes when y increases
         if not lat_determined:

@@ -36,7 +36,6 @@ class Geocoder(CoordinatesExtractor):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
-        print("GEOCODING FUN TIMES")
         geocoded: DocGeocodedPlaces = input.input.parse_data(
             GEOCODED_PLACES_OUTPUT_KEY, DocGeocodedPlaces.model_validate
         )
