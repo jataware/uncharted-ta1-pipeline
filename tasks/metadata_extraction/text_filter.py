@@ -9,7 +9,7 @@ from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.segmentation.detectron_segmenter import THING_CLASSES_DEFAULT
 from enum import Enum
 from shapely.geometry import Polygon
-from typing import Dict, List
+from typing import Callable, Dict, List, Optional
 
 
 class FilterMode(Enum):
@@ -28,13 +28,18 @@ class TextFilter(Task):
         filter_mode=FilterMode.EXCLUDE,
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
         classes: List[str] = THING_CLASSES_DEFAULT,
+        should_run: Optional[Callable] = None,
     ):
         self._filter_mode = filter_mode
         self._output_key = output_key
         self._filering_classes = classes
+        self._should_run = should_run
         super().__init__(task_id)
 
     def run(self, input: TaskInput) -> TaskResult:
+        if self._should_run and not self._should_run(input):
+            return self._create_result(input)
+
         # get OCR output
         text_data = input.data[TEXT_EXTRACTION_OUTPUT_KEY]
         doc_text = DocTextExtraction.model_validate(text_data)

@@ -8,6 +8,7 @@ from pipelines.geo_referencing.output import (
     SummaryOutput,
 )
 from tasks.common.pipeline import Pipeline
+from tasks.common.task import TaskInput
 from tasks.geo_referencing.coordinates_extractor import (
     GeocodeCoordinatesExtractor,
     GeoCoordinatesExtractor,
@@ -16,6 +17,7 @@ from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
 from tasks.geo_referencing.filter import OutlierFilter
 from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
+from tasks.geo_referencing.geocode import Geocoder as rfGeocoder
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.roi_extractor import (
     EntropyROIExtractor,
@@ -31,6 +33,14 @@ from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 
 from typing import List
+
+
+def run_step(input: TaskInput) -> bool:
+    lats = input.get_data("lats", [])
+    lons = input.get_data("lons", [])
+    num_keypoints = min(len(lons), len(lats))
+    print(f"running step due to insufficient key points: {num_keypoints < 2}")
+    return num_keypoints < 2
 
 
 def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
@@ -112,22 +122,45 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 "metadata_extractor", LLM.GPT_3_5_TURBO, "filtered_ocr_text"
             )
         )
-        tasks.append(Geocoder("geo", NominatimGeocoder(10)))
+        tasks.append(
+            Geocoder(
+                "geo-bounds",
+                NominatimGeocoder(10, 1),
+                run_bounds=True,
+                run_points=False,
+            )
+        )
+        tasks.append(GeoFencer("geofence"))
+    tasks.append(GeoCoordinatesExtractor("third"))
+    tasks.append(OutlierFilter("fourth"))
+    tasks.append(UTMCoordinatesExtractor("fifth"))
+    if extract_metadata:
         tasks.append(
             TextFilter(
-                "map_area_filter", FilterMode.INCLUDE, "map_area_filter", ["map"]
+                "map_area_filter",
+                FilterMode.INCLUDE,
+                "map_area_filter",
+                ["map"],
+                run_step,
             )
         )
         tasks.append(
             MetadataExtractor(
-                "metadata_map_area_extractor", LLM.GPT_3_5_TURBO, "map_area_filter"
+                "metadata_map_area_extractor",
+                LLM.GPT_3_5_TURBO,
+                "map_area_filter",
+                run_step,
             )
         )
-    tasks.append(GeoFencer("geofence"))
-    tasks.append(GeoCoordinatesExtractor("third"))
-    tasks.append(OutlierFilter("fourth"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
-    tasks.append(GeocodeCoordinatesExtractor("sixth"))
+        tasks.append(
+            Geocoder(
+                "geo-places",
+                NominatimGeocoder(10, 5),
+                run_bounds=False,
+                run_points=True,
+            )
+        )
+        tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     p.append(

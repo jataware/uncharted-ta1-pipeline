@@ -97,6 +97,7 @@ class GeoReference(Task):
             confidence,
         )
         lon_multiplier, lat_multiplier = self._determine_hemispheres(input, query_pts)
+        print(f"HEMI CHECK\tLON: {lon_multiplier}\tLAT: {lat_multiplier}")
         results = self._clip_query_pts(query_pts, lon_minmax, lat_minmax)
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
@@ -327,6 +328,9 @@ class GeoReference(Task):
         if geofence is not None and not geofence.geofence.defaulted:
             lon_minmax = geofence.geofence.lon_minmax
             lat_minmax = geofence.geofence.lat_minmax
+            print(
+                f"adjusting fallback window to geofence of {lon_minmax} & {lat_minmax}"
+            )
 
         # no geographic-projection polynomial available,
         # just use the 'clue' midpoint as a fallback answer for any query points

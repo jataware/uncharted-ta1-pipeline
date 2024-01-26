@@ -1,7 +1,6 @@
 import logging
 import re
 import json
-from typing import List, Optional, Dict, Any
 from enum import Enum
 from openai import OpenAI
 import tiktoken
@@ -16,7 +15,7 @@ from tasks.text_extraction.entities import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.common.pipeline import Task
-from typing import List, Dict, Any, Tuple
+from typing import Callable, List, Dict, Any, Optional, Tuple
 
 logger = logging.getLogger("metadata_extractor")
 
@@ -75,7 +74,11 @@ class MetadataExtractor(Task):
     )
 
     def __init__(
-        self, id: str, model=LLM.GPT_3_5_TURBO, text_key=TEXT_EXTRACTION_OUTPUT_KEY
+        self,
+        id: str,
+        model=LLM.GPT_3_5_TURBO,
+        text_key=TEXT_EXTRACTION_OUTPUT_KEY,
+        should_run: Optional[Callable] = None,
     ):
         super().__init__(id)
         self._openai_client = (
@@ -83,10 +86,14 @@ class MetadataExtractor(Task):
         )  # will read key from "OPENAI_API_KEY" env variable
         self._model = model
         self._text_key = text_key
+        self._should_run = should_run
         logger.info(f"Using model: {self._model.value}")
 
     def run(self, input: TaskInput) -> TaskResult:
         """Processes a directory of OCR files and writes the metadata to a json file"""
+        if self._should_run and not self._should_run(input):
+            return self._create_result(input)
+
         # extract metadata from ocr output
         text_data = input.data[self._text_key]
         doc_text = DocTextExtraction.model_validate(text_data)
