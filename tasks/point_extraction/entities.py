@@ -35,15 +35,15 @@ class MapImage(BaseModel):
 
     path: str
     labels: Optional[List[MapPointLabel]] = None
-    map_bounds: Optional[
-        List[int]
-    ] = None  # [x1, y1, h, w] location of map. TODO: Accept polygonal seg mask.
-    point_legend_bounds: Optional[
-        List[int]
-    ] = None  # [x1, y1, h, w] location of point legend.
-    polygon_legend_bounds: Optional[
-        List[int]
-    ] = None  # [x1, y1, h, w] location of polygon legend.
+    map_bounds: Optional[List[int]] = (
+        None  # [x1, y1, h, w] location of map. TODO: Accept polygonal seg mask.
+    )
+    point_legend_bounds: Optional[List[int]] = (
+        None  # [x1, y1, h, w] location of point legend.
+    )
+    polygon_legend_bounds: Optional[List[int]] = (
+        None  # [x1, y1, h, w] location of polygon legend.
+    )
 
     _cached_image = None
 
