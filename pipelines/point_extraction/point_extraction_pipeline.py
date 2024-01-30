@@ -1,8 +1,7 @@
+import logging
 from pathlib import Path
-from tasks.point_extraction.point_extractor import (
-    PointDirectionPredictor,
-    YOLOPointDetector,
-)
+from tasks.point_extraction.point_extractor import YOLOPointDetector
+from tasks.point_extraction.point_orientation_extractor import PointOrientationExtractor
 from tasks.point_extraction.tiling import Tiler, Untiler
 from tasks.point_extraction.entities import MapImage
 from tasks.common.pipeline import (
@@ -11,29 +10,69 @@ from tasks.common.pipeline import (
     PipelineResult,
     OutputCreator,
 )
-from schema.ta1_schema import Map, MapFeatureExtractions, ProjectionMeta
+
+from tasks.text_extraction.text_extractor import ResizeTextExtractor
+from tasks.segmentation.detectron_segmenter import (
+    DetectronSegmenter,
+    SEGMENTATION_OUTPUT_KEY,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class PointExtractionPipeline(Pipeline):
     """
-    Pipeline for extracting map points, orientation, and their associated incline values.
+    Pipeline for extracting map point symbols, orientation, and their associated orientation and magnitude values, if present
+
+    Args:
+        model_path: path to point symbol extraction model weights
+        model_path_segmenter: path to segmenter model weights
+        work_dir: cache directory
     """
 
     def __init__(
         self,
-        model_data: Path,
-        model_data_cache: Path,
+        model_path: str,
+        model_path_segmenter: str,
+        work_dir: str,
         verbose=False,
     ):
+        # extract text from image, segmentation to only keep the map area,
         # tile, extract points, untile, predict direction
-        tasks = [
-            Tiler("tiling"),
-            YOLOPointDetector(
-                "point_detection", str(model_data), str(model_data_cache)
-            ),
-            Untiler("untiling"),
-            PointDirectionPredictor("point_direction_prediction"),
-        ]
+        logger.info("Initializing Point Extraction Pipeline")
+        tasks = []
+        tasks.append(
+            # TODO: could use Tiled Text extractor here? ... better recall for dip magnitude extraction?
+            ResizeTextExtractor(
+                "resize_text",
+                Path(work_dir).joinpath("text"),
+                to_blocks=True,
+                document_ocr=False,
+                pixel_lim=6000,
+            )
+        )
+        if model_path_segmenter:
+            tasks.append(
+                DetectronSegmenter(
+                    "detectron_segmenter",
+                    model_path_segmenter,
+                    str(Path(work_dir).joinpath("segmentation")),
+                )
+            )
+        else:
+            logger.warning(
+                "Not using image segmentation. 'model_path_segmenter' param not given"
+            )
+        tasks.extend(
+            [
+                Tiler("tiling"),
+                YOLOPointDetector(
+                    "point_detection", model_path, work_dir, batch_size=20
+                ),
+                Untiler("untiling"),
+                PointOrientationExtractor("point_orientation_extraction"),
+            ]
+        )
 
         outputs = [
             MapPointLabelOutput("map_point_label_output"),

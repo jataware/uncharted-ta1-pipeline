@@ -85,10 +85,15 @@ The model leverages [YOLOv8](https://github.com/ultralytics/ultralytics) for the
 
 #### Extracted Point Types ####
 Initial efforts have focused on identifying and extracting the following symbols:
-* Inclined Bedding
+* Inclined Bedding (aka strike/dip)
 * Vertical Bedding
 * Horizontal Bedding
 * Overturned Bedding
+
+#### Point Symbol Orientation ####
+Some point symbols also contain directional information.
+Point orientation (ie "strike" direction) and the "dip" magnitude are also extracted for applicable symbol types:
+* Inclined Bedding (strike/dip)
 
 #### Using the Point Extraction Tasks ####
 * The main point extraction is available in the `YOLOPointDetector` task

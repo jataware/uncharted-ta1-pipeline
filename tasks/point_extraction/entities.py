@@ -25,12 +25,13 @@ class MapPointLabel(BaseModel):
     x2: int
     y2: int
     score: float
-    directionality: Optional[Dict] = None
+    direction: Optional[float] = None  # [deg] orientation of point symbol
+    dip: Optional[float] = None  # [deg] dip angle associated with symbol
 
 
 class MapImage(BaseModel):
     """
-    Represents a map image.
+    Represents a map image with point symbol prediction results
     """
 
     path: str
