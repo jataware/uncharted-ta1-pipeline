@@ -1,5 +1,5 @@
 import os
-import argparse
+import re
 import json
 from typing import List, Dict
 from pathlib import Path
@@ -10,10 +10,20 @@ MetadataScore = Dict[str, float]
 MetadataScores = Dict[str, MetadataScore]
 
 
+SKIP_FIELDS = []
+
+
 class Scorer:
-    def __init__(self, truth: Path, predictions: Path, verbose: bool = False):
+    def __init__(
+        self,
+        truth: Path,
+        predictions: Path,
+        approximate_long: bool,
+        verbose: bool = False,
+    ):
         self._truth = truth
         self._predictions = predictions
+        self._approximate_long = approximate_long
         self._verbose = verbose
         self._results: MetadataScores = {}
 
@@ -45,10 +55,9 @@ class Scorer:
     def print_scores(self) -> None:
         """print the collected results"""
         print("Results:\n====================")
-        total_score = 0.0
 
         field_scores: Dict[str, List[float]] = {}
-        for key, value in self._results.items():
+        for _, value in self._results.items():
             for field_key, field_score in value.items():
                 if field_key not in field_scores.keys():
                     field_scores[field_key] = []
@@ -90,12 +99,16 @@ class Scorer:
                 field_truth = getattr(truth, field_key[0])
                 # skip predictions that are null / empty when scoring
                 if (
-                    isinstance(field_truth, str)
-                    and (field_truth == "NULL" or len(field_truth) == 0)
-                ) or (
-                    isinstance(field_truth, list)
-                    and len(field_truth) > 0
-                    and field_truth[0] == "NULL"
+                    (
+                        isinstance(field_truth, str)
+                        and (field_truth == "NULL" or len(field_truth) == 0)
+                    )
+                    or (
+                        isinstance(field_truth, list)
+                        and len(field_truth) > 0
+                        and field_truth[0] == "NULL"
+                    )
+                    or field_key[0] in SKIP_FIELDS
                 ):
                     continue
 
@@ -103,20 +116,14 @@ class Scorer:
 
                 score = 0.0
                 if isinstance(field_prediction, list) and isinstance(field_truth, list):
-                    score = self._score_list(field_prediction, field_truth)
+                    score = self._score_list(
+                        field_key[0], field_prediction, field_truth
+                    )
                 elif isinstance(field_prediction, str) and isinstance(field_truth, str):
-                    if field_key[0] == "title":
+                    if field_key[0] == "title" and self._approximate_long:
                         score = self._score_meteor(field_prediction, field_truth)
-                    if (
-                        field_key[0] == "quadrangle"
-                    ):  # normalization is now in the pipeline but this is here for legacy data
-                        # remove quadrangle from prediction and truth
-                        field_prediction = field_prediction.lower().replace(
-                            "quadrangle", ""
-                        )
-                        field_truth = field_truth.lower().replace("quadrangle", "")
-                    # else:
-                    score = self._score_string(field_prediction, field_truth)
+                    else:
+                        score = self._score_string(field_prediction, field_truth)
                 else:
                     score = self._score_string(str(field_prediction), str(field_truth))
 
@@ -133,7 +140,7 @@ class Scorer:
 
         return results
 
-    def _score_list(self, predicted: List[str], truth: List[str]) -> float:
+    def _score_list(self, key: str, predicted: List[str], truth: List[str]) -> float:
         """Scores a predicted list of strings against a ground truth list of strings"""
         # lower case all strings
         predictions = [
@@ -141,6 +148,20 @@ class Scorer:
             for prediction in predicted
             if prediction != "NULL"
         ]
+        # for quadrangles, remove the term quadrangle
+        if key == "quadrangles":
+            predictions = [
+                re.sub(r"\b(?:quadrangle|quad\.?|quad)\b", "", prediction).strip()
+                for prediction in predictions
+                if prediction != "NULL"
+            ]
+        elif key == "counties":
+            predictions = [
+                re.sub(r"\b(?:county|co\.?|co)\b", "", prediction).strip()
+                for prediction in predictions
+                if prediction != "NULL"
+            ]
+
         truth_list = [
             self._clean_string(truth_val) for truth_val in truth if truth_val != "NULL"
         ]
@@ -153,8 +174,8 @@ class Scorer:
     def _score_meteor(self, predicted: str, truth: str) -> float:
         """Scores a predicted string against a ground truth string"""
         # remove any characters that are not alphanumeric
-        predicted = self._clean_string(predicted)
-        truth = self._clean_string(truth)
+        predicted = self._clean_string(predicted, False)
+        truth = self._clean_string(truth, False)
 
         prediction_list = predicted.split(" ")
         truth_list = truth.split(" ")
@@ -167,15 +188,11 @@ class Scorer:
         truth = self._clean_string(truth)
         return 1.0 if predicted == truth else 0.0
 
-    def _clean_string(self, s: str) -> str:
+    def _clean_string(self, s: str, remove_whitespace=True) -> str:
         """retain characters that are alphanumeric or whitespace"""
         s = s.lower()
         s = "".join([c for c in s if c.isalnum() or c.isspace()])
-
-        # allow a maximum of one space between words
-        # s = " ".join(s.split())
-
-        # remoove whitespace
-        s = s.replace(" ", "")
+        # remove extra whitespace
+        s = " ".join(s.split())
 
         return s
