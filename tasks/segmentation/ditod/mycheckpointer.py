@@ -257,9 +257,9 @@ def modify_ckpt_state(model, state_dict, logger=None):
             append_prefix("rel_pos_bias.relative_position_bias_table")
         ]
         for i in range(num_layers):
-            state_dict[
-                "blocks.%d.attn.relative_position_bias_table" % i
-            ] = rel_pos_bias.clone()
+            state_dict["blocks.%d.attn.relative_position_bias_table" % i] = (
+                rel_pos_bias.clone()
+            )
         state_dict.pop(append_prefix("rel_pos_bias.relative_position_bias_table"))
 
     return state_dict

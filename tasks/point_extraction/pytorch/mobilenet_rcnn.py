@@ -8,7 +8,6 @@ from typing import Dict, Union, Iterable
 
 
 class MobileNetRCNN(FasterRCNN):
-
     """
     Pytorch model definition. MobileNetV2 backbone with FasterRCNN head.
     """

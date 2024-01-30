@@ -20,6 +20,7 @@ for some einops/einsum fun
 
 Hacked together by / Copyright 2020 Ross Wightman
 """
+
 import warnings
 import math
 import torch
@@ -592,9 +593,9 @@ class BEiT(nn.Module):
 
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
         self.num_classes = num_classes
-        self.num_features = (
-            self.embed_dim
-        ) = embed_dim  # num_features for consistency with other models
+        self.num_features = self.embed_dim = (
+            embed_dim  # num_features for consistency with other models
+        )
         self.use_checkpoint = use_checkpoint
 
         if hybrid_backbone is not None:
@@ -648,9 +649,9 @@ class BEiT(nn.Module):
                     drop_path=dpr[i],
                     norm_layer=norm_layer,
                     init_values=init_values,
-                    window_size=self.patch_embed.patch_shape
-                    if use_rel_pos_bias
-                    else None,
+                    window_size=(
+                        self.patch_embed.patch_shape if use_rel_pos_bias else None
+                    ),
                 )
                 for i in range(depth)
             ]
