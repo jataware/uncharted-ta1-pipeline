@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--model", type=str, required=True)
+    parser.add_argument("--model_point_extractor", type=str, required=True)
     parser.add_argument("--model_segmenter", type=str, default=None)
     p = parser.parse_args()
 
@@ -33,7 +33,9 @@ def main():
     file_writer = JSONFileWriter()
 
     # create the pipeline
-    pipeline = PointExtractionPipeline(p.model, p.model_segmenter, p.workdir)
+    pipeline = PointExtractionPipeline(
+        p.model_point_extractor, p.model_segmenter, p.workdir
+    )
 
     # run the extraction pipeline
     for doc_id, image in input:
