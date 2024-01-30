@@ -107,9 +107,11 @@ class IntegrationOutput(OutputCreator):
             image_size=[],
             authors=", ".join(metadata_extraction.authors),
             publisher="",
-            year=int(metadata_extraction.year)
-            if metadata_extraction.year.isdigit()
-            else -1,
+            year=(
+                int(metadata_extraction.year)
+                if metadata_extraction.year.isdigit()
+                else -1
+            ),
             organization="",
             scale=metadata_extraction.scale,
             bounds="",

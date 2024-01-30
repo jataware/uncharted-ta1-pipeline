@@ -13,7 +13,6 @@ Image.MAX_IMAGE_PIXELS = 500000000
 
 
 class CompetitionCOCOLoader:
-
     """
     Assumptions to be made before using this loader:
     - Used to convert original competition training & validation datasets to COCO format.

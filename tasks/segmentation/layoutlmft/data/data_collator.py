@@ -84,9 +84,11 @@ class DataCollatorForKeyValueExtraction(DataCollatorMixin):
         if images is not None:
             batch["images"] = images
             batch = {
-                k: torch.tensor(v, dtype=torch.int64)
-                if isinstance(v[0], list) and k == "attention_mask"
-                else v
+                k: (
+                    torch.tensor(v, dtype=torch.int64)
+                    if isinstance(v[0], list) and k == "attention_mask"
+                    else v
+                )
                 for k, v in batch.items()
             }
             visual_attention_mask = torch.ones(
