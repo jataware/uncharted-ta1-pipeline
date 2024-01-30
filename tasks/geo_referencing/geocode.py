@@ -26,6 +26,8 @@ from tasks.metadata_extraction.entities import (
 
 from typing import Dict, List, Optional, Tuple
 
+COORDINATE_CONFIDENCE_GEOCODE = 0.8
+
 
 class Geocoder(CoordinatesExtractor):
     def __init__(self, task_id: str):
@@ -109,7 +111,7 @@ class Geocoder(CoordinatesExtractor):
                     abs(c[0][1]),
                     True,
                     pixel_alignment=(c[1][1], c[1][2]),
-                    confidence=0.8,
+                    confidence=COORDINATE_CONFIDENCE_GEOCODE,
                 )
             )
             coordinates.append(
@@ -119,7 +121,7 @@ class Geocoder(CoordinatesExtractor):
                     abs(c[0][0]),
                     False,
                     pixel_alignment=(c[1][1], c[1][2]),
-                    confidence=0.8,
+                    confidence=COORDINATE_CONFIDENCE_GEOCODE,
                 )
             )
         return coordinates
