@@ -264,10 +264,6 @@ class GeoReference(Task):
             if abs(qps_sorted_x[0].lonlat[0]) > abs(qps_sorted_x[-1].lonlat[0]):
                 # x increased but lon decreased so it is negative
                 lon_multiplier = -1
-            print(
-                f"hemi update lon: {qps_sorted_x[0].lonlat}\t{qps_sorted_x[-1].lonlat}"
-            )
-            print(f"hemi update lon: {qps_sorted_x[0].xy}\t{qps_sorted_x[-1].xy}")
 
         # set north - south hemisphere by seeing how latitude changes when y increases
         if not lat_determined:
@@ -327,6 +323,9 @@ class GeoReference(Task):
         if geofence is not None and not geofence.geofence.defaulted:
             lon_minmax = geofence.geofence.lon_minmax
             lat_minmax = geofence.geofence.lat_minmax
+            print(
+                f"adjusting fallback window to geofence of {lon_minmax} & {lat_minmax}"
+            )
 
         # no geographic-projection polynomial available,
         # just use the 'clue' midpoint as a fallback answer for any query points
