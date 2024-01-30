@@ -1,5 +1,5 @@
 from pathlib import Path
-from moto.core.decorator import mock_aws
+from moto import mock_aws
 import boto3
 from tasks.common.s3_data_cache import S3DataCache
 
