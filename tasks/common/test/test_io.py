@@ -8,7 +8,7 @@ from cv2 import exp
 from pydantic import BaseModel
 from typing import Dict, List
 import boto3
-from moto.core.dectorator import mock_aws
+from moto import mock_aws
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
 
 

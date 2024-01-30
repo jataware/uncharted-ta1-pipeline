@@ -5,4 +5,5 @@
     ],
     "reportMissingImports": false,
     "typeCheckingMode": "basic"
+    "reportPrivateImportUsage": false
 }
