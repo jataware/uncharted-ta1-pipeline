@@ -30,17 +30,62 @@ RE_NONNUMERIC = re.compile(r"[^0-9]")  # matches non-numeric chars
 
 class PointOrientationExtractor(Task):
     _VERSION = 1
-    # supported point classes and corresponding template image paths
+
+    # ---- supported point classes and corresponding template image paths
     POINT_TEMPLATES = {
         str(
             POINT_CLASS.STRIKE_AND_DIP
-        ): "tasks/point_extraction/templates/strike_dip_black_on_white_north_synthetic.png"
+        ): "tasks/point_extraction/templates/strike_dip_black_on_white_north_synthetic.png",
+        str(
+            POINT_CLASS.OVERTURNED_BEDDING
+        ): "tasks/point_extraction/templates/overturned_bedding_pt_north.png",
+        str(
+            POINT_CLASS.VERTICAL_BEDDING
+        ): "tasks/point_extraction/templates/vertical_bedding_pt_north.png",
+        str(
+            POINT_CLASS.INCLINED_FOLIATION
+        ): "tasks/point_extraction/templates/inclined_foliation_pt_north.png",
+        str(
+            POINT_CLASS.VERTICAL_FOLIATION
+        ): "tasks/point_extraction/templates/vertical_foliation_pt_north.png",
+        str(
+            POINT_CLASS.VERTICAL_JOINT
+        ): "tasks/point_extraction/templates/vertical_joint_pt_north.png",
+        str(
+            POINT_CLASS.MINE_TUNNEL
+        ): "tasks/point_extraction/templates/mine_tunnel_pt_north.png",
     }
-    # task config per point class
+
+    # ---- task config per point class
     POINT_CONFIGS = {
         str(POINT_CLASS.STRIKE_AND_DIP): PointOrientationConfig(
             point_class=str(POINT_CLASS.STRIKE_AND_DIP), mirroring_correction=True
-        )
+        ),
+        str(POINT_CLASS.OVERTURNED_BEDDING): PointOrientationConfig(
+            point_class=str(POINT_CLASS.OVERTURNED_BEDDING), mirroring_correction=True
+        ),
+        str(POINT_CLASS.VERTICAL_BEDDING): PointOrientationConfig(
+            point_class=str(POINT_CLASS.VERTICAL_BEDDING),
+            dip_number_extraction=False,
+            rotate_max=180,
+        ),
+        str(POINT_CLASS.INCLINED_FOLIATION): PointOrientationConfig(
+            point_class=str(POINT_CLASS.INCLINED_FOLIATION), mirroring_correction=True
+        ),
+        str(POINT_CLASS.VERTICAL_FOLIATION): PointOrientationConfig(
+            point_class=str(POINT_CLASS.VERTICAL_FOLIATION),
+            dip_number_extraction=False,
+            rotate_max=180,
+        ),
+        str(POINT_CLASS.VERTICAL_JOINT): PointOrientationConfig(
+            point_class=str(POINT_CLASS.VERTICAL_JOINT),
+            dip_number_extraction=False,
+            rotate_max=180,
+        ),
+        str(POINT_CLASS.MINE_TUNNEL): PointOrientationConfig(
+            point_class=str(POINT_CLASS.MINE_TUNNEL),
+            dip_number_extraction=False,
+        ),
     }
 
     def __init__(self, task_id: str):
@@ -195,7 +240,9 @@ class PointOrientationExtractor(Task):
             # --- template matching
             # loop through rotational intervals...
             xcorr_results = {}
-            for rot_deg in range(0, 360, task_config.template_rotate_interval):
+            for rot_deg in range(
+                0, task_config.rotate_max, task_config.rotate_interval
+            ):
                 logger.debug("template rotation: {}".format(rot_deg))  #
                 # get rotated template
                 if rot_deg > 0:
