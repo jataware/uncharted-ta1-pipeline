@@ -1,3 +1,5 @@
+import logging
+
 import cv2 as cv
 import numpy as np
 
@@ -10,6 +12,8 @@ from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 
 from typing import Callable, List, Optional, Tuple
+
+logger = logging.getLogger("roi_extractor")
 
 ROI_PXL_LIMIT = 2000
 SLICE_PERCENT = 0.05
@@ -34,7 +38,9 @@ def buffer_roi_ratio(vertices: List[Tuple[float, float]], input: TaskInput) -> f
 
 class ROIExtractor(Task):
     def run(self, input: TaskInput) -> TaskResult:
-        print(f"running region of interest extraction task with id {self._task_id}")
+        logger.info(
+            f"running region of interest extraction task with id {self._task_id}"
+        )
 
         roi = self._extract_roi(input)
 
@@ -75,7 +81,7 @@ class ModelROIExtractor(ROIExtractor):
 
         # expand the polygon outward
         buffer_size = self._buffering_func(poly_raw, input)
-        print(f"buffering roi by {buffer_size}")
+        logger.info(f"buffering roi by {buffer_size}")
 
         polygon = Polygon(poly_raw)
         buffered = polygon.buffer(buffer_size, join_style=2)  # type: ignore
@@ -174,7 +180,7 @@ class EntropyROIExtractor(ROIExtractor):
         self, img: np.ndarray, axis: int = 0, s_width: float = 0.05
     ) -> Tuple[List[float], List[float]]:
         if axis != 0 and axis != 1:
-            print("ERROR! not supported!")
+            logger.error("ERROR! not supported!")
         len0 = img.shape[axis]
         p_shift = int(s_width * len0)
         p1 = 0

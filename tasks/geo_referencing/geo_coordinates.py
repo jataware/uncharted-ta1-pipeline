@@ -1,9 +1,13 @@
+import logging
+
 import numpy as np
 
 from geopy.distance import distance as geo_distance
 from sklearn.cluster import DBSCAN
 
 from typing import List, Optional, Tuple
+
+logger = logging.getLogger("coordinates_functions")
 
 FOV_RANGE_KM = 700
 
@@ -25,13 +29,13 @@ def split_lon_lat_degrees(
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
     n_noise_ = list(labels).count(-1)
 
-    print("Estimated number of clusters: %d" % n_clusters_)
-    print("Estimated number of noise points: %d" % n_noise_)
-    print(f"labels: {labels}")
+    logger.info("Estimated number of clusters: %d" % n_clusters_)
+    logger.info("Estimated number of noise points: %d" % n_noise_)
+    logger.info(f"labels: {labels}")
 
     # determine which of the clusters could be lat vs lon
     data_clustered = list(zip(degrees, labels))
-    print(f"cluster results: {data_clustered}")
+    logger.info(f"cluster results: {data_clustered}")
 
     clusters = {}
     for d in data_clustered:
@@ -46,7 +50,7 @@ def split_lon_lat_degrees(
         cluster_list.append(c)
 
     # handle the case where fewer than 2 clusters are detected
-    print(f"initial geofence: {geofence}")
+    logger.info(f"initial geofence: {geofence}")
     if len(cluster_list) < 1:
         return geofence
     elif len(cluster_list) == 1:
@@ -55,7 +59,7 @@ def split_lon_lat_degrees(
             degrees_extracted = list(map(lambda x: x[2], cluster_list[0]))
             updated_geofence = [geofence[0], geofence[1]]
             if is_lat:
-                print("lat determined")
+                logger.info("lat determined")
                 updated_lat = narrow_geofence(
                     [min(degrees_extracted), max(degrees_extracted)],
                     geofence[0],
@@ -63,7 +67,7 @@ def split_lon_lat_degrees(
                 )
                 updated_geofence = [geofence[0], updated_lat[1]]
             else:
-                print("lon determined")
+                logger.info("lon determined")
                 updated_lon = narrow_geofence(
                     geofence[1],
                     [min(degrees_extracted), max(degrees_extracted)],

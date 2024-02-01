@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from tasks.geo_referencing.entities import Coordinate
@@ -6,6 +7,8 @@ from tasks.geo_referencing.geo_projection import PolyRegression
 from tasks.geo_referencing.util import ocr_to_coordinates
 
 from typing import Dict, Tuple
+
+logger = logging.getLogger("coordinates_filter")
 
 
 class FilterCoordinates(Task):
@@ -51,7 +54,7 @@ class OutlierFilter(FilterCoordinates):
         super().__init__(task_id)
 
     def _filter(self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]):
-        print(f"outlier filter running against {coords}")
+        logger.info(f"outlier filter running against {coords}")
         updated_coords = coords
         test_length = 0
         while len(updated_coords) != test_length:

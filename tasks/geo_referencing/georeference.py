@@ -1,3 +1,4 @@
+import logging
 import math
 
 from geopy.distance import geodesic
@@ -11,6 +12,8 @@ from tasks.metadata_extraction.entities import (
 )
 
 from typing import Any, Dict, List, Optional, Tuple
+
+logger = logging.getLogger("geo_referencing")
 
 
 class QueryPoint:
@@ -53,7 +56,7 @@ class GeoReference(Task):
     def run(self, input: TaskInput) -> TaskResult:
         lon_minmax = input.get_request_info("lon_minmax", [0, 180])
         lat_minmax = input.get_request_info("lat_minmax", [0, 90])
-        print(f"initial lon_minmax: {lon_minmax}")
+        logger.info(f"initial lon_minmax: {lon_minmax}")
         lon_pts = input.get_data("lons")
         lat_pts = input.get_data("lats")
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
@@ -64,9 +67,6 @@ class GeoReference(Task):
 
         lon_check = list(map(lambda x: x[0], lon_pts))
         lat_check = list(map(lambda x: x[0], lat_pts))
-        print(f"lon check: {lon_check}\tlat check: {lat_check}")
-        print(f"lons: {lon_pts}")
-        print(f"lats: {lat_pts}")
         num_keypoints = min(len(lon_pts), len(lat_pts))
         confidence = 0
         if (
@@ -102,7 +102,7 @@ class GeoReference(Task):
 
         rmse = self._score_query_points(query_pts)
         datum, projection = self._determine_projection(input)
-        print(f"datum: {datum}\tprojection: {projection}")
+        logger.info(f"extracted datum: {datum}\textracted projection: {projection}")
 
         result = super()._create_result(input)
         result.output["query_pts"] = results
@@ -185,8 +185,8 @@ class GeoReference(Task):
                 qp.confidence = confidence
                 results.append(qp)
         except Exception as e:
-            print(f"EXCEPTION geo projecting")
-            print(e)
+            logger.error(f"EXCEPTION geo projecting")
+            logger.error(e)
             return self._add_fallback(input, query_pts, lon_minmax, lat_minmax)
 
         return results
@@ -200,7 +200,6 @@ class GeoReference(Task):
         if lon_minmax and lat_minmax:
             for qp in query_pts:
                 # ensure query pt results are within expected field-of-view range
-                # print(f'lonlat: {qp.lonlat}\tlon minmax: {lon_minmax}\tlat minmax: {lat_minmax}')
                 qp.lonlat = (
                     self._clip(qp.lonlat[0], lon_minmax[0], lon_minmax[1]),
                     self._clip(qp.lonlat[1], lat_minmax[0], lat_minmax[1]),
@@ -313,7 +312,9 @@ class GeoReference(Task):
         lon_minmax: List[float],
         lat_minmax: List[float],
     ) -> List[QueryPoint]:
-        print(f"adding fallback when georeferencing using {lon_minmax} & {lat_minmax}")
+        logger.info(
+            f"adding fallback when georeferencing using {lon_minmax} & {lat_minmax}"
+        )
         results = []
 
         # use the geofence if it was not defaulted and lat/lon minmax not clue point based
@@ -323,7 +324,7 @@ class GeoReference(Task):
         if geofence is not None and not geofence.geofence.defaulted:
             lon_minmax = geofence.geofence.lon_minmax
             lat_minmax = geofence.geofence.lat_minmax
-            print(
+            logger.info(
                 f"adjusting fallback window to geofence of {lon_minmax} & {lat_minmax}"
             )
 
@@ -345,7 +346,7 @@ class GeoReference(Task):
         return lower if value < lower else upper if value > upper else value
 
     def _score_query_points(self, query_pts: List[QueryPoint]) -> float:
-        print("scoring...")
+        logger.info("scoring georeferencing...")
         # if ground truth lon/lat info exists, calculate the
         # RMSE of geodesic error distances (in km) for all
         # query points for a given image

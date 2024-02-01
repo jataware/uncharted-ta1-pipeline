@@ -1,3 +1,4 @@
+import logging
 import random
 
 from abc import ABC, abstractmethod
@@ -18,6 +19,8 @@ from tasks.metadata_extraction.entities import (
 from tasks.text_extraction.entities import TextExtraction
 
 from typing import List, Tuple
+
+logger = logging.getLogger("geocoder")
 
 
 class GeocodingService(ABC):
@@ -111,7 +114,7 @@ class Geocoder(Task):
         self._run_points = run_points
 
     def run(self, input: TaskInput) -> TaskResult:
-        print(f"running geocoding task with id {self._task_id}")
+        logger.info(f"running geocoding task with id {self._task_id}")
         to_geocode = self._get_places(input)
 
         geocoded_output = input.parse_data(
