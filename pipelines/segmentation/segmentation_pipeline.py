@@ -1,6 +1,6 @@
 from typing import List
 
-from schema.ta1_schema import PageExtraction, ExtractionIdentifier
+from schema.ta1_schema import PageExtraction, ExtractionIdentifier, ProvenanceType
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.common.pipeline import (
     Pipeline,
@@ -102,16 +102,17 @@ class IntegrationOutput(OutputCreator):
         )
 
         page_extractions: List[PageExtraction] = []
-        for segment in map_segmentation.segments:
+        for i, segment in enumerate(map_segmentation.segments):
             page_extraction = PageExtraction(
                 name="segmentation",
                 model=ExtractionIdentifier(
-                    id=1, model=segment.id_model, field=segment.class_label
+                    id=i, model=segment.id_model, field=segment.class_label
                 ),
                 ocr_text="",
                 bounds=segment.poly_bounds,
-                # confidence = segment.confidence, // TODO: add to schema
                 color_estimation=None,
+                confidence=segment.confidence,
+                provenance=ProvenanceType.modelled,
             )
             page_extractions.append(page_extraction)
 
