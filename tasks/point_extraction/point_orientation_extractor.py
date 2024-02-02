@@ -306,7 +306,7 @@ class PointOrientationExtractor(Task):
                         xc_ocr -= xc
                         yc_ocr -= yc
                         yc_ocr *= -1
-                        ocr_deg = math.atan2(yc, xc) * 180 / math.pi
+                        ocr_deg = math.atan2(yc_ocr, xc_ocr) * 180 / math.pi
                         if ocr_deg < 0:
                             ocr_deg += 360
                         if not point_extractor_utils.angle_in_range(
