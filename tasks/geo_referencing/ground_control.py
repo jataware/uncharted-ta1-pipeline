@@ -19,7 +19,9 @@ class CreateGroundControlPoints(Task):
             f"running ground control point creation at task index {input.task_index} with id {self._task_id}"
         )
         # check if query points already defined
-        query_pts = input.request["query_pts"]
+        query_pts = None
+        if "query_pts" in input.request:
+            query_pts = input.request["query_pts"]
         if query_pts and len(query_pts) > 0:
             logger.info("ground control points already exist")
             return self._create_result(input)

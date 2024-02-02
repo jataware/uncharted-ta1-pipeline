@@ -1,3 +1,4 @@
+import argparse
 import os
 from flask import Flask, request, Response
 import logging, json
@@ -71,11 +72,15 @@ if __name__ == "__main__":
     logger = logging.getLogger("metadata extraction app")
     logger.info("*** Starting map metadata app ***")
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--workdir", type=str, required=True)
+    parser.add_argument("--model", type=str, required=True)
+    parser.add_argument("--min_confidence", type=float, default=0.25)
+    parser.add_argument("--debug", type=float, default=False)
+    p = parser.parse_args()
+
     # init segmenter
-    metadata_extraction = MetadataExtractorPipeline(
-        "tmp/lara/workdir",
-        "tmp/lara/models",
-    )
+    metadata_extraction = MetadataExtractorPipeline(p.workdir, p.model)
 
     #### start flask server
     app.run(host="0.0.0.0", port=5000)

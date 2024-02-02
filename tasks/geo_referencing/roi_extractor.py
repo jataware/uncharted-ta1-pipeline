@@ -53,14 +53,10 @@ class ROIExtractor(Task):
 
 
 class ModelROIExtractor(ROIExtractor):
-    _coco_file_path: str = ""
     _buffering_func: Callable
 
-    def __init__(
-        self, task_id: str, buffering_func: Callable, coco_file_path: str = ""
-    ):
+    def __init__(self, task_id: str, buffering_func: Callable):
         super().__init__(task_id)
-        self._coco_file_path = coco_file_path
         self._buffering_func = buffering_func
 
     def _extract_roi(self, input: TaskInput) -> Optional[List[Tuple[float, float]]]:

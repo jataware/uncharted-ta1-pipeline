@@ -61,7 +61,9 @@ class GeoReference(Task):
         lat_pts = input.get_data("lats")
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
 
-        query_pts = input.request["query_pts"]
+        query_pts = None
+        if "query_pts" in input.request:
+            query_pts = input.request["query_pts"]
         if not query_pts or len(query_pts) < 1:
             query_pts = input.get_data("query_pts")
 
