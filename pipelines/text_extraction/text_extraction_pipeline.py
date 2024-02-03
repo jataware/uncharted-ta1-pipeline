@@ -10,7 +10,7 @@ from tasks.common.pipeline import (
     OutputCreator,
     PipelineResult,
 )
-from schema.ta1_schema import PageExtraction, ExtractionIdentifier
+from schema.ta1_schema import PageExtraction, ExtractionIdentifier, ProvenanceType
 
 
 class TextExtractionPipeline(Pipeline):
@@ -69,16 +69,17 @@ class IntegrationOutput(OutputCreator):
         )
 
         page_extractions: List[PageExtraction] = []
-        for text_extraction in doc_text_extraction.extractions:
+        for i, text_extraction in enumerate(doc_text_extraction.extractions):
             page_extraction = PageExtraction(
                 name="ocr",
                 model=ExtractionIdentifier(
-                    id=1, model="google-cloud-vision", field="ocr"
+                    id=i, model="google-cloud-vision", field="ocr"
                 ),
                 ocr_text=text_extraction.text,
-                # confidence=text_extraction.confidence,
                 bounds=[(v.x, v.y) for v in text_extraction.bounds],
                 color_estimation=None,
+                confidence=text_extraction.confidence,
+                provenance=ProvenanceType.modelled,
             )
             page_extractions.append(page_extraction)
 

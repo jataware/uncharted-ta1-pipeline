@@ -24,6 +24,7 @@ def main():
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model_point_extractor", type=str, required=True)
     parser.add_argument("--model_segmenter", type=str, default=None)
+    parser.add_argument("--ta1_schema", type=bool, default=False)
     p = parser.parse_args()
 
     # setup an input stream

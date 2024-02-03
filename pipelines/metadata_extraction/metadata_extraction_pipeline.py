@@ -22,7 +22,13 @@ from tasks.common.pipeline import (
     Output,
     ImageOutput,
 )
-from schema.ta1_schema import Map, MapFeatureExtractions, ProjectionMeta
+from schema.ta1_schema import (
+    Map,
+    MapFeatureExtractions,
+    MapMetadata,
+    GeoReferenceMeta,
+    ProvenanceType,
+)
 
 
 class MetadataExtractorPipeline(Pipeline):
@@ -100,11 +106,9 @@ class IntegrationOutput(OutputCreator):
         metadata_extraction = MetadataExtraction.model_validate(
             pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
         )
-        schema_map = Map(
-            name=metadata_extraction.title,
-            source_url="",
-            image_url="",
-            image_size=[],
+
+        schema_metadata = MapMetadata(
+            id=metadata_extraction.map_id,
             authors=", ".join(metadata_extraction.authors),
             publisher="",
             year=(
@@ -114,11 +118,24 @@ class IntegrationOutput(OutputCreator):
             ),
             organization="",
             scale=metadata_extraction.scale,
-            bounds="",
-            features=MapFeatureExtractions(lines=[], points=[], polygons=[]),
+            confidence=None,  # TODO -- put in metadata extraction confidence?
+            provenance=ProvenanceType.modelled,
+        )
+
+        schema_map = Map(
+            name=metadata_extraction.title,
+            id=metadata_extraction.map_id,
+            source_url="",
+            image_url="",
+            image_size=[],
+            map_metadata=schema_metadata,
+            features=MapFeatureExtractions(
+                lines=[], points=[], polygons=[], pipelines=[]
+            ),
             cross_sections=None,
-            pipelines=[],
-            projection_info=ProjectionMeta(gcps=[], projection=""),
+            projection_info=GeoReferenceMeta(
+                gcps=[], projection="", bounds=None, provenance=None
+            ),
         )
         return BaseModelOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, schema_map
