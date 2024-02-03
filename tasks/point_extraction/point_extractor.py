@@ -22,6 +22,10 @@ class POINT_CLASS(str, Enum):
     HORIZONTAL_BEDDING = "horizontal_bedding"
     OVERTURNED_BEDDING = "overturned_bedding"
     VERTICAL_BEDDING = "vertical_bedding"
+    INCLINED_FOLIATION = "inclined_foliation"
+    VERTICAL_FOLIATION = "vertical_foliation"
+    VERTICAL_JOINT = "vertical_joint"
+    MINE_TUNNEL = "mine_tunnel"  # aka adit or "4_pt"
 
     def __str__(self):
         return self.value

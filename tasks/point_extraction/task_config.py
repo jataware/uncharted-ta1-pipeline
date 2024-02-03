@@ -12,7 +12,8 @@ class PointOrientationConfig(BaseModel):
     # do extraction of dip angle (2-digit label beside symbol)
     dip_number_extraction: bool = True
 
-    template_rotate_interval: int = 5  # [deg] rotational interval for template matching
+    rotate_interval: int = 5  # [deg] rotational interval for template matching
+    rotate_max: int = 360  # [deg] max degrees for rotation analysis
     bbox_size: int = 75  # [pixels] bounding-box size for symbol orientation analysis
 
     # [pixels] template cross-correlation search range (around point center)
