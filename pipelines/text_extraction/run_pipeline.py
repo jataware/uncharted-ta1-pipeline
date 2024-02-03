@@ -1,9 +1,14 @@
 import argparse
 import os
-from pathlib import Path
-from tasks.common.io import ImageFileInputIterator, JSONFileWriter
-from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
+from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
+from tasks.common.pipeline import (
+    PipelineInput,
+    BaseModelOutput,
+    BaseModelListOutput,
+    ImageOutput,
+)
 from .text_extraction_pipeline import TextExtractionPipeline
+from PIL.Image import Image as PILImage
 
 
 def main():
@@ -16,6 +21,7 @@ def main():
     parser.add_argument("--ta1_schema", action="store_true")
     parser.add_argument("--tile", action="store_true")
     parser.add_argument("--pixel_limit", type=int, default=6000)
+    parser.add_argument("--debug", type=bool, default=False)
 
     p = parser.parse_args()
 
@@ -23,9 +29,11 @@ def main():
     input = ImageFileInputIterator(p.input)
 
     # run the extraction pipeline
-    pipeline = TextExtractionPipeline(p.workdir, p.tile, p.pixel_limit)
+    pipeline = TextExtractionPipeline(p.workdir, p.tile, p.pixel_limit, p.debug)
 
     file_writer = JSONFileWriter()
+    image_writer = ImageFileWriter()
+
     for doc_id, image in input:
         # run the model
         results = pipeline.run(PipelineInput(raster_id=doc_id, image=image))
@@ -40,6 +48,11 @@ def main():
             ):  # type assertion
                 path = os.path.join(p.output, f"{doc_id}_text_extraction_schema.json")
                 file_writer.process(path, output_data.data)
+            elif isinstance(output_data, ImageOutput):
+                # write out the image
+                path = os.path.join(p.output, f"{doc_id}_text_extraction.png")
+                assert isinstance(output_data.data, PILImage)
+                image_writer.process(path, output_data.data)
             else:
                 continue
 
