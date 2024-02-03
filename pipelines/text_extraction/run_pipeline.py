@@ -17,11 +17,14 @@ def main():
     parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--verbose", action="store_true")
-    parser.add_argument("--ta1_schema", action="store_true")
-    parser.add_argument("--tile", action="store_true")
+    parser.add_argument(
+        "--ta1_schema", action=argparse.BooleanOptionalAction, default=False
+    )
+    parser.add_argument(
+        "--no-tile", action=argparse.BooleanOptionalAction, default=False
+    )
     parser.add_argument("--pixel_limit", type=int, default=6000)
-    parser.add_argument("--debug", type=bool, default=False)
+    parser.add_argument("--debug", action=argparse.BooleanOptionalAction, default=False)
 
     p = parser.parse_args()
 
@@ -29,7 +32,7 @@ def main():
     input = ImageFileInputIterator(p.input)
 
     # run the extraction pipeline
-    pipeline = TextExtractionPipeline(p.workdir, p.tile, p.pixel_limit, p.debug)
+    pipeline = TextExtractionPipeline(p.workdir, not p.no_tile, p.pixel_limit, p.debug)
 
     file_writer = JSONFileWriter()
     image_writer = ImageFileWriter()

@@ -32,11 +32,11 @@ class TextExtractionPipeline(Pipeline):
 
     def __init__(self, work_dir: Path, tile=True, pixel_limit=6000, debug_images=False):
         if tile:
+            tasks = [TileTextExtractor("tile_text", work_dir, pixel_limit)]
+        else:
             tasks = [
                 ResizeTextExtractor("resize_text", work_dir, False, True, pixel_limit)
             ]
-        else:
-            tasks = [TileTextExtractor("tile_text", work_dir, pixel_limit)]
 
         outputs = [
             IntegrationOutput("integration_output"),
@@ -145,7 +145,7 @@ class OCRImageOutput(OutputCreator):
         draw = ImageDraw.Draw(text_image)
         # draw in the text bounds
         font = ImageFont.truetype("Pillow/Tests/fonts/FreeMono.ttf", 40)
-        for text in tqdm.tqdm(extracted_text.extractions):
+        for text in extracted_text.extractions:
             points = [(point.x, point.y) for point in text.bounds]
             draw.polygon(
                 points,
