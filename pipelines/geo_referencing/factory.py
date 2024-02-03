@@ -112,7 +112,6 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         ModelROIExtractor(
             "model roi",
             buffer_fixed,
-            "/Users/phorne/projects/criticalmaas/data/challenge_1/legend_and_map_segmentation_results_20231025",
         )
     )
     if extract_metadata:
@@ -193,7 +192,6 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         ModelROIExtractor(
             "model roi",
             buffer_image_ratio,
-            "/Users/phorne/projects/criticalmaas/data/challenge_1/legend_and_map_segmentation_results_20231025",
         )
     )
     if extract_metadata:
@@ -234,7 +232,6 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         ModelROIExtractor(
             "model roi",
             buffer_roi_ratio,
-            "/Users/phorne/projects/criticalmaas/data/challenge_1/legend_and_map_segmentation_results_20231025",
         )
     )
     if extract_metadata:
@@ -263,20 +260,65 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
     return p
 
 
-def create_geo_referencing_pipeline() -> Pipeline:
+def create_geo_referencing_pipeline(model_path: str) -> Pipeline:
     tasks = []
-    tasks.append(TileTextExtractor("ocr", Path("temp/text/cache"), 6000))
+    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(
+        DetectronSegmenter(
+            "segmenter",
+            model_path,
+            "temp/segmentation/cache",
+            confidence_thres=0.25,
+        )
+    )
     tasks.append(
         ModelROIExtractor(
             "model roi",
             buffer_fixed,
-            "/Users/phorne/projects/criticalmaas/data/challenge_1/legend_and_map_segmentation_results_20231025",
         )
     )
-    tasks.append(GeoCoordinatesExtractor("geo"))
-    tasks.append(UTMCoordinatesExtractor("utm"))
-    tasks.append(GeocodeCoordinatesExtractor("geocode"))
-    tasks.append(GeoReference("reference", 1))
-    return Pipeline(
-        "wally-finder", "wally-finder", [IntegrationOutput("schema")], tasks
+    tasks.append(TextFilter("text_filter", output_key="filtered_ocr_text"))
+    tasks.append(
+        MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO, "filtered_ocr_text")
     )
+    tasks.append(
+        Geocoder(
+            "geo-bounds",
+            NominatimGeocoder(10, 1),
+            run_bounds=True,
+            run_points=False,
+        )
+    )
+    tasks.append(GeoFencer("geofence"))
+    tasks.append(GeoCoordinatesExtractor("third"))
+    tasks.append(OutlierFilter("fourth"))
+    tasks.append(UTMCoordinatesExtractor("fifth"))
+    tasks.append(
+        TextFilter(
+            "map_area_filter",
+            FilterMode.INCLUDE,
+            "map_area_filter",
+            ["map"],
+            run_step,
+        )
+    )
+    tasks.append(
+        MetadataExtractor(
+            "metadata_map_area_extractor",
+            LLM.GPT_3_5_TURBO,
+            "map_area_filter",
+            run_step,
+        )
+    )
+    tasks.append(
+        Geocoder(
+            "geo-places",
+            NominatimGeocoder(10, 5),
+            run_bounds=False,
+            run_points=True,
+        )
+    )
+    tasks.append(rfGeocoder("geocoded-georeferencing"))
+    tasks.append(CreateGroundControlPoints("seventh"))
+    tasks.append(GeoReference("eighth", 1))
+    return Pipeline("wally-finder", "wally-finder", [GCPOutput("schema")], tasks)

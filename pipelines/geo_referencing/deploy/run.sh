@@ -8,4 +8,4 @@ docker run \
     -v $1:/workdir \
     --net lara \
     -p 5000:5000 \
-    docker.uncharted.software/metadata-extraction:latest --workdir /workdir --model $2
+    docker.uncharted.software/geo-ref:latest --workdir /workdir --model $2

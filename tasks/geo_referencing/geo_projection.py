@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 
 from sklearn.linear_model import LinearRegression
@@ -6,6 +7,8 @@ from sklearn.preprocessing import PolynomialFeatures
 from tasks.geo_referencing.entities import Coordinate
 
 from typing import Dict, List, Tuple
+
+logger = logging.getLogger("geo_projection")
 
 
 class PolyRegression:
@@ -60,9 +63,6 @@ class GeoProjection:
         # a sparse number of keypoints)
         lon_results = self._map_coordinates(lon_coords)
         lat_results = self._map_coordinates(lat_coords)
-
-        print(f"estimating lat: {lat_results}")
-        print(f"estimating lon: {lon_results}")
         lon_results = self.finalize_keypoints(lon_results, im_size[0], im_size[1])
         lat_results = self.finalize_keypoints(lat_results, im_size[1], im_size[0])
 
@@ -106,7 +106,6 @@ class GeoProjection:
     ) -> Dict[Tuple[float, float], float]:
         # num of unique degree values
         num_deg_vals = len(set([x[0] for x in deg_results]))
-        print(f"deg results: {deg_results}")
 
         if num_deg_vals < 2:
             return deg_results
@@ -122,7 +121,7 @@ class GeoProjection:
             )  # new j value (far from the others)
             new_i = pxl_i + 1  # jitter by 1 pixel
             deg_results[(deg, new_i)] = new_j
-            print(
+            logger.info(
                 "Adding an anchor keypoint (assume no skew): deg: {}, i,j: {},{}".format(
                     deg, new_i, new_j
                 )

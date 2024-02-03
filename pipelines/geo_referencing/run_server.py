@@ -1,13 +1,17 @@
+import argparse
 import logging
 import os
 
 from flask import Flask, request, Response
+from hashlib import sha1
+from io import BytesIO
+from pathlib import Path
 from PIL.Image import Image as PILImage
 from PIL import Image
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
 from pipelines.geo_referencing.output import JSONWriter, ObjectOutput
-from tasks.common.pipeline import PipelineInput
+from tasks.common.pipeline import Pipeline, PipelineInput
 from tasks.geo_referencing.georeference import QueryPoint
 
 from typing import Dict, List, Tuple
@@ -19,10 +23,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/credentials.json"
 
 app = Flask(__name__)
 
-
-def load_image(image_path: str) -> PILImage:
-    # assume local file system for now
-    return Image.open(image_path)
+georef_pipeline: Pipeline
 
 
 def get_geofence(
@@ -51,17 +52,9 @@ def get_geofence(
     return (lon_minmax, lat_minmax, lon_sign_factor)
 
 
-def create_query_points(
-    raster_id: str, points: List[Dict[str, float]]
-) -> list[QueryPoint]:
-    return [QueryPoint(raster_id, (p["x"], p["y"]), None) for p in points]
-
-
-def create_input(
-    raster_id: str, image_path: str, points: List[Dict[str, float]]
-) -> PipelineInput:
+def create_input(raster_id: str, image: PILImage) -> PipelineInput:
     input = PipelineInput()
-    input.image = load_image(image_path)
+    input.image = image
     input.raster_id = raster_id
 
     lon_minmax, lat_minmax, lon_sign_factor = get_geofence()
@@ -69,40 +62,36 @@ def create_input(
     input.params["lat_minmax"] = lat_minmax
     input.params["lon_sign_factor"] = lon_sign_factor
 
-    query_pts = create_query_points(raster_id, points)
-    input.params["query_pts"] = query_pts
-
     return input
-
-
-def process_input(raster_id: str, image_path: str, points: List[Dict[str, float]]):
-    # create the input for the pipeline
-    input = create_input(raster_id, image_path, points)
-
-    # create the pipeline
-    pipeline = create_geo_referencing_pipeline()
-
-    # run the pipeline
-    outputs = pipeline.run(input)
-
-    # create the output assuming schema output is part of the pipeline
-    output_schema: ObjectOutput = outputs["schema"]  # type: ignore
-    writer_json = JSONWriter()
-    return writer_json.output([output_schema], {})
 
 
 @app.route("/api/process_image", methods=["POST"])
 def process_image():
-    # get input values
-    data = request.json
-    assert data is not None
-    raster_id = data["id"]
-    image_path = data["image_path"]
-    points = data["points"]
+    # Adapted from code samples here: https://gist.github.com/kylehounslow/767fb72fde2ebdd010a0bf4242371594
+    try:
+        # open the image from the supplied byte stream
+        bytes_io = BytesIO(request.data)
+        image = Image.open(bytes_io)
 
-    # process the request
-    result = process_input(raster_id, image_path, points)
-    return Response(result, status=200, mimetype="application/json")
+        # use the hash as the doc id since we don't have a filename
+        doc_id = sha1(request.data).hexdigest()
+
+        # run the image through the metadata extraction pipeline
+        input = create_input(doc_id, image)
+        outputs = georef_pipeline.run(input)
+        if len(outputs) == 0:
+            msg = "No georeferencing information derived"
+            logging.warning(msg)
+            return (msg, 500)
+        output_schema: ObjectOutput = outputs["schema"]  # type: ignore
+        writer_json = JSONWriter()
+        result_json = writer_json.output([output_schema], {})
+        return Response(result_json, status=200, mimetype="application/json")
+    except Exception as e:
+        msg = f"Error with process_image: {repr(e)}"
+        logging.error(msg)
+        print(repr(e))
+        return Response(msg, status=500)
 
 
 @app.route("/healthcheck")
@@ -121,6 +110,17 @@ def start_server():
     )
     logger = logging.getLogger("georef app")
     logger.info("*** Starting geo referencing app ***")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--workdir", type=str, required=True)
+    parser.add_argument("--model", type=str, required=True)
+    parser.add_argument("--min_confidence", type=float, default=0.25)
+    parser.add_argument("--debug", type=float, default=False)
+    p = parser.parse_args()
+
+    global georef_pipeline
+    georef_pipeline = create_geo_referencing_pipeline(p.model)
+
     app.run(host="0.0.0.0", port=5000)
 
 
