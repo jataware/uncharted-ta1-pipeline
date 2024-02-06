@@ -1,15 +1,10 @@
-from os import pipe
-from re import M
 from pathlib import Path
-
-from sympy import Ge
 
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     GeopackageIntegrationOutput,
 )
 from schema.ta1_schema import ProvenanceType
 from tasks.common.pipeline import GeopackageOutput, PipelineResult
-from tasks.geo_referencing.geo_coordinates import is_in_geofence
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
