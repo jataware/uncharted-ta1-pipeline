@@ -171,7 +171,7 @@ class MetadataExtractor(Task):
                 messages: List[Any] = [
                     {
                         "role": "system",
-                        "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
+                        "content": "You are using text extracted from maps by an OCR process to identify map metadata",
                     },
                     {"role": "user", "content": prompt_str},
                 ]

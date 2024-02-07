@@ -5,6 +5,7 @@ from .task import Task, TaskInput, TaskResult
 from typing import Optional, List, Dict, Any, Sequence
 from PIL.Image import Image as PILImage
 from pydantic import BaseModel
+from criticalmaas.ta1_geopackage import GeopackageDatabase
 
 
 class PipelineInput:
@@ -75,6 +76,14 @@ class ImageOutput(Output):
     data: PILImage
 
     def __init__(self, pipeline_id: str, pipeline_name: str, data: PILImage):
+        super().__init__(pipeline_id, pipeline_name)
+        self.data = data
+
+
+class GeopackageOutput(Output):
+    data: GeopackageDatabase
+
+    def __init__(self, pipeline_id: str, pipeline_name: str, data: GeopackageDatabase):
         super().__init__(pipeline_id, pipeline_name)
         self.data = data
 
