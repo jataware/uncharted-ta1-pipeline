@@ -51,7 +51,14 @@ class MetadataExtractorPipeline(Pipeline):
                 model_data_path,
                 str(Path(work_dir).joinpath("segmentation")),
             ),
-            TextFilter("text_filter"),
+            TextFilter(
+                "text_filter",
+                classes=[
+                    "cross_section",
+                    "legend_points_lines",
+                    "legend_polygons",
+                ],
+            ),
             MetadataExtractor("metadata_extractor", model=model),
         ]
 
@@ -176,16 +183,17 @@ class FilteredOCROutput(OutputCreator):
                     width=10,
                 )
         # draw in the map region bounds
-        map_segmentation = MapSegmentation.model_validate(
-            pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
-        )
-        for segment in map_segmentation.segments:
-            points = [(point[0], point[1]) for point in segment.poly_bounds]
-            draw.polygon(
-                points,
-                outline="#5ec04a",
-                width=20,
+        if SEGMENTATION_OUTPUT_KEY in pipeline_result.data:
+            map_segmentation = MapSegmentation.model_validate(
+                pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
             )
+            for segment in map_segmentation.segments:
+                points = [(point[0], point[1]) for point in segment.poly_bounds]
+                draw.polygon(
+                    points,
+                    outline="#5ec04a",
+                    width=20,
+                )
         return ImageOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, text_image
         )
