@@ -27,6 +27,9 @@ CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/clue_CSVs/"
 QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/AI4CMA_Map Georeferencing Challenge_Validation Answer Key/"
 # QUERY_PATH_IN = '/Users/phorne/projects/criticalmaas/data/challenge_1/quick/'
 POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/points/"
+# CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/input/"
+# QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/truth/"
+# POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/input/"
 IMG_FILE_EXT = "tif"
 CLUE_FILEN_SUFFIX = "_clue"
 

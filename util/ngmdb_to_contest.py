@@ -1,13 +1,14 @@
 from argparse import ArgumentParser
 import subprocess
 import csv
+import os
 from typing import List, Tuple
 from pathlib import Path
 from numpy import std
 from osgeo import gdal, osr
 
 
-def write_csv_headers(georef_input_file: Path, georef_truth_file: Path):
+def write_csv_headers(georef_input_file: str, georef_truth_file: str):
     # write the headers to the csv files
     with open(georef_input_file, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
@@ -19,8 +20,8 @@ def write_csv_headers(georef_input_file: Path, georef_truth_file: Path):
 
 
 def write_csv_files(
-    georef_input_file: Path,
-    georef_truth_file: Path,
+    georef_input_file: str,
+    georef_truth_file: str,
     map_id: str,
     pixel_coords: List[Tuple[int, int]],
     geo_coords: List[Tuple[float, float]],
@@ -89,15 +90,21 @@ def main():
     else:
         input_files = [input_path]
 
-    georef_input_file = Path(p.output_dir / f"{p.output_name}_input.csv")
-    georef_truth_file = Path(p.output_dir / f"{p.output_name}_truth.csv")
+    input_folder = os.path.join(p.output_dir, "input")
+    truth_folder = os.path.join(p.output_dir, "truth")
 
-    # write the headers to the csv files
-    write_csv_headers(georef_input_file, georef_truth_file)
+    os.makedirs(p.output_dir, exist_ok=True)
+    os.makedirs(input_folder, exist_ok=True)
+    os.makedirs(truth_folder, exist_ok=True)
 
     # iterate through the input files and append the pixel and geocoords to the output files
     for input_file in input_files:
         map_id = input_file.stem
+        georef_input_file = os.path.join(input_folder, f"{map_id}.csv")
+        georef_truth_file = os.path.join(truth_folder, f"{map_id}.csv")
+
+        # write the headers to the csv files
+        write_csv_headers(georef_input_file, georef_truth_file)
 
         # transform the source gcps
         pixel_coords = extract_pixel_gcps(input_file)

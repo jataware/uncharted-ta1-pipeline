@@ -58,7 +58,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
     tasks.append(GeocodeCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
-    p.append(
+    """p.append(
         Pipeline(
             "resize",
             "resize",
@@ -71,7 +71,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
             ],
             tasks,
         )
-    )
+    )"""
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -81,9 +81,36 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
     tasks.append(GeocodeCoordinatesExtractor("fifth"))
+    if extract_metadata:
+        tasks.append(
+            TextFilter(
+                "map_area_filter",
+                FilterMode.INCLUDE,
+                "map_area_filter",
+                ["map"],
+                run_step,
+            )
+        )
+        tasks.append(
+            MetadataExtractor(
+                "metadata_map_area_extractor",
+                LLM.GPT_3_5_TURBO,
+                "map_area_filter",
+                run_step,
+            )
+        )
+        tasks.append(
+            Geocoder(
+                "geo-places",
+                NominatimGeocoder(10, 5),
+                run_bounds=False,
+                run_points=True,
+            )
+        )
+        tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
-    p.append(
+    """p.append(
         Pipeline(
             "tile",
             "tile",
@@ -96,7 +123,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
             ],
             tasks,
         )
-    )
+    )"""
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -187,7 +214,6 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
             confidence_thres=0.25,
         )
     )
-    # tasks.append(ModelROIExtractor('model roi', buffer_image_ratio, '/Users/phorne/projects/criticalmaas/data/challenge_1/map_legend_segmentation_labels/ch1_validation_evaluation_labels_coco.json'))
     tasks.append(
         ModelROIExtractor(
             "model roi",
@@ -195,14 +221,54 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         )
     )
     if extract_metadata:
-        tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
+        tasks.append(TextFilter("text_filter", output_key="filtered_ocr_text"))
+        tasks.append(
+            MetadataExtractor(
+                "metadata_extractor", LLM.GPT_3_5_TURBO, "filtered_ocr_text"
+            )
+        )
+        tasks.append(
+            Geocoder(
+                "geo-bounds",
+                NominatimGeocoder(10, 1),
+                run_bounds=True,
+                run_points=False,
+            )
+        )
+        tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
-    tasks.append(GeocodeCoordinatesExtractor("sixth"))
+    if extract_metadata:
+        tasks.append(
+            TextFilter(
+                "map_area_filter",
+                FilterMode.INCLUDE,
+                "map_area_filter",
+                ["map"],
+                run_step,
+            )
+        )
+        tasks.append(
+            MetadataExtractor(
+                "metadata_map_area_extractor",
+                LLM.GPT_3_5_TURBO,
+                "map_area_filter",
+                run_step,
+            )
+        )
+        tasks.append(
+            Geocoder(
+                "geo-places",
+                NominatimGeocoder(10, 5),
+                run_bounds=False,
+                run_points=True,
+            )
+        )
+        tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    p.append(
+    """p.append(
         Pipeline(
             "roi poly image",
             "roi poly",
@@ -215,7 +281,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
             ],
             tasks,
         )
-    )
+    )"""
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -227,7 +293,6 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
             confidence_thres=0.25,
         )
     )
-    # tasks.append(ModelROIExtractor('model roi', buffer_roi_ratio, '/Users/phorne/projects/criticalmaas/data/challenge_1/map_legend_segmentation_labels/ch1_validation_evaluation_labels_coco.json'))
     tasks.append(
         ModelROIExtractor(
             "model roi",
@@ -235,14 +300,54 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         )
     )
     if extract_metadata:
-        tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
+        tasks.append(TextFilter("text_filter", output_key="filtered_ocr_text"))
+        tasks.append(
+            MetadataExtractor(
+                "metadata_extractor", LLM.GPT_3_5_TURBO, "filtered_ocr_text"
+            )
+        )
+        tasks.append(
+            Geocoder(
+                "geo-bounds",
+                NominatimGeocoder(10, 1),
+                run_bounds=True,
+                run_points=False,
+            )
+        )
+        tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
-    tasks.append(GeocodeCoordinatesExtractor("sixth"))
+    if extract_metadata:
+        tasks.append(
+            TextFilter(
+                "map_area_filter",
+                FilterMode.INCLUDE,
+                "map_area_filter",
+                ["map"],
+                run_step,
+            )
+        )
+        tasks.append(
+            MetadataExtractor(
+                "metadata_map_area_extractor",
+                LLM.GPT_3_5_TURBO,
+                "map_area_filter",
+                run_step,
+            )
+        )
+        tasks.append(
+            Geocoder(
+                "geo-places",
+                NominatimGeocoder(10, 5),
+                run_bounds=False,
+                run_points=True,
+            )
+        )
+        tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    p.append(
+    """p.append(
         Pipeline(
             "roi poly roi",
             "roi poly",
@@ -255,7 +360,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
             ],
             tasks,
         )
-    )
+    )"""
 
     return p
 
