@@ -15,6 +15,7 @@ from tasks.common.pipeline import (
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from criticalmaas.ta1_geopackage import GeopackageDatabase
 from shapely import Polygon
+from geopandas import GeoDataFrame
 
 
 class SegmentationPipeline(Pipeline):
