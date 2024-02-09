@@ -208,25 +208,24 @@ class GeopackageIntegrationOutput(OutputCreator):
                 )
             )
 
-            page_extractions.append(
-                db.model.page_extraction(
-                    id=extr_id,
-                    name="segmentation",
-                    pointer=extr_id,
-                    model_run=model_run_id,
-                    ocr_text=None,
-                    color_estimation=None,
-                    # BUG: with geopackage lib? px_geometry field throws an exception "(sqlite3.OperationalError) no such function: GeomFromEWKT"
-                    px_geometry=poly_obj.wkt,
-                    bounds=poly_obj.wkt,
-                    confidence=segment.confidence,
-                    provenance="modelled",
-                )
+            page_extr = dict(
+                id=extr_id,
+                name="segmentation",
+                pointer=extr_id,
+                model_run=model_run_id,
+                ocr_text=None,
+                color_estimation=None,
+                px_geometry=poly_obj,
+                bounds="",
+                confidence=segment.confidence,
+                provenance="modelled",
             )
+            page_extractions.append(page_extr)
+
         if extraction_identifiers:
             db.write_models(extraction_identifiers)
         if page_extractions:
-            db.write_models(page_extractions)
+            db.write_dataframe(GeoDataFrame(page_extractions, geometry="px_geometry"), "page_extraction")  # type: ignore
 
         return GeopackageOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, db
