@@ -110,7 +110,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "tile",
             "tile",
@@ -123,7 +123,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
             ],
             tasks,
         )
-    )"""
+    )
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -268,7 +268,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "roi poly image",
             "roi poly",
@@ -281,7 +281,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
             ],
             tasks,
         )
-    )"""
+    )
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -347,7 +347,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "roi poly roi",
             "roi poly",
@@ -360,7 +360,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
             ],
             tasks,
         )
-    )"""
+    )
 
     return p
 
