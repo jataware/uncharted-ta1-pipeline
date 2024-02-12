@@ -19,6 +19,8 @@ from typing import Callable, List, Dict, Any, Optional, Tuple
 
 logger = logging.getLogger("metadata_extractor")
 
+PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
+
 
 class LLM(str, Enum):
     GPT_3_5_TURBO = "gpt-3.5-turbo"
@@ -116,6 +118,11 @@ class MetadataExtractor(Task):
 
         metadata = self._process_doc_text_extraction(doc_text)
         if metadata:
+            # map state names as needed
+            for i, p in enumerate(metadata.states):
+                if p.lower() in PLACE_EXTENSION_MAP:
+                    metadata.states[i] = PLACE_EXTENSION_MAP[p.lower()]
+
             # normalize scale
             metadata.scale = self._normalize_scale(metadata.scale)
 
