@@ -15,8 +15,12 @@ from tasks.common.pipeline import (
     GeopackageOutput,
 )
 from criticalmaas.ta1_geopackage import GeopackageDatabase
-from tasks.text_extraction.text_extractor import ResizeTextExtractor
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
+from tasks.text_extraction.text_extractor import TileTextExtractor
+from tasks.segmentation.detectron_segmenter import (
+    DetectronSegmenter,
+    SEGMENTATION_OUTPUT_KEY,
+)
 from schema.ta1_schema import (
     PointFeature,
     PointType,
@@ -49,13 +53,9 @@ class PointExtractionPipeline(Pipeline):
         logger.info("Initializing Point Extraction Pipeline")
         tasks = []
         tasks.append(
-            # TODO: could use Tiled Text extractor here? ... better recall for dip magnitude extraction?
-            ResizeTextExtractor(
-                "resize_text",
+            TileTextExtractor(
+                "tile_text",
                 Path(work_dir).joinpath("text"),
-                to_blocks=True,
-                document_ocr=False,
-                pixel_lim=6000,
             )
         )
         if model_path_segmenter:
