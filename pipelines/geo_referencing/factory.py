@@ -3,6 +3,7 @@ from pathlib import Path
 from pipelines.geo_referencing.output import (
     GCPOutput,
     GeoReferencingOutput,
+    IntegrationModelOutput,
     IntegrationOutput,
     UserLeverOutput,
     SummaryOutput,
@@ -120,6 +121,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
+                IntegrationModelOutput("geopackage"),
             ],
             tasks,
         )
@@ -199,6 +201,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
+                IntegrationModelOutput("geopackage"),
             ],
             tasks,
         )
@@ -278,6 +281,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
+                IntegrationModelOutput("geopackage"),
             ],
             tasks,
         )
@@ -357,6 +361,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
+                IntegrationModelOutput("geopackage"),
             ],
             tasks,
         )
