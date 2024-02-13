@@ -1,4 +1,5 @@
 import jsons
+import os
 import uuid
 
 from tasks.common.pipeline import (
@@ -164,9 +165,12 @@ class JSONWriter:
             output_target.append(o.data)
         json_raw = jsons.dumps(output_target, indent=4)
 
+        file_path = params["path"]
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
         # Writing to output file if path specified
         if "path" in params:
-            with open(params["path"], "w") as f_out:
+            with open(file_path, "w") as f_out:
                 f_out.write(json_raw)
 
         # return the raw json
@@ -235,11 +239,10 @@ class IntegrationOutput(OutputCreator):
             count = count + 1
             o = {
                 "id": count,
-                "map_geom": {
-                    "coordinates": [qp.lonlat[0], qp.lonlat[1]],
-                    "type": "Point",
-                },
-                "px_geom": {"coordinates": [qp.xy[0], qp.xy[1]], "type": "Point"},
+                "map_geom": (qp.lonlat[0], qp.lonlat[1]),
+                "px_geom": (qp.xy[0], qp.xy[1]),
+                "confidence": qp.confidence,
+                "provenance": "modelled",
             }
             gcps.append(o)
         res.data = {
@@ -247,8 +250,7 @@ class IntegrationOutput(OutputCreator):
                 "name": pipeline_result.raster_id,
                 "projection_info": {
                     "projection": projection_mapped,
-                    "datum_raw": datum_raw,
-                    "projection_raw": projection_raw,
+                    "provenance": "modelled",
                     "gcps": gcps,
                 },
             }

@@ -25,6 +25,7 @@ class QueryPoint:
     lonlat_xp: Tuple[float, float]
     lonlat_yp: Tuple[float, float]
     error_lonlat: Tuple[float, float]
+    confidence: float
 
     def __init__(
         self,
