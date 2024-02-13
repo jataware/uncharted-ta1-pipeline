@@ -25,7 +25,12 @@ class POINT_CLASS(str, Enum):
     INCLINED_FOLIATION = "inclined_foliation"
     VERTICAL_FOLIATION = "vertical_foliation"
     VERTICAL_JOINT = "vertical_joint"
+    SINK_HOLE = "sink_hole"
+    GRAVEL_BORROW_PIT = "gravel_borrow_pit"
+    MINE_SHAFT = "mine_shaft"
+    PROSPECT = "prospect"
     MINE_TUNNEL = "mine_tunnel"  # aka adit or "4_pt"
+    MINE_QUARRY = "mine_quarry"
 
     def __str__(self):
         return self.value
