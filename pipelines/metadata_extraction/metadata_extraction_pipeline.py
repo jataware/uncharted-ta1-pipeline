@@ -21,6 +21,7 @@ from tasks.common.pipeline import (
     OutputCreator,
     Output,
     ImageOutput,
+    GeopackageOutput,
 )
 from schema.ta1_schema import (
     Map,
@@ -29,6 +30,7 @@ from schema.ta1_schema import (
     GeoReferenceMeta,
     ProvenanceType,
 )
+from criticalmaas.ta1_geopackage import GeopackageDatabase
 
 
 class MetadataExtractorPipeline(Pipeline):
@@ -194,4 +196,61 @@ class FilteredOCROutput(OutputCreator):
                 )
         return ImageOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, text_image
+        )
+
+
+class GeopackageIntegrationOutput(OutputCreator):
+    def __init__(self, id: str, file_path: Path):
+        super().__init__(id)
+        self._file_path = file_path
+
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
+        """
+        Creates a geopackage output from the pipeline result.
+
+        Args:
+            pipeline_result (PipelineResult): The pipeline result.
+
+        Returns:
+            GeopackageOutput: A geopackage containing the metadata extraction results.
+        """
+
+        metadata_extraction = MetadataExtraction.model_validate(
+            pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
+        )
+
+        db = GeopackageDatabase(str(self._file_path), crs="EPSG:4326")
+
+        if db.model is None:
+            raise ValueError("db.model is None")
+
+        db.write_models(
+            [
+                db.model.map(
+                    id=pipeline_result.raster_id,
+                    name=pipeline_result.raster_id,
+                    source_url="",
+                    image_url="",
+                    image_width=(
+                        pipeline_result.image.width if pipeline_result.image else -1
+                    ),
+                    image_height=(
+                        pipeline_result.image.height if pipeline_result.image else -1
+                    ),
+                ),
+                db.model.map_metadata(
+                    id=metadata_extraction.map_id,
+                    map_id=pipeline_result.raster_id,
+                    provenance=ProvenanceType.modelled.value,
+                    authors=",".join(metadata_extraction.authors),
+                    publisher="",
+                    confidence=0.5,
+                    year=int(metadata_extraction.year),
+                    scale=metadata_extraction.scale,
+                    title=metadata_extraction.title,
+                ),
+            ]
+        )
+        return GeopackageOutput(
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, db
         )
