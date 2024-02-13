@@ -23,13 +23,16 @@ FOV_RANGE_KM = (
 LON_MINMAX = [-66.0, -180.0]  # fallback geo-fence (ALL of USA + Alaska)
 LAT_MINMAX = [24.0, 73.0]
 
-CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/clue_CSVs/"
-QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/AI4CMA_Map Georeferencing Challenge_Validation Answer Key/"
+# CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/clue_CSVs/"
+# QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/AI4CMA_Map Georeferencing Challenge_Validation Answer Key/"
 # QUERY_PATH_IN = '/Users/phorne/projects/criticalmaas/data/challenge_1/quick/'
-POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/points/"
+# POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/points/"
 # CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/input/"
 # QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/truth/"
 # POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/input/"
+CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/raw_maps"
+QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/georeferenced_maps_input/truth"
+POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/georeferenced_maps_input/input"
 IMG_FILE_EXT = "tif"
 CLUE_FILEN_SUFFIX = "_clue"
 
