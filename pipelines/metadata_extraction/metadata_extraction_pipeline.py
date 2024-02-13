@@ -40,6 +40,7 @@ class MetadataExtractorPipeline(Pipeline):
         model_data_path: str,
         debug_images=False,
         model=LLM.GPT_3_5_TURBO,
+        gpu=True
     ):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
@@ -50,6 +51,7 @@ class MetadataExtractorPipeline(Pipeline):
                 "detectron_segmenter",
                 model_data_path,
                 str(Path(work_dir).joinpath("segmentation")),
+                gpu=gpu,
             ),
             TextFilter(
                 "text_filter",

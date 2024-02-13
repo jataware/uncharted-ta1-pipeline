@@ -57,6 +57,7 @@ class DetectronSegmenter(Task):
         model_data_cache_path: str,
         class_labels: list = THING_CLASSES_DEFAULT,
         confidence_thres: float = CONFIDENCE_THRES_DEFAULT,
+        gpu: bool = True,
     ):
         super().__init__(task_id)
 
@@ -67,6 +68,7 @@ class DetectronSegmenter(Task):
         self.class_labels = class_labels
         self.predictor: Optional[DefaultPredictor] = None
         self.id_model: str = ""
+        self.gpu = gpu
 
         # instantiate config
         self.cfg = get_cfg()
@@ -94,7 +96,7 @@ class DetectronSegmenter(Task):
         self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = confidence_thres
 
         # set device
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = "cuda" if self.gpu == True and torch.cuda.is_available() else "cpu"
         self.cfg.MODEL.DEVICE = device
         logger.info(f"torch device: {device}")
 
