@@ -71,6 +71,23 @@ def transform_pixel_gcps(
     return geo_coords
 
 
+def is_gcp_based(file_path: Path) -> bool:
+    return len(gdal.Open(str(file_path)).GetGCPs()) > 0
+
+
+def read_pixels(map_id: str, pixel_file_path: Path) -> List[Tuple[int, int]]:
+    # assume csv with map_id, y, x, ... format
+    with open(str(pixel_file_path), newline="") as f:
+        reader = csv.reader(f)
+        data = list(reader)
+
+    result = []
+    for d in data:
+        if d[0] == map_id:
+            result.append((d[2], d[1]))
+    return result
+
+
 # main
 def main():
     # use argparse to get the file path
@@ -78,6 +95,7 @@ def main():
     args.add_argument("--input_path", type=Path)
     args.add_argument("--output_name", type=str, default="georef")
     args.add_argument("--output_dir", type=Path, default=Path.cwd())
+    args.add_argument("--pixel_file", type=Path, default=Path.cwd())
     args.add_argument("--crs_epsg", type=int, default=4269)
 
     p = args.parse_args()
@@ -106,8 +124,13 @@ def main():
         # write the headers to the csv files
         write_csv_headers(georef_input_file, georef_truth_file)
 
-        # transform the source gcps
-        pixel_coords = extract_pixel_gcps(input_file)
+        pixel_coords: List[Tuple[int, int]] = []
+        if is_gcp_based(input_file):
+            # transform the source gcps
+            pixel_coords = extract_pixel_gcps(input_file)
+        else:
+            # read list of pixels to map
+            pixel_coords = read_pixels(map_id, p.pixel_file)
 
         # transform the pixel gcps to geographic coordinates
         geo_coords = transform_pixel_gcps(input_file, pixel_coords, p.crs_epsg)
