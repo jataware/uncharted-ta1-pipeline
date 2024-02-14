@@ -88,7 +88,7 @@ def create_input(
 
 def run_pipelines(parsed, input_data: ImageFileInputIterator):
     # get the pipelines
-    pipelines = create_geo_referencing_pipelines(parsed.extract_metadata)
+    pipelines = create_geo_referencing_pipelines(parsed.extract_metadata, parsed.output)
 
     results = {}
     results_summary = {}

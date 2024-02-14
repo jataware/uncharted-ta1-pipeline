@@ -1,7 +1,10 @@
+import os
+
 from pathlib import Path
 
 from pipelines.geo_referencing.output import (
     GCPOutput,
+    GeopackageIntegrationOutput,
     GeoReferencingOutput,
     IntegrationModelOutput,
     IntegrationOutput,
@@ -44,7 +47,9 @@ def run_step(input: TaskInput) -> bool:
     return num_keypoints < 2
 
 
-def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
+def create_geo_referencing_pipelines(
+    extract_metadata: bool, output_dir: str
+) -> List[Pipeline]:
     p = []
 
     tasks = []
@@ -111,7 +116,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
-    p.append(
+    """p.append(
         Pipeline(
             "tile",
             "tile",
@@ -121,11 +126,12 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
-                IntegrationModelOutput("geopackage"),
+                IntegrationModelOutput("model"),
+                GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )
-    )
+    )"""
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -201,7 +207,10 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
-                IntegrationModelOutput("geopackage"),
+                IntegrationModelOutput("model"),
+                GeopackageIntegrationOutput(
+                    "geopackage", os.path.join(output_dir, "geopackage")
+                ),
             ],
             tasks,
         )
@@ -271,7 +280,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    p.append(
+    """p.append(
         Pipeline(
             "roi poly image",
             "roi poly",
@@ -281,11 +290,12 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
-                IntegrationModelOutput("geopackage"),
+                IntegrationModelOutput("model"),
+                GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )
-    )
+    )"""
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -351,7 +361,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    p.append(
+    """p.append(
         Pipeline(
             "roi poly roi",
             "roi poly",
@@ -361,11 +371,12 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
-                IntegrationModelOutput("geopackage"),
+                IntegrationModelOutput("model"),
+                GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )
-    )
+    )"""
 
     return p
 
