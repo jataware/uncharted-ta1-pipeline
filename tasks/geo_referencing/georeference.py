@@ -70,6 +70,8 @@ class GeoReference(Task):
 
         lon_check = list(map(lambda x: x[0], lon_pts))
         lat_check = list(map(lambda x: x[0], lat_pts))
+        print(f"LAT CHECK: {lat_check}")
+        print(f"LON CHECK: {lon_check}")
         num_keypoints = min(len(lon_pts), len(lat_pts))
         confidence = 0
         if (
@@ -305,8 +307,16 @@ class GeoReference(Task):
         if not metadata:
             return "", ""
 
+        datum = metadata.datum
+        if not datum or len(datum) == 0:
+            year = metadata.year
+            if year >= "1985":
+                datum = "NAD83"
+            if year >= "1930":
+                datum = "NAD27"
+
         # return the datum and the projection
-        return metadata.datum, metadata.projection
+        return datum, metadata.projection
 
     def _add_fallback(
         self,

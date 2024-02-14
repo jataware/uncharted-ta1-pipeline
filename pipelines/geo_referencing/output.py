@@ -31,10 +31,10 @@ from typing import Any, Dict, List
 def get_projection(datum: str) -> str:
     # get espg code via basic lookup of the two frequently seen datums
     if "83" in datum:
-        return "ESPG:4269"
+        return "EPSG:4269"
     elif "27" in datum:
-        return "ESPG:4267"
-    return ""
+        return "EPSG:4267"
+    return "EPSG:4326"
 
 
 class GeoReferencingOutput(OutputCreator):

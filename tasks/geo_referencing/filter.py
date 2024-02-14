@@ -1,6 +1,10 @@
 import logging
 import uuid
 
+import numpy as np
+
+from sklearn.cluster import DBSCAN
+
 from tasks.geo_referencing.entities import Coordinate
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.geo_projection import PolyRegression
@@ -53,7 +57,9 @@ class OutlierFilter(FilterCoordinates):
     def __init__(self, task_id: str):
         super().__init__(task_id)
 
-    def _filter(self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]):
+    def _filter(
+        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[Tuple[float, float], Coordinate]:
         logger.info(f"outlier filter running against {coords}")
         updated_coords = coords
         test_length = 0
@@ -131,3 +137,62 @@ class OutlierFilter(FilterCoordinates):
         # calculate error
         # TODO: FOR NOW DO SIMPLE SUM
         return sum([abs(degrees[i] - predictions[i]) for i in range(len(predictions))])
+
+
+class NaiveFilter(FilterCoordinates):
+    def __init__(self, task_id: str):
+        super().__init__(task_id)
+
+    def _filter(
+        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[Tuple[float, float], Coordinate]:
+        logger.info(f"naive filter running against {coords}")
+        updated_coords = self._filter_coarse(input, coords)
+        return updated_coords
+
+    def _filter_coarse(
+        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[Tuple[float, float], Coordinate]:
+        # check range of coordinates to determine if filtering is required
+        degs = []
+        for _, c in coords.items():
+            degs.append(c.get_parsed_degree())
+
+        if max(degs) - min(degs) < 10:
+            return coords
+
+        # cluster degrees
+        data = np.array([[d] for d in degs])
+        db = DBSCAN(eps=1, min_samples=2).fit(data)
+        labels = db.labels_
+
+        clusters = []
+        max_cluster = []
+        for i, l in enumerate(labels):
+            if l == -1:
+                continue
+            while len(clusters) <= l:
+                clusters.append([])
+            clusters[l].append(degs[i])
+            if len(clusters[l]) > len(max_cluster):
+                max_cluster = clusters[l]
+
+        filtered_coords = {}
+        for k, v in coords.items():
+            if v.get_parsed_degree() in max_cluster:
+                filtered_coords[k] = v
+            else:
+                self._add_param(
+                    input,
+                    str(uuid.uuid4()),
+                    "coordinate-excluded",
+                    {
+                        "bounds": ocr_to_coordinates(v.get_bounds()),
+                        "text": v.get_text(),
+                        "type": ("latitude" if v.is_lat() else "longitude"),
+                        "pixel_alignment": v.get_pixel_alignment(),
+                        "confidence": v.get_confidence(),
+                    },
+                    "excluded due to naive outlier detection",
+                )
+        return filtered_coords

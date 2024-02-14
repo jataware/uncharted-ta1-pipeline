@@ -18,7 +18,7 @@ from tasks.geo_referencing.coordinates_extractor import (
     GeoCoordinatesExtractor,
 )
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
-from tasks.geo_referencing.filter import OutlierFilter
+from tasks.geo_referencing.filter import NaiveFilter, OutlierFilter
 from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.geocode import Geocoder as rfGeocoder
@@ -167,6 +167,7 @@ def create_geo_referencing_pipelines(
         tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
+    tasks.append(NaiveFilter("fun"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
@@ -208,9 +209,9 @@ def create_geo_referencing_pipelines(
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
                 IntegrationModelOutput("model"),
-                GeopackageIntegrationOutput(
-                    "geopackage", os.path.join(output_dir, "geopackage")
-                ),
+                # GeopackageIntegrationOutput(
+                #    "geopackage", os.path.join(output_dir, "geopackage")
+                # ),
             ],
             tasks,
         )
