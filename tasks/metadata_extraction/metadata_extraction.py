@@ -320,13 +320,14 @@ class MetadataExtractor(Task):
             + " - base map info\n"
             + " - quadrangles\n"
             + " - counties\n"
-            + " - states\n"
+            + " - states/provinces\n"
             + " - country\n"
             + " Examples of vertical datums: mean sea level, vertical datum of 1901\n"
             + " Examples of datums: North American Datum of 1927, NAD83, WGS 84\n"
             + " Examples of projections: Polyconic, Lambert, Transverse Mercator\n"
             + " Examples of coordinate systems: Utah coordinate system central zone, UTM Zone 15, Universal Transverse Mercator zone 12, New Mexico coordinate system, north zone, Carter Coordinate System"
             + ' Examples of base maps: "U.S. Geological Survey 1954", "U.S. Geological Survey 1:62,500, Vidal (1949) Rice and Turtle Mountains (1954) Savahia Peak (1975)"\n'
+            + ' Examples of states/provinces: "Arizona", "New York", "Ontario"\n' 
             + " Return the data as a JSON structure.\n"
             + " Here is an example of the structure to use: \n"
             + self.EXAMPLE_JSON
