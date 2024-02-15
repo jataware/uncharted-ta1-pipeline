@@ -90,6 +90,12 @@ class GeoReference(Task):
                 list(map(lambda x: x[1], lat_pts.items())),
                 input.image.size,
             )
+            # if geo_projn:
+            #    import pickle, os
+            #    os.makedirs("results_georeferencing/", exist_ok=True)
+            #    filen = f"results_georeferencing/{input.raster_id}_geoproj.pkl"
+            #    with open(filen, "wb") as fp:
+            #        pickle.dump(geo_projn, fp)
 
         # ----- Get lon/lat results for query points for this image
         results = self._process_query_points(
@@ -385,4 +391,5 @@ class GeoReference(Task):
         if num_pts == 0:
             return -1
         rmse = math.sqrt(sum_sq_error / num_pts)
+
         return rmse

@@ -163,7 +163,7 @@ class NaiveFilter(FilterCoordinates):
 
         # cluster degrees
         data = np.array([[d] for d in degs])
-        db = DBSCAN(eps=1, min_samples=2).fit(data)
+        db = DBSCAN(eps=2.5, min_samples=2).fit(data)
         labels = db.labels_
 
         clusters = []
@@ -176,6 +176,10 @@ class NaiveFilter(FilterCoordinates):
             clusters[l].append(degs[i])
             if len(clusters[l]) > len(max_cluster):
                 max_cluster = clusters[l]
+
+        # no clustering so unable to filter anything reliably
+        if len(max_cluster) == 0:
+            return coords
 
         filtered_coords = {}
         for k, v in coords.items():

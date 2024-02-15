@@ -30,9 +30,14 @@ LAT_MINMAX = [24.0, 73.0]
 # CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/input/"
 # QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/truth/"
 # POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/input/"
-CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/raw_maps"
-QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/georeferenced_maps_input/truth"
-POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/georeferenced_maps_input/input"
+# CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/raw_maps"
+# QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/georeferenced_maps_input/truth"
+# POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/georeferenced_maps_input/input"
+CLUE_PATH_IN = (
+    "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_all/raw_maps"
+)
+QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_all/georeferenced_maps_input/truth"
+POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_all/georeferenced_maps_input/input"
 IMG_FILE_EXT = "tif"
 CLUE_FILEN_SUFFIX = "_clue"
 
