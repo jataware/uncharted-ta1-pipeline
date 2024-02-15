@@ -38,8 +38,9 @@ class TestGeopackageIntegrationOutput:
         pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY] = metadata_extraction
 
         # Create an instance of GeopackageIntegrationOutput
-        geopackage_path = Path("pipelines/metadata_extraction/test/test_db.gpkg")
-        output_creator = GeopackageIntegrationOutput("output_id", geopackage_path)
+        geopackage_path = Path("pipelines/metadata_extraction/test")
+        geopackage_file = geopackage_path.joinpath(f"{pipeline_result.raster_id}_metadata_extraction.gpkg")
+        output_creator = GeopackageIntegrationOutput("output_id", str(geopackage_path))
 
         try:
             # Call the create_output method
@@ -70,7 +71,7 @@ class TestGeopackageIntegrationOutput:
             gpk_metadata = gpk.session.query(gpk.model.map_metadata).first()
             assert gpk_metadata.id == metadata_extraction.map_id  # type: ignore
             assert gpk_metadata.map_id == pipeline_result.raster_id  # type: ignore
-            assert gpk_metadata.provenance == ProvenanceType.modelled.value  # type: ignore
+            assert gpk_metadata.provenance == "modelled"  # type: ignore
             assert gpk_metadata.authors == ",".join(metadata_extraction.authors)  # type: ignore
             assert gpk_metadata.publisher == ""  # type: ignore
             assert gpk_metadata.confidence == 0.5  # type: ignore
@@ -80,4 +81,4 @@ class TestGeopackageIntegrationOutput:
 
         finally:
             # delete the file
-            geopackage_path.unlink()
+            geopackage_file.unlink()
