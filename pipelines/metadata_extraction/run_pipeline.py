@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--ta1_schema", type=bool, default=False)
     parser.add_argument("--debug_images", type=bool, default=False)
     parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_3_5_TURBO)
-    parser.add_argument("--no_gpu", action="store_true", default=False)
+    parser.add_argument("--no_gpu", type=bool, default=False)
     p = parser.parse_args()
 
     logger.info(f"Args: {p}")
@@ -43,7 +43,7 @@ def main():
     image_writer = ImageFileWriter()
 
     # create the pipeline
-    pipeline = MetadataExtractorPipeline(p.workdir, p.model, p.debug_images, p.llm, not p.no_gpu)
+    pipeline = MetadataExtractorPipeline(p.workdir, p.model, p.output, p.debug_images, p.ta1_schema, p.llm, not p.no_gpu)
 
     # run the extraction pipeline
     for doc_id, image in input:
@@ -56,11 +56,11 @@ def main():
                 if output_type == "metadata_extraction_output":
                     path = os.path.join(p.output, f"{doc_id}_metadata_extraction.json")
                     file_writer.process(path, output_data.data)
-                elif output_type == "metadata_integration_output" and p.ta1_schema:
+                if output_type == "metadata_integration_output" and p.ta1_schema:
                     path = os.path.join(
                         p.output, f"{doc_id}_metadata_extraction_schema.json"
                     )
-                    file_writer.process(path, output_data.data)
+                    file_writer.process(path, output_data.data)         
             elif isinstance(output_data, ImageOutput):
                 # write out the image
                 path = os.path.join(p.output, f"{doc_id}_metadata_extraction.png")

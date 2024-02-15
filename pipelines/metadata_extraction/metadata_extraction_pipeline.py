@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Optional, List
 from PIL import ImageDraw
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.text_filter import TextFilter, TEXT_EXTRACTION_OUTPUT_KEY
@@ -38,7 +39,9 @@ class MetadataExtractorPipeline(Pipeline):
         self,
         work_dir: str,
         model_data_path: str,
+        output_dir: Optional[str] = None,
         debug_images=False,
+        ta1_schema=False,
         model=LLM.GPT_3_5_TURBO,
         gpu=True
     ):
@@ -64,10 +67,14 @@ class MetadataExtractorPipeline(Pipeline):
             MetadataExtractor("metadata_extractor", model=model),
         ]
 
-        outputs = [
-            MetadataExtractionOutput("metadata_extraction_output"),
-            IntegrationOutput("metadata_integration_output"),
+        outputs: List[OutputCreator] = [
+            MetadataExtractionOutput("metadata_extraction_output"),            
         ]
+
+        if ta1_schema and output_dir:
+            outputs.append(IntegrationOutput("metadata_integration_output"))
+            outputs.append(GeopackageIntegrationOutput("geopackage_integration_output", output_dir))
+
         if debug_images:
             outputs.append(FilteredOCROutput("filtered_ocr_output"))
 
@@ -130,7 +137,7 @@ class IntegrationOutput(OutputCreator):
             organization="",
             scale=metadata_extraction.scale,
             confidence=None,  # TODO -- put in metadata extraction confidence?
-            provenance=ProvenanceType.modelled,
+            provenance=None
         )
 
         schema_map = Map(
@@ -148,7 +155,7 @@ class IntegrationOutput(OutputCreator):
                 gcps=[], projection="", bounds=None, provenance=None
             ),
         )
-        return BaseModelOutput(
+        return BaseModelOutput( 
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, schema_map
         )
 
@@ -182,7 +189,7 @@ class FilteredOCROutput(OutputCreator):
                 draw.polygon(
                     points,
                     outline="#ff497b",
-                    width=10,
+                    width=1,
                 )
         # draw in the map region bounds
         if SEGMENTATION_OUTPUT_KEY in pipeline_result.data:
@@ -194,7 +201,7 @@ class FilteredOCROutput(OutputCreator):
                 draw.polygon(
                     points,
                     outline="#5ec04a",
-                    width=20,
+                    width=1,
                 )
         return ImageOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, text_image
@@ -202,10 +209,10 @@ class FilteredOCROutput(OutputCreator):
 
 
 class GeopackageIntegrationOutput(OutputCreator):
-    def __init__(self, id: str, file_path: Path):
+    def __init__(self, id: str, output_dir: str):
         super().__init__(id)
-        self._file_path = file_path
-
+        self._output_dir = output_dir
+        
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         """
         Creates a geopackage output from the pipeline result.
@@ -221,7 +228,8 @@ class GeopackageIntegrationOutput(OutputCreator):
             pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
         )
 
-        db = GeopackageDatabase(str(self._file_path), crs="EPSG:4326")
+        path = os.path.join(self._output_dir, f"{pipeline_result.raster_id}_metadata_extraction.gpkg")
+        db = GeopackageDatabase(str(path), crs="EPSG:4326")
 
         if db.model is None:
             raise ValueError("db.model is None")
@@ -243,11 +251,13 @@ class GeopackageIntegrationOutput(OutputCreator):
                 db.model.map_metadata(
                     id=metadata_extraction.map_id,
                     map_id=pipeline_result.raster_id,
-                    provenance=ProvenanceType.modelled.value,
+                    provenance="modelled",
                     authors=",".join(metadata_extraction.authors),
                     publisher="",
                     confidence=0.5,
-                    year=int(metadata_extraction.year),
+                    year=int(metadata_extraction.year)
+                    if metadata_extraction.year.isdigit()
+                    else -1,
                     scale=metadata_extraction.scale,
                     title=metadata_extraction.title,
                 ),
