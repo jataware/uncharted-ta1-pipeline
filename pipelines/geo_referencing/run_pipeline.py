@@ -38,6 +38,9 @@ CLUE_PATH_IN = (
 )
 QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_all/georeferenced_maps_input/truth"
 POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_all/georeferenced_maps_input/input"
+# CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/jataware/clue"
+# QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/jataware/truth"
+# POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/jataware/input"
 IMG_FILE_EXT = "tif"
 CLUE_FILEN_SUFFIX = "_clue"
 
