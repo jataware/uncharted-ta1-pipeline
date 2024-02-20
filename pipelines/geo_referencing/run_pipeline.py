@@ -23,24 +23,6 @@ FOV_RANGE_KM = (
 LON_MINMAX = [-66.0, -180.0]  # fallback geo-fence (ALL of USA + Alaska)
 LAT_MINMAX = [24.0, 73.0]
 
-# CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/clue_CSVs/"
-# QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/AI4CMA_Map Georeferencing Challenge_Validation Answer Key/"
-# QUERY_PATH_IN = '/Users/phorne/projects/criticalmaas/data/challenge_1/quick/'
-# POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/points/"
-# CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/input/"
-# QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/truth/"
-# POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/cloudfront_input/input/"
-# CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/raw_maps"
-# QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/georeferenced_maps_input/truth"
-# POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_02092024/georeferenced_maps_input/input"
-CLUE_PATH_IN = (
-    "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_all/raw_maps"
-)
-QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_all/georeferenced_maps_input/truth"
-POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/challenge_1/magmatic_nickel_all/georeferenced_maps_input/input"
-# CLUE_PATH_IN = "/Users/phorne/projects/criticalmaas/data/jataware/clue"
-# QUERY_PATH_IN = "/Users/phorne/projects/criticalmaas/data/jataware/truth"
-# POINTS_PATH_IN = "/Users/phorne/projects/criticalmaas/data/jataware/input"
 IMG_FILE_EXT = "tif"
 CLUE_FILEN_SUFFIX = "_clue"
 
@@ -61,6 +43,9 @@ def main():
     parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
     parser.add_argument("--workdir", type=str, default=None)
+    parser.add_argument("--clue_dir", type=str, default=None)
+    parser.add_argument("--query_dir", type=str, default=None)
+    parser.add_argument("--points_dir", type=str, default=None)
     parser.add_argument("--verbose", type=bool, default=False)
     parser.add_argument("--ta1_schema", type=bool, default=False)
     parser.add_argument("--extract_metadata", type=bool, default=False)
@@ -96,6 +81,11 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
     # get the pipelines
     pipelines = create_geo_referencing_pipelines(parsed.extract_metadata, parsed.output)
 
+    # get file paths
+    clue_dir = parsed.clue_dir
+    query_dir = parsed.query_dir
+    points_dir = parsed.points_id
+
     results = {}
     results_summary = {}
     results_levers = {}
@@ -113,9 +103,9 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
     for raster_id, image in input_data:
         print(f"processing {raster_id}")
 
-        clue_path = os.path.join(CLUE_PATH_IN, raster_id + CLUE_FILEN_SUFFIX + ".csv")
-        query_path = os.path.join(QUERY_PATH_IN, raster_id + ".csv")
-        points_path = os.path.join(POINTS_PATH_IN, f"pipeline_output_{raster_id}.json")
+        clue_path = os.path.join(clue_dir, raster_id + CLUE_FILEN_SUFFIX + ".csv")
+        query_path = os.path.join(query_dir, raster_id + ".csv")
+        points_path = os.path.join(points_dir, f"pipeline_output_{raster_id}.json")
 
         input = create_input(raster_id, image, points_path, query_path, clue_path)
 
