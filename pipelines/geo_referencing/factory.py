@@ -251,6 +251,7 @@ def create_geo_referencing_pipelines(
         tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
+    tasks.append(NaiveFilter("fun"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
@@ -281,7 +282,7 @@ def create_geo_referencing_pipelines(
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "roi poly image",
             "roi poly",
@@ -292,11 +293,11 @@ def create_geo_referencing_pipelines(
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
                 IntegrationModelOutput("model"),
-                GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
+                # GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )
-    )"""
+    )
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -332,6 +333,7 @@ def create_geo_referencing_pipelines(
         tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
+    tasks.append(NaiveFilter("fun"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
@@ -362,7 +364,7 @@ def create_geo_referencing_pipelines(
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "roi poly roi",
             "roi poly",
@@ -373,11 +375,11 @@ def create_geo_referencing_pipelines(
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
                 IntegrationModelOutput("model"),
-                GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
+                # GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )
-    )"""
+    )
 
     return p
 

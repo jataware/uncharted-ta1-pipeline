@@ -8,6 +8,8 @@ from rasterio import CRS
 from rasterio.control import GroundControlPoint
 from rasterio.transform import Affine, from_gcps
 
+from util.json import read_json_file
+
 from typing import Tuple
 
 
@@ -54,6 +56,32 @@ def build_geo_ref_csv_result(map_name: str, gcp_csv_path: str) -> Tuple[CRS, Aff
     return crs, transform
 
 
+def build_geo_ref_schema_result(
+    map_name: str, gcp_json_path: str
+) -> Tuple[CRS, Affine]:
+    # load json
+    raw_data = read_json_file(gcp_json_path)
+    map_json = raw_data[0]["map"]
+
+    # pull out CRS of the map
+    projection = map_json["projection_info"]
+    crs = CRS.from_epsg(int(projection["projection"].split(":")[1]))
+
+    # process each gcp
+    rasterio_gcps = []
+    for gcp in projection["gcps"]:
+        rasterio_gcps.append(
+            GroundControlPoint(
+                gcp["px_geom"][1],
+                gcp["px_geom"][0],
+                gcp["map_geom"][0],
+                gcp["map_geom"][1],
+            )
+        )
+
+    return crs, from_gcps(rasterio_gcps)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--image_dir", type=str, required=True)
@@ -69,7 +97,12 @@ def main():
             output_file_path = os.path.join(p.output_dir, file)
             file_path = os.path.join(root, file)
             map_id = os.path.splitext(file)[0]
-            crs, transform = build_geo_ref_csv_result(map_id, p.gcp_file)
+            if file_path.endswith("csv"):
+                crs, transform = build_geo_ref_csv_result(map_id, p.gcp_file)
+            else:
+                crs, transform = build_geo_ref_schema_result(
+                    map_id, os.path.join(p.gcp_file, f"{map_id}.json")
+                )
 
             # load the image
             im = load_raw_geo_tiff(file_path)
