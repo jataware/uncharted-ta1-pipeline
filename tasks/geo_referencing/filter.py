@@ -14,6 +14,8 @@ from typing import Dict, Tuple
 
 logger = logging.getLogger("coordinates_filter")
 
+NAIVE_FILTER_MINIMUM = 10
+
 
 class FilterCoordinates(Task):
     _coco_file_path: str = ""
@@ -158,7 +160,7 @@ class NaiveFilter(FilterCoordinates):
         for _, c in coords.items():
             degs.append(c.get_parsed_degree())
 
-        if max(degs) - min(degs) < 10:
+        if max(degs) - min(degs) < NAIVE_FILTER_MINIMUM:
             return coords
 
         # cluster degrees

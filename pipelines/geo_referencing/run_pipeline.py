@@ -47,8 +47,6 @@ CLUE_FILEN_SUFFIX = "_clue"
 Image.MAX_IMAGE_PIXELS = 400000000
 GEOCODE_CACHE = "temp/geocode/"
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/phorne/google-vision-lara.json"
-
 
 def main():
     logging.basicConfig(
