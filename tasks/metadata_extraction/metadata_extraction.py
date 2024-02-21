@@ -24,7 +24,7 @@ PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
 
 class LLM(str, Enum):
     GPT_3_5_TURBO = "gpt-3.5-turbo"
-    GPT_4_TURBO = "gpt-4-preview"
+    GPT_4_TURBO = "gpt-4-turbo-preview"
     GPT_4 = "gpt-4"
 
     def __str__(self):
