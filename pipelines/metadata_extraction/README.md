@@ -45,6 +45,8 @@ pip install -e .
 
 The segmentation dependencies are required due to the use of the map segmentation task within the metadata extraction pipeline.
 
+*Depending on the shell used, the brackets may need to be escaped.*
+
 ### Overview ###
 
 * Pipeline is defined in `metdata_extraction_pipeline.py` and is suitable for integration into other systems
