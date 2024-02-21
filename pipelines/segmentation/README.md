@@ -19,7 +19,7 @@ The model currently supports 4 segmentation classes:
 
 ### Installation
 
-* python=3.9 or higher is recommended
+* python 3.10 or higher is required
 * Installation of Detectron2 requires `torch` already be present in the environment, so it must be installed manually.
 
 To install from the current directory:
@@ -42,7 +42,10 @@ pip install -e .[segmentation]
 * Pipeline is defined in `segmentation_pipeline.py` and is suitable for integration into other systems
 * Model weights can be input from S3 or local drive
 * Input is a image (ie binary image file buffer)
-* Ouput is segmentation polygon results as a JSON object, either as a `SegmentationResults` object or a `PageExtraction` object (the latter being part of the CMA TA1 schema)
+* Ouput is the set of map polygons capturing the map region, legend areas and cross sections materialized as a:
+  * `SegmentationResults` JSON object
+  * `PageExtraction` JSON object (the latter being part of the CMA TA1 schema)
+  * [Geopackage](geopackage.org) adhering to the CMA TA1 schema
 
 ### Command Line Execution ###
 `run_pipeline.py` provides a command line wrapper around the segmentation pipeline, and allows for a directory map images to be processed serially.

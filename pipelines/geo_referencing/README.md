@@ -47,7 +47,7 @@ A list of georeferenced gcps output specifically for downstream integration cont
 
 ### Installation
 
-python=3.9 or higher is recommended
+python 3.10 or higher is required
 
 To install from the current directory:
 ```
