@@ -39,7 +39,9 @@ class TestGeopackageIntegrationOutput:
 
         # Create an instance of GeopackageIntegrationOutput
         geopackage_path = Path("pipelines/metadata_extraction/test")
-        geopackage_file = geopackage_path.joinpath(f"{pipeline_result.raster_id}_metadata_extraction.gpkg")
+        geopackage_file = geopackage_path.joinpath(
+            f"{pipeline_result.raster_id}_metadata_extraction.gpkg"
+        )
         output_creator = GeopackageIntegrationOutput("output_id", str(geopackage_path))
 
         try:

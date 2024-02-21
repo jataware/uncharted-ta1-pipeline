@@ -43,7 +43,7 @@ class MetadataExtractorPipeline(Pipeline):
         debug_images=False,
         ta1_schema=False,
         model=LLM.GPT_3_5_TURBO,
-        gpu=True
+        gpu=True,
     ):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
@@ -68,12 +68,14 @@ class MetadataExtractorPipeline(Pipeline):
         ]
 
         outputs: List[OutputCreator] = [
-            MetadataExtractionOutput("metadata_extraction_output"),            
+            MetadataExtractionOutput("metadata_extraction_output"),
         ]
 
         if ta1_schema and output_dir:
             outputs.append(IntegrationOutput("metadata_integration_output"))
-            outputs.append(GeopackageIntegrationOutput("geopackage_integration_output", output_dir))
+            outputs.append(
+                GeopackageIntegrationOutput("geopackage_integration_output", output_dir)
+            )
 
         if debug_images:
             outputs.append(FilteredOCROutput("filtered_ocr_output"))
@@ -137,7 +139,7 @@ class IntegrationOutput(OutputCreator):
             organization="",
             scale=metadata_extraction.scale,
             confidence=None,  # TODO -- put in metadata extraction confidence?
-            provenance=None
+            provenance=None,
         )
 
         schema_map = Map(
@@ -155,7 +157,7 @@ class IntegrationOutput(OutputCreator):
                 gcps=[], projection="", bounds=None, provenance=None
             ),
         )
-        return BaseModelOutput( 
+        return BaseModelOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, schema_map
         )
 
@@ -212,7 +214,7 @@ class GeopackageIntegrationOutput(OutputCreator):
     def __init__(self, id: str, output_dir: str):
         super().__init__(id)
         self._output_dir = output_dir
-        
+
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         """
         Creates a geopackage output from the pipeline result.
@@ -228,7 +230,9 @@ class GeopackageIntegrationOutput(OutputCreator):
             pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
         )
 
-        path = os.path.join(self._output_dir, f"{pipeline_result.raster_id}_metadata_extraction.gpkg")
+        path = os.path.join(
+            self._output_dir, f"{pipeline_result.raster_id}_metadata_extraction.gpkg"
+        )
         db = GeopackageDatabase(str(path), crs="EPSG:4326")
 
         if db.model is None:
@@ -255,9 +259,11 @@ class GeopackageIntegrationOutput(OutputCreator):
                     authors=",".join(metadata_extraction.authors),
                     publisher="",
                     confidence=0.5,
-                    year=int(metadata_extraction.year)
-                    if metadata_extraction.year.isdigit()
-                    else -1,
+                    year=(
+                        int(metadata_extraction.year)
+                        if metadata_extraction.year.isdigit()
+                        else -1
+                    ),
                     scale=metadata_extraction.scale,
                     title=metadata_extraction.title,
                 ),
