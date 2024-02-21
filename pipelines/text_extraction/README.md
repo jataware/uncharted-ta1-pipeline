@@ -10,7 +10,7 @@ See more info on pipeline tasks here: [../../tasks/text_extraction/README.md](..
 
 ### Installation
 
-python=3.9 or higher is recommended
+python 3.10 or higher is required
 
 To install from the current directory:
 ```
@@ -27,7 +27,10 @@ pip install -e .
 
 * Pipeline is defined in `text_extraction_pipeline.py` and is suitable for integration into other systems
 * Input is a image (ie binary image file buffer)
-* Output is extracted metadata as a JSON object, either as a `DocTextExtraction` object or a list of `PageExtraction` objects (from the CMA TA1 schema)
+* Output is the set of extracted text items materialized as a:
+  * `DocTextExtraction` JSON object
+  * List of `PageExtraction` objects as defined in the CMA TA1
+  * [Geopackage](geopackage.org) adhering to the CMA TA1 schema
 
 ### Command Line Execution ###
 `run_pipeline.py` provides a command line wrapper around the map extraction pipeline, and allows for a directory map images to be processed serially.

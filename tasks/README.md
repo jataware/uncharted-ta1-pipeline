@@ -4,8 +4,8 @@ LARA Pipeline Tasks
 
 ### Installation
 
-* python=3.9 or higher is recommended
-* The task library is pip install-able from this directory:
+* python 3.10 or higher is required
+* The task library is pip installable from this directory:
 ```
 pip install -e .
 ```
@@ -89,11 +89,26 @@ Initial efforts have focused on identifying and extracting the following symbols
 * Vertical Bedding
 * Horizontal Bedding
 * Overturned Bedding
+* Inclined Foliation
+* Vertical Foliation
+* Vertical Joint
+* Sink Hole
+* Gravel Borrow Pit
+* Mine Shaft
+* Prospect
+* Mine Tunnel
+* Mine Quarry
 
 #### Point Symbol Orientation ####
 Some point symbols also contain directional information.
 Point orientation (ie "strike" direction) and the "dip" magnitude are also extracted for applicable symbol types:
 * Inclined Bedding (strike/dip)
+* Vertical Bedding
+* Overturned Bedding
+* Inclined Foliation
+* Vertical Foliation
+* Vertical Joint
+* Mine Tunnel
 
 #### Using the Point Extraction Tasks ####
 * The main point extraction is available in the `YOLOPointDetector` task

@@ -30,7 +30,7 @@ The following are the currently extracted fields along with an example of each:
 
 ### Installation
 
-python=3.10 or required
+python 3.10 or higher required
 
 To install from the current directory:
 ```
@@ -43,14 +43,16 @@ cd ../pipelines/metadata_extraction
 pip install -e .
 ```
 
+The segmentation dependencies are required due to the use of the map segmentation task within the metadata extraction pipeline.
+
 ### Overview ###
 
 * Pipeline is defined in `metdata_extraction_pipeline.py` and is suitable for integration into other systems
 * Input is a image (ie binary image file buffer)
-* Output is extracted as:
-  * A `MetadataExtraction` JSON object
-  * A `Map` JSON object adhering to the CMA TA1 schema)
-  * A [Geopackage](geopackage.org) adhering to the CMA TA1 schema
+* Output is the set of metadata fields materialized as a:
+  * `MetadataExtraction` JSON object
+  * `Map` JSON object adhering to the CMA TA1 schema)
+  * [Geopackage](geopackage.org) adhering to the CMA TA1 schema
 
 ### Command Line Execution ###
 `run_pipeline.py` provides a command line wrapper around the map extraction pipeline, and allows for a directory map images to be processed serially.

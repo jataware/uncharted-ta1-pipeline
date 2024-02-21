@@ -21,24 +21,31 @@ Point orientation (ie "strike" direction) and the "dip" magnitude are also extra
 
 ### Installation
 
-python=3.9 or higher is recommended
+python 3.10 or higher is required
 
 To install from the current directory:
 ```
 # install the task library
 cd ../../tasks
-pip install -e .[point]
+pip install -e .[point,segmentation]
 
 # install the point extraction pipeline
 cd ../pipelines/point_extraction
 pip install -e .
 ```
 
+The segmentation dependencies are required due to the use of the map segmentation task within the metadata extraction pipeline.
+
+*Depending on the shell used, the brackets may need to be escaped.*
+
 ### Overview ###
 
 * Pipeline is defined in `point_extraction_pipeline.py` and is suitable for integration into other systems
 * Input is a image (ie binary image file buffer)
-* Ouput is extracted points as a `MapImage` JSON object, which contains a list of `MapPointLabel` caputring the point information.
+* Ouput is the set of extracted points materialized as a:
+  * `MapImage` JSON object, which contains a list of `MapPointLabel` capturing the point information
+  * List of `PointFeature` JSON objects as defined in the CMA TA1 schema
+  * [Geopackage](geopackage.org) adhering to the CMA TA1 schema
 
 ### Command Line Execution ###
 `run_pipeline.py` provides a command line wrapper around the point extraction pipeline, and allows for a directory map images to be processed serially.
@@ -53,7 +60,7 @@ python3 -m pipelines.point_extraction.run_pipeline \
     --output /model/output/dir \
     --workdir /model/working/dir \
     --model_point_extractor https://s3/compatible/endpoint/point_extractor_model_weights_dir \
-    --model_segmenter https://s3/compatible/endpoint/segmentation_model_weights_dir 
+    --model_segmenter https://s3/compatible/endpoint/segmentation_model_weights_dir
 ```
 
 Note that the `model_point_extractor` and `model_segmenter` parameters can point to a folder in the local file system, or to a resource on an S3-compatible endpoint.  The first file with a `.pt` extension will be loaded as the model weights.
@@ -75,7 +82,7 @@ export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
 python3 -m pipelines.point_extraction.run_server \
     --workdir /model/workingdir \
     --model_point_extractor https://s3/compatible/endpoint/point_extractor_model_weights_dir \
-    --model_segmenter https://s3/compatible/endpoint/segmentation_model_weights_dir 
+    --model_segmenter https://s3/compatible/endpoint/segmentation_model_weights_dir
 ```
 
 ### Dockerized deployment
