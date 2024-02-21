@@ -25,6 +25,7 @@ class QueryPoint:
     lonlat_xp: Tuple[float, float]
     lonlat_yp: Tuple[float, float]
     error_lonlat: Tuple[float, float]
+    confidence: float
 
     def __init__(
         self,
@@ -69,6 +70,8 @@ class GeoReference(Task):
 
         lon_check = list(map(lambda x: x[0], lon_pts))
         lat_check = list(map(lambda x: x[0], lat_pts))
+        print(f"LAT CHECK: {lat_check}")
+        print(f"LON CHECK: {lon_check}")
         num_keypoints = min(len(lon_pts), len(lat_pts))
         confidence = 0
         if (
@@ -87,6 +90,12 @@ class GeoReference(Task):
                 list(map(lambda x: x[1], lat_pts.items())),
                 input.image.size,
             )
+            # if geo_projn:
+            #   import pickle, os
+            #   os.makedirs("results_georeferencing/", exist_ok=True)
+            #   filen = f"results_georeferencing/{input.raster_id}_geoproj.pkl"
+            #   with open(filen, "wb") as fp:
+            #       pickle.dump(geo_projn, fp)
 
         # ----- Get lon/lat results for query points for this image
         results = self._process_query_points(
@@ -304,8 +313,16 @@ class GeoReference(Task):
         if not metadata:
             return "", ""
 
+        datum = metadata.datum
+        if not datum or len(datum) == 0:
+            year = metadata.year
+            if year >= "1985":
+                datum = "NAD83"
+            if year >= "1930":
+                datum = "NAD27"
+
         # return the datum and the projection
-        return metadata.datum, metadata.projection
+        return datum, metadata.projection
 
     def _add_fallback(
         self,
@@ -374,4 +391,5 @@ class GeoReference(Task):
         if num_pts == 0:
             return -1
         rmse = math.sqrt(sum_sq_error / num_pts)
+
         return rmse
