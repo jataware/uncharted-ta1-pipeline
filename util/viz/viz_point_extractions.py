@@ -1,19 +1,15 @@
+from argparse import ArgumentParser
 from PIL import Image, ImageDraw, ImageFont
 import json
 from collections import defaultdict
 
-# import colorsys, random
 import math
-from matplotlib import colors as mpl_colors
 import os
 from pathlib import Path
 
 # -------------
 # Plot Point Extraction location and orientation bboxes on an image
 
-IMG_PATH = "<path/to/images/tiffs>"
-
-JSON_PRED_PATH = "<path/to/uncharted/point/extraction/json/results>"
 
 RESULTS_DIR = "results_viz/"
 
@@ -61,12 +57,11 @@ def rotated_about(ax, ay, bx, by, angle):
     return (round(bx + radius * math.cos(angle)), round(by + radius * math.sin(angle)))
 
 
-def run():
-    print(f"*** Running viz point extractions on image path : {IMG_PATH}")
+def run(input_path: Path, json_pred_path: Path):
+    print(f"*** Running viz point extractions on image path : {input_path}")
 
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    input_path = Path(IMG_PATH)
     input_files = []
     if input_path.is_dir():
         # collect the ids of the files in the directory
@@ -77,7 +72,7 @@ def run():
     for img_path in input_files:
 
         img_filen = Path(img_path).stem
-        json_path = Path(JSON_PRED_PATH) / f"{img_filen}_point_extraction.json"
+        json_path = json_pred_path / f"{img_filen}_point_extraction.json"
         print(f"---- {img_filen}")
 
         data = json.load(open(json_path))
@@ -166,10 +161,20 @@ def run():
 
         img.save(
             os.path.join(RESULTS_DIR, img_filen + "_points_viz.jpg")
-        )  # save output to a new png file
+        )  # save output to a new jpg file
 
     print("Done!")
 
 
 if __name__ == "__main__":
-    run()
+
+    args = ArgumentParser()
+    args.add_argument("--input_path", type=Path, description="path to input tiffs")
+    args.add_argument(
+        "--json_pred_path",
+        type=Path,
+        description="path to uncharted point extraction json results",
+    )
+    p = args.parse_args()
+
+    run(p.input_path, p.json_pred_path)
