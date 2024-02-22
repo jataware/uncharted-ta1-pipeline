@@ -11,6 +11,10 @@ from tasks.point_extraction.entities import MapTile, MapTiles, MapImage, MapPoin
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 
 SEGMENT_MAP_CLASS = "map"  # class label for map area segmentation
+TILE_OVERLAP_DEFAULT = (  # default tliing overlap = point bbox + 10%
+    int(1.1 * 90),
+    int(1.1 * 90),
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +28,13 @@ class Tiler(Task):
     e.g., 1024x1024
     """
 
-    # TODO: recommend keep overlap=0 for now.
-    # More work is needed to de-dup detection results for regions where tiles overlap
     # TODO: handle case where image already has labels attached to it.
-    def __init__(self, task_id="", tile_size=(1024, 1024), overlap=0.0):
+    def __init__(
+        self,
+        task_id="",
+        tile_size: tuple = (1024, 1024),
+        overlap: tuple = TILE_OVERLAP_DEFAULT,
+    ):
         self.tile_size = tile_size
         self.overlap = overlap
         super().__init__(task_id)
@@ -69,8 +76,8 @@ class Tiler(Task):
                 p_map = Polygon(poly_xy)
                 (x_min, y_min, x_max, y_max) = [int(b) for b in p_map.bounds]
 
-        step_x = int(self.tile_size[0] * (1 - self.overlap))
-        step_y = int(self.tile_size[1] * (1 - self.overlap))
+        step_x = int(self.tile_size[0] - self.overlap[0])
+        step_y = int(self.tile_size[1] - self.overlap[1])
 
         tiles: List[MapTile] = []
 
@@ -98,6 +105,7 @@ class Tiler(Task):
                     y_offset=y,
                     width=self.tile_size[0],
                     height=self.tile_size[1],
+                    map_bounds=(x_min, y_min, x_max, y_max),
                     image=Image.fromarray(tile_array),
                     map_path="",
                 )
@@ -117,7 +125,9 @@ class Tiler(Task):
 
 
 class Untiler(Task):
-    def __init__(self, task_id=""):
+    def __init__(self, task_id="", overlap: tuple = TILE_OVERLAP_DEFAULT):
+        # NOTE: Untiler recommended to use the same tile overlap as corresponding Tiler class instance
+        self.check_overlap_predictions: bool = overlap[0] > 0 or overlap[1] > 0
         super().__init__(task_id)
 
     """
@@ -141,12 +151,14 @@ class Untiler(Task):
         all_predictions = []
         map_path = tiles[0].map_path
         for tile in tiles:
+
+            x_offset = tile.x_offset  # xmin of tile, absolute value in original map
+            y_offset = tile.y_offset  # ymin of tile, absolute value in original map
+
             for pred in tqdm(
                 tile.predictions,
                 desc="Reconstructing original map with predictions on tiles",
             ):
-                x_offset = tile.x_offset  # xmin of tile, absolute value in original map
-                y_offset = tile.y_offset  # ymin of tile, absolute value in original map
 
                 x1 = pred.x1
                 x2 = pred.x2
@@ -154,6 +166,15 @@ class Untiler(Task):
                 y2 = pred.y2
                 score = pred.score
                 label_name = pred.class_name
+
+                # filter noisy predictions due to tile overlap
+                if self.check_overlap_predictions and self._is_prediction_redundant(
+                    (pred.x1, pred.y1, pred.x2, pred.y2),
+                    tile.map_bounds,
+                    (tile.x_offset, tile.y_offset),
+                    (tile.width, tile.height),
+                ):
+                    continue
 
                 global_prediction = MapPointLabel(
                     classifier_name=pred.classifier_name,
@@ -173,6 +194,39 @@ class Untiler(Task):
                 all_predictions.append(global_prediction)
         map_image = MapImage(path=map_path, labels=all_predictions)
         return TaskResult(task_id=self._task_id, output={"map_image": map_image})
+
+    def _is_prediction_redundant(
+        self,
+        pred_bbox: tuple,
+        map_bbox,
+        tile_offset: tuple,
+        tile_wh: tuple,
+        shape_thres=2,
+    ) -> bool:
+        """
+        Check if a point symbol prediction is redundant, due to overlapping tiles
+        """
+        (x1, y1, x2, y2) = pred_bbox
+        (map_xmin, map_ymin, map_xmax, map_ymax) = map_bbox
+        tile_w, tile_h = tile_wh
+        x_offset, y_offset = tile_offset
+
+        # TODO - instead of checking at tile edge could check if bbox edge is in overlap region
+        if (abs((x2 - x1) - (y2 - y1)) > shape_thres) and (
+            x1 <= 1 or y1 <= 1 or x2 >= tile_w - 1 or y2 >= tile_h - 1
+        ):
+            # pred bbox is at a tile edge and NOT square,
+            # check if bbox edges correspond to global image bounds
+            if (
+                x1 + x_offset > map_xmin
+                and x2 + x_offset < map_xmax
+                and y1 + y_offset > map_ymin
+                and y2 + y_offset < map_ymax
+            ):
+                # point bbox not at map edges, assume this is a redundant prediction (due to tile overlap) and skip
+                return True
+
+        return False
 
     @property
     def input_type(self):
