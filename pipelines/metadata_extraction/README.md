@@ -24,27 +24,37 @@ The following are the currently extracted fields along with an example of each:
 | Base Map String | U.S. Geological Survey, 1961 |
 | Projection | Polyconic |
 | Datum | NAD 1927 |
+| Counties | Mariposa |
+| States | Arizona |
+| Country | United States |
 
 ### Installation
 
-python=3.9 or higher is recommended
+python 3.10 or higher required
 
 To install from the current directory:
 ```
 # install the task library
 cd ../../tasks
-pip install -e .
+pip install -e .[segmentation]
 
 # install the metadata extraction pipeline
 cd ../pipelines/metadata_extraction
 pip install -e .
 ```
 
+The segmentation dependencies are required due to the use of the map segmentation task within the metadata extraction pipeline.
+
+*Depending on the shell used, the brackets may need to be escaped.*
+
 ### Overview ###
 
 * Pipeline is defined in `metdata_extraction_pipeline.py` and is suitable for integration into other systems
 * Input is a image (ie binary image file buffer)
-* Output is extracted metadata as a JSON object, either as a `MetadataExtraction` object or a `Map` object (the latter being part of the CMA TA1 schema)
+* Output is the set of metadata fields materialized as a:
+  * `MetadataExtraction` JSON object
+  * `Map` JSON object adhering to the CMA TA1 schema)
+  * [Geopackage](geopackage.org) adhering to the CMA TA1 schema
 
 ### Command Line Execution ###
 `run_pipeline.py` provides a command line wrapper around the map extraction pipeline, and allows for a directory map images to be processed serially.
@@ -57,8 +67,11 @@ export OPENAI_API_KEY=<OPEN API KEY>
 python3 -m pipelines.metadata_extraction.run_pipeline \
     --input /image/input/dir \
     --output /model/output/dir \
-    --workdir /model/working/dir
+    --workdir /model/working/dir \
+    --model /segmentation/model/weights
 ```
+
+The `model` argument should point to the latest segmentation model weights, which can be stored on the local file system, or accessed through a URL.
 
 ### REST Service ###
 `run_server.py` provides the pipeline as a REST service with the following endpoints:

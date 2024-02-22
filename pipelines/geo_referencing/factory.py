@@ -1,8 +1,12 @@
+import os
+
 from pathlib import Path
 
 from pipelines.geo_referencing.output import (
     GCPOutput,
+    GeopackageIntegrationOutput,
     GeoReferencingOutput,
+    IntegrationModelOutput,
     IntegrationOutput,
     UserLeverOutput,
     SummaryOutput,
@@ -14,7 +18,7 @@ from tasks.geo_referencing.coordinates_extractor import (
     GeoCoordinatesExtractor,
 )
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
-from tasks.geo_referencing.filter import OutlierFilter
+from tasks.geo_referencing.filter import NaiveFilter, OutlierFilter
 from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.geocode import Geocoder as rfGeocoder
@@ -43,7 +47,9 @@ def run_step(input: TaskInput) -> bool:
     return num_keypoints < 2
 
 
-def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
+def create_geo_referencing_pipelines(
+    extract_metadata: bool, output_dir: str
+) -> List[Pipeline]:
     p = []
 
     tasks = []
@@ -110,7 +116,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
-    p.append(
+    """p.append(
         Pipeline(
             "tile",
             "tile",
@@ -120,10 +126,12 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
+                IntegrationModelOutput("model"),
+                GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )
-    )
+    )"""
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -159,6 +167,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
+    tasks.append(NaiveFilter("fun"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
@@ -199,6 +208,10 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
+                IntegrationModelOutput("model"),
+                # GeopackageIntegrationOutput(
+                #    "geopackage", os.path.join(output_dir, "geopackage")
+                # ),
             ],
             tasks,
         )
@@ -238,6 +251,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
+    tasks.append(NaiveFilter("fun"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
@@ -278,6 +292,8 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
+                IntegrationModelOutput("model"),
+                # GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )
@@ -317,6 +333,7 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
         tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
+    tasks.append(NaiveFilter("fun"))
     tasks.append(UTMCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
@@ -357,6 +374,8 @@ def create_geo_referencing_pipelines(extract_metadata: bool) -> List[Pipeline]:
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
+                IntegrationModelOutput("model"),
+                # GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )
