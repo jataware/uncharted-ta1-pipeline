@@ -112,6 +112,7 @@ class Geocoder(CoordinatesExtractor):
                     True,
                     pixel_alignment=(c[1][1], c[1][2]),
                     confidence=COORDINATE_CONFIDENCE_GEOCODE,
+                    derivation="geocoded",
                 )
             )
             coordinates.append(
@@ -122,6 +123,7 @@ class Geocoder(CoordinatesExtractor):
                     False,
                     pixel_alignment=(c[1][1], c[1][2]),
                     confidence=COORDINATE_CONFIDENCE_GEOCODE,
+                    derivation="geocoded",
                 )
             )
         return coordinates
