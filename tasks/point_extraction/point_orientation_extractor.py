@@ -323,12 +323,27 @@ class PointOrientationExtractor(Task):
 
             # save "best orientation angle" results for this point class
             for idx, (_, best_angle) in xcorr_results.items():
-                map_image.labels[idx].direction = best_angle
+                # convert final result from 'trig' angle convention
+                # to compass angle convention (CW with 0 deg at top)
+                map_image.labels[idx].direction = self._trig_to_compass_angle(
+                    best_angle
+                )
             logger.info(f"Finished point orientation analysis for class {c}")
 
         return TaskResult(
             task_id=self._task_id, output={"map_image": map_image.model_dump()}
         )
+
+    def _trig_to_compass_angle(self, angle_deg: int) -> int:
+        """
+        Convert "trigonometry" angle (CCW with 0 deg to the right)
+        to "compass" angle convention (CW with 0 at the top).
+        NOTE: a symbol's "dip marker" (if applicable) points to the right when a symbol is in the 0 deg compass direction
+        """
+        angle_compass = 270 - angle_deg
+        if angle_compass < 0:
+            angle_compass += 360
+        return angle_compass
 
     @property
     def input_type(self):

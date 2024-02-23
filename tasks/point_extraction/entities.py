@@ -78,6 +78,7 @@ class MapTile(BaseModel):
     y_offset: int  # y offset of the tile in the original image.
     width: int
     height: int
+    map_bounds: tuple  # map global bounds (x_min, y_min, x_max, y_max)
     image: Any  # torch.Tensor or PIL.Image
     map_path: str  # Path to the original map image.
     predictions: Optional[List[MapPointLabel]] = None
