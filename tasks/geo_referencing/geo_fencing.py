@@ -1,3 +1,5 @@
+import logging
+
 from copy import deepcopy
 
 from tasks.common.task import Task, TaskInput, TaskResult
@@ -7,7 +9,9 @@ from tasks.metadata_extraction.entities import (
     GEOCODED_PLACES_OUTPUT_KEY,
 )
 
-from typing import Optional
+from typing import List, Optional, Tuple
+
+logger = logging.getLogger("geo_fencer")
 
 
 class GeoFencer(Task):
@@ -15,11 +19,26 @@ class GeoFencer(Task):
         super().__init__(task_id)
 
     def run(self, input: TaskInput) -> TaskResult:
+        logger.info("running geo fencing task")
+
         geocoded: DocGeocodedPlaces = input.parse_data(
             GEOCODED_PLACES_OUTPUT_KEY, DocGeocodedPlaces.model_validate
         )
+        logger.info(f"GEO CODED: {geocoded}")
 
-        geofence = self._get_geofence(input, geocoded)
+        geofence, places = self._get_geofence(input, geocoded)
+        logger.info(f"GEO FENCE: {geofence}")
+        self._add_param(
+            input,
+            "geo-fence-derived",
+            "geofence",
+            {
+                "places": places,
+                "geofence-lon": geofence.geofence.lon_minmax,
+                "geofence-lat": geofence.geofence.lat_minmax,
+            },
+            "geofence derived from geocoded places",
+        )
 
         # TODO: NEED TO DETERMINE IF INPUT HAS BETTER GEOFENCE (MAYBE BY AREA) OR SKIP IF RELATIVELY SMALL GEOFENCE
 
@@ -38,15 +57,15 @@ class GeoFencer(Task):
 
     def _get_geofence(
         self, input: TaskInput, geocoded: DocGeocodedPlaces
-    ) -> DocGeoFence:
+    ) -> Tuple[DocGeoFence, List[str]]:
         # use default if nothing geocoded
         if geocoded is None or len(geocoded.places) == None:
-            return self._create_default_geofence(input)
+            return self._create_default_geofence(input), []
 
         # for now, geofence should be either the widest possible to accomodate all states or if none present the country
-        geofence = self._get_state_geofence(input, geocoded)
+        geofence, places = self._get_state_geofence(input, geocoded)
         if geofence is not None:
-            return geofence
+            return geofence, places
 
         return self._get_country_geofence(input, geocoded)
 
@@ -64,7 +83,7 @@ class GeoFencer(Task):
 
     def _get_country_geofence(
         self, input: TaskInput, geocoded: DocGeocodedPlaces
-    ) -> DocGeoFence:
+    ) -> Tuple[DocGeoFence, List[str]]:
         # country geofence is the one item with no restriction
         for p in geocoded.places:
             if (
@@ -74,37 +93,48 @@ class GeoFencer(Task):
                 return DocGeoFence(
                     map_id=geocoded.map_id,
                     geofence=GeoFence(
-                        lat_minmax=[p.coordinates[0].geo_y, p.coordinates[2].geo_y],
-                        lon_minmax=[p.coordinates[0].geo_x, p.coordinates[2].geo_x],
+                        lat_minmax=[
+                            p.coordinates[0][0].geo_y,
+                            p.coordinates[0][2].geo_y,
+                        ],
+                        lon_minmax=[
+                            p.coordinates[0][0].geo_x,
+                            p.coordinates[0][2].geo_x,
+                        ],
                         defaulted=False,
                     ),
-                )
+                ), [p.place_name]
 
-        return self._create_default_geofence(input)
+        return self._create_default_geofence(input), []
 
     def _get_state_geofence(
         self, input: TaskInput, geocoded: DocGeocodedPlaces
-    ) -> Optional[DocGeoFence]:
+    ) -> Tuple[Optional[DocGeoFence], List[str]]:
         # for now, assume states have a restriction to the country
         lats = []
         lons = []
+        places = []
         for p in geocoded.places:
             if (
                 p.place_location_restriction is not None
                 and p.place_location_restriction != ""
-            ):
+            ) and p.place_type == "bound":
                 # extract all lat and lon
-                lats = lats + [p.coordinates[0].geo_y, p.coordinates[2].geo_y]
-                lons = lons + [p.coordinates[0].geo_x, p.coordinates[2].geo_x]
+                lats = lats + [p.coordinates[0][0].geo_y, p.coordinates[0][2].geo_y]
+                lons = lons + [p.coordinates[0][0].geo_x, p.coordinates[0][2].geo_x]
+                places.append(p.place_name)
         if len(lats) == 0:
-            return None
+            return None, []
 
         # geofence is the widest possible box
-        return DocGeoFence(
-            map_id=input.raster_id,
-            geofence=GeoFence(
-                lat_minmax=[min(lats), max(lats)],
-                lon_minmax=[min(lons), max(lons)],
-                defaulted=False,
+        return (
+            DocGeoFence(
+                map_id=input.raster_id,
+                geofence=GeoFence(
+                    lat_minmax=[min(lats), max(lats)],
+                    lon_minmax=[min(lons), max(lons)],
+                    defaulted=False,
+                ),
             ),
+            places,
         )

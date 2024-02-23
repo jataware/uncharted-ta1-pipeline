@@ -1,3 +1,4 @@
+import logging
 import re
 import utm
 import uuid
@@ -13,6 +14,8 @@ from tasks.geo_referencing.entities import Coordinate
 from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
 
 from typing import Any, Dict, List, Tuple
+
+logger = logging.getLogger("utm_extractor")
 
 # UTM coordinates
 # pre-compiled regex patterns
@@ -46,7 +49,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             lat_minmax[0] = -80
         if lat_minmax[1] > 84:
             lat_minmax[1] = 84
-        print(f"utm lon & lat limits: {lon_minmax}\t{lat_minmax}")
+        logger.info(f"utm lon & lat limits: {lon_minmax}\t{lat_minmax}")
 
         lon_pts, lat_pts = self._extract_utm(
             input,
@@ -73,7 +76,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
         if not ocr_text_blocks_raw or len(ocr_text_blocks_raw.extractions) == 0:
-            print("WARNING! No ocr text blocks available!")
+            logger.info("WARNING! No ocr text blocks available!")
             return ({}, {})
 
         ocr_text_blocks = deepcopy(ocr_text_blocks_raw)
@@ -91,7 +94,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
 
         # get utm coords and zone of clue coords
         # utm_clue = (easting, northing, zone number, zone letter)
-        print(f"lat clue: {lat_clue}\tlon clue: {lon_clue}")
+        logger.info(f"lat clue: {lat_clue}\tlon clue: {lon_clue}")
         utm_clue = utm.from_latlon(lat_clue, lon_clue * lon_sign_factor)
         easting_clue = utm_clue[0]
         northing_clue = utm_clue[1]
@@ -203,7 +206,9 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                         "extracted northing utm coordinate",
                     )
                 else:
-                    print("Excluding candidate northing point: {}".format(utm_dist))
+                    logger.info(
+                        "Excluding candidate northing point: {}".format(utm_dist)
+                    )
             else:
                 # longitude keypoint (x-axis)
                 if (
@@ -281,7 +286,9 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                         "extracted easting utm coordinate",
                     )
                 else:
-                    print("Excluding candidate easting point: {}".format(utm_dist))
-        print("done utm")
+                    logger.info(
+                        "Excluding candidate easting point: {}".format(utm_dist)
+                    )
+        logger.info("done utm")
 
         return (lon_results, lat_results)

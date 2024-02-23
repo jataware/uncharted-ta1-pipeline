@@ -626,9 +626,9 @@ class Layout_LMv3Encoder(nn.Module):
             rel_pos_mat[(rel_pos_mat > 0) & (valid_span == False)] = position_ids.shape[
                 1
             ]
-            rel_pos_mat[
-                (rel_pos_mat < 0) & (valid_span == False)
-            ] = -position_ids.shape[1]
+            rel_pos_mat[(rel_pos_mat < 0) & (valid_span == False)] = (
+                -position_ids.shape[1]
+            )
 
             # image-text, minimum distance
             rel_pos_mat[:, -VISUAL_NUM:, :-VISUAL_NUM] = 0

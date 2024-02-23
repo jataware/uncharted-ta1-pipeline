@@ -1,3 +1,5 @@
+import logging
+
 from random import randint
 
 from tasks.common.task import Task, TaskInput, TaskResult
@@ -5,24 +7,28 @@ from tasks.geo_referencing.georeference import QueryPoint
 
 from typing import List, Tuple
 
+logger = logging.getLogger("ground_control_points")
+
 
 class CreateGroundControlPoints(Task):
     def __init__(self, task_id: str):
         super().__init__(task_id)
 
     def run(self, input: TaskInput) -> TaskResult:
-        print(
+        logger.info(
             f"running ground control point creation at task index {input.task_index} with id {self._task_id}"
         )
         # check if query points already defined
-        query_pts = input.request["query_pts"]
+        query_pts = None
+        if "query_pts" in input.request:
+            query_pts = input.request["query_pts"]
         if query_pts and len(query_pts) > 0:
-            print("ground control points already exist")
+            logger.info("ground control points already exist")
             return self._create_result(input)
 
         # no query points exist, so create them
         query_pts = self._create_query_points(input)
-        print(f"created {len(query_pts)} ground control points")
+        logger.info(f"created {len(query_pts)} ground control points")
 
         # add them to the output
         result = self._create_result(input)

@@ -8,9 +8,12 @@ from tasks.common.pipeline import (
     BaseModelOutput,
     Output,
     OutputCreator,
+    ImageOutput,
     PipelineResult,
 )
-from schema.ta1_schema import PageExtraction, ExtractionIdentifier
+from schema.ta1_schema import PageExtraction, ExtractionIdentifier, ProvenanceType
+from PIL import ImageDraw, ImageFont
+import tqdm
 
 
 class TextExtractionPipeline(Pipeline):
@@ -21,23 +24,26 @@ class TextExtractionPipeline(Pipeline):
         work_dir (Path): The directory where OCR output will be saved.
         tile (bool): Whether to tile the image before OCR.
         pixel_limit (int): The maximum number of pixels in the image before resizing / tiling will apply.
+        debug_images (bool): Whether to output debug images.
 
     Returns:
         List[DocTextExtraction]: A list of DocTextExtraction objects containing the extracted text.
     """
 
-    def __init__(self, work_dir: Path, tile=True, pixel_limit=6000):
+    def __init__(self, work_dir: Path, tile=True, pixel_limit=6000, debug_images=False):
         if tile:
+            tasks = [TileTextExtractor("tile_text", work_dir, pixel_limit)]
+        else:
             tasks = [
                 ResizeTextExtractor("resize_text", work_dir, False, True, pixel_limit)
             ]
-        else:
-            tasks = [TileTextExtractor("tile_text", work_dir, pixel_limit)]
 
         outputs = [
             IntegrationOutput("integration_output"),
             DocTextExtractionOutput("doc_text_extraction_output"),
         ]
+        if debug_images:
+            outputs.append(OCRImageOutput("ocr_image_output"))
 
         super().__init__(
             "text_extraction",
@@ -69,16 +75,17 @@ class IntegrationOutput(OutputCreator):
         )
 
         page_extractions: List[PageExtraction] = []
-        for text_extraction in doc_text_extraction.extractions:
+        for i, text_extraction in enumerate(doc_text_extraction.extractions):
             page_extraction = PageExtraction(
                 name="ocr",
                 model=ExtractionIdentifier(
-                    id=1, model="google-cloud-vision", field="ocr"
+                    id=i, model="google-cloud-vision", field="ocr"
                 ),
                 ocr_text=text_extraction.text,
-                # confidence=text_extraction.confidence,
                 bounds=[(v.x, v.y) for v in text_extraction.bounds],
                 color_estimation=None,
+                confidence=text_extraction.confidence,
+                provenance=ProvenanceType.modelled,
             )
             page_extractions.append(page_extraction)
 
@@ -112,4 +119,44 @@ class DocTextExtractionOutput(OutputCreator):
             pipeline_result.pipeline_id,
             pipeline_result.pipeline_name,
             doc_text_extraction,
+        )
+
+
+class OCRImageOutput(OutputCreator):
+    def __init__(self, id: str):
+        super().__init__(id)
+
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
+        """
+        Creates an OCR output image from the pipeline result.
+
+        Args:
+            pipeline_result (PipelineResult): The pipeline result.
+
+        Returns:
+            ImageOutput: An image showing the text that passed through the filtering process.
+        """
+        extracted_text = DocTextExtraction.model_validate(
+            pipeline_result.data[TEXT_EXTRACTION_OUTPUT_KEY]
+        )
+        if pipeline_result.image is None:
+            raise ValueError("Pipeline result image is None")
+        text_image = pipeline_result.image.copy()
+        draw = ImageDraw.Draw(text_image)
+        # draw in the text bounds
+        font = ImageFont.truetype("Pillow/Tests/fonts/FreeMono.ttf", 40)
+        for text in extracted_text.extractions:
+            points = [(point.x, point.y) for point in text.bounds]
+            draw.polygon(
+                points,
+                outline="#ff497b",
+                width=1,
+            )
+            # draw the text and continue on any encoding exceptions
+            try:
+                draw.text(points[3], text.text, fill="#ff497b", font=font)
+            except Exception as e:
+                continue
+        return ImageOutput(
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, text_image
         )

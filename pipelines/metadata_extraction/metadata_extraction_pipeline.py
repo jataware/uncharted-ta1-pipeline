@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Optional, List
 from PIL import ImageDraw
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.text_filter import TextFilter, TEXT_EXTRACTION_OUTPUT_KEY
@@ -21,8 +22,16 @@ from tasks.common.pipeline import (
     OutputCreator,
     Output,
     ImageOutput,
+    GeopackageOutput,
 )
-from schema.ta1_schema import Map, MapFeatureExtractions, ProjectionMeta
+from schema.ta1_schema import (
+    Map,
+    MapFeatureExtractions,
+    MapMetadata,
+    GeoReferenceMeta,
+    ProvenanceType,
+)
+from criticalmaas.ta1_geopackage import GeopackageDatabase
 
 
 class MetadataExtractorPipeline(Pipeline):
@@ -30,8 +39,11 @@ class MetadataExtractorPipeline(Pipeline):
         self,
         work_dir: str,
         model_data_path: str,
+        output_dir: Optional[str] = None,
         debug_images=False,
+        ta1_schema=False,
         model=LLM.GPT_3_5_TURBO,
+        gpu=True,
     ):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
@@ -42,15 +54,29 @@ class MetadataExtractorPipeline(Pipeline):
                 "detectron_segmenter",
                 model_data_path,
                 str(Path(work_dir).joinpath("segmentation")),
+                gpu=gpu,
             ),
-            TextFilter("text_filter"),
+            TextFilter(
+                "text_filter",
+                classes=[
+                    "cross_section",
+                    "legend_points_lines",
+                    "legend_polygons",
+                ],
+            ),
             MetadataExtractor("metadata_extractor", model=model),
         ]
 
-        outputs = [
+        outputs: List[OutputCreator] = [
             MetadataExtractionOutput("metadata_extraction_output"),
-            IntegrationOutput("metadata_integration_output"),
         ]
+
+        if ta1_schema and output_dir:
+            outputs.append(IntegrationOutput("metadata_integration_output"))
+            outputs.append(
+                GeopackageIntegrationOutput("geopackage_integration_output", output_dir)
+            )
+
         if debug_images:
             outputs.append(FilteredOCROutput("filtered_ocr_output"))
 
@@ -100,23 +126,36 @@ class IntegrationOutput(OutputCreator):
         metadata_extraction = MetadataExtraction.model_validate(
             pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
         )
+
+        schema_metadata = MapMetadata(
+            id=metadata_extraction.map_id,
+            authors=", ".join(metadata_extraction.authors),
+            publisher="",
+            year=(
+                int(metadata_extraction.year)
+                if metadata_extraction.year.isdigit()
+                else -1
+            ),
+            organization="",
+            scale=metadata_extraction.scale,
+            confidence=None,  # TODO -- put in metadata extraction confidence?
+            provenance=None,
+        )
+
         schema_map = Map(
             name=metadata_extraction.title,
+            id=metadata_extraction.map_id,
             source_url="",
             image_url="",
             image_size=[],
-            authors=", ".join(metadata_extraction.authors),
-            publisher="",
-            year=int(metadata_extraction.year)
-            if metadata_extraction.year.isdigit()
-            else -1,
-            organization="",
-            scale=metadata_extraction.scale,
-            bounds="",
-            features=MapFeatureExtractions(lines=[], points=[], polygons=[]),
+            map_metadata=schema_metadata,
+            features=MapFeatureExtractions(
+                lines=[], points=[], polygons=[], pipelines=[]
+            ),
             cross_sections=None,
-            pipelines=[],
-            projection_info=ProjectionMeta(gcps=[], projection=""),
+            projection_info=GeoReferenceMeta(
+                gcps=[], projection="", bounds=None, provenance=None
+            ),
         )
         return BaseModelOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, schema_map
@@ -152,19 +191,84 @@ class FilteredOCROutput(OutputCreator):
                 draw.polygon(
                     points,
                     outline="#ff497b",
-                    width=10,
+                    width=1,
                 )
         # draw in the map region bounds
-        map_segmentation = MapSegmentation.model_validate(
-            pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
-        )
-        for segment in map_segmentation.segments:
-            points = [(point[0], point[1]) for point in segment.poly_bounds]
-            draw.polygon(
-                points,
-                outline="#5ec04a",
-                width=20,
+        if SEGMENTATION_OUTPUT_KEY in pipeline_result.data:
+            map_segmentation = MapSegmentation.model_validate(
+                pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
             )
+            for segment in map_segmentation.segments:
+                points = [(point[0], point[1]) for point in segment.poly_bounds]
+                draw.polygon(
+                    points,
+                    outline="#5ec04a",
+                    width=1,
+                )
         return ImageOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, text_image
+        )
+
+
+class GeopackageIntegrationOutput(OutputCreator):
+    def __init__(self, id: str, output_dir: str):
+        super().__init__(id)
+        self._output_dir = output_dir
+
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
+        """
+        Creates a geopackage output from the pipeline result.
+
+        Args:
+            pipeline_result (PipelineResult): The pipeline result.
+
+        Returns:
+            GeopackageOutput: A geopackage containing the metadata extraction results.
+        """
+
+        metadata_extraction = MetadataExtraction.model_validate(
+            pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
+        )
+
+        path = os.path.join(
+            self._output_dir, f"{pipeline_result.raster_id}_metadata_extraction.gpkg"
+        )
+        db = GeopackageDatabase(str(path), crs="EPSG:4326")
+
+        if db.model is None:
+            raise ValueError("db.model is None")
+
+        db.write_models(
+            [
+                db.model.map(
+                    id=pipeline_result.raster_id,
+                    name=pipeline_result.raster_id,
+                    source_url="",
+                    image_url="",
+                    image_width=(
+                        pipeline_result.image.width if pipeline_result.image else -1
+                    ),
+                    image_height=(
+                        pipeline_result.image.height if pipeline_result.image else -1
+                    ),
+                ),
+                db.model.map_metadata(
+                    id=metadata_extraction.map_id,
+                    map_id=pipeline_result.raster_id,
+                    provenance="modelled",
+                    authors=",".join(metadata_extraction.authors),
+                    publisher="",
+                    confidence=0.5,
+                    year=(
+                        int(metadata_extraction.year)
+                        if metadata_extraction.year.isdigit()
+                        else -1
+                    ),
+                    scale=metadata_extraction.scale,
+                    title=metadata_extraction.title,
+                ),
+            ]
+        )
+        return GeopackageOutput(
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, db
         )

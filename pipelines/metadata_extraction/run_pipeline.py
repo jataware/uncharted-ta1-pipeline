@@ -30,7 +30,10 @@ def main():
     parser.add_argument("--ta1_schema", type=bool, default=False)
     parser.add_argument("--debug_images", type=bool, default=False)
     parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_3_5_TURBO)
+    parser.add_argument("--no_gpu", type=bool, default=False)
     p = parser.parse_args()
+
+    logger.info(f"Args: {p}")
 
     # setup an input stream
     input = ImageFileInputIterator(str(p.input))
@@ -40,7 +43,9 @@ def main():
     image_writer = ImageFileWriter()
 
     # create the pipeline
-    pipeline = MetadataExtractorPipeline(p.workdir, p.model, p.debug_images, p.llm)
+    pipeline = MetadataExtractorPipeline(
+        p.workdir, p.model, p.output, p.debug_images, p.ta1_schema, p.llm, not p.no_gpu
+    )
 
     # run the extraction pipeline
     for doc_id, image in input:

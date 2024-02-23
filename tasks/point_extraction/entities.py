@@ -25,25 +25,26 @@ class MapPointLabel(BaseModel):
     x2: int
     y2: int
     score: float
-    directionality: Optional[Dict] = None
+    direction: Optional[float] = None  # [deg] orientation of point symbol
+    dip: Optional[float] = None  # [deg] dip angle associated with symbol
 
 
 class MapImage(BaseModel):
     """
-    Represents a map image.
+    Represents a map image with point symbol prediction results
     """
 
     path: str
     labels: Optional[List[MapPointLabel]] = None
-    map_bounds: Optional[
-        List[int]
-    ] = None  # [x1, y1, h, w] location of map. TODO: Accept polygonal seg mask.
-    point_legend_bounds: Optional[
-        List[int]
-    ] = None  # [x1, y1, h, w] location of point legend.
-    polygon_legend_bounds: Optional[
-        List[int]
-    ] = None  # [x1, y1, h, w] location of polygon legend.
+    map_bounds: Optional[List[int]] = (
+        None  # [x1, y1, h, w] location of map. TODO: Accept polygonal seg mask.
+    )
+    point_legend_bounds: Optional[List[int]] = (
+        None  # [x1, y1, h, w] location of point legend.
+    )
+    polygon_legend_bounds: Optional[List[int]] = (
+        None  # [x1, y1, h, w] location of polygon legend.
+    )
 
     _cached_image = None
 
@@ -77,6 +78,7 @@ class MapTile(BaseModel):
     y_offset: int  # y offset of the tile in the original image.
     width: int
     height: int
+    map_bounds: tuple  # map global bounds (x_min, y_min, x_max, y_max)
     image: Any  # torch.Tensor or PIL.Image
     map_path: str  # Path to the original map image.
     predictions: Optional[List[MapPointLabel]] = None

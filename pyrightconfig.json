@@ -4,5 +4,6 @@
         "**/segmentation/ditod",
     ],
     "reportMissingImports": false,
-    "typeCheckingMode": "basic"
+    "typeCheckingMode": "basic",
+    "reportPrivateImportUsage": false
 }

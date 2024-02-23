@@ -204,9 +204,9 @@ class TileTextExtractor(TextExtractor):
             f"Image split into {len(im_tiles)} tiles. Extracting OCR text from each..."
         )
 
-        ocr_blocks: List[
-            Dict[str, Any]
-        ] = []  # list for OCR results across all tiles (whole image)
+        ocr_blocks: List[Dict[str, Any]] = (
+            []
+        )  # list for OCR results across all tiles (whole image)
         for tile in im_tiles:
             # get OCR results for this tile
             tile_ocr_blocks = self._extract_text(tile.image)

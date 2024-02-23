@@ -1,5 +1,5 @@
 from pathlib import Path
-from moto import mock_s3
+from moto import mock_aws
 import boto3
 from tasks.common.s3_data_cache import S3DataCache
 
@@ -23,7 +23,7 @@ def setup_s3_and_cache():
     return s3_data_cache, ("test-file-1", "test-file-2")
 
 
-@mock_s3
+@mock_aws
 def test_fetch_file_from_s3():
     s3_data_cache, test_files = setup_s3_and_cache()
 
@@ -38,7 +38,7 @@ def test_fetch_file_from_s3():
     Path(filepath_local).unlink()
 
 
-@mock_s3
+@mock_aws
 def test_fetch_file_from_local_cache():
     s3_data_cache, test_files = setup_s3_and_cache()
 
@@ -59,7 +59,7 @@ def test_fetch_file_from_local_cache():
     Path(filepath_local).unlink()
 
 
-@mock_s3
+@mock_aws
 def test_list_bucket_contents():
     s3_data_cache, _ = setup_s3_and_cache()
 

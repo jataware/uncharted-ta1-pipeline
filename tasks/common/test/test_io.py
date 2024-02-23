@@ -8,7 +8,7 @@ from cv2 import exp
 from pydantic import BaseModel
 from typing import Dict, List
 import boto3
-from moto import mock_s3
+from moto import mock_aws
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
 
 
@@ -60,7 +60,7 @@ def test_image_file_input_iterator_filesystem_dir():
 
 
 # add a test for s3 input iterator
-@mock_s3
+@mock_aws
 def image_file_input_iterator_s3(input_path: str):
     # Create a temporary directory and save some test images
     test_prefix = "data"
@@ -152,7 +152,7 @@ def test_json_file_writer_filesystem():
     os.remove(output_location)
 
 
-@mock_s3
+@mock_aws
 def test_json_file_writer_s3():
     # Create a temporary directory and save some test images
     test_bucket = "test-bucket"
@@ -186,7 +186,7 @@ def test_json_file_writer_s3():
     ]
 
 
-@mock_s3
+@mock_aws
 def test_image_writer_s3():
     # Create a temporary directory and save a test image
     test_bucket = "test-bucket"

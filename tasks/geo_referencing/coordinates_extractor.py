@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import uuid
@@ -16,9 +17,11 @@ from tasks.text_extraction.entities import (
 from tasks.geo_referencing.entities import Coordinate, DocGeoFence, GEOFENCE_OUTPUT_KEY
 from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
 from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
-from util.cache import cache_geocode_data, load_geocode_cache
+from util.coordinate import absolute_minmax
 
 from typing import Any, Dict, List, Tuple
+
+logger = logging.getLogger("coordinates_extractor")
 
 # GeoCoordinates
 # pre-compiled regex patterns
@@ -81,7 +84,7 @@ class CoordinateInput:
 
 class CoordinatesExtractor(Task):
     def run(self, input: TaskInput) -> TaskResult:
-        print(f"running coordinates extraction task with id {self._task_id}")
+        logger.info(f"running coordinates extraction task with id {self._task_id}")
         input_coord = CoordinateInput(input)
 
         if not self._should_run(input_coord):
@@ -114,9 +117,10 @@ class CoordinatesExtractor(Task):
                 True,
             )
 
+        # when parsing, only the absolute range matters as coordinates may or may not have the negative sign
         return (
-            geofence.geofence.lon_minmax,
-            geofence.geofence.lat_minmax,
+            absolute_minmax(geofence.geofence.lon_minmax),
+            absolute_minmax(geofence.geofence.lat_minmax),
             geofence.geofence.defaulted,
         )
 
@@ -140,7 +144,7 @@ class CoordinatesExtractor(Task):
         lats = input.input.get_data("lats", [])
         lons = input.input.get_data("lons", [])
         num_keypoints = min(len(lons), len(lats))
-        print(f"num keypoints: {num_keypoints}")
+        logger.info(f"checking run condition: {num_keypoints} key points")
         return num_keypoints < 2
 
     def _in_polygon(
@@ -169,7 +173,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         )
         num_keypoints = min(len(lon_pts), len(lat_pts))
         if num_keypoints > 0:
-            print(f"filtering via roi")
+            logger.info(f"filtering via roi")
             # ----- do Region-of-Interest analysis (automatic cropping)
             roi_xy = input.input.get_data("roi")
             self._add_param(input.input, str(uuid.uuid4()), "roi", {"bounds": roi_xy})
@@ -193,7 +197,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         for e in ocr_text_blocks.extractions:
             e.bounds = get_bounds_bounding_box(e.bounds)
 
-        print("starting extraction")
+        logger.info("starting coordinate extraction")
         lon_clue = (
             lon_minmax[0] + lon_minmax[1]
         ) / 2  # mid-points of lon/lat hint area
@@ -242,8 +246,6 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 matches_iter = RE_DEGDEC.finditer(block.text)
                 for m in matches_iter:
                     m_groups = m.groups()
-                    # if block['text'] == '177⁹':
-                    # print(f'groups: {m_groups}')
                     if any(x for x in m_groups):
                         # valid match
                         is_match = True
@@ -282,7 +284,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 lat_minmax = updated_geofence[1]
                 input.updated_output["lat_minmax"] = lat_minmax
                 lat_clue = (lat_minmax[0] + lat_minmax[1]) / 2
-            print(
+            logger.info(
                 f"new geo fence: {updated_geofence}\tlon clue: {lon_clue}\tlat clue: {lat_clue}"
             )
 
@@ -292,7 +294,6 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         coord_lon_results = {}
         # ---- Check degress-minutes-seconds extractions...
         for idx, (groups, span, _) in dms_matches.items():
-            # print(f'DMS MATCHES: {ocr_text_blocks[idx]["text"]}')
             try:
                 deg = RE_NONNUMERIC.sub("", groups[0])
                 deg = float(deg)
@@ -321,7 +322,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
             # minutes and seconds expected in certain increments
             if not self._check_degree_increments(int(minutes), int(seconds)):
-                print(
+                logger.info(
                     f"Excluding candidate point due to unexpected degree increment: {deg_decimal}"
                 )
                 self._add_param(
@@ -339,7 +340,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 continue
 
             if self._check_consecutive(deg, minutes, seconds):
-                print("Excluding candidate point: {}".format(deg_decimal))
+                logger.info("Excluding candidate point: {}".format(deg_decimal))
                 self._add_param(
                     input.input,
                     str(uuid.uuid4()),
@@ -387,7 +388,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     # pixel->latitude mapping depends mostly on y-pixel (but also x-pixel values, due to possible map rotation/projection)
                     coord_lat_results[(deg_decimal, y_pixel)] = coord
                 else:
-                    print(
+                    logger.info(
                         "Excluding candidate latitude point: {} with lat minmax {}".format(
                             deg_decimal, lat_minmax
                         )
@@ -428,7 +429,9 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     # pixel->longitude mapping depends mostly on x-pixel (but also y-pixel values, due to possible map rotation/projection)
                     coord_lon_results[(deg_decimal, x_pixel)] = coord
                 else:
-                    print("Excluding candidate longitude point: {}".format(deg_decimal))
+                    logger.info(
+                        "Excluding candidate longitude point: {}".format(deg_decimal)
+                    )
                     self._add_param(
                         input.input,
                         str(uuid.uuid4()),
@@ -460,7 +463,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
             deg_decimal = deg + minutes / 60.0
 
             if self._check_consecutive(deg, minutes, 0):
-                print("Excluding candidate point: {}".format(deg_decimal))
+                logger.info("Excluding candidate point: {}".format(deg_decimal))
                 self._add_param(
                     input.input,
                     str(uuid.uuid4()),
@@ -498,7 +501,9 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     # pixel->latitude mapping depends mostly on y-pixel (but also x-pixel values, due to possible map rotation/projection)
                     coord_lat_results[(deg_decimal, y_pixel)] = coord
                 else:
-                    print("Excluding candidate latitude point: {}".format(deg_decimal))
+                    logger.info(
+                        "Excluding candidate latitude point: {}".format(deg_decimal)
+                    )
                     self._add_param(
                         input.input,
                         str(uuid.uuid4()),
@@ -535,7 +540,9 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     # pixel->longitude mapping depends mostly on x-pixel (but also y-pixel values, due to possible map rotation/projection)
                     coord_lon_results[(deg_decimal, x_pixel)] = coord
                 else:
-                    print("Excluding candidate longitude point: {}".format(deg_decimal))
+                    logger.info(
+                        "Excluding candidate longitude point: {}".format(deg_decimal)
+                    )
                     self._add_param(
                         input.input,
                         str(uuid.uuid4()),
@@ -644,7 +651,9 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     coord_lat_results[(deg_decimal, y_pixel)] = coord
                 else:
-                    print("Excluding candidate latitude point: {}".format(deg_decimal))
+                    logger.info(
+                        "Excluding candidate latitude point: {}".format(deg_decimal)
+                    )
                     self._add_param(
                         input.input,
                         str(uuid.uuid4()),
@@ -681,7 +690,9 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     x_pixel, y_pixel = coord.get_pixel_alignment()
                     coord_lon_results[(deg_decimal, x_pixel)] = coord
                 else:
-                    print("Excluding candidate longitude point: {}".format(deg_decimal))
+                    logger.info(
+                        "Excluding candidate longitude point: {}".format(deg_decimal)
+                    )
                     self._add_param(
                         input.input,
                         str(uuid.uuid4()),
@@ -700,7 +711,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
             self._add_param(
                 input.input,
                 str(uuid.uuid4()),
-                f"coordinate-{c.get_type()}",
+                f"coordinate-{c.get_type()}-{c.get_derivation()}",
                 {
                     "bounds": ocr_to_coordinates(c.get_bounds()),
                     "text": c.get_text(),
@@ -744,7 +755,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
-        print("validating lonlat")
+        logger.info("validating lonlat")
 
         num_lat_pts = len(lat_results)
         num_lon_pts = len(lon_results)
@@ -758,7 +769,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         if roi_xy and (num_lat_pts > 4 or num_lon_pts > 4):
             for (deg, y), coord in list(lat_results.items()):
                 if not self._in_polygon(coord.get_pixel_alignment(), roi_xy):
-                    print(
+                    logger.info(
                         f"Excluding out-of-bounds latitude point: {deg} ({coord.get_pixel_alignment()})"
                     )
                     del lat_results[(deg, y)]
@@ -777,7 +788,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     )
             for (deg, x), coord in list(lon_results.items()):
                 if not self._in_polygon(coord.get_pixel_alignment(), roi_xy):
-                    print(
+                    logger.info(
                         f"Excluding out-of-bounds longitude point: {deg} ({coord.get_pixel_alignment()})"
                     )
                     del lon_results[(deg, x)]
@@ -797,7 +808,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
         num_lat_pts = len(lat_results)
         num_lon_pts = len(lon_results)
-        print(f"after exclusion lat,lon: {num_lat_pts},{num_lon_pts}")
+        logger.info(f"point count after exclusion lat,lon: {num_lat_pts},{num_lon_pts}")
 
         # if num_lon_pts > 4:
         #    lon_results = self._remove_outlier_pts(input, lon_results, im_size[0], im_size[1])
@@ -807,7 +818,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         # check number of unique lat and lon values
         num_lat_pts = len(set([x[0] for x in lat_results]))
         num_lon_pts = len(set([x[0] for x in lon_results]))
-        print(f"distinct after outlier lat,lon: {num_lat_pts},{num_lon_pts}")
+        logger.info(f"distinct after outlier lat,lon: {num_lat_pts},{num_lon_pts}")
 
         if num_lon_pts >= 2 and num_lat_pts == 1:
             # estimate additional lat pt (based on lon pxl resolution)
@@ -825,7 +836,6 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 lat_pt = list(lat_results.items())[0]
                 # new_y = im_size[1]-1
                 new_y = 0 if lat_pt[0][1] > im_size[1] / 2 else im_size[1] - 1
-                print("t1")
                 new_lat = -deg_per_pxl * (new_y - lat_pt[0][1]) + lat_pt[0][0]
                 coord = Coordinate(
                     "lat keypoint",
@@ -835,7 +845,6 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     pixel_alignment=(lat_pt[1].to_deg_result()[1], new_y),
                     confidence=0.6,
                 )
-                print("t2")
                 lat_results[(new_lat, new_y)] = coord
 
         elif num_lat_pts >= 2 and num_lon_pts == 1:
@@ -854,7 +863,6 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 lon_pt = list(lon_results.items())[0]
                 # new_x = im_size[0]-1
                 new_x = 0 if lon_pt[0][1] > im_size[0] / 2 else im_size[0] - 1
-                print("t3")
                 new_lon = -deg_per_pxl * (new_x - lon_pt[0][1]) + lon_pt[0][0]
                 coord = Coordinate(
                     "lon keypoint",
@@ -864,10 +872,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     pixel_alignment=(new_x, lon_pt[1].to_deg_result()[1]),
                     confidence=0.6,
                 )
-                print(f"lon pt: {lon_pt}")
-                print("t4")
                 lon_results[(new_lon, new_x)] = coord
-        print("done validating")
+        logger.info("done validating coordinates")
 
         return (lon_results, lat_results)
 
@@ -982,8 +988,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
             delta_pixel = max_coord[1] - min_coord[1]
             delta_pixel_deg = delta_pixel / delta_deg
-            print(f"min coord: {min_coord}\tmax coord: {max_coord}")
-            print(
+            logger.info(f"min coord: {min_coord}\tmax coord: {max_coord}")
+            logger.info(
                 f"delta pixel: {delta_pixel}\tdelta deg:{delta_deg}\tratio: {delta_pixel_deg}"
             )
             for r in coord_result:
@@ -999,7 +1005,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 if delta_ratio > 0.5:
                     coord_filtered[r] = coord_result[r]
                 else:
-                    print(f"dropping {r} due to being part of secondary map")
+                    logger.info(f"dropping {r} due to being part of secondary map")
                     coord_dropped[r] = coord_result[r]
         return coord_filtered, coord_dropped
 
@@ -1047,258 +1053,3 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
         # convert DMS to decimal degrees
         return True, deg + minutes / 60.0 + seconds / 3600.0
-
-
-class GeocodeCoordinatesExtractor(CoordinatesExtractor):
-    def __init__(self, task_id: str):
-        super().__init__(task_id)
-
-    def _extract_coordinates(
-        self, input: CoordinateInput
-    ) -> Tuple[
-        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
-    ]:
-        roi_xy = input.input.get_data("roi")
-        ocr_blocks = input.input.get_data("ocr_blocks")
-        lon_minmax = input.input.get_request_info("lon_minmax", [0, 180])
-        lat_minmax = input.input.get_request_info("lat_minmax", [0, 90])
-        lon_pts = input.input.get_data("lons")
-        lat_pts = input.input.get_data("lats")
-        lon_sign_factor = input.input.get_request_info("lon_sign_factor", 1)
-
-        # not enough key-points, try geo-coding
-        lon_pts, lat_pts = self._extract_places(
-            ocr_blocks,
-            (lon_pts, lat_pts),
-            lon_minmax,
-            lat_minmax,
-            lon_sign_factor,
-            roi_xy,
-            use_google_maps=True,
-            geocode_path=os.path.join(GEOCODE_CACHE, input.input.raster_id + ".pkl"),
-        )
-
-        return lon_pts, lat_pts
-
-    def _extract_places(
-        self,
-        ocr_text_blocks: DocTextExtraction,
-        lonlat_results: Tuple[
-            Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
-        ],
-        lon_minmax: List[float],
-        lat_minmax: List[float],
-        lon_sign_factor: float = 1.0,
-        roi_xy: List[Tuple[float, float]] = [],
-        use_google_maps: bool = True,
-        geocode_path: str = "",
-    ) -> Tuple[
-        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
-    ]:
-        if not ocr_text_blocks or len(ocr_text_blocks.extractions) == 0:
-            print("WARNING! No ocr text blocks available!")
-            return ({}, {})
-
-        google_api_key = os.environ.get("GOOGLE_MAPS_API_KEY", None)
-        using_google = use_google_maps and google_api_key
-
-        lon_clue = (
-            lon_minmax[0] + lon_minmax[1]
-        ) / 2  # mid-points of lon/lat hint area
-        lat_clue = (lat_minmax[0] + lat_minmax[1]) / 2
-
-        lon_range = (
-            abs(lon_minmax[1] - lon_minmax[0]) / 2
-        ) * 0.5  # use a smaller fov for geo-coding!
-        lat_range = (abs(lat_minmax[1] - lat_minmax[0]) / 2) * 0.5
-        lon_minmax = [lon_clue - lon_range, lon_clue + lon_range]
-        lat_minmax = [lat_clue - lat_range, lat_clue + lat_range]
-
-        geocoder = None
-        timeout = 10
-        if using_google:
-            geocoder = GoogleV3(api_key=google_api_key, domain="maps.googleapis.com")
-        else:
-            geocoder = Nominatim(
-                timeout=timeout, user_agent="uncharted-cma-challenge-geocoder"  # type: ignore
-            )
-
-        geocode_cache = {}
-        if geocode_path:
-            geocode_cache = load_geocode_cache(geocode_path)
-
-        lon_results, lat_results = lonlat_results
-        geo_lonlat_results = []
-        for idx, block in enumerate(ocr_text_blocks.extractions):
-            if len(block.text) <= MIN_PLACENAME_LEN:
-                continue
-            re_result = RE_LETTERS.search(block.text)
-            if not re_result:
-                continue
-
-            if roi_xy:
-                x = self._get_center_x(block.bounds, (0.0, 1.0))
-                y = self._get_center_y(block.bounds)
-                if not self._in_bounds(x, roi_xy[0]) or not self._in_bounds(
-                    y, roi_xy[1]
-                ):
-                    # this OCR block is not in ROI, so skip geocoding for this OCR block
-                    continue
-
-            viewbox = [
-                Point(lat_minmax[1], lon_sign_factor * lon_minmax[1]),
-                Point(lat_minmax[0], lon_sign_factor * lon_minmax[0]),
-            ]
-
-            places = geocode_cache.get(block.text, None)
-            if places is None:
-                if using_google:
-                    # run Google geo-coder
-                    places = geocoder.geocode(
-                        block.text,  # type: ignore
-                        exactly_one=False,  # type: ignore
-                        timeout=timeout,  # type: ignore
-                        region="us",  # type: ignore
-                        bounds=viewbox,  # type: ignore
-                    )
-                else:
-                    # run Nominatim geo-coder
-                    # featuretype='settlement' #'city,settlement'
-                    places = geocoder.geocode(
-                        block.text,  # type: ignore
-                        exactly_one=False,  # type: ignore
-                        limit=4,  # type: ignore
-                        country_codes="us",  # type: ignore
-                        viewbox=viewbox,  # type: ignore
-                    )  # featuretype=featuretype)
-                if places:
-                    geocode_cache[block.text].extend(places)  # type: ignore
-                else:
-                    geocode_cache[block.text].append(None)
-
-            if places is None:
-                continue
-
-            place_dists = []
-            for p_idx, place in enumerate(places):  # type: ignore
-                if place is None:
-                    continue
-
-                this_lon = place.longitude * lon_sign_factor
-                this_lat = place.latitude
-                if (
-                    this_lon >= lon_minmax[0]
-                    and this_lon <= lon_minmax[1]
-                    and this_lat >= lat_minmax[0]
-                    and this_lat <= lat_minmax[1]
-                ):
-                    # got a geo-coding result within target geo-fence...
-                    # check if location 'type' is ok (google geocoding API only)
-                    place_type_ok = False
-                    if using_google:
-                        place_types = []
-                        try:
-                            place_types = place.raw["types"]
-                        except:
-                            place_types = []
-
-                        for place_type in place_types:
-                            if place_type in LOC_TYPES_PASSLIST_GOOGLE:
-                                place_type_ok = True
-                    else:
-                        place_type = ""
-                        try:
-                            loc_class = place.raw.get("class", "")
-                            if loc_class == "place":
-                                place_type = place.raw.get("type", "")
-                        except:
-                            place_type = ""
-                        if place_type in LOC_TYPES_PASSLIST_NOM:
-                            place_type_ok = True
-
-                    if place_type_ok:
-                        # save keypoint
-                        xd = this_lon - lon_clue
-                        yd = this_lat - lat_clue
-                        place_dists.append((p_idx, xd * xd + yd * yd))
-
-            if place_dists:
-                # choose match closest to 'clue' lat/lon pt
-                p_idx_match, p_dist_sq = min(place_dists, key=lambda x: x[1])
-                x_pixel = self._get_center_x(
-                    ocr_text_blocks.extractions[idx].bounds, (0.0, 1.0)
-                )
-                y_pixel = self._get_center_y(ocr_text_blocks.extractions[idx].bounds)
-                lonlat_deg = (
-                    places[p_idx_match].longitude * lon_sign_factor,  # type: ignore
-                    places[p_idx_match].latitude,  # type: ignore
-                )
-
-                geo_lonlat_results.append((lonlat_deg, (x_pixel, y_pixel), p_dist_sq))
-
-            if len(geo_lonlat_results) >= 5:
-                # we have sufficient keypoint results
-                break
-
-        if geocode_path:
-            cache_geocode_data(geocode_cache, geocode_path)
-
-        # sort geocode results by distance from clue pt
-        geo_lonlat_results.sort(key=lambda x: x[2])
-
-        if len(geo_lonlat_results) == 0:
-            return lon_results, lat_results
-
-        # goal is to retain up to 3 keypoints
-        geo_pts_needed = max(min(3 - len(lon_results), len(geo_lonlat_results)), 0)
-        if geo_pts_needed > 0:
-            for i in range(geo_pts_needed):
-                lon_deg = geo_lonlat_results[i][0][0]
-                x = geo_lonlat_results[i][1][0]
-                y = geo_lonlat_results[i][1][1]
-                coord = Coordinate(
-                    "lon keypoint",
-                    "",
-                    lon_deg,
-                    False,
-                    pixel_alignment=(x, y),
-                    confidence=0.55,
-                )
-                lon_results[(lon_deg, x)] = coord
-
-        geo_pts_needed = max(min(3 - len(lat_results), len(geo_lonlat_results)), 0)
-        if geo_pts_needed > 0:
-            for i in range(geo_pts_needed):
-                lat_deg = geo_lonlat_results[i][0][1]
-                x = geo_lonlat_results[i][1][0]
-                y = geo_lonlat_results[i][1][1]
-                coord = Coordinate(
-                    "lat keypoint",
-                    "",
-                    lat_deg,
-                    True,
-                    pixel_alignment=(x, y),
-                    confidence=0.55,
-                )
-                lat_results[(lat_deg, y)] = coord
-
-        return lon_results, lat_results
-
-    def _get_center_y(self, bounding_poly: List[TPoint]) -> float:
-        min_y = bounding_poly[0].y
-        max_y = bounding_poly[3].y
-        return (min_y + max_y) / 2.0
-
-    def _get_center_x(
-        self, bounding_poly: List[TPoint], x_ranges: Tuple[float, float]
-    ) -> float:
-        min_x = bounding_poly[0].x
-        max_x = bounding_poly[2].x
-        if x_ranges[0] > 0.0 or x_ranges[1] < 1.0:
-            x_span = max_x - min_x
-            min_x += x_span * x_ranges[0]
-            max_x -= x_span * (1.0 - x_ranges[1])
-        return (min_x + max_x) / 2.0
-
-    def _in_bounds(self, value: float, bounds: Tuple[float, float]) -> bool:
-        return value >= bounds[0] and value <= bounds[1]

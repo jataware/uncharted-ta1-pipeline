@@ -1,4 +1,6 @@
-from typing import List
+from tasks.text_extraction.entities import TextExtraction
+
+from typing import List, Tuple
 from pydantic import BaseModel, ConfigDict
 
 
@@ -23,11 +25,14 @@ class MetadataExtraction(BaseModel):
     counties: List[str]
     states: List[str]
     country: str
+    places: List[
+        TextExtraction
+    ]  # a list of places, each place having a name and coordinates
 
 
 class GeocodedCoordinate(BaseModel):
-    pixel_x: int
-    pixel_y: int
+    pixel_x: float
+    pixel_y: float
     geo_x: float
     geo_y: float
 
@@ -39,8 +44,8 @@ class GeocodedPlace(BaseModel):
     place_location_restriction: str  # restrict the search space when geocoding to the country or the state to reduce noise
     place_type: str  # either bound for places that are not on the map but restrict the coordinate space, or point / line / polygon
     coordinates: List[
-        GeocodedCoordinate
-    ]  # bounds will not have the pixel coordinates defined
+        List[GeocodedCoordinate]
+    ]  # bounds will not have the pixel coordinates defined, with each geocoding option a separate list of coordinates
 
 
 class DocGeocodedPlaces(BaseModel):

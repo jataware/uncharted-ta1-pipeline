@@ -2,7 +2,6 @@
 Reference: https://huggingface.co/datasets/pierresi/cord/blob/main/cord.py
 """
 
-
 import json
 import os
 from pathlib import Path
@@ -51,7 +50,9 @@ _URLS = [
     _get_drive_url(
         "https://drive.google.com/file/d/1MqhTbcj-AHXOqYoeoh12aRUwIprzTJYI/"
     ),
-    _get_drive_url("https://drive.google.com/file/d/1wYdp5nC9LnHQZ2FcmOoC0eClyWvcuARU/")
+    _get_drive_url(
+        "https://drive.google.com/file/d/1wYdp5nC9LnHQZ2FcmOoC0eClyWvcuARU/"
+    ),
     # If you failed to download the dataset through the automatic downloader,
     # you can download it manually and modify the code to get the local dataset.
     # Or you can use the following links. Please follow the original LICENSE of CORD for usage.

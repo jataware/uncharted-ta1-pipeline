@@ -26,6 +26,7 @@ class Coordinate:
     _bounds: List[Point] = []
     _pixel_alignment: Tuple[float, float] = (0, 0)
     _confidence: float = 0
+    _derivation: str = "parsed"
 
     def __init__(
         self,
@@ -38,6 +39,7 @@ class Coordinate:
         x_ranges: Tuple[float, float] = (0, 1),
         font_height: float = 0.0,
         confidence: float = 0,
+        derivation: str = "parsed",
     ):
         self._type = type
         self._text = text
@@ -45,6 +47,7 @@ class Coordinate:
         self._parsed_degree = parsed_degree
         self._is_lat = is_lat
         self._confidence = confidence
+        self._derivation = derivation
 
         if pixel_alignment:
             self._pixel_alignment = pixel_alignment
@@ -80,6 +83,9 @@ class Coordinate:
             return self._pixel_alignment[1]
         return self._pixel_alignment[0]
 
+    def set_pixel_alignment(self, pixel_alignment: Tuple[float, float]):
+        self._pixel_alignment = pixel_alignment
+
     def to_deg_result(self) -> Tuple[Tuple[float, float], float]:
         if self._is_lat:
             return (
@@ -87,6 +93,9 @@ class Coordinate:
                 self._pixel_alignment[1],
             ), self._pixel_alignment[0]
         return (self._parsed_degree, self._pixel_alignment[0]), self._pixel_alignment[1]
+
+    def get_derivation(self) -> str:
+        return self._derivation
 
     def _calculate_pixel_alignment(
         self,
