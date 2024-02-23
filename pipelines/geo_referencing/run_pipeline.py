@@ -43,9 +43,9 @@ def main():
     parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
     parser.add_argument("--workdir", type=str, default=None)
-    parser.add_argument("--clue_dir", type=str, default=None)
-    parser.add_argument("--query_dir", type=str, default=None)
-    parser.add_argument("--points_dir", type=str, default=None)
+    parser.add_argument("--clue_dir", type=str, default="")
+    parser.add_argument("--query_dir", type=str, default="")
+    parser.add_argument("--points_dir", type=str, default="")
     parser.add_argument("--verbose", type=bool, default=False)
     parser.add_argument("--ta1_schema", type=bool, default=False)
     parser.add_argument("--extract_metadata", type=bool, default=False)
@@ -84,7 +84,7 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
     # get file paths
     clue_dir = parsed.clue_dir
     query_dir = parsed.query_dir
-    points_dir = parsed.points_id
+    points_dir = parsed.points_dir
 
     results = {}
     results_summary = {}

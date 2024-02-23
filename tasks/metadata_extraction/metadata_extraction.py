@@ -74,6 +74,15 @@ class MetadataExtractor(Task):
         },
         indent=4,
     )
+    EXAMPLE_JSON_POINTS = json.dumps(
+        [
+            {"name": "Ducky Hill", "index": 12},
+            {"name": "Bear Mtn", "index": 34},
+            {"name": "Bedford Hill", "index": 20},
+            {"name": "Spear Peak", "index": 6},
+        ],
+        indent=4,
+    )
 
     def __init__(
         self,
@@ -252,6 +261,7 @@ class MetadataExtractor(Task):
                 completion = self._openai_client.chat.completions.create(
                     messages=messages,
                     model=self._model.value,
+                    response_format={"type": "json_object"},
                     temperature=0.1,
                 )
 
@@ -345,18 +355,22 @@ class MetadataExtractor(Task):
             "The following blocks of text were extracted from a map using an OCR process, specified as a list with (text, index):\n"
             + text_str
             + "\n\n"
-            + "Return the places that are points. The following types of places are points: \n"
+            + " Return the places that are points. The following types of places are points: \n"
             + " - mountains\n"
             + " - peaks\n"
             + " - trailheads\n"
             + " - hills\n"
             + " - summits\n\n"
-            + "Ignore places that are not points. The following types of places are not points: \n"
+            + " Ignore places that are not points. The following types of places are not points: \n"
             + " - pond\n"
             + " - brook\n"
             + " - lake\n"
             + " - river\n\n"
-            + "The response should be in JSON format. In the response, include the index and the name as part of a tuple in a json formatted list with each item being {name: 'name', index: 'index'}."
+            + " Return the data as a JSON structure.\n"
+            + " In the response, include the index and the name as part of a tuple in a json formatted list with each item being {name: 'name', index: 'index'}.\n"
+            + " Here is an example of the structure to use: \n"
+            + self.EXAMPLE_JSON_POINTS
+            + "\n"
         )
 
     def _extract_text(

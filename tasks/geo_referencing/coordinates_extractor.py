@@ -712,7 +712,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
             self._add_param(
                 input.input,
                 str(uuid.uuid4()),
-                f"coordinate-{c.get_type()}",
+                f"coordinate-{c.get_type()}-{c.get_derivation()}",
                 {
                     "bounds": ocr_to_coordinates(c.get_bounds()),
                     "text": c.get_text(),
