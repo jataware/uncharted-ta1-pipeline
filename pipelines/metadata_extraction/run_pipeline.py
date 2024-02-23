@@ -58,7 +58,7 @@ def main():
                 if output_type == "metadata_extraction_output":
                     path = os.path.join(p.output, f"{doc_id}_metadata_extraction.json")
                     file_writer.process(path, output_data.data)
-                if output_type == "metadata_integration_output" and p.ta1_schema:
+                elif output_type == "metadata_integration_output" and p.ta1_schema:
                     path = os.path.join(
                         p.output, f"{doc_id}_metadata_extraction_schema.json"
                     )
