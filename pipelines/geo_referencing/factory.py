@@ -14,7 +14,6 @@ from pipelines.geo_referencing.output import (
 from tasks.common.pipeline import Pipeline
 from tasks.common.task import TaskInput
 from tasks.geo_referencing.coordinates_extractor import (
-    GeocodeCoordinatesExtractor,
     GeoCoordinatesExtractor,
 )
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
@@ -61,7 +60,6 @@ def create_geo_referencing_pipelines(
         tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
-    tasks.append(GeocodeCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
     """p.append(
@@ -86,7 +84,6 @@ def create_geo_referencing_pipelines(
         tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
-    tasks.append(GeocodeCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
             TextFilter(
