@@ -78,11 +78,11 @@ def run(input_path: Path, json_pred_path: Path):
 if __name__ == "__main__":
 
     args = ArgumentParser()
-    args.add_argument("--input_path", type=Path, description="path to input tiffs")
+    args.add_argument("--input_path", type=Path, help="path to input tiffs")
     args.add_argument(
         "--json_pred_path",
         type=Path,
-        description="path to uncharted segementation extraction json results",
+        help="path to uncharted segementation extraction json results",
     )
     p = args.parse_args()
 
