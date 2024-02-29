@@ -302,7 +302,7 @@ class GeopackageIntegrationOutput(OutputCreator):
                     "map_id": pipeline_result.raster_id,
                     "type": map_pt_label.class_name,
                     "confidence": map_pt_label.score,
-                    "provenance": ProvenanceType.modelled.value,  # type: ignore
+                    "provenance": ProvenanceType.modelled,
                     "dip_direction": map_pt_label.direction,
                     "dip": map_pt_label.dip,
                 },

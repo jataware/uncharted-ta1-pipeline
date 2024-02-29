@@ -15,7 +15,7 @@ WKT = TypeVar("WKT", bound=str)
 PixelBoundingPolygon = TypeVar("PixelBoundingPolygon")
 
 
-class ProvenanceType(Enum):
+class ProvenanceType(str, Enum):
     """
     Type of provenance for data and extractions
     """

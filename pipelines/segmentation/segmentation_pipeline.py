@@ -219,7 +219,7 @@ class GeopackageIntegrationOutput(OutputCreator):
                 px_geometry=poly_obj,
                 bounds="",
                 confidence=segment.confidence,
-                provenance=ProvenanceType.modelled.value,  # type: ignore
+                provenance=ProvenanceType.modelled,
             )
             page_extractions.append(page_extr)
 
