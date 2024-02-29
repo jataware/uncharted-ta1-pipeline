@@ -1,6 +1,5 @@
 from flask import Flask, request, Response
 import logging, json
-from PIL import Image
 import argparse
 from hashlib import sha1
 from io import BytesIO
