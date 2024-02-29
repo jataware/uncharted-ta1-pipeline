@@ -106,6 +106,7 @@ if __name__ == "__main__":
     )
 
     #### start flask server
+    app.config["ta1_schema"] = p.ta1_schema
     if p.debug:
         app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
     else:

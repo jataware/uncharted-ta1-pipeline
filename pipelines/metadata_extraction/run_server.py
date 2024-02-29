@@ -98,7 +98,8 @@ if __name__ == "__main__":
     metadata_extraction = MetadataExtractorPipeline(p.workdir, p.model)
 
     #### start flask server
-    app.run(host="0.0.0.0", port=5000)
-
-    # TEMP Use this for debug mode
-    # app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    app.config["ta1_schema"] = p.ta1_schema
+    if p.debug:
+        app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    else:
+        app.run(host="0.0.0.0", port=5000)
