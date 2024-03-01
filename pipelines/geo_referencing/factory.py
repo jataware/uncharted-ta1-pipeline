@@ -159,13 +159,13 @@ def create_geo_referencing_pipelines(
                 NominatimGeocoder(10, 1),
                 run_bounds=True,
                 run_points=False,
+                run_centres=False,
             )
         )
         tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
             TextFilter(
@@ -190,9 +190,20 @@ def create_geo_referencing_pipelines(
                 NominatimGeocoder(10, 5),
                 run_bounds=False,
                 run_points=True,
+                run_centres=False,
+            )
+        )
+        tasks.append(
+            Geocoder(
+                "geo-centres",
+                NominatimGeocoder(10, 1),
+                run_bounds=False,
+                run_points=False,
+                run_centres=True,
             )
         )
         tasks.append(rfGeocoder("geocoded-georeferencing"))
+    tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     p.append(

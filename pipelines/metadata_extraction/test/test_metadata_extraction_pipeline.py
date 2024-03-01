@@ -30,6 +30,7 @@ class TestGeopackageIntegrationOutput:
             states=["test_state_1", "test_state_2"],
             country="test_country",
             places=[],
+            population_centres=[],
         )
         pipeline_result = PipelineResult()
         pipeline_result.pipeline_id = "test_id"
