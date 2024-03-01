@@ -2,7 +2,8 @@ from PIL import Image
 from PIL.Image import Image as PILImage
 import cv2
 import numpy as np
-import io, copy, logging
+import logging
+from io import BytesIO
 
 #
 # Generic image loading/saving and formatting functions
@@ -21,6 +22,13 @@ def load_pil_image(path: str) -> PILImage:
     Loads an image into memory as a PIL image object
     """
     return Image.open(path)
+
+
+def load_pil_image_stream(bytes_io: BytesIO) -> PILImage:
+    """
+    Loads an image into memory as a PIL image object from a byte-stream
+    """
+    return Image.open(bytes_io)
 
 
 def load_cv_image(path: str) -> np.ndarray:

@@ -3,13 +3,12 @@ import os
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
-from pathlib import Path
 from io import BytesIO
-from PIL import Image
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
-from tasks.common.pipeline import PipelineInput, BaseModelOutput
+from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
+from tasks.common import image_io
 from tasks.metadata_extraction.entities import METADATA_EXTRACTION_OUTPUT_KEY
 
 app = Flask(__name__)
@@ -26,7 +25,7 @@ def process_image():
     try:
         # open the image from the supplied byte stream
         bytes_io = BytesIO(request.data)
-        image = Image.open(bytes_io)
+        image = image_io.load_pil_image_stream(bytes_io)
 
         # use the hash as the doc id since we don't have a filename
         doc_id = sha1(request.data).hexdigest()
@@ -38,10 +37,21 @@ def process_image():
             msg = "No metadata extracted"
             logging.warning(msg)
             return (msg, 500)
-        metadata_result = result[METADATA_EXTRACTION_OUTPUT_KEY]
-        if isinstance(metadata_result, BaseModelOutput):
-            # convert result to a JSON array
-            result_json = json.dumps(metadata_result.data.model_dump())
+
+        ta1_schema = app.config.get("ta1_schema", False)
+        # get ta1 schema output or internal output format
+        segmentation_result = (
+            result[METADATA_EXTRACTION_OUTPUT_KEY]
+            if ta1_schema
+            else result["metadata_integration_output"]
+        )
+
+        # convert result to a JSON string and return
+        if isinstance(segmentation_result, BaseModelOutput):
+            result_json = json.dumps(segmentation_result.data.model_dump())
+            return Response(result_json, status=200, mimetype="application/json")
+        elif isinstance(segmentation_result, BaseModelListOutput):
+            result_json = json.dumps([d.model_dump() for d in segmentation_result.data])
             return Response(result_json, status=200, mimetype="application/json")
         else:
             msg = "No metadata extracted"
@@ -73,17 +83,23 @@ if __name__ == "__main__":
     logger.info("*** Starting map metadata app ***")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--workdir", type=str, required=True)
+    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
-    parser.add_argument("--min_confidence", type=float, default=0.25)
-    parser.add_argument("--debug", type=float, default=False)
+    parser.add_argument("--debug", type=bool, default=False)
+    parser.add_argument(
+        "--ta1_schema",
+        type=bool,
+        default=False,
+        help="Output results as TA1 json schema format",
+    )
     p = parser.parse_args()
 
     # init segmenter
     metadata_extraction = MetadataExtractorPipeline(p.workdir, p.model)
 
     #### start flask server
-    app.run(host="0.0.0.0", port=5000)
-
-    # TEMP Use this for debug mode
-    # app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    app.config["ta1_schema"] = p.ta1_schema
+    if p.debug:
+        app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    else:
+        app.run(host="0.0.0.0", port=5000)
