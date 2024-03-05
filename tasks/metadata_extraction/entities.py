@@ -23,6 +23,7 @@ class MetadataExtraction(BaseModel):
     coordinate_systems: List[str]
     base_map: str
     counties: List[str]
+    population_centres: List[TextExtraction]  # a list of cities, towns, and villages
     states: List[str]
     country: str
     places: List[
