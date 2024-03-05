@@ -111,9 +111,10 @@ def create_geo_referencing_pipelines(
             )
         )
         tasks.append(rfGeocoder("geocoded-georeferencing"))
+    tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "tile",
             "tile",
@@ -124,11 +125,11 @@ def create_geo_referencing_pipelines(
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
                 IntegrationModelOutput("model"),
-                GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
+                # GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )
-    )"""
+    )
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -288,9 +289,10 @@ def create_geo_referencing_pipelines(
             )
         )
         tasks.append(rfGeocoder("geocoded-georeferencing"))
+    tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "roi poly image",
             "roi poly",
@@ -305,7 +307,7 @@ def create_geo_referencing_pipelines(
             ],
             tasks,
         )
-    )"""
+    )
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -370,9 +372,10 @@ def create_geo_referencing_pipelines(
             )
         )
         tasks.append(rfGeocoder("geocoded-georeferencing"))
+    tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "roi poly roi",
             "roi poly",
@@ -387,7 +390,7 @@ def create_geo_referencing_pipelines(
             ],
             tasks,
         )
-    )"""
+    )
 
     return p
 

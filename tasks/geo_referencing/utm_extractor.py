@@ -32,6 +32,8 @@ RE_NORTHEAST = re.compile(
 
 RE_NONNUMERIC = re.compile(r"[^0-9]")
 
+RE_UTM_ZONE = re.compile(r"^utm zone ([1-9]{1,2})\s?([ns])($|\b)")
+
 FOV_RANGE_METERS = 200000  # fallback search range (meters)
 
 
@@ -70,6 +72,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         if lat_minmax[1] > 84:
             lat_minmax[1] = 84
         logger.info(f"utm lon & lat limits: {lon_minmax}\t{lat_minmax}")
+        logger.info(f"derived utm zone: {utm_zone}")
 
         lon_pts, lat_pts = self._extract_utm(
             input,
@@ -88,12 +91,18 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
     def _determine_utm_zone(
         self, metadata: MetadataExtraction, geocoded_centres: List[GeocodedPlace]
     ) -> Tuple[int, bool]:
-        zone_number = 1
+        zone_number = -1
         northern = False
 
-        # extract the zone number
-
-        # determine if north or south
+        # extract the zone number from the coordinate systems
+        for crs in metadata.coordinate_systems:
+            # check for utm zone  DD[ns]
+            lowered = crs.lower()
+            for z in RE_UTM_ZONE.finditer(lowered):
+                g = z.groups()
+                zone_number = int(g[0])
+                northern = g[1] == "n"
+                return zone_number, northern
 
         # if zone not specified in metadata, look to geocoded centres
         # TODO: MAYBE CHECK THAT THE GEOCODING IS WITHIN REASONABLE DISTANCE
