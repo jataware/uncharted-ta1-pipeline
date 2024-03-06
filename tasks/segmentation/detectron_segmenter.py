@@ -59,7 +59,7 @@ class DetectronSegmenter(Task):
         confidence_thres: float = CONFIDENCE_THRES_DEFAULT,
         gpu: bool = True,
     ):
-        super().__init__(task_id)
+        super().__init__(task_id, model_data_cache_path)
 
         model_paths = self._prep_config_data(model_data_path, model_data_cache_path)
 
@@ -123,6 +123,18 @@ class DetectronSegmenter(Task):
             self.id_model = self._get_id_model(self.predictor.model)
             logger.info(f"Model ID: {self.id_model}")
 
+        doc_key = f"{input.raster_id}_segmentation-{self.id_model}"
+
+        # check cache and re-use existing file if present
+        json_data = self.fetch_cached_result(doc_key)
+        if json_data:
+            result = self._create_result(input)
+            result.add_output(
+                SEGMENTATION_OUTPUT_KEY,
+                MapSegmentation(**json_data).model_dump(),
+            )
+            return result
+
         # --- run inference
         predictions = self.predictor(np.array(input.image))["instances"]
         predictions = predictions.to("cpu")
@@ -167,8 +179,13 @@ class DetectronSegmenter(Task):
                     )
                     seg_results.append(seg_result)
         map_segmentation = MapSegmentation(doc_id=input.raster_id, segments=seg_results)
+        json_data = map_segmentation.model_dump()
+
+        # write to cache
+        self.write_result_to_cache(json_data, doc_key)
+
         result = self._create_result(input)
-        result.add_output(SEGMENTATION_OUTPUT_KEY, map_segmentation.model_dump())
+        result.add_output(SEGMENTATION_OUTPUT_KEY, json_data)
         return result
 
     def run_inference_batch(self):
@@ -229,7 +246,7 @@ class DetectronSegmenter(Task):
 
         if model_data_path.startswith("s3://") or model_data_path.startswith("http"):
             # need to specify data cache path when fetching from S3
-            if data_cache_path == "":
+            if not data_cache_path:
                 raise ValueError(
                     "'data_cache_path' must be specified when fetching model data from S3"
                 )
