@@ -37,12 +37,11 @@ class TextExtractor(Task):
         to_blocks: bool = True,
         document_ocr: bool = False,
     ):
-        super().__init__(task_id)
+        super().__init__(task_id, str(cache_dir))
         self._ocr = GoogleVisionOCR()
         self._model_id = "google-cloud-vision"
         self._to_blocks = to_blocks
         self._document_ocr = document_ocr
-        self._cache_dir = cache_dir
 
     def _extract_text(self, im: PILImage) -> List[Dict[str, Any]]:
         img_gv = GoogleVisionOCR.pil_to_vision_image(im)
@@ -87,21 +86,16 @@ class ResizeTextExtractor(TextExtractor):
         im_resized, im_resize_ratio = self._resize_image(input.image)
 
         doc_key = f"{input.raster_id}_{self._model_id}"
-        doc_path = os.path.join(self._cache_dir, f"{doc_key}.json")
-
-        # create the cache dir if it doesn't exist
-        if not os.path.isdir(self._cache_dir):
-            os.makedirs(self._cache_dir)
 
         # check cache and re-use existing file if present
-        if os.path.isfile(doc_path):
-            with open(doc_path, "rb") as f:
-                result = self._create_result(input)
-                result.add_output(
-                    TEXT_EXTRACTION_OUTPUT_KEY,
-                    DocTextExtraction(**json.load(f)).model_dump(),
-                )
-                return result
+        cached_json = self.fetch_cached_result(doc_key)
+        if cached_json:
+            result = self._create_result(input)
+            result.add_output(
+                TEXT_EXTRACTION_OUTPUT_KEY,
+                DocTextExtraction(**cached_json).model_dump(),
+            )
+            return result
 
         ocr_blocks = self._extract_text(im_resized)
 
@@ -126,9 +120,7 @@ class ResizeTextExtractor(TextExtractor):
         doc_text_extraction = DocTextExtraction(doc_id=doc_key, extractions=texts)
 
         # write to cache
-        with open(doc_path, "w") as f:
-            json_model = doc_text_extraction.model_dump()
-            json.dump(json_model, f)
+        self.write_result_to_cache(doc_text_extraction.model_dump(), doc_key)
 
         result = self._create_result(input)
         result.add_output(TEXT_EXTRACTION_OUTPUT_KEY, doc_text_extraction.model_dump())
@@ -183,21 +175,16 @@ class TileTextExtractor(TextExtractor):
             return self._create_result(input)
 
         doc_key = f"{input.raster_id}_{self._model_id}"
-        doc_path = os.path.join(self._cache_dir, f"{doc_key}.json")
-
-        # create the cache dir if it doesn't exist
-        if not os.path.isdir(self._cache_dir):
-            os.makedirs(self._cache_dir)
 
         # check cache and re-use existing file if present
-        if os.path.isfile(doc_path):
-            with open(doc_path, "rb") as f:
-                result = self._create_result(input)
-                result.add_output(
-                    TEXT_EXTRACTION_OUTPUT_KEY,
-                    DocTextExtraction(**json.load(f)).model_dump(),
-                )
-                return result
+        json_data = self.fetch_cached_result(doc_key)
+        if json_data:
+            result = self._create_result(input)
+            result.add_output(
+                TEXT_EXTRACTION_OUTPUT_KEY,
+                DocTextExtraction(**json_data).model_dump(),
+            )
+            return result
 
         im_tiles = self._split_image(input.image, self.split_lim)
         logger.info(
@@ -228,14 +215,13 @@ class TileTextExtractor(TextExtractor):
             texts.append(ocr_result)
 
         doc_text_extraction = DocTextExtraction(doc_id=doc_key, extractions=texts)
+        json_data = doc_text_extraction.model_dump()
 
         # write to cache
-        with open(doc_path, "w") as f:
-            json_model = doc_text_extraction.model_dump()
-            json.dump(json_model, f)
+        self.write_result_to_cache(json_data, doc_key)
 
         result = self._create_result(input)
-        result.add_output(TEXT_EXTRACTION_OUTPUT_KEY, doc_text_extraction.model_dump())
+        result.add_output(TEXT_EXTRACTION_OUTPUT_KEY, json_data)
         return result
 
     def _split_image(self, image: PILImage, size_limit: int) -> List[Tile]:

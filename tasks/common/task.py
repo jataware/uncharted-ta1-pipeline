@@ -1,8 +1,9 @@
-import copy
-
+import copy, json, logging, os
 from PIL.Image import Image as PILImage
 
-from typing import Callable, Optional, List, Any, Dict
+from typing import Callable, List, Any, Dict
+
+logger = logging.getLogger(__name__)
 
 
 class TaskParameter:
@@ -91,11 +92,20 @@ class TaskResult:
 class Task:
     _task_id = ""
 
-    def __init__(self, task_id):
+    def __init__(self, task_id: str, cache_dir: str = ""):
         self._task_id = task_id
+        self._cache_dir = cache_dir
+
+        if self._cache_dir:
+            logger.info(
+                f"Initializing task {self._task_id} with cache dir {self._cache_dir}"
+            )
+            self._init_cache()
+        else:
+            logger.info(f"Initializing task {self._task_id} with no local data cache")
 
     def run(self, input: TaskInput) -> TaskResult:
-        print(f"running task {self._task_id}")
+        logger.info(f"Running task {self._task_id}")
 
         result = TaskResult()
         result.task_id = self._task_id
@@ -120,3 +130,39 @@ class Task:
         description: str = "",
     ):
         input.add_param(self._task_id, key, category, values, description)
+
+    def _init_cache(self):
+        """
+        Create local cache dir, if it doesn't exist
+        """
+        if self._cache_dir and not os.path.exists(self._cache_dir):
+            os.makedirs(self._cache_dir)
+
+    def _get_cache_doc_path(self, doc_key: str) -> str:
+        """
+        Generate the full local path for cached json result
+        """
+        return os.path.join(self._cache_dir, f"{doc_key}.json")
+
+    def fetch_cached_result(self, doc_key: str) -> Any:
+        """
+        Check if task result is available in the local cache
+        """
+        if not self._cache_dir:
+            return None
+        doc_path = self._get_cache_doc_path(doc_key)
+        if os.path.isfile(doc_path):
+            with open(doc_path, "rb") as f:
+                return json.load(f)
+        else:
+            return None
+
+    def write_result_to_cache(self, json_model: Dict[Any, Any], doc_key: str):
+        """
+        Write task result to local cache
+        """
+        if not self._cache_dir:
+            return
+        doc_path = self._get_cache_doc_path(doc_key)
+        with open(doc_path, "w") as f:
+            json.dump(json_model, f)
