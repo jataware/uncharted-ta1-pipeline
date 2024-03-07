@@ -128,6 +128,9 @@ class DetectronSegmenter(Task):
         # check cache and re-use existing file if present
         json_data = self.fetch_cached_result(doc_key)
         if json_data:
+            logger.info(
+                f"Using cached segmentation results for raster: {input.raster_id}"
+            )
             result = self._create_result(input)
             result.add_output(
                 SEGMENTATION_OUTPUT_KEY,

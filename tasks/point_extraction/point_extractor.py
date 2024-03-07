@@ -161,6 +161,7 @@ class YOLOPointDetector(Task):
         json_data = self.fetch_cached_result(doc_key)
         if json_data and map_tiles.join_with_cached_predictions(MapTiles(**json_data)):
             # cached point predictions loaded successfully
+            logger.info(f"Using cached point extractions for raster: {input.raster_id}")
             return TaskResult(
                 task_id=self._task_id,
                 output={"map_tiles": map_tiles},
