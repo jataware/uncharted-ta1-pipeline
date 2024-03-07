@@ -67,7 +67,7 @@ class DetectronSegmenter(Task):
         self.model_weights = str(model_paths.model_weights_path)
         self.class_labels = class_labels
         self.predictor: Optional[DefaultPredictor] = None
-        self.id_model: str = ""
+        self._model_id: str = ""
         self.gpu = gpu
 
         # instantiate config
@@ -120,10 +120,10 @@ class DetectronSegmenter(Task):
             # load model...
             logger.info(f"Loading segmentation model {self.model_name}")
             self.predictor = DefaultPredictor(self.cfg)
-            self.id_model = self._get_id_model(self.predictor.model)
-            logger.info(f"Model ID: {self.id_model}")
+            self._model_id = self._get_model_id(self.predictor.model)
+            logger.info(f"Model ID: {self._model_id }")
 
-        doc_key = f"{input.raster_id}_segmentation-{self.id_model}"
+        doc_key = f"{input.raster_id}_segmentation-{self._model_id}"
 
         # check cache and re-use existing file if present
         json_data = self.fetch_cached_result(doc_key)
@@ -175,7 +175,7 @@ class DetectronSegmenter(Task):
                         area=cv2.contourArea(contour),
                         confidence=scores[i],
                         class_label=self.class_labels[classes[i]],
-                        id_model=self.id_model,
+                        id_model=self._model_id,
                     )
                     seg_results.append(seg_result)
         map_segmentation = MapSegmentation(doc_id=input.raster_id, segments=seg_results)
@@ -214,7 +214,7 @@ class DetectronSegmenter(Task):
         has_holes = (reshaped[:, 3] >= 0).sum() > 0
         return (res[-2], has_holes)
 
-    def _get_id_model(self, model) -> str:
+    def _get_model_id(self, model) -> str:
         """
         Create a unique string ID for this model,
         based on MD5 hash of the model's state-dict

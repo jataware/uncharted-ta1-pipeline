@@ -74,7 +74,10 @@ class PointExtractionPipeline(Pipeline):
             [
                 Tiler("tiling"),
                 YOLOPointDetector(
-                    "point_detection", model_path, work_dir, batch_size=20
+                    "point_detection",
+                    model_path,
+                    str(Path(work_dir).joinpath("points")),
+                    batch_size=20,
                 ),
                 Untiler("untiling"),
                 PointOrientationExtractor("point_orientation_extraction"),
