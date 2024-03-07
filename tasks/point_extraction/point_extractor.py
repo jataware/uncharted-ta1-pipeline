@@ -2,6 +2,7 @@ from tasks.point_extraction.entities import MapTile, MapTiles, MapPointLabel
 from tasks.common.s3_data_cache import S3DataCache
 from tasks.common.task import Task, TaskInput, TaskResult
 from enum import Enum
+import hashlib
 import logging
 import os
 from urllib.parse import urlparse
@@ -41,8 +42,6 @@ class YOLOPointDetector(Task):
     Wrapper for Ultralytics YOLOv8 model inference.
     """
 
-    _VERSION = 1
-
     def __init__(
         self,
         task_id: str,
@@ -55,8 +54,9 @@ class YOLOPointDetector(Task):
         self.model = YOLO(local_data_path)
         self.bsz = batch_size
         self.device = device
+        self._model_id = self._get_model_id(self.model)
 
-        super().__init__(task_id)
+        super().__init__(task_id, cache_path)
 
     def _prep_model_data(self, model_data_path: str, data_cache_path: str) -> Path:
         """
@@ -133,7 +133,7 @@ class YOLOPointDetector(Task):
                 pt_labels.append(
                     MapPointLabel(
                         classifier_name="unchartNet_point_extractor",
-                        classifier_version=self._VERSION,
+                        classifier_version=self._model_id,
                         class_id=int(class_id),
                         class_name=self.model.names[int(class_id)],
                         x1=int(x1),
@@ -156,6 +156,16 @@ class YOLOPointDetector(Task):
         if self.device not in ["cuda", "cpu"]:
             raise ValueError(f"Invalid device: {self.device}")
 
+        doc_key = f"{input.raster_id}_points-{self._model_id}"
+        # check cache and re-use existing file if present
+        json_data = self.fetch_cached_result(doc_key)
+        if json_data and map_tiles.join_with_cached_predictions(MapTiles(**json_data)):
+            # cached point predictions loaded successfully
+            return TaskResult(
+                task_id=self._task_id,
+                output={"map_tiles": map_tiles},
+            )
+
         output: List[MapTile] = []
         # run batch model inference...
         for i in tqdm(range(0, len(map_tiles.tiles), self.bsz)):
@@ -170,13 +180,28 @@ class YOLOPointDetector(Task):
                 tile.predictions = self.process_output(preds)
                 output.append(tile)
         result_map_tiles = MapTiles(raster_id=map_tiles.raster_id, tiles=output)
+
+        # write to cache
+        self.write_result_to_cache(
+            result_map_tiles.format_for_caching().model_dump(), doc_key
+        )
+
         return TaskResult(
             task_id=self._task_id, output={"map_tiles": result_map_tiles.model_dump()}
         )
 
+    def _get_model_id(self, model: YOLO) -> str:
+        """
+        Create a unique string ID for this model,
+        based on MD5 hash of the model's state-dict
+        """
+        state_dict_str = str(model.state_dict())
+        hash_result = hashlib.md5(bytes(state_dict_str, encoding="utf-8"))
+        return hash_result.hexdigest()
+
     @property
     def version(self):
-        return self._VERSION
+        return self._model_id
 
     @property
     def input_type(self):
