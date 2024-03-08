@@ -17,9 +17,14 @@ from tasks.segmentation.entities import (
     SEGMENTATION_OUTPUT_KEY,
 )
 from detectron2.config import get_cfg
+from detectron2.layers import mask_ops
 from detectron2.engine import DefaultPredictor
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.common.s3_data_cache import S3DataCache
+
+# Internal Detectron GPU mem threshold
+# TODO: could try to tune dynamically, based on available resources
+mask_ops.GPU_MEM_LIMIT = 2 * (1024**3)  # 2GB (default=1GB)
 
 CONFIDENCE_THRES_DEFAULT = 0.25  # default confidence threshold (model will discard any regions with confidence < threshold)
 
