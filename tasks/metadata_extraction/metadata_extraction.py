@@ -1,3 +1,4 @@
+import copy
 import logging
 import re
 import json
@@ -83,6 +84,15 @@ class MetadataExtractor(Task):
         ],
         indent=4,
     )
+    EXAMPLE_JSON_CITIES = json.dumps(
+        [
+            {"name": "Denver", "index": 12},
+            {"name": "Los Angeles", "index": 34},
+            {"name": "Seattle", "index": 20},
+            {"name": "Calgary", "index": 6},
+        ],
+        indent=4,
+    )
 
     def __init__(
         self,
@@ -119,7 +129,22 @@ class MetadataExtractor(Task):
             # add the place extraction
             # TODO: THIS IS A TEMPORARY HACK UNTIL REFACTORED TO WORK WITH LANGCHAIN
             doc_text = DocTextExtraction.model_validate(text_data)
-            metadata.places = self._process_map_area_extractions(doc_text)
+
+            text_indices = self._extract_text_with_index(doc_text)
+
+            # convert text to prompt string and compute token count
+            prompt_str_places = self._to_point_prompt_str(
+                self._text_extractions_to_str(text_indices)
+            )
+            metadata.places = self._process_map_area_extractions(
+                doc_text, prompt_str_places
+            )
+            prompt_str_areas = self._to_place_prompt_str(
+                self._text_extractions_to_str(text_indices)
+            )
+            metadata.population_centres = self._process_map_area_extractions(
+                doc_text, prompt_str_areas, True
+            )
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
@@ -213,6 +238,7 @@ class MetadataExtractor(Task):
                 else:
                     content_dict = {"map_id": doc_text_extraction.doc_id}
                 content_dict["places"] = []
+                content_dict["population_centres"] = []
                 extraction = MetadataExtraction(**content_dict)
                 return extraction
 
@@ -230,19 +256,16 @@ class MetadataExtractor(Task):
             return self._create_empty_extraction(doc_text_extraction.doc_id)
 
     def _process_map_area_extractions(
-        self, doc_text_extraction: DocTextExtraction
+        self,
+        doc_text_extraction: DocTextExtraction,
+        prompt_str: str,
+        replace_text: bool = False,
     ) -> List[TextExtraction]:
         logger.info(
             f"extracting point places from the map area of '{doc_text_extraction.doc_id}'"
         )
         places = []
         try:
-            text_indices = self._extract_text_with_index(doc_text_extraction)
-
-            # convert text to prompt string and compute token count
-            prompt_str = self._to_point_prompt_str(
-                self._text_extractions_to_str(text_indices)
-            )
             messages: List[Any] = [
                 {
                     "role": "system",
@@ -271,7 +294,9 @@ class MetadataExtractor(Task):
                     places_raw: List[Dict[str, Any]] = json.loads(message_content)[
                         "points"
                     ]
-                    places = self._map_text_coordinates(places_raw, doc_text_extraction)
+                    places = self._map_text_coordinates(
+                        places_raw, doc_text_extraction, replace_text
+                    )
                 except json.JSONDecodeError as e:
                     logger.error(
                         f"Skipping extraction '{doc_text_extraction.doc_id}' - error parsing json response from api likely due to token limit",
@@ -300,11 +325,22 @@ class MetadataExtractor(Task):
         return "\n".join(items)
 
     def _map_text_coordinates(
-        self, places: List[Dict[str, Any]], extractions: DocTextExtraction
+        self,
+        places: List[Dict[str, Any]],
+        extractions: DocTextExtraction,
+        replace_text: bool,
     ) -> List[TextExtraction]:
         # want to use the index to filter the extractions
         # TODO: MAY WANT TO CHECK THE TEXT LINES UP JUST IN CASE THE LLM HAD A BIT OF FUN
-        return [extractions.extractions[p["index"]] for p in places]  # type: ignore
+        filtered = []
+        for p in places:
+            e = copy.deepcopy(extractions.extractions[p["index"]])
+            if replace_text:
+                e.text = p["name"]
+            if "state" in p:
+                e.text = f"{e.text}, {p['state']}"
+            filtered.append(e)
+        return filtered  # type: ignore
 
     def _count_tokens(self, input_str: str, encoding_name: str) -> int:
         """Counts the number of tokens in a input string using a given encoding"""
@@ -367,11 +403,25 @@ class MetadataExtractor(Task):
             + " - brook\n"
             + " - lake\n"
             + " - river\n\n"
-            + " Return the data as a JSON structure.\n"
             + " In the response, include the index and the name as part of a tuple in a json formatted list with each item being {name: 'name', index: 'index'}.\n"
             + " Here is an example of the structure to use: \n"
             + self.EXAMPLE_JSON_POINTS
             + "\n"
+        )
+
+    def _to_place_prompt_str(self, text_str: str) -> str:
+        return (
+            "The following blocks of text were extracted from a map using an OCR process, specified as a list with (text, index):\n"
+            + text_str
+            + "\n\n"
+            + " Return the places that are recognizable metropolitan areas, cities, towns, or villages.\n"
+            + " Ignore places that are roads, streets, avenues, or other similar features.\n"
+            + " Using the above list of places, determine which state or province is most likely being explored.\n"
+            + " In the response, include the index, the name and the state or province as part of a tuple in a json formatted list with each item being {name: 'name', index: 'index', state: 'state'}.\n"
+            + " Here is an example of the structure to use: \n"
+            + self.EXAMPLE_JSON_CITIES
+            + "\n\n"
+            + ' In the returned json, name the result "points".'
         )
 
     def _extract_text(
@@ -424,6 +474,7 @@ class MetadataExtractor(Task):
             base_map="",
             counties=[],
             states=[],
+            population_centres=[],
             country="",
             places=[],
         )

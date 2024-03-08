@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from matplotlib.mathtext import RasterParse
 import numpy as np
@@ -17,7 +18,7 @@ class MapPointLabel(BaseModel):
     """
 
     classifier_name: str
-    classifier_version: int
+    classifier_version: str
     class_id: int
     class_name: str
     x1: int
@@ -85,6 +86,8 @@ class MapTile(BaseModel):
 
     @validator("image", pre=True, always=True)
     def validate_image(cls, value):
+        if value is None:
+            return value
         if isinstance(value, torch.Tensor):
             value = value.permute(1, 2, 0)  # Convert from (C, H, W) to (H, W, C)
             value = value.numpy()
@@ -110,3 +113,46 @@ class MapTile(BaseModel):
 class MapTiles(BaseModel):
     raster_id: str
     tiles: List[MapTile]
+
+    def format_for_caching(self) -> MapTiles:
+        """
+        Reformat point extraction tiles prior to caching
+        - tile image raster is discarded
+        """
+
+        tiles_cache = []
+        for t in self.tiles:
+            t_cache = MapTile(
+                x_offset=t.x_offset,
+                y_offset=t.y_offset,
+                width=t.width,
+                height=t.height,
+                map_bounds=t.map_bounds,
+                image=None,
+                map_path=t.map_path,
+                predictions=t.predictions,
+            )
+            tiles_cache.append(t_cache)
+
+        return MapTiles(raster_id=self.raster_id, tiles=tiles_cache)
+
+    def join_with_cached_predictions(self, cached_preds: MapTiles) -> bool:
+        """
+        Append cached point predictions to MapTiles
+        """
+        try:
+            # re-format cached predictions with key as (x_offset, y_offset)
+            cached_dict = {}
+            for p in cached_preds.tiles:
+                cached_dict[(p.x_offset, p.y_offset)] = p
+            for t in self.tiles:
+                key = (t.x_offset, t.y_offset)
+                if key not in cached_dict:
+                    # cached predictions not found for this tile!
+                    return False
+                t_cached = cached_dict[key]
+                t.predictions = t_cached.predictions
+            return True
+        except Exception as e:
+            print(f"Exception in join_with_cached_predictions: {str(e)}")
+            return False

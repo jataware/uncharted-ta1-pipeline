@@ -107,11 +107,13 @@ class Geocoder(Task):
         geocoding_service: GeocodingService,
         run_bounds: bool = True,
         run_points: bool = True,
+        run_centres: bool = True,
     ):
         super().__init__(task_id)
         self._geocoding_service = geocoding_service
         self._run_bounds = run_bounds
         self._run_points = run_points
+        self._run_centres = run_centres
 
     def run(self, input: TaskInput) -> TaskResult:
         logger.info(f"running geocoding task with id {self._task_id}")
@@ -123,15 +125,15 @@ class Geocoder(Task):
         if geocoded_output is None:
             geocoded_output = DocGeocodedPlaces(map_id=input.raster_id, places=[])
 
-        if self._run_bounds:
-            geocoded_output.places = geocoded_output.places + self._geocode_bounds(
-                input, to_geocode
-            )
-
-        if self._run_points:
-            geocoded_output.places = geocoded_output.places + self._geocode_points(
-                input, to_geocode
-            )
+        geocoded_output.places = geocoded_output.places + self._geocode_bounds(
+            input, to_geocode
+        )
+        geocoded_output.places = geocoded_output.places + self._geocode_points(
+            input, to_geocode
+        )
+        geocoded_output.places = geocoded_output.places + self._geocode_centres(
+            input, to_geocode
+        )
 
         # update the coordinates list
         return self._create_result(input, geocoded_output)
@@ -156,25 +158,13 @@ class Geocoder(Task):
 
         places: List[GeocodedPlace] = []
         country = ""
-        if metadata.country and not metadata.country == "NULL":
-            country = metadata.country
-            places.append(
-                GeocodedPlace(
-                    place_name=metadata.country,
-                    place_location_restriction="",
-                    place_type="bound",
-                    coordinates=[
-                        [GeocodedCoordinate(geo_x=0, geo_y=0, pixel_x=0, pixel_y=0)]
-                    ],
-                )
-            )
-
-        for s in metadata.states:
-            if s and not s == "NULL":
+        if self._run_bounds:
+            if metadata.country and not metadata.country == "NULL":
+                country = metadata.country
                 places.append(
                     GeocodedPlace(
-                        place_name=s,
-                        place_location_restriction=metadata.country,
+                        place_name=metadata.country,
+                        place_location_restriction="",
                         place_type="bound",
                         coordinates=[
                             [GeocodedCoordinate(geo_x=0, geo_y=0, pixel_x=0, pixel_y=0)]
@@ -182,15 +172,46 @@ class Geocoder(Task):
                     )
                 )
 
-        for p in metadata.places:
-            places.append(
-                GeocodedPlace(
-                    place_name=p.text,
-                    place_location_restriction=country,
-                    place_type="point",
-                    coordinates=[[self._map_coordinates(p)]],
+            for s in metadata.states:
+                if s and not s == "NULL":
+                    places.append(
+                        GeocodedPlace(
+                            place_name=s,
+                            place_location_restriction=metadata.country,
+                            place_type="bound",
+                            coordinates=[
+                                [
+                                    GeocodedCoordinate(
+                                        geo_x=0, geo_y=0, pixel_x=0, pixel_y=0
+                                    )
+                                ]
+                            ],
+                        )
+                    )
+
+        if self._run_points:
+            for p in metadata.places:
+                places.append(
+                    GeocodedPlace(
+                        place_name=p.text,
+                        place_location_restriction=country,
+                        place_type="point",
+                        coordinates=[[self._map_coordinates(p)]],
+                    )
                 )
-            )
+
+        if self._run_centres:
+            for p in metadata.population_centres:
+                places.append(
+                    GeocodedPlace(
+                        place_name=p.text,
+                        place_location_restriction=country,
+                        place_type="population",
+                        coordinates=[
+                            [GeocodedCoordinate(geo_x=0, geo_y=0, pixel_x=0, pixel_y=0)]
+                        ],
+                    )
+                )
 
         return places
 
@@ -211,17 +232,29 @@ class Geocoder(Task):
                     geocoded_places.append(g)
         return geocoded_places
 
+    def _geocode_centres(
+        self, input: TaskInput, places: List[GeocodedPlace]
+    ) -> List[GeocodedPlace]:
+        geocoded_places = []
+        for p in places:
+            if p.place_type == "population":
+                g, s = self._geocoding_service.geocode(p)
+                if s:
+                    geocoded_places.append(g)
+        return geocoded_places
+
     def _geocode_points(
         self, input: TaskInput, places: List[GeocodedPlace]
     ) -> List[GeocodedPlace]:
         geocoded_places = []
-        limit = min(10, len(places))
-        places_to_geocode = random.sample(places, limit)
+
+        points_only = list(filter(lambda x: x.place_type == "point", places))
+        limit = min(10, len(points_only))
+        places_to_geocode = random.sample(points_only, limit)
         for p in places_to_geocode:
-            if p.place_type == "point":
-                g, s = self._geocoding_service.geocode(p)
-                if s:
-                    geocoded_places.append(g)
+            g, s = self._geocoding_service.geocode(p)
+            if s:
+                geocoded_places.append(g)
         return geocoded_places
 
     def _map_coordinates(self, extraction: TextExtraction) -> GeocodedCoordinate:
