@@ -13,11 +13,21 @@ Initial efforts have focused on identifying and extracting the following symbols
 * Vertical Bedding
 * Horizontal Bedding
 * Overturned Bedding
+* Inclined Foliation
+* Vertical Foliation
+* Vertical Joint
+* Sink Hole
+* Gravel Borrow Pit
+* Mine Shaft
+* Prospect
+* Mine Tunnel
+* Mine Quarry
 
 ### Point Symbol Orientation
 Some point symbols also contain directional information.
 Point orientation (ie "strike" direction) and the "dip" magnitude are also extracted for applicable symbol types:
 * Inclined Bedding (strike/dip)
+
 
 ### Installation
 
