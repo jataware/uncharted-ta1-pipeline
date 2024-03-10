@@ -1,2 +1,0 @@
-## LARA Pipelines
-LARA Pipelines
