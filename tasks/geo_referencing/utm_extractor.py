@@ -117,6 +117,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         dir_potential: str,
         parsed_direction: List[Tuple[float, bool]],
     ) -> Tuple[bool, str]:
+        # returns true if the passed in value is a northing point, false if it is an easting point
         if dir_potential is None:
             dir_potential = ""
         dir_potential_lower = dir_potential.lower()
@@ -148,6 +149,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         geocoded_centres: List[GeocodedPlace],
         raw_geofence: DocGeoFence,
     ) -> Tuple[int, bool, str]:
+        # determine the UTM zone number and direction
         zone_number = 1
         northern = False
 
