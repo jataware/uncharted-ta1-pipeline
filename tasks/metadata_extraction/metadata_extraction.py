@@ -115,20 +115,17 @@ class MetadataExtractor(Task):
         if self._should_run and not self._should_run(input):
             return self._create_result(input)
 
-        # extract metadata from ocr output
-        text_data = input.data[self._text_key]
-        doc_text = DocTextExtraction.model_validate(text_data)
         task_result = TaskResult(self._task_id)
 
         # check if metadata already exists
         metadata_raw = input.get_data(METADATA_EXTRACTION_OUTPUT_KEY)
         if metadata_raw:
             metadata = MetadataExtraction.model_validate(metadata_raw)
-            text_data = input.data[TEXT_EXTRACTION_OUTPUT_KEY]
-            doc_text = DocTextExtraction.model_validate(text_data)
             # add the place extraction
             # TODO: THIS IS A TEMPORARY HACK UNTIL REFACTORED TO WORK WITH LANGCHAIN
-            doc_text = DocTextExtraction.model_validate(text_data)
+            doc_text: DocTextExtraction = input.parse_data(
+                TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
+            )
 
             text_indices = self._extract_text_with_index(doc_text)
 
@@ -148,6 +145,13 @@ class MetadataExtractor(Task):
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
+            return task_result
+
+        # extract metadata from ocr output
+        doc_text: DocTextExtraction = input.parse_data(
+            self._text_key, DocTextExtraction.model_validate
+        )
+        if not doc_text:
             return task_result
 
         metadata = self._process_doc_text_extraction(doc_text)
