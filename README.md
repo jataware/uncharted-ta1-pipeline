@@ -1,5 +1,7 @@
 # Uncharted TA1 Models
 
+![example workflow](https://github.com/uncharted-lara/lara-models/actions/workflows/build_test.yml/badge.svg)
+
 This repository contains five pipelines:
 
 * [Map Segmentation](pipelines/segmentation/README.md) - detects and extracts the main map area, polygon legend, point/line legend and geologic cross section from maps
