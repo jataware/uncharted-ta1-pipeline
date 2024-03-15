@@ -10,6 +10,7 @@ from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
+from tasks.metadata_extraction.scale import SCALE_VALUE_OUTPUT_KEY
 
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -26,6 +27,7 @@ class QueryPoint:
     lonlat_yp: Tuple[float, float]
     error_lonlat: Tuple[float, float]
     confidence: float
+    error_scale: Optional[float]
 
     def __init__(
         self,
@@ -41,6 +43,7 @@ class QueryPoint:
         self.properties = properties
 
         self.error_km = None
+        self.error_scale = None
         self.dist_xp_km = None
         self.dist_yp_km = None
 
@@ -55,11 +58,14 @@ class GeoReference(Task):
         self._poly_order = poly_order
 
     def run(self, input: TaskInput) -> TaskResult:
+        logger.info(f"running georeferencing task for image {input.raster_id}")
+
         lon_minmax = input.get_request_info("lon_minmax", [0, 180])
         lat_minmax = input.get_request_info("lat_minmax", [0, 90])
         logger.info(f"initial lon_minmax: {lon_minmax}")
         lon_pts = input.get_data("lons")
         lat_pts = input.get_data("lats")
+        scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
 
         query_pts = None
@@ -105,13 +111,14 @@ class GeoReference(Task):
         results = self._clip_query_pts(query_pts, lon_minmax, lat_minmax)
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
-        rmse = self._score_query_points(query_pts)
+        rmse, scale_error = self._score_query_points(query_pts, scale_value)
         datum, projection = self._determine_projection(input)
         logger.info(f"extracted datum: {datum}\textracted projection: {projection}")
 
         result = super()._create_result(input)
         result.output["query_pts"] = results
         result.output["rmse"] = rmse
+        result.output["error_scale"] = scale_error
         result.output["datum"] = datum
         result.output["projection"] = projection
         return result
@@ -358,13 +365,16 @@ class GeoReference(Task):
     def _clip(self, value: float, lower: float, upper: float) -> float:
         return lower if value < lower else upper if value > upper else value
 
-    def _score_query_points(self, query_pts: List[QueryPoint]) -> float:
+    def _score_query_points(
+        self, query_pts: List[QueryPoint], scale_value: float
+    ) -> Tuple[float, float]:
         logger.info("scoring georeferencing...")
         # if ground truth lon/lat info exists, calculate the
         # RMSE of geodesic error distances (in km) for all
         # query points for a given image
 
         sum_sq_error = 0.0
+        sum_sq_scale_error = 0.0
         num_pts = 0
         for qp in query_pts:
             if qp.lonlat_gtruth is not None:
@@ -378,12 +388,23 @@ class GeoReference(Task):
                     latlon[1] - latlon_gtruth[1],
                     latlon[0] - latlon_gtruth[0],
                 )
+                if scale_value > 0:
+                    # calculate the error based on heuristic of scale / 1000 (in meters)
+                    qp.error_scale = (qp.error_km * 1000.0) / (
+                        float(scale_value) / 1000.0
+                    )
+                    sum_sq_scale_error += qp.error_scale * qp.error_scale
 
                 sum_sq_error += err_dist * err_dist
                 num_pts += 1
 
         if num_pts == 0:
-            return -1
+            return -1, -1
         rmse = math.sqrt(sum_sq_error / num_pts)
 
-        return rmse
+        # all points in an image will either have a scale error or not have one so dont need to track point count separately
+        scale_error = -1
+        if scale_value > 0:
+            scale_error = math.sqrt(sum_sq_scale_error / num_pts)
+
+        return rmse, scale_error
