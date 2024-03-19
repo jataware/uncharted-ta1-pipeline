@@ -55,6 +55,7 @@ class GeoReferencingOutput(OutputCreator):
             "error_x",
             "error_y",
             "Distance",
+            "error_scale",
             "pixel_dist_xx",
             "pixel_dist_xy",
             "pixel_dist_x",
@@ -83,6 +84,7 @@ class GeoReferencingOutput(OutputCreator):
                 o["error_x"] = qp.error_lonlat[0]
                 o["error_y"] = qp.error_lonlat[1]
                 o["distance"] = qp.error_km
+                o["error_scale"] = qp.error_scale
                 o["pixel_dist_xx"] = qp.lonlat_xp[0]
                 o["pixel_dist_xy"] = qp.lonlat_xp[1]
                 o["pixel_dist_x"] = qp.dist_xp_km
@@ -108,6 +110,7 @@ class SummaryOutput(OutputCreator):
             "lon",
             "extraction",
             "rmse",
+            "error_scale",
             "confidence",
         ]
 
@@ -122,6 +125,7 @@ class SummaryOutput(OutputCreator):
                 "lon": "",
                 "extraction": "",
                 "rmse": pipeline_result.data["rmse"],
+                "error_scale": pipeline_result.data["error_scale"],
                 "confidence": pipeline_result.data["query_pts"][0].confidence,
             }
         ]

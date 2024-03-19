@@ -31,6 +31,7 @@ from tasks.geo_referencing.roi_extractor import (
 )
 from tasks.metadata_extraction.geocoder import Geocoder, NominatimGeocoder
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
+from tasks.metadata_extraction.scale import ScaleExtractor
 from tasks.metadata_extraction.text_filter import FilterMode, TextFilter
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
@@ -205,6 +206,7 @@ def create_geo_referencing_pipelines(
         )
         tasks.append(UTMCoordinatesExtractor("fifth"))
         tasks.append(rfGeocoder("geocoded-georeferencing"))
+    tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     p.append(
