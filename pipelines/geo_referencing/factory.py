@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 from pipelines.geo_referencing.output import (
+    OutputCreator,
     GCPOutput,
     GeopackageIntegrationOutput,
     GeoReferencingOutput,
@@ -397,13 +398,15 @@ def create_geo_referencing_pipelines(
     return p
 
 
-def create_geo_referencing_pipeline(model_path: str) -> Pipeline:
+def create_geo_referencing_pipeline(
+    segmentation_model_path: str, outputs: List[OutputCreator]
+) -> Pipeline:
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            model_path,
+            segmentation_model_path,
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -458,4 +461,4 @@ def create_geo_referencing_pipeline(model_path: str) -> Pipeline:
     tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    return Pipeline("wally-finder", "wally-finder", [GCPOutput("schema")], tasks)
+    return Pipeline("wally-finder", "wally-finder", outputs, tasks)

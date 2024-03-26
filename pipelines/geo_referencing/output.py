@@ -184,11 +184,10 @@ class JSONWriter:
             output_target.append(o.data)
         json_raw = jsons.dumps(output_target, indent=4)
 
-        file_path = params["path"]
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
         # Writing to output file if path specified
         if "path" in params:
+            file_path = params["path"]
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, "w") as f_out:
                 f_out.write(json_raw)
 
@@ -461,3 +460,51 @@ class GeopackageIntegrationOutput(OutputCreator):
         return GeopackageOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, db
         )
+
+
+class CDROutput(OutputCreator):
+    def __init__(self, id):
+        super().__init__(id)
+
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
+        assert pipeline_result.image is not None
+        query_points = pipeline_result.data["query_pts"]
+        projection_raw = pipeline_result.data["projection"]
+        datum_raw = pipeline_result.data["datum"]
+        projection_mapped = get_projection(datum_raw)
+
+        res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
+
+        gcps = []
+        for qp in query_points:
+            o = {
+                "gcp_id": f"{len(gcps) + 1}",
+                "map_geom": {"latitude": qp.lonlat[1], "longitude": qp.lonlat[0]},
+                "px_geom": {"columns_from_left": qp.xy[0], "rows_from_top": qp.xy[1]},
+                "confidence": qp.confidence,
+                "model": "uncharted",
+                "model_version": "0.0.1",
+                "crs": projection_mapped,
+            }
+            gcps.append(o)
+
+        res.data = {
+            "cog_id": pipeline_result.raster_id,
+            "georeference_results": [
+                {
+                    "likely_CRSs": [projection_mapped],
+                    "projections": [
+                        {
+                            "crs": projection_mapped,
+                            "gcp_ids": [gcp["gcp_id"] for gcp in gcps],
+                            "file_name": f"lara-{pipeline_result.raster_id}.tif",
+                        }
+                    ],
+                }
+            ],
+            "gcps": gcps,
+            "system": "uncharted",
+            "system_version": "0.0.1",
+        }
+
+        return res
