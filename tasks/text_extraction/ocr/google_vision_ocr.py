@@ -191,7 +191,7 @@ class GoogleVisionOCR:
 
         if p_union.geom_type == "MultiPolygon":
             # input polygons don't overlap, so merge into one single 'parent' polygon using concave hull
-            p_union = concave_hull(p_union, ratio=0.0)
+            p_union = concave_hull(p_union, ratio=1)
         # remove any redundant vertices in final polygon
         p_union = p_union.simplify(0.0)
 

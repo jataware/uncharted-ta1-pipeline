@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 from pipelines.geo_referencing.output import (
+    OutputCreator,
     GCPOutput,
     GeopackageIntegrationOutput,
     GeoReferencingOutput,
@@ -31,6 +32,7 @@ from tasks.geo_referencing.roi_extractor import (
 )
 from tasks.metadata_extraction.geocoder import Geocoder, NominatimGeocoder
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
+from tasks.metadata_extraction.scale import ScaleExtractor
 from tasks.metadata_extraction.text_filter import FilterMode, TextFilter
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
@@ -114,7 +116,7 @@ def create_geo_referencing_pipelines(
     tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
-    p.append(
+    """p.append(
         Pipeline(
             "tile",
             "tile",
@@ -129,7 +131,7 @@ def create_geo_referencing_pipelines(
             ],
             tasks,
         )
-    )
+    )"""
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -203,8 +205,9 @@ def create_geo_referencing_pipelines(
                 run_centres=True,
             )
         )
+        tasks.append(UTMCoordinatesExtractor("fifth"))
         tasks.append(rfGeocoder("geocoded-georeferencing"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
+    tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     p.append(
@@ -292,7 +295,7 @@ def create_geo_referencing_pipelines(
     tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    p.append(
+    """p.append(
         Pipeline(
             "roi poly image",
             "roi poly",
@@ -307,7 +310,7 @@ def create_geo_referencing_pipelines(
             ],
             tasks,
         )
-    )
+    )"""
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
@@ -375,7 +378,7 @@ def create_geo_referencing_pipelines(
     tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    p.append(
+    """p.append(
         Pipeline(
             "roi poly roi",
             "roi poly",
@@ -390,18 +393,20 @@ def create_geo_referencing_pipelines(
             ],
             tasks,
         )
-    )
+    )"""
 
     return p
 
 
-def create_geo_referencing_pipeline(model_path: str) -> Pipeline:
+def create_geo_referencing_pipeline(
+    segmentation_model_path: str, outputs: List[OutputCreator]
+) -> Pipeline:
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            model_path,
+            segmentation_model_path,
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -456,4 +461,4 @@ def create_geo_referencing_pipeline(model_path: str) -> Pipeline:
     tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    return Pipeline("wally-finder", "wally-finder", [GCPOutput("schema")], tasks)
+    return Pipeline("wally-finder", "wally-finder", outputs, tasks)

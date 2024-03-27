@@ -10,7 +10,7 @@ from PIL.Image import Image as PILImage
 from PIL import Image
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
-from pipelines.geo_referencing.output import JSONWriter, ObjectOutput
+from pipelines.geo_referencing.output import GCPOutput, JSONWriter, ObjectOutput
 from tasks.common.pipeline import Pipeline, PipelineInput
 from tasks.geo_referencing.georeference import QueryPoint
 
@@ -119,7 +119,7 @@ def start_server():
     p = parser.parse_args()
 
     global georef_pipeline
-    georef_pipeline = create_geo_referencing_pipeline(p.model)
+    georef_pipeline = create_geo_referencing_pipeline(p.model, [GCPOutput("schema")])
 
     app.run(host="0.0.0.0", port=5000)
 
