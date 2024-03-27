@@ -19,7 +19,7 @@ from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
 from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
 from util.coordinate import absolute_minmax
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("coordinates_extractor")
 
@@ -71,6 +71,12 @@ LOC_TYPES_PASSLIST_NOM = [
     "hamlet",
     "locality",
 ]
+
+
+class ParsedDegree:
+    degree: float
+    minutes: float
+    seconds: float
 
 
 class CoordinateInput:
@@ -183,6 +189,36 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
         return lon_pts, lat_pts
 
+    def _parse_groups(self, groups: List[str]) -> Optional[ParsedDegree]:
+        parsed = ParsedDegree()
+        try:
+            deg = RE_NONNUMERIC.sub("", groups[0])
+            deg = float(deg)
+        except:
+            return None  # not valid
+
+        try:
+            minutes = RE_NONNUMERIC.sub("", groups[3])
+            if minutes:
+                minutes = float(minutes)
+            else:
+                minutes = 0.0
+        except:
+            minutes = 0.0
+        try:
+            seconds = RE_NONNUMERIC.sub("", groups[4])
+            if seconds:
+                seconds = float(seconds)
+            else:
+                seconds = 0.0
+        except:
+            seconds = 0.0
+
+        parsed.degree = deg
+        parsed.minutes = minutes
+        parsed.seconds = seconds
+        return parsed
+
     def _extract_lonlat(
         self,
         input: CoordinateInput,
@@ -221,7 +257,31 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     m_span = (m.start(), m.end(), len(block.text))
                     ok, deg_parsed = self._parse_dms(m_groups)
                     if ok:
-                        dms_matches[idx] = (m_groups, m_span, deg_parsed)
+                        parsed_dms = self._parse_groups(m_groups)  #   type:ignore
+                        if parsed_dms:
+                            # minutes and seconds expected in certain increments
+                            if self._check_degree_increments(
+                                int(parsed_dms.minutes), int(parsed_dms.seconds)
+                            ):
+                                dms_matches[idx] = (m_groups, m_span, deg_parsed)
+                            else:
+                                logger.info(
+                                    f"Excluding candidate point due to unexpected degree increment: {deg_parsed}"
+                                )
+                                self._add_param(
+                                    input.input,
+                                    str(uuid.uuid4()),
+                                    "coordinate-excluded",
+                                    {
+                                        "bounds": ocr_to_coordinates(
+                                            ocr_text_blocks.extractions[idx].bounds
+                                        ),
+                                        "text": ocr_text_blocks.extractions[idx].text,
+                                    },
+                                    "excluded due to invalid increment",
+                                )
+                        else:
+                            dms_matches[idx] = (m_groups, m_span, deg_parsed)
             if not is_match:
                 matches_iter = RE_DEGMIN.finditer(block.text)
                 for m in matches_iter:
@@ -294,52 +354,20 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         coord_lon_results = {}
         # ---- Check degress-minutes-seconds extractions...
         for idx, (groups, span, _) in dms_matches.items():
-            try:
-                deg = RE_NONNUMERIC.sub("", groups[0])
-                deg = float(deg)
-            except:
-                continue  # not valid
-
-            try:
-                minutes = RE_NONNUMERIC.sub("", groups[3])
-                if minutes:
-                    minutes = float(minutes)
-                else:
-                    minutes = 0.0
-            except:
-                minutes = 0.0
-            try:
-                seconds = RE_NONNUMERIC.sub("", groups[4])
-                if seconds:
-                    seconds = float(seconds)
-                else:
-                    seconds = 0.0
-            except:
-                seconds = 0.0
-
-            # convert DMS to decimal degrees
-            deg_decimal = deg + minutes / 60.0 + seconds / 3600.0
-
-            # minutes and seconds expected in certain increments
-            if not self._check_degree_increments(int(minutes), int(seconds)):
-                logger.info(
-                    f"Excluding candidate point due to unexpected degree increment: {deg_decimal}"
-                )
-                self._add_param(
-                    input.input,
-                    str(uuid.uuid4()),
-                    "coordinate-excluded",
-                    {
-                        "bounds": ocr_to_coordinates(
-                            ocr_text_blocks.extractions[idx].bounds
-                        ),
-                        "text": ocr_text_blocks.extractions[idx].text,
-                    },
-                    "excluded due to invalid increment",
-                )
+            parsed_dms = self._parse_groups(groups)
+            if parsed_dms is None:
                 continue
 
-            if self._check_consecutive(deg, minutes, seconds):
+            # convert DMS to decimal degrees
+            deg_decimal = (
+                parsed_dms.degree
+                + parsed_dms.minutes / 60.0
+                + parsed_dms.seconds / 3600.0
+            )
+
+            if self._check_consecutive(
+                parsed_dms.degree, parsed_dms.minutes, parsed_dms.seconds
+            ):
                 logger.info("Excluding candidate point: {}".format(deg_decimal))
                 self._add_param(
                     input.input,
