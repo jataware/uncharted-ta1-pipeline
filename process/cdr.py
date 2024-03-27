@@ -145,9 +145,9 @@ def process_event():
         # handle event directly or create lara request
         match evt:
             case Event(event="ping"):
-                print("Received PING!")
+                logger.info("received ping event")
             case Event(event="map.process"):
-                print("Received MAP!")
+                logger.info("Received map event")
                 map_event = MapEventPayload.model_validate(evt.payload)
                 lara_req = Request(
                     id=evt.id,
@@ -157,10 +157,10 @@ def process_event():
                     output_format="cdr",
                 )
             case _:
-                print("Nothing to do for event: %s", evt)
+                logger.info(f"received unsupported {evt} event")
 
     except Exception:
-        print("background processing event: %s", evt)
+        logger.error(f"exception processing {evt} event")
         raise
 
     if lara_req is None:
@@ -168,13 +168,8 @@ def process_event():
         return Response({"ok": "success"}, status=200, mimetype="application/json")
 
     # queue event in background since it may be blocking on the queue
-    threading.Thread(
-        target=queue_event,
-        args=(
-            request_channel,
-            lara_req,
-        ),
-    ).start()
+    assert request_channel is not None
+    queue_event(request_channel, lara_req)
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
 
