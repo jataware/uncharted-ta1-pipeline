@@ -11,15 +11,18 @@ RUN apt-get install -y libgdal-dev g++ --no-install-recommends && apt-get clean 
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
 
-# detectron2 and torch are not pip installable and need to be handled separately
+# install torch separately to avoid conflicts with detectron2
+RUN pip install torch==2.0.1
+
+# copy over the tasks libarary and install it
+COPY tasks tasks
+# install lara packages - including point detection extras
+RUN pip install -e ./tasks[segmentation]
+RUN pip install -e ./tasks[point]
+
 COPY schema schema
 COPY pipelines pipelines
-COPY tasks tasks
 
-# install lara packages - including point detection extras
-RUN pip install -e ./tasks[point]
 RUN pip install -e ./pipelines/point_extraction
 
 ENTRYPOINT ["python3", "-m", "pipelines.point_extraction.run_server"]
-
-
