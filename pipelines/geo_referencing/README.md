@@ -2,7 +2,7 @@
 ## LARA Georeferencing Pipeline
 
 
-This pipeline georeferences an input raster map image. The georeferencing approach revolves around parsing text in the image to extract coordinates, and then using those coordinates to georeference ground control points. It currently attempts to parse Degrees, Minutes, Seconds style coordinates and UTM style coordinates.
+This pipeline georeferences an input raster map image. The georeferencing approach revolves around parsing text in the image to extract coordinates, and then using those coordinates to georeference ground control points. It currently attempts to parse Degrees, Minutes, Seconds style coordinates and UTM style coordinates. There is initial support to extract potential geocoding options as basis for extraction of latitude and longitude transformations.
 
 If run through CLI, the georeferencing system is currently structured to execute 5 independent pipelines, each producing 5 outputs.
 
@@ -77,7 +77,8 @@ export OPENAI_API_KEY=<OPEN API KEY>
 python3 -m pipelines.geo_referencing.run_pipeline \
     --input /image/input/dir \
     --output /model/output/dir \
-    --workdir /model/working/dir
+    --workdir /model/working/dir \
+    --extract_metadata=True
 ```
 
 ### REST Service ###
@@ -105,7 +106,7 @@ cd deploy
 export GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_api_credentials.json
 export OPENAI_API_KEY=<OPEN API KEY>
 
-./run.sh /model/working/dir
+./run.sh /model/working/dir /path/to/segmentation/weights
 ```
 
 
