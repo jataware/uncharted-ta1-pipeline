@@ -1,7 +1,9 @@
 import argparse
+import atexit
 import httpx
 import json
 import logging
+import ngrok
 import os
 import pika
 import rasterio as rio
@@ -35,12 +37,20 @@ request_channel: Optional[Channel] = None
 
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 CDR_HOST = "https://api.cdr.land"
+CDR_SYSTEM_NAME = "uncharted"
+CDR_SYSTEM_VERSION = "0.0.1"
+CDR_CALLBACK_SECRET = "maps rock"
 
 
 class Settings:
     cdr_api_token: str
     cdr_host: str
     workdir: str
+    system_name: str
+    system_version: str
+    callback_secret: str
+    callback_url: str
+    registration_id: str
 
 
 settings: Settings
@@ -190,10 +200,6 @@ def process_image(image_id: str):
     queue_event(request_channel, req)
 
 
-def start_app():
-    pass
-
-
 def process_result(
     channel: Channel,
     method: spec.Basic.Deliver,
@@ -256,6 +262,59 @@ def start_result_listener(result_queue: str):
     result_channel.start_consuming()
 
 
+def register_system():
+    logger.info("registering system with cdr")
+    headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
+
+    registration = {
+        "name": settings.system_name,
+        "version": settings.system_version,
+        "callback_url": settings.callback_url,
+        "webhook_secret": settings.callback_secret,
+        # Leave blank if callback url has no auth requirement
+        # "auth_header": "",
+        # "auth_token": "",
+        # Registers for ALL events
+        "events": [],
+    }
+
+    client = httpx.Client(follow_redirects=True)
+
+    r = client.post(
+        f"{settings.cdr_host}/user/me/register", json=registration, headers=headers
+    )
+
+    # Log our registration_id such we can delete it when we close the program.
+    print(r.json())
+    settings.registration_id = r.json()["id"]
+    logger.info("system registered with cdr")
+
+
+def clean_up():
+    logger.info("unregistering system with cdr")
+    # delete our registered system at CDR on program end
+    headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
+    client = httpx.Client(follow_redirects=True)
+    client.delete(
+        f"{settings.cdr_host}/user/me/register/{settings.registration_id}",
+        headers=headers,
+    )
+    logger.info("system no longer registered with cdr")
+
+
+def start_app():
+    # make it accessible from the outside
+    listener = ngrok.forward(5001, authtoken_from_env=True)
+    settings.callback_url = listener.url() + "/process_event"
+
+    register_system()
+
+    # wire up the cleanup of the registration
+    atexit.register(clean_up)
+
+    app.run(host="0.0.0.0", port=5001)
+
+
 def main():
     logging.basicConfig(
         level=logging.INFO,
@@ -276,12 +335,15 @@ def main():
     settings.cdr_api_token = CDR_API_TOKEN
     settings.cdr_host = CDR_HOST
     settings.workdir = p.workdir
+    settings.system_name = CDR_SYSTEM_NAME
+    settings.system_version = CDR_SYSTEM_VERSION
+    settings.callback_secret = CDR_CALLBACK_SECRET
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
     if p.mode == "process" and (p.cog_id == "" or p.cog_id is None):
         print("process mode requires a cog id")
         exit(1)
-    elif p.mode == "host" and (not p.cog_id == "" or p.cog_id is not None):
+    elif p.mode == "host" and (not p.cog_id == "" and p.cog_id is not None):
         print("a cog id cannot be provided if host mode is selected")
         exit(1)
     logger.info(f"starting cdr in {p.mode} mode")
@@ -300,7 +362,7 @@ def main():
     elif p.mode == "process":
         process_image(p.cog_id)
 
-    # ensure propoer closure of channels
+    # TODO: ensure propoer closure of channels
 
 
 if __name__ == "__main__":
