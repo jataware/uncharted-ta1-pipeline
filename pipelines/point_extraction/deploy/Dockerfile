@@ -17,9 +17,9 @@ COPY pipelines pipelines
 COPY tasks tasks
 
 # install lara packages - including point detection extras
+RUN pip install torch==2.0.1
+RUN pip install -e ./tasks[segmentation]
 RUN pip install -e ./tasks[point]
 RUN pip install -e ./pipelines/point_extraction
 
 ENTRYPOINT ["python3", "-m", "pipelines.point_extraction.run_server"]
-
-
