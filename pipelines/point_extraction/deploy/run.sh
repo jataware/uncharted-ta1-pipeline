@@ -5,6 +5,8 @@ docker network create lara
 docker run \
     --rm \
     --name point_extraction \
+    -e GOOGLE_APPLICATION_CREDENTIALS=/credentials.json \
+    -v $GOOGLE_APPLICATION_CREDENTIALS:/credentials.json \
     -v $1:/workdir \
     --net lara \
     -p 5000:5000 \
