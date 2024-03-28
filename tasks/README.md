@@ -121,4 +121,18 @@ A pipeline using these task, along with a CLI and sever wrapper are available at
 
 ### Georeferencing Tasks ###
 
+**Goal:** map the pixel coordinates to world coordinates including extraction of the projection
+
+This module relies on image segmentation to identify the map area, OCR output as basis for georeferencing, and metadata extraction to build a geofence and to identify potential geocoding opportunities.
+
+#### Using the Georeferencing Task
+
+* Georeferencing is done through a series of tasks culminating with the `GeoReference` class
+* A valid OpenAPI key must be supplied through the `OPENAI_API_KEY` environment variable
+* To access the Google Vision API, the `GOOGLE_APPLICATION_CREDENTIALS` environment variable must be set to the google vision credentials json file
+* The path to the segmentation weights file must be provided as argument
+* Output is a list of `QueryPoint` object containing the mapped coordinates and error if ground truth is specified, as well as the extracted projection
+
+A pipeline using this task, along with a CLI and sever wrapper are available at [../pipelines/geo_referencing](../pipelines/geo_referencing)
+
 ...
