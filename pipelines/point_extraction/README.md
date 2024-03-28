@@ -64,6 +64,7 @@ To run from the repository root directory:
 ```
 export AWS_ACCESS_KEY_ID=<KEY ID>
 export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
+export GOOGLE_APPLICATION_CREDENTIALS=/credentinals/google_api_credentials.json
 
 python3 -m pipelines.point_extraction.run_pipeline \
     --input /image/input/dir \
@@ -79,6 +80,8 @@ In the S3 case, the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment 
 
 The `model_segmenter` param is optional. If present each image will be segmented and only the map area will be used for point symbol extraction.
 
+OCR text extraction is used to extract the "dip" magnitude labels for strike/dip point symbols. For this functionality, the `GOOGLE_APPLICATION_CREDENTIALS` environment variables must be set.
+
 ### REST Service ###
 `run_server.py` provides the pipeline as a REST service with the following endpoints:
 * ```POST:  /api/process_image``` - Sends an image (as binary file buffer) to the segmenter pipeline for analysis. Results are JSON string.
@@ -88,6 +91,7 @@ To start the server:
 ```
 export AWS_ACCESS_KEY_ID=<KEY ID>
 export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
+export GOOGLE_APPLICATION_CREDENTIALS=/credentinals/google_api_credentials.json
 
 python3 -m pipelines.point_extraction.run_server \
     --workdir /model/workingdir \
