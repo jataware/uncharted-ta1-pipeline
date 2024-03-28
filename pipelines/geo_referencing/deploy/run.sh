@@ -6,4 +6,4 @@ docker run \
     -v $1:/workdir \
     --net lara \
     -p 5000:5000 \
-    docker.uncharted.software/geo-ref:latest --workdir /workdir --model pipelines/segmentation_weights/layoutlmv3_xsection_20231201
+    uncharted/lara-georef:latest --workdir /workdir --model pipelines/segmentation_weights/layoutlmv3_xsection_20231201

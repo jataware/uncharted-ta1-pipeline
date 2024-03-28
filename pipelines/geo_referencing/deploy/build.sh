@@ -23,7 +23,7 @@ else
 fi
 
 # run the build
-docker build -t docker.uncharted.software/geo-ref:latest .
+docker build -t uncharted/lara-georef:latest .
 
 # cleanup the temp files
 rm -rf pipelines

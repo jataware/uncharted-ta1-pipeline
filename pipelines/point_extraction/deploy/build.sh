@@ -35,7 +35,7 @@ fi
 
 
 # run the build
-docker build -t docker.uncharted.software/point_extraction:latest .
+docker build -t uncharted/lara-point-extract:latest .
 
 # cleanup the temp files
 rm -rf pipelines
