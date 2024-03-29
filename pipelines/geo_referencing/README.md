@@ -96,17 +96,32 @@ export OPENAI_API_KEY=<OPEN API KEY>
 python3 -m pipelines.geo_referencing.run_server \
     --workdir /model/workingdir
 ```
+To test the server:
+
+```
+curl localhost:5000/healthcheck
+```
+
+To georeference an image:
+
+```
+curl http://localhost:5000/api/process_image \
+  --header 'Content-Type: image/tiff' \
+  --data-binary @/path/to/map/image.tif
+  --output output/file/path.json
+```
 
 ### Dockerized deployment
-The `deploy/build.sh` script can be used to build the server above into a Docker image.  Once built, the server can be started as a container:
+
+A dockerized version REST service described above is available that includes model weights.  OCR text and metadata extraction require
+the `GOOGLE_APPLICATION_CREDENTIALS` and `OPENAI_API_KEY` environment variables be set, and a
+a local directory for caching results must be provided.  To run:
 
 ```
 cd deploy
-
-export GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_api_credentials.json
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google_api_credentials.json
 export OPENAI_API_KEY=<OPEN API KEY>
-
-./run.sh /model/working/dir /path/to/segmentation/weights
+./run.sh /path/to/workdir
 ```
 
-
+The `deploy/build.sh` script can also be used to build the Docker image from source.
