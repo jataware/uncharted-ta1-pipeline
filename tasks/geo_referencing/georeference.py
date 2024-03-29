@@ -70,15 +70,16 @@ class GeoReference(Task):
 
         query_pts = None
         if "query_pts" in input.request:
+            logger.info("reading query points from request")
             query_pts = input.request["query_pts"]
         if not query_pts or len(query_pts) < 1:
+            logger.info("reading query points from task input")
             query_pts = input.get_data("query_pts")
 
         lon_check = list(map(lambda x: x[0], lon_pts))
         lat_check = list(map(lambda x: x[0], lat_pts))
-        print(f"LAT CHECK: {lat_check}")
-        print(f"LON CHECK: {lon_check}")
         num_keypoints = min(len(lon_pts), len(lat_pts))
+        logger.info(f"{num_keypoints} key points available for project")
         confidence = 0
         if (
             num_keypoints < 2
@@ -86,10 +87,13 @@ class GeoReference(Task):
             or (abs(max(lat_check) - min(lat_check)) > 40)
         ):
             # still not enough key-points, just use 'clue' lon/lat as fallback query response
+            logger.info("not enough key points to generate a projection")
             geo_projn = None
         else:
             # ----- Use extracted keypoints to estimate geographic projection
+            logger.info("sufficient key points to generate a projection")
             confidence = self._calculate_confidence(lon_pts, lat_pts)
+            logger.info(f"confidence of projection is {confidence}")
             geo_projn = GeoProjection(self._poly_order)
             geo_projn.estimate_pxl2geo_mapping(
                 list(map(lambda x: x[1], lon_pts.items())),
@@ -229,6 +233,7 @@ class GeoReference(Task):
     def _determine_hemispheres(
         self, input: TaskInput, query_pts: List[QueryPoint]
     ) -> Tuple[float, float]:
+        logger.info("determining hemisphere for georeferencing")
         lon_multiplier = 1
         lon_determined = False
         lat_multiplier = 1
@@ -288,6 +293,7 @@ class GeoReference(Task):
     def _update_hemispheres(
         self, query_pts: List[QueryPoint], lon_multiplier: float, lat_multiplier: float
     ) -> List[QueryPoint]:
+        logger.info("updating hemispheres for georeferencing")
         for qp in query_pts:
             qp.lonlat = (
                 abs(qp.lonlat[0]) * lon_multiplier,
@@ -305,6 +311,7 @@ class GeoReference(Task):
         return query_pts
 
     def _determine_projection(self, input: TaskInput) -> Tuple[str, str]:
+        logger.info("determining projection for georeferencing")
         # parse extracted metadata
         metadata = input.parse_data(
             METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate

@@ -7,7 +7,7 @@ name = "lara-georeferencing"
 version = "0.1.0"
 description = "LARA georeferencing pipeline and server"
 readme = "README.md"
-dependencies = ["jsons", "flask", "lara-tasks", "mypy-boto3-s3"]
+dependencies = ["jsons", "flask", "lara-tasks", "mypy-boto3-s3", "criticalmaas.ta1-geopackage"]
 
 [tool.setuptools.packages]
 find = {}

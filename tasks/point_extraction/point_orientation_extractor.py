@@ -183,9 +183,16 @@ class PointOrientationExtractor(Task):
             )
 
         # get OCR output
-        img_text = DocTextExtraction.model_validate(
-            input.data[TEXT_EXTRACTION_OUTPUT_KEY]
+        img_text = (
+            DocTextExtraction.model_validate(input.data[TEXT_EXTRACTION_OUTPUT_KEY])
+            if TEXT_EXTRACTION_OUTPUT_KEY in input.data
+            else DocTextExtraction(doc_id=input.raster_id, extractions=[])
         )
+
+        if len(img_text.extractions) == 0:
+            logger.warn(
+                "Skipping extraction of dip magnitudes - no OCR data available."
+            )
 
         # build OCR tree index
         ocr_polygon_index = point_extractor_utils.build_ocr_index(img_text.extractions)

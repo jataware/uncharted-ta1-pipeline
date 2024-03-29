@@ -64,6 +64,7 @@ To run from the repository root directory:
 ```
 export AWS_ACCESS_KEY_ID=<KEY ID>
 export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
+export GOOGLE_APPLICATION_CREDENTIALS=/credentinals/google_api_credentials.json
 
 python3 -m pipelines.point_extraction.run_pipeline \
     --input /image/input/dir \
@@ -79,6 +80,8 @@ In the S3 case, the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment 
 
 The `model_segmenter` param is optional. If present each image will be segmented and only the map area will be used for point symbol extraction.
 
+OCR text extraction is used to extract the "dip" magnitude labels for strike/dip point symbols. For this functionality, the `GOOGLE_APPLICATION_CREDENTIALS` environment variables must be set.
+
 ### REST Service ###
 `run_server.py` provides the pipeline as a REST service with the following endpoints:
 * ```POST:  /api/process_image``` - Sends an image (as binary file buffer) to the segmenter pipeline for analysis. Results are JSON string.
@@ -88,6 +91,7 @@ To start the server:
 ```
 export AWS_ACCESS_KEY_ID=<KEY ID>
 export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
+export GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_api_credentials.json
 
 python3 -m pipelines.point_extraction.run_server \
     --workdir /model/workingdir \
@@ -95,16 +99,33 @@ python3 -m pipelines.point_extraction.run_server \
     --model_segmenter https://s3/compatible/endpoint/segmentation_model_weights_dir
 ```
 
+To test the server:
+
+```
+curl localhost:5000/healthcheck
+```
+
+To extract points from an image:
+
+```
+curl http://localhost:5000/api/process_image \
+  --header 'Content-Type: image/tiff' \
+  --data-binary @/path/to/map/image.tif
+  --output output/file/path.json
+```
+
 ### Dockerized deployment
-The `deploy/build.sh` script can be used to build the server above into a Docker image.  Once built, the server can be started as a container:
+
+A dockerized version REST service described above is available that includes model weights.  Similar to the steps above,
+OCR text extraction for "dip" magnitude labels need the `GOOGLE_APPLICATION_CREDENTIALS` environment variables must be set, and
+a local directory for caching results must be provided.  To run:
 
 ```
 cd deploy
-
-export AWS_ACCESS_KEY_ID=<KEY ID>
-export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
-
-./run.sh /model/workingdir https://s3/compatible/endpoint/model_weights_dir
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google_api_credentials.json
+./run.sh /path/to/workdir
 ```
+
+The `deploy/build.sh` script can also be used to build the Docker image from source.
 
 

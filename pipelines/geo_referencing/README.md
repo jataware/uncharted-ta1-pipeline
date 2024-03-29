@@ -2,7 +2,7 @@
 ## LARA Georeferencing Pipeline
 
 
-This pipeline georeferences an input raster map image. The georeferencing approach revolves around parsing text in the image to extract coordinates, and then using those coordinates to georeference ground control points. It currently attempts to parse Degrees, Minutes, Seconds style coordinates and UTM style coordinates.
+This pipeline georeferences an input raster map image. The georeferencing approach revolves around parsing text in the image to extract coordinates, and then using those coordinates to georeference ground control points. It currently attempts to parse Degrees, Minutes, Seconds style coordinates and UTM style coordinates. There is initial support to extract potential geocoding options as basis for extraction of latitude and longitude transformations.
 
 If run through CLI, the georeferencing system is currently structured to execute 5 independent pipelines, each producing 5 outputs.
 
@@ -77,7 +77,8 @@ export OPENAI_API_KEY=<OPEN API KEY>
 python3 -m pipelines.geo_referencing.run_pipeline \
     --input /image/input/dir \
     --output /model/output/dir \
-    --workdir /model/working/dir
+    --workdir /model/working/dir \
+    --extract_metadata=True
 ```
 
 ### REST Service ###
@@ -95,17 +96,32 @@ export OPENAI_API_KEY=<OPEN API KEY>
 python3 -m pipelines.geo_referencing.run_server \
     --workdir /model/workingdir
 ```
+To test the server:
+
+```
+curl localhost:5000/healthcheck
+```
+
+To georeference an image:
+
+```
+curl http://localhost:5000/api/process_image \
+  --header 'Content-Type: image/tiff' \
+  --data-binary @/path/to/map/image.tif
+  --output output/file/path.json
+```
 
 ### Dockerized deployment
-The `deploy/build.sh` script can be used to build the server above into a Docker image.  Once built, the server can be started as a container:
+
+A dockerized version REST service described above is available that includes model weights.  OCR text and metadata extraction require
+the `GOOGLE_APPLICATION_CREDENTIALS` and `OPENAI_API_KEY` environment variables be set, and a
+a local directory for caching results must be provided.  To run:
 
 ```
 cd deploy
-
-export GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_api_credentials.json
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google_api_credentials.json
 export OPENAI_API_KEY=<OPEN API KEY>
-
-./run.sh /model/working/dir
+./run.sh /path/to/workdir
 ```
 
-
+The `deploy/build.sh` script can also be used to build the Docker image from source.
