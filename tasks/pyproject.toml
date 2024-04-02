@@ -17,7 +17,7 @@ dependencies = [
     "grpcio",
     "boto3",
     "types-boto3",
-    "pillow",
+    "pillow=10.2",
     "geopy",
     "matplotlib",
     "opencv-python>=4.8",
