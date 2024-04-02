@@ -36,7 +36,7 @@ def image_file_input_iterator_filesystem(test_path: str):
     for doc_id, image in iterator:
         expected_doc_id, expected_image = expected_images.pop(0)
         assert doc_id == expected_doc_id
-        assert list(image.getdata()) == list(expected_image.getdata())
+        assert list(image.getdata()) == list(expected_image.getdata())  #   type: ignore
 
     # Verify that StopIteration is raised when there are no more images
     try:
@@ -97,7 +97,7 @@ def image_file_input_iterator_s3(input_path: str):
     for doc_id, image in iterator:
         expected_doc_id, expected_image = expected_images.pop(0)
         assert doc_id == expected_doc_id
-        assert list(image.getdata()) == list(expected_image.getdata())
+        assert list(image.getdata()) == list(expected_image.getdata())  #   type: ignore
 
     # Verify that StopIteration is raised when there are no more images
     try:

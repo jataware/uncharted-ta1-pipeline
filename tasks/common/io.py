@@ -151,7 +151,7 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
             im.verify()
             im.close()
             im = Image.open(image_path)
-            im.transpose(Image.FLIP_LEFT_RIGHT)
+            im.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
             im.close()
             return True
         except:
