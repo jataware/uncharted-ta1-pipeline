@@ -40,6 +40,7 @@ CDR_HOST = "https://api.cdr.land"
 CDR_SYSTEM_NAME = "uncharted"
 CDR_SYSTEM_VERSION = "0.0.1"
 CDR_CALLBACK_SECRET = "maps rock"
+APP_PORT = 5001
 
 
 class Settings:
@@ -304,7 +305,7 @@ def clean_up():
 
 def start_app():
     # make it accessible from the outside
-    listener = ngrok.forward(5001, authtoken_from_env=True)
+    listener = ngrok.forward(APP_PORT, authtoken_from_env=True)
     settings.callback_url = listener.url() + "/process_event"
 
     register_system()
@@ -312,7 +313,7 @@ def start_app():
     # wire up the cleanup of the registration
     atexit.register(clean_up)
 
-    app.run(host="0.0.0.0", port=5001)
+    app.run(host="0.0.0.0", port=APP_PORT)
 
 
 def main():
