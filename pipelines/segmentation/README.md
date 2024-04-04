@@ -44,7 +44,7 @@ pip install -e .[segmentation]
 * Input is a image (ie binary image file buffer)
 * Ouput is the set of map polygons capturing the map region, legend areas and cross sections materialized as a:
   * `SegmentationResults` JSON object
-  * `PageExtraction` JSON object (the latter being part of the CMA TA1 schema)
+  * `FeatureResults` JSON object (the latter being part of the CMA TA1 CDR schema)
 
 ### Command Line Execution ###
 `run_pipeline.py` provides a command line wrapper around the segmentation pipeline, and allows for a directory map images to be processed serially.
