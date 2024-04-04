@@ -26,6 +26,7 @@ from process.queue import (
 )
 
 from schema.cdr_schemas.events import Event, MapEventPayload
+from schema.cdr_schemas.georeference import GeoreferenceResults
 
 from typing import Any, Dict, List, Optional
 
@@ -63,10 +64,13 @@ def create_channel(host: str) -> Channel:
     return connection.channel()
 
 
-def queue_event(channel: Channel, req: Request):
+def queue_event(req: Request):
+    request_channel = create_channel("localhost")
+    request_channel.queue_declare(queue=LARA_REQUEST_QUEUE_NAME)
+
     logger.info(f"sending request {req.id} for image {req.image_id} to lara queue")
     # send request to queue
-    channel.basic_publish(
+    request_channel.basic_publish(
         exchange="",
         routing_key=LARA_REQUEST_QUEUE_NAME,
         body=json.dumps(req.model_dump()),
@@ -149,19 +153,23 @@ def project_georeference(
 
 @app.route("/process_event", methods=["POST"])
 def process_event():
-    evt = request.json
+    logger.info("event callback started")
+    logger.info(f"request data {request.data}")
+    logger.info(f"request headers {request.headers}")
+    evt = request.get_json(force=True)
+    logger.info(f"event data received {evt}")
     lara_req = None
 
     try:
         # handle event directly or create lara request
-        match evt:
-            case Event(event="ping"):
+        match evt["event"]:
+            case "ping":
                 logger.info("received ping event")
-            case Event(event="map.process"):
+            case "map.process":
                 logger.info("Received map event")
-                map_event = MapEventPayload.model_validate(evt.payload)
+                map_event = MapEventPayload.model_validate(evt["payload"])
                 lara_req = Request(
-                    id=evt.id,
+                    id=evt["id"],
                     task="georeference",
                     image_id=map_event.cog_id,
                     image_url=map_event.cog_url,
@@ -179,13 +187,12 @@ def process_event():
         return Response({"ok": "success"}, status=200, mimetype="application/json")
 
     # queue event in background since it may be blocking on the queue
-    assert request_channel is not None
-    queue_event(request_channel, lara_req)
+    # assert request_channel is not None
+    queue_event(lara_req)
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
 
 def process_image(image_id: str):
-    assert request_channel is not None
     logger.info(f"processing image with id {image_id}")
 
     # build the request
@@ -198,7 +205,7 @@ def process_image(image_id: str):
     )
 
     # push the request onto the queue
-    queue_event(request_channel, req)
+    queue_event(req)
 
 
 def process_result(
@@ -218,6 +225,16 @@ def process_result(
 
     # reproject image to file on disk for pushing to CDR
     georef_result = json.loads(result.output)[0]
+
+    # validate the result by building the model classes
+    try:
+        GeoreferenceResults.model_validate(georef_result)
+    except:
+        logger.error(
+            "bad georeferencing result received so unable to send results to cdr"
+        )
+        raise
+
     projection = georef_result["georeference_results"][0]["projections"][0]
     gcps = georef_result["gcps"]
     output_file_name = projection["file_name"]
@@ -243,7 +260,7 @@ def process_result(
         headers=headers,
     )
     logger.info(
-        f"result for request {result.request.id} sent to CDR with response {resp.status_code}"
+        f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
     )
 
 
@@ -350,9 +367,9 @@ def main():
     logger.info(f"starting cdr in {p.mode} mode")
 
     # initializae the request channel
-    global request_channel
-    request_channel = create_channel(p.request_queue)
-    request_channel.queue_declare(queue=LARA_REQUEST_QUEUE_NAME)
+    # global request_channel
+    # request_channel = create_channel(p.request_queue)
+    # request_channel.queue_declare(queue=LARA_REQUEST_QUEUE_NAME)
 
     # start the listener for the results
     threading.Thread(target=start_result_listener, args=(p.result_queue,)).start()

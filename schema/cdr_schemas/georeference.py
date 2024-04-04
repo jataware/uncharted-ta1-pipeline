@@ -1,31 +1,49 @@
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
-from pydantic import BaseModel, Field, ConfigDict
-from enum import Enum
+from pydantic import BaseModel, ConfigDict, Field
 
-
-class PointType(str, Enum):
-    Point = "Point"
+from schema.cdr_schemas.area_extraction import Area_Extraction
+from schema.cdr_schemas.common import GeomType
 
 
 class Geom_Point(BaseModel):
     """
-    Geometry Point:
-    Point geometry in world coordinates (longitude, latitude).
+    Geometry Point
     """
 
-    coordinates: List[Optional[Union[float, int]]]
-    type: PointType = PointType.Point
+    latitude: Optional[Union[float, int]] = Field(
+        ...,
+        description="""
+            The latitude value for the world coordinate.
+        """,
+    )
+    longitude: Optional[Union[float, int]] = Field(
+        ...,
+        description="""
+            The longitude value for the world coordinate.
+        """,
+    )
+    type: GeomType = GeomType.Point
 
 
 class Pixel_Point(BaseModel):
     """
-    Pixel point.
-    Point geometry in pixel coordinates (columns from left, row from bottom).
+    Pixel point
     """
 
-    coordinates: List[Union[float, int]]
-    type: PointType = PointType.Point
+    rows_from_top: Union[float, int] = Field(
+        ...,
+        description="""
+            The number of rows from the top, equivalent to the usual y value in images.
+        """,
+    )
+    columns_from_left: Union[float, int] = Field(
+        ...,
+        description="""
+            The number of columns from the left, equivalent to the usual x value in images.
+        """,
+    )
+    type: GeomType = GeomType.Point
 
 
 class GroundControlPoint(BaseModel):
@@ -36,20 +54,20 @@ class GroundControlPoint(BaseModel):
     gcp_id: str = Field(
         ...,
         description="""
-            Your internal generated gcp id that helps connect to a 
+            Your internal generated gcp id that helps connect to a
             raster projection if one is created.
         """,
     )
     map_geom: Geom_Point = Field(
         ...,
         description="""
-            Point geometry, in world coordinates. [longitude, latitude].
+            Point geometry, in world coordinates.
         """,
     )
     px_geom: Pixel_Point = Field(
         ...,
         description="""
-            Point geometry, in pixel coordinates. [columns from left, row from bottom].
+            Point geometry, in pixel coordinates.
         """,
     )
     confidence: Optional[float] = Field(
@@ -113,14 +131,23 @@ class GeoreferenceResult(BaseModel):
     likely_CRSs: Optional[List[str]] = Field(
         ...,
         description="""
-            List of potential Coordinate Reference System specifically 
+            List of potential Coordinate Reference System specifically
             Projection Coordinate System for the map. ie ["EPSG:32612", "EPSG:32613"]
+        """,
+    )
+    map_area: Optional[Area_Extraction] = Field(
+        ...,
+        description="""
+            Polygon bordering the map area for this georeference result. There can
+            be many map areas on a cog so this would be the pixel polygon of one of those
+            areas that has been found.
+            The optional projections attached to this GeoreferenceResult should be referring to this area.
         """,
     )
     projections: Optional[List[ProjectionResult]] = Field(
         ...,
         description="""
-            For each projection raster produced return crs 
+            For each projection raster produced return crs
             and gcp ids used in the transform
         """,
     )
@@ -140,7 +167,7 @@ class GeoreferenceResults(BaseModel):
     georeference_results: Optional[List[GeoreferenceResult]] = Field(
         ...,
         description="""
-            A list of georeferencing results, which include projections, gcps, and crs info. 
+            A list of georeferencing results, which include projections, gcps, and crs info.
         """,
     )
     gcps: Optional[List[GroundControlPoint]] = Field(
