@@ -305,19 +305,45 @@ def register_system():
     logger.info("system registered with cdr")
 
 
-def clean_up():
-    logger.info("unregistering system with cdr")
-    # delete our registered system at CDR on program end
+def get_registrations() -> List[Dict[str, Any]]:
+    logger.info("getting list of existing registrations in CDR")
+
+    # query the listing endpoint in CDR
+    headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
+    client = httpx.Client(follow_redirects=True)
+    response = client.get(
+        f"{settings.cdr_host}/user/me/registrations",
+        headers=headers,
+    )
+
+    # parse json response
+    return json.loads(response.content)
+
+
+def unregister(registration_id: str):
     headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
     client = httpx.Client(follow_redirects=True)
     client.delete(
-        f"{settings.cdr_host}/user/me/register/{settings.registration_id}",
+        f"{settings.cdr_host}/user/me/register/{registration_id}",
         headers=headers,
     )
+
+
+def clean_up():
+    logger.info("unregistering system with cdr")
+    # delete our registered system at CDR on program end
+    unregister(settings.registration_id)
     logger.info("system no longer registered with cdr")
 
 
 def start_app():
+    # check if already registered and delete existing registrations for this name and token combination
+    registrations = get_registrations()
+    if len(registrations) > 0:
+        for r in registrations:
+            if r["name"] == settings.system_name:
+                unregister(r["id"])
+
     # make it accessible from the outside
     listener = ngrok.forward(APP_PORT, authtoken_from_env=True)
     settings.callback_url = listener.url() + "/process_event"
