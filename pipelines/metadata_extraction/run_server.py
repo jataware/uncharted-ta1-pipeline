@@ -37,20 +37,20 @@ def process_image():
             logging.warning(msg)
             return (msg, 500)
 
-        ta1_schema = app.config.get("ta1_schema", False)
+        cdr_schema = app.config.get("cdr_schema", False)
         # get ta1 schema output or internal output format
-        segmentation_result = (
+        metadata_result = (
             result[METADATA_EXTRACTION_OUTPUT_KEY]
-            if ta1_schema
-            else result["metadata_integration_output"]
+            if not cdr_schema
+            else result["metadata_cdr_output"]
         )
 
         # convert result to a JSON string and return
-        if isinstance(segmentation_result, BaseModelOutput):
-            result_json = json.dumps(segmentation_result.data.model_dump())
+        if isinstance(metadata_result, BaseModelOutput):
+            result_json = json.dumps(metadata_result.data.model_dump())
             return Response(result_json, status=200, mimetype="application/json")
-        elif isinstance(segmentation_result, BaseModelListOutput):
-            result_json = json.dumps([d.model_dump() for d in segmentation_result.data])
+        elif isinstance(metadata_result, BaseModelListOutput):
+            result_json = json.dumps([d.model_dump() for d in metadata_result.data])
             return Response(result_json, status=200, mimetype="application/json")
         else:
             msg = "No metadata extracted"
@@ -84,20 +84,21 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
-    parser.add_argument("--debug", type=bool, default=False)
+    parser.add_argument("--debug", action="store_true")
     parser.add_argument(
-        "--ta1_schema",
-        type=bool,
-        default=False,
+        "--cdr_schema",
+        action="store_true",
         help="Output results as TA1 json schema format",
     )
     p = parser.parse_args()
 
     # init segmenter
-    metadata_extraction = MetadataExtractorPipeline(p.workdir, p.model)
+    metadata_extraction = MetadataExtractorPipeline(
+        p.workdir, p.model, cdr_schema=p.cdr_schema
+    )
 
     #### start flask server
-    app.config["ta1_schema"] = p.ta1_schema
+    app.config["cdr_schema"] = p.cdr_schema
     if p.debug:
         app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
     else:

@@ -23,12 +23,13 @@ from tasks.common.pipeline import (
     Output,
     ImageOutput,
 )
-from schema.ta1_schema import (
-    Map,
-    MapFeatureExtractions,
-    MapMetadata,
-    GeoReferenceMeta,
-)
+
+from schema.cdr_schemas.metadata import MapMetaData, CogMetaData
+
+import importlib.metadata
+
+MODEL_NAME = "lara-map-metadata-extraction"  # should match name in pyproject.toml
+MODEL_VERSION = importlib.metadata.version(MODEL_NAME)
 
 
 class MetadataExtractorPipeline(Pipeline):
@@ -37,7 +38,7 @@ class MetadataExtractorPipeline(Pipeline):
         work_dir: str,
         model_data_path: str,
         debug_images=False,
-        ta1_schema=False,
+        cdr_schema=False,
         model=LLM.GPT_3_5_TURBO,
         gpu=True,
     ):
@@ -67,8 +68,8 @@ class MetadataExtractorPipeline(Pipeline):
             MetadataExtractionOutput("metadata_extraction_output"),
         ]
 
-        if ta1_schema:
-            outputs.append(IntegrationOutput("metadata_integration_output"))
+        if cdr_schema:
+            outputs.append(CDROutput("metadata_cdr_output"))
 
         if debug_images:
             outputs.append(FilteredOCROutput("filtered_ocr_output"))
@@ -102,56 +103,49 @@ class MetadataExtractionOutput(OutputCreator):
         )
 
 
-class IntegrationOutput(OutputCreator):
+class CDROutput(OutputCreator):
     def __init__(self, id: str):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         """
-        Creates a TA1 schema Map object from the pipeline result.
+        Creates a CDR schema metadata object from the pipeline result.
 
         Args:
             pipeline_result (PipelineResult): The pipeline result.
 
         Returns:
-            Map: The TA1 schema Map object.
+            Map: The CDR schema Map object.
         """
         metadata_extraction = MetadataExtraction.model_validate(
             pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
         )
 
-        schema_metadata = MapMetadata(
-            id=metadata_extraction.map_id,
-            authors=", ".join(metadata_extraction.authors),
-            publisher="",
-            year=(
-                int(metadata_extraction.year)
-                if metadata_extraction.year.isdigit()
-                else -1
-            ),
-            organization="",
-            scale=metadata_extraction.scale,
-            confidence=None,  # TODO -- put in metadata extraction confidence?
-            provenance=None,
-        )
-
-        schema_map = Map(
-            name=metadata_extraction.title,
-            id=metadata_extraction.map_id,
-            source_url="",
-            image_url="",
-            image_size=[],
-            map_metadata=schema_metadata,
-            features=MapFeatureExtractions(
-                lines=[], points=[], polygons=[], pipelines=[]
-            ),
-            cross_sections=None,
-            projection_info=GeoReferenceMeta(
-                gcps=[], projection="", bounds=None, provenance=None
-            ),
+        cdr_metadata = CogMetaData(
+            cog_id=metadata_extraction.map_id,
+            system="metadata_extraction",
+            system_version="1.0",
+            multiple_maps=False,
+            map_metadata=[
+                MapMetaData(
+                    title=metadata_extraction.title,
+                    year=int(metadata_extraction.year),
+                    scale=int(metadata_extraction.scale.split(":")[1]),
+                    crs=None,
+                    authors=metadata_extraction.authors,
+                    organization=None,
+                    quadrangle_name=",".join(metadata_extraction.quadrangles),
+                    map_shape=None,
+                    map_color_scheme=None,
+                    publisher=None,
+                    state=",".join(metadata_extraction.states),
+                    model=MODEL_NAME,
+                    model_version=MODEL_VERSION,
+                ),
+            ],
         )
         return BaseModelOutput(
-            pipeline_result.pipeline_id, pipeline_result.pipeline_name, schema_map
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, cdr_metadata
         )
 
 
