@@ -356,10 +356,10 @@ def main():
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
     if p.mode == "process" and (p.cog_id == "" or p.cog_id is None):
-        print("process mode requires a cog id")
+        logger.info("process mode requires a cog id")
         exit(1)
     elif p.mode == "host" and (not p.cog_id == "" and p.cog_id is not None):
-        print("a cog id cannot be provided if host mode is selected")
+        logger.info("a cog id cannot be provided if host mode is selected")
         exit(1)
     logger.info(f"starting cdr in {p.mode} mode")
 
