@@ -154,8 +154,6 @@ def project_georeference(
 @app.route("/process_event", methods=["POST"])
 def process_event():
     logger.info("event callback started")
-    logger.info(f"request data {request.data}")
-    logger.info(f"request headers {request.headers}")
     evt = request.get_json(force=True)
     logger.info(f"event data received {evt}")
     lara_req = None
@@ -303,7 +301,6 @@ def register_system():
     )
 
     # Log our registration_id such we can delete it when we close the program.
-    print(r.json())
     settings.registration_id = r.json()["id"]
     logger.info("system registered with cdr")
 
