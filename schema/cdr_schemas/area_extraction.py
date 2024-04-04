@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from schema.cdr_schemas.common import GeomType
+from cdr_schemas.common import GeomType
 
 
 class AreaType(str, Enum):

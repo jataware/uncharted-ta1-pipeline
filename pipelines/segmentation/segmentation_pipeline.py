@@ -1,5 +1,5 @@
-from typing import List
-from schema.ta1_schema import PageExtraction, ExtractionIdentifier, ProvenanceType
+import logging
+from typing import Dict, List
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.common.pipeline import (
     Pipeline,
@@ -7,9 +7,12 @@ from tasks.common.pipeline import (
     Output,
     OutputCreator,
     BaseModelOutput,
-    BaseModelListOutput,
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
+from schema.cdr_schemas.area_extraction import Area_Extraction, AreaType
+from schema.cdr_schemas.feature_results import FeatureResults
+
+logger = logging.getLogger("segmentation_pipeline")
 
 
 class SegmentationPipeline(Pipeline):
@@ -43,7 +46,7 @@ class SegmentationPipeline(Pipeline):
 
         outputs = [
             MapSegmentationOutput("map_segmentation_output"),
-            IntegrationOutput("integration_output"),
+            CDROutput("map_segmentation_cdr_output"),
         ]
         super().__init__("map-segmentation", "Map Segmentation", outputs, tasks)
 
@@ -72,10 +75,17 @@ class MapSegmentationOutput(OutputCreator):
         )
 
 
-class IntegrationOutput(OutputCreator):
+class CDROutput(OutputCreator):
     """
-    OutputCreator for text extraction pipeline.
+    CDR OutputCreator for map segmentation pipeline.
     """
+
+    AREA_MAPPING = {
+        "cross_section": AreaType.CrossSection,
+        "legend_points_lines": AreaType.Line_Point_Legend_Area,
+        "legend_polygons": AreaType.Polygon_Legend_Area,
+        "map": AreaType.Map_Area,
+    }
 
     def __init__(self, id):
         """
@@ -100,22 +110,43 @@ class IntegrationOutput(OutputCreator):
             pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
         )
 
-        page_extractions: List[PageExtraction] = []
+        area_extractions: List[Area_Extraction] = []
+        # create CDR area extractions for segment we've identified in the map
         for i, segment in enumerate(map_segmentation.segments):
-            page_extraction = PageExtraction(
-                name="segmentation",
-                model=ExtractionIdentifier(
-                    id=i, model=segment.id_model, field=segment.class_label
-                ),
-                ocr_text="",
-                bounds=segment.poly_bounds,
-                color_estimation=None,
-                confidence=segment.confidence,
-                provenance=ProvenanceType.modelled,
-            )
-            page_extractions.append(page_extraction)
+            coordinates = [list(point) for point in segment.poly_bounds]
 
-        result = BaseModelListOutput(
-            pipeline_result.pipeline_id, pipeline_result.pipeline_name, page_extractions
+            if segment.area in CDROutput.AREA_MAPPING:
+                area_type = CDROutput.AREA_MAPPING[segment.area]
+            else:
+                logger.warning(
+                    f"Unknown area type {segment.area} for {pipeline_result.raster_id}"
+                )
+
+            area_extraction = Area_Extraction(
+                coordinates=[coordinates],
+                bbox=segment.bbox,
+                category=area_type,
+                confidence=segment.confidence,  # assume two points - ll, ur
+                model="",
+                model_version="",
+                text=None,
+            )
+            area_extractions.append(area_extraction)
+
+        feature_results = FeatureResults(
+            # relevant to segment extractions
+            cog_id=pipeline_result.raster_id,
+            cog_area_extractions=area_extractions,
+            system="map-segmentation",
+            system_version="1.0",
+            # other
+            line_feature_results=None,
+            point_feature_results=None,
+            polygon_feature_results=None,
+            cog_metadata_extractions=None,
+        )
+
+        result = BaseModelOutput(
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, feature_results
         )
         return result

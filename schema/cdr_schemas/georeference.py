@@ -2,8 +2,8 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from schema.cdr_schemas.area_extraction import Area_Extraction
-from schema.cdr_schemas.common import GeomType
+from cdr_schemas.area_extraction import Area_Extraction
+from cdr_schemas.common import GeomType
 
 
 class Geom_Point(BaseModel):

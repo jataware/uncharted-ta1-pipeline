@@ -1,5 +1,4 @@
 import argparse
-from pathlib import Path
 import logging
 import os
 
@@ -15,7 +14,6 @@ def main():
         format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    logger = logging.getLogger("metadata_pipeline")
 
     # parse command line args
     parser = argparse.ArgumentParser()
