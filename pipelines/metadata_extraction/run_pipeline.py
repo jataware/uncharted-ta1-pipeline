@@ -44,7 +44,7 @@ def main():
 
     # create the pipeline
     pipeline = MetadataExtractorPipeline(
-        p.workdir, p.model, p.output, p.debug_images, p.ta1_schema, p.llm, not p.no_gpu
+        p.workdir, p.model, p.debug_images, p.ta1_schema, p.llm, not p.no_gpu
     )
 
     # run the extraction pipeline

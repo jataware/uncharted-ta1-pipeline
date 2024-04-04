@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Optional, List
+from typing import List
 from PIL import ImageDraw
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.text_filter import TextFilter, TEXT_EXTRACTION_OUTPUT_KEY
@@ -22,16 +22,13 @@ from tasks.common.pipeline import (
     OutputCreator,
     Output,
     ImageOutput,
-    GeopackageOutput,
 )
 from schema.ta1_schema import (
     Map,
     MapFeatureExtractions,
     MapMetadata,
     GeoReferenceMeta,
-    ProvenanceType,
 )
-from criticalmaas.ta1_geopackage import GeopackageDatabase
 
 
 class MetadataExtractorPipeline(Pipeline):
@@ -39,7 +36,6 @@ class MetadataExtractorPipeline(Pipeline):
         self,
         work_dir: str,
         model_data_path: str,
-        output_dir: Optional[str] = None,
         debug_images=False,
         ta1_schema=False,
         model=LLM.GPT_3_5_TURBO,
@@ -71,11 +67,8 @@ class MetadataExtractorPipeline(Pipeline):
             MetadataExtractionOutput("metadata_extraction_output"),
         ]
 
-        if ta1_schema and output_dir:
+        if ta1_schema:
             outputs.append(IntegrationOutput("metadata_integration_output"))
-            outputs.append(
-                GeopackageIntegrationOutput("geopackage_integration_output", output_dir)
-            )
 
         if debug_images:
             outputs.append(FilteredOCROutput("filtered_ocr_output"))
@@ -207,68 +200,4 @@ class FilteredOCROutput(OutputCreator):
                 )
         return ImageOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, text_image
-        )
-
-
-class GeopackageIntegrationOutput(OutputCreator):
-    def __init__(self, id: str, output_dir: str):
-        super().__init__(id)
-        self._output_dir = output_dir
-
-    def create_output(self, pipeline_result: PipelineResult) -> Output:
-        """
-        Creates a geopackage output from the pipeline result.
-
-        Args:
-            pipeline_result (PipelineResult): The pipeline result.
-
-        Returns:
-            GeopackageOutput: A geopackage containing the metadata extraction results.
-        """
-
-        metadata_extraction = MetadataExtraction.model_validate(
-            pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
-        )
-
-        path = os.path.join(
-            self._output_dir, f"{pipeline_result.raster_id}_metadata_extraction.gpkg"
-        )
-        db = GeopackageDatabase(str(path), crs="EPSG:4326")
-
-        if db.model is None:
-            raise ValueError("db.model is None")
-
-        db.write_models(
-            [
-                db.model.map(
-                    id=pipeline_result.raster_id,
-                    name=pipeline_result.raster_id,
-                    source_url="",
-                    image_url="",
-                    image_width=(
-                        pipeline_result.image.width if pipeline_result.image else -1
-                    ),
-                    image_height=(
-                        pipeline_result.image.height if pipeline_result.image else -1
-                    ),
-                ),
-                db.model.map_metadata(
-                    id=metadata_extraction.map_id,
-                    map_id=pipeline_result.raster_id,
-                    provenance="modelled",
-                    authors=",".join(metadata_extraction.authors),
-                    publisher="",
-                    confidence=0.5,
-                    year=(
-                        int(metadata_extraction.year)
-                        if metadata_extraction.year.isdigit()
-                        else -1
-                    ),
-                    scale=metadata_extraction.scale,
-                    title=metadata_extraction.title,
-                ),
-            ]
-        )
-        return GeopackageOutput(
-            pipeline_result.pipeline_id, pipeline_result.pipeline_name, db
         )

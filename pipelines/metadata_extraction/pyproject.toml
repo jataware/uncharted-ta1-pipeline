@@ -7,7 +7,7 @@ name = "lara-map-metadata-extraction"
 version = "0.1.0"
 description = "LARA map metadata extraction pipeline and server"
 readme = "README.md"
-dependencies = ["flask", "lara-tasks", "mypy-boto3-s3", "criticalmaas.ta1-geopackage"]
+dependencies = ["flask", "lara-tasks", "mypy-boto3-s3"]
 
 [tool.setuptools.packages]
 find = {}

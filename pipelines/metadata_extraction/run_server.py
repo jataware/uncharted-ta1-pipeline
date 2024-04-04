@@ -1,5 +1,4 @@
 import argparse
-import os
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
