@@ -45,7 +45,6 @@ pip install -e .[segmentation]
 * Ouput is the set of map polygons capturing the map region, legend areas and cross sections materialized as a:
   * `SegmentationResults` JSON object
   * `PageExtraction` JSON object (the latter being part of the CMA TA1 schema)
-  * [Geopackage](geopackage.org) adhering to the CMA TA1 schema
 
 ### Command Line Execution ###
 `run_pipeline.py` provides a command line wrapper around the segmentation pipeline, and allows for a directory map images to be processed serially.
