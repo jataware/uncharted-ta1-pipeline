@@ -2,11 +2,11 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from cdr_schemas.area_extraction import Area_Extraction
-from cdr_schemas.features.line_features import LineLegendAndFeaturesResult
-from cdr_schemas.features.point_features import PointLegendAndFeaturesResult
-from cdr_schemas.features.polygon_features import PolygonLegendAndFeauturesResult
-from cdr_schemas.metadata import CogMetaData
+from schema.cdr_schemas.area_extraction import Area_Extraction
+from schema.cdr_schemas.features.line_features import LineLegendAndFeaturesResult
+from schema.cdr_schemas.features.point_features import PointLegendAndFeaturesResult
+from schema.cdr_schemas.features.polygon_features import PolygonLegendAndFeauturesResult
+from schema.cdr_schemas.metadata import CogMetaData
 
 
 class FeatureResults(BaseModel):

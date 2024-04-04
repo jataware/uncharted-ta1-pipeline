@@ -115,12 +115,13 @@ class CDROutput(OutputCreator):
         for i, segment in enumerate(map_segmentation.segments):
             coordinates = [list(point) for point in segment.poly_bounds]
 
-            if segment.area in CDROutput.AREA_MAPPING:
-                area_type = CDROutput.AREA_MAPPING[segment.area]
+            if segment.class_label in CDROutput.AREA_MAPPING:
+                area_type = CDROutput.AREA_MAPPING[segment.class_label]
             else:
                 logger.warning(
-                    f"Unknown area type {segment.area} for {pipeline_result.raster_id}"
+                    f"Unknown area type {segment.class_label} for map {pipeline_result.raster_id}"
                 )
+                area_type = AreaType.Map_Area
 
             area_extraction = Area_Extraction(
                 coordinates=[coordinates],

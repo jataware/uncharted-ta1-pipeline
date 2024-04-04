@@ -2,7 +2,7 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cdr_schemas.common import GeoJsonType, GeomType
+from schema.cdr_schemas.common import GeoJsonType, GeomType
 
 
 class Point(BaseModel):

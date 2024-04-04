@@ -2,8 +2,7 @@ import argparse
 import logging
 import os
 
-
-from tasks.common.pipeline import BaseModelListOutput, PipelineInput, BaseModelOutput
+from tasks.common.pipeline import PipelineInput, BaseModelOutput
 from pipelines.segmentation.segmentation_pipeline import SegmentationPipeline
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter
 
@@ -22,7 +21,7 @@ def main():
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--min_confidence", type=float, default=0.25)
-    parser.add_argument("--ta1_schema", type=bool, default=False)
+    parser.add_argument("--cdr_schema", action="store_true")
     p = parser.parse_args()
 
     # setup an input stream
@@ -48,8 +47,8 @@ def main():
             if isinstance(output_data, BaseModelOutput):
                 path = os.path.join(p.output, f"{doc_id}_map_segmentation.json")
                 file_writer.process(path, output_data.data)
-            elif isinstance(output_data, BaseModelListOutput) and p.ta1_schema:
-                path = os.path.join(p.output, f"{doc_id}_map_segmentation_schema.json")
+            elif isinstance(output_data, BaseModelOutput) and p.cdr_schema:
+                path = os.path.join(p.output, f"{doc_id}_map_segmentation_cdr.json")
                 file_writer.process(path, output_data.data)
 
 
