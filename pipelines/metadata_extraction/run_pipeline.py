@@ -27,10 +27,10 @@ def main():
     parser.add_argument("--output", type=str, required=True)
     parser.add_argument("--workdir", type=str, default=None)
     parser.add_argument("--model", type=str, default=None)
-    parser.add_argument("--ta1_schema", type=bool, default=False)
-    parser.add_argument("--debug_images", type=bool, default=False)
+    parser.add_argument("--cdr_schema", action="store_true")
+    parser.add_argument("--debug_images", action="store_true")
     parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_3_5_TURBO)
-    parser.add_argument("--no_gpu", type=bool, default=False)
+    parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
     logger.info(f"Args: {p}")
@@ -44,7 +44,7 @@ def main():
 
     # create the pipeline
     pipeline = MetadataExtractorPipeline(
-        p.workdir, p.model, p.output, p.debug_images, p.ta1_schema, p.llm, not p.no_gpu
+        p.workdir, p.model, p.debug_images, p.cdr_schema, p.llm, not p.no_gpu
     )
 
     # run the extraction pipeline
@@ -58,7 +58,7 @@ def main():
                 if output_type == "metadata_extraction_output":
                     path = os.path.join(p.output, f"{doc_id}_metadata_extraction.json")
                     file_writer.process(path, output_data.data)
-                elif output_type == "metadata_integration_output" and p.ta1_schema:
+                elif output_type == "metadata_cdr_output" and p.cdr_schema:
                     path = os.path.join(
                         p.output, f"{doc_id}_metadata_extraction_schema.json"
                     )

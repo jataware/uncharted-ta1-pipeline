@@ -53,8 +53,7 @@ The segmentation dependencies are required due to the use of the map segmentatio
 * Input is a image (ie binary image file buffer)
 * Output is the set of metadata fields materialized as a:
   * `MetadataExtraction` JSON object
-  * `Map` JSON object adhering to the CMA TA1 schema)
-  * [Geopackage](geopackage.org) adhering to the CMA TA1 schema
+  * `CogMetaData` JSON object adhering to the CMA CDR TA1 schema)
 
 ### Command Line Execution ###
 `run_pipeline.py` provides a command line wrapper around the map extraction pipeline, and allows for a directory map images to be processed serially.
