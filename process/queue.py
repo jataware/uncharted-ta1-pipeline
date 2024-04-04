@@ -75,13 +75,13 @@ class RequestQueue:
         body_decoded = json.loads(body.decode())
         # parse body as request
         request = Request.model_validate(body_decoded)
+        channel.basic_ack(delivery_tag=method.delivery_tag)
 
         # process the request
         result = self._process_request(request)
         logger.info("writing request result to output queue")
 
         # run queue operations
-        channel.basic_ack(delivery_tag=method.delivery_tag)
         self._output_channel[0].basic_publish(
             exchange="",
             routing_key=self._output_channel[1],
@@ -179,15 +179,19 @@ def main():
 
     # setup input and output queue
     request_connection = pika.BlockingConnection(
-        pika.ConnectionParameters(p.request_queue)
+        pika.ConnectionParameters(
+            p.request_queue, heartbeat=900, blocked_connection_timeout=600
+        )
     )
     request_channel = request_connection.channel()
     request_channel.queue_declare(queue=LARA_REQUEST_QUEUE_NAME)
 
-    request_connection = pika.BlockingConnection(
-        pika.ConnectionParameters(p.result_queue)
+    result_connection = pika.BlockingConnection(
+        pika.ConnectionParameters(
+            p.result_queue, heartbeat=900, blocked_connection_timeout=600
+        )
     )
-    result_channel = request_connection.channel()
+    result_channel = result_connection.channel()
     result_channel.queue_declare(queue=LARA_RESULT_QUEUE_NAME)
 
     # start the queue

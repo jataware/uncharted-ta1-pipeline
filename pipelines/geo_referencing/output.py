@@ -493,6 +493,7 @@ class CDROutput(OutputCreator):
             "georeference_results": [
                 {
                     "likely_CRSs": [projection_mapped],
+                    "map_area": None,
                     "projections": [
                         {
                             "crs": projection_mapped,
