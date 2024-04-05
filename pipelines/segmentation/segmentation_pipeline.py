@@ -143,8 +143,8 @@ class CDROutput(OutputCreator):
             # relevant to segment extractions
             cog_id=pipeline_result.raster_id,
             cog_area_extractions=area_extractions,
-            system="uncharted-lara",
-            system_version="0.1",
+            system=MODEL_NAME,
+            system_version=MODEL_VERSION,
             # other
             line_feature_results=None,
             point_feature_results=None,
