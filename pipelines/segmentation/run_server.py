@@ -40,11 +40,11 @@ def process_image():
             logging.warning(msg)
             return (msg, 500)
 
-        ta1_schema = app.config.get("ta1_schema", False)
+        cdr_schema = app.config.get("cdr_schema", False)
         # get ta1 schema output or internal output format
         segmentation_result = (
-            result["integration_output"]
-            if ta1_schema
+            result["map_segmentation_cdr_output"]
+            if cdr_schema
             else result["map_segmentation_output"]
         )
 
@@ -63,7 +63,6 @@ def process_image():
     except Exception as e:
         msg = f"Error with process_image: {repr(e)}"
         logging.error(msg)
-        print(repr(e))
         return Response(msg, status=500)
 
 
@@ -89,20 +88,15 @@ if __name__ == "__main__":
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--min_confidence", type=float, default=0.25)
-    parser.add_argument("--debug", type=bool, default=False)
-    parser.add_argument(
-        "--ta1_schema",
-        type=bool,
-        default=False,
-        help="Output results as TA1 json schema format",
-    )
+    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--cdr_schema", action="store_true")
     p = parser.parse_args()
 
     # init segmenter
     segmentation_pipeline = SegmentationPipeline(p.model, p.workdir, p.min_confidence)
 
     #### start flask server
-    app.config["ta1_schema"] = p.ta1_schema
+    app.config["cdr_schema"] = p.cdr_schema
     if p.debug:
         app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
     else:

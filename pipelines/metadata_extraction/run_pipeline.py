@@ -60,7 +60,7 @@ def main():
                     file_writer.process(path, output_data.data)
                 elif output_type == "metadata_cdr_output" and p.cdr_schema:
                     path = os.path.join(
-                        p.output, f"{doc_id}_metadata_extraction_schema.json"
+                        p.output, f"{doc_id}_metadata_extraction_cdr.json"
                     )
                     file_writer.process(path, output_data.data)
             elif isinstance(output_data, ImageOutput):
