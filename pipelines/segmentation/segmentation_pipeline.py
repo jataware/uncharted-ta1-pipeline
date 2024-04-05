@@ -14,6 +14,11 @@ from schema.cdr_schemas.feature_results import FeatureResults
 
 logger = logging.getLogger("segmentation_pipeline")
 
+import importlib.metadata
+
+MODEL_NAME = "lara-map-segmentation"  # should match name in pyproject.toml
+MODEL_VERSION = importlib.metadata.version(MODEL_NAME)
+
 
 class SegmentationPipeline(Pipeline):
     """
@@ -128,8 +133,8 @@ class CDROutput(OutputCreator):
                 bbox=segment.bbox,
                 category=area_type,
                 confidence=segment.confidence,  # assume two points - ll, ur
-                model="",
-                model_version="",
+                model=MODEL_NAME,
+                model_version=MODEL_VERSION,
                 text=None,
             )
             area_extractions.append(area_extraction)
@@ -138,8 +143,8 @@ class CDROutput(OutputCreator):
             # relevant to segment extractions
             cog_id=pipeline_result.raster_id,
             cog_area_extractions=area_extractions,
-            system="map-segmentation",
-            system_version="1.0",
+            system="uncharted-lara",
+            system_version="0.1",
             # other
             line_feature_results=None,
             point_feature_results=None,
