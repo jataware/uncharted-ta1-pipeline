@@ -162,8 +162,8 @@ class CDROutput(OutputCreator):
                 # create the point geometry
                 point = Point(
                     coordinates=[
-                        map_pt_label.x1 + (map_pt_label.x2 - map_pt_label.x1 / 2),
-                        map_pt_label.y1 + (map_pt_label.y2 - map_pt_label.y1 / 2),
+                        (map_pt_label.x1 + map_pt_label.x2) / 2,
+                        (map_pt_label.y1 + map_pt_label.y2) / 2,
                     ]
                 )
 
@@ -220,8 +220,8 @@ class CDROutput(OutputCreator):
             polygon_feature_results=None,
             cog_area_extractions=None,
             cog_metadata_extractions=None,
-            system="uncharted-lara",
-            system_version="0.1",
+            system=MODEL_NAME,
+            system_version=MODEL_VERSION,
         )
 
         result = BaseModelOutput(
