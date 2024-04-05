@@ -123,8 +123,8 @@ class CDROutput(OutputCreator):
 
         cdr_metadata = CogMetaData(
             cog_id=metadata_extraction.map_id,
-            system="uncharted-lara",
-            system_version="0.1",
+            system=MODEL_NAME,
+            system_version=MODEL_VERSION,
             multiple_maps=False,
             map_metadata=[
                 MapMetaData(
