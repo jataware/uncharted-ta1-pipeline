@@ -25,8 +25,10 @@ from process.queue import (
     LARA_RESULT_QUEUE_NAME,
 )
 
+from cdr.mapper import get_mapper
 from schema.cdr_schemas.events import Event, MapEventPayload
-from schema.cdr_schemas.georeference import GeoreferenceResults
+from schema.cdr_schemas.georeference import GeoreferenceResults, GroundControlPoint
+from tasks.geo_referencing.entities import GeoferenceResult as LARAGeoreferenceResult
 
 from typing import Any, Dict, List, Optional
 
@@ -112,14 +114,16 @@ def project_image(
                 )
 
 
-def cps_to_transform(gcps: List[Dict[str, Any]], height: int, to_crs: str) -> Affine:
+def cps_to_transform(
+    gcps: List[GroundControlPoint], height: int, to_crs: str
+) -> Affine:
     cps = [
         {
-            "row": height - float(gcp["px_geom"]["rows_from_top"]),
-            "col": float(gcp["px_geom"]["columns_from_left"]),
-            "x": float(gcp["map_geom"]["longitude"]),
-            "y": float(gcp["map_geom"]["latitude"]),
-            "crs": gcp["crs"],
+            "row": height - float(gcp.px_geom.rows_from_top),
+            "col": float(gcp.px_geom.columns_from_left),
+            "x": float(gcp.map_geom.longitude),  #   type: ignore
+            "y": float(gcp.map_geom.latitude),  #   type: ignore
+            "crs": gcp.crs,
         }
         for gcp in gcps
     ]
@@ -138,7 +142,7 @@ def project_georeference(
     source_image_path: str,
     target_image_path: str,
     target_crs: str,
-    gcps: List[Dict[str, Any]],
+    gcps: List[GroundControlPoint],
 ):
     # open the image
     img = Image.open(source_image_path)
@@ -222,27 +226,34 @@ def process_result(
     logger.info(f"processing result for request {result.request.id}")
 
     # reproject image to file on disk for pushing to CDR
-    georef_result = json.loads(result.output)[0]
+    georef_result_raw = json.loads(result.output)
 
     # validate the result by building the model classes
+    cdr_result: Optional[GeoreferenceResults] = None
     try:
-        GeoreferenceResults.model_validate(georef_result)
+        lara_result = LARAGeoreferenceResult.model_validate(georef_result_raw)
+        mapper = get_mapper(settings.system_name, settings.system_version)
+        cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
     except:
         logger.error(
             "bad georeferencing result received so unable to send results to cdr"
         )
         raise
 
-    projection = georef_result["georeference_results"][0]["projections"][0]
-    gcps = georef_result["gcps"]
-    output_file_name = projection["file_name"]
+    assert cdr_result is not None
+    assert cdr_result.georeference_results is not None
+    assert cdr_result.georeference_results[0] is not None
+    assert cdr_result.georeference_results[0].projections is not None
+    projection = cdr_result.georeference_results[0].projections[0]
+    gcps = cdr_result.gcps
+    output_file_name = projection.file_name
     output_file_name_full = os.path.join(settings.workdir, output_file_name)
+
+    assert gcps is not None
     logger.info(
-        f"projecting image {result.image_path} to {output_file_name_full} using crs {projection['crs']}"
+        f"projecting image {result.image_path} to {output_file_name_full} using crs {projection.crs}"
     )
-    project_georeference(
-        result.image_path, output_file_name_full, projection["crs"], gcps
-    )
+    project_georeference(result.image_path, output_file_name_full, projection.crs, gcps)
 
     files_ = []
     files_.append(("files", (output_file_name, open(output_file_name_full, "rb"))))
@@ -253,7 +264,7 @@ def process_result(
     client = httpx.Client(follow_redirects=True)
     resp = client.post(
         f"{settings.cdr_host}/v1/maps/publish/georef",
-        data={"georef_result": json.dumps(georef_result)},
+        data={"georef_result": json.dumps(cdr_result.model_dump())},
         files=files_,
         headers=headers,
     )
@@ -301,7 +312,8 @@ def register_system():
     )
 
     # Log our registration_id such we can delete it when we close the program.
-    settings.registration_id = r.json()["id"]
+    response_raw = r.json()
+    settings.registration_id = response_raw["id"]
     logger.info("system registered with cdr")
 
 
@@ -336,7 +348,7 @@ def clean_up():
     logger.info("system no longer registered with cdr")
 
 
-def start_app():
+def cdr_startup(host: str):
     # check if already registered and delete existing registrations for this name and token combination
     registrations = get_registrations()
     if len(registrations) > 0:
@@ -345,13 +357,19 @@ def start_app():
                 unregister(r["id"])
 
     # make it accessible from the outside
-    listener = ngrok.forward(APP_PORT, authtoken_from_env=True)
-    settings.callback_url = listener.url() + "/process_event"
+    settings.callback_url = f"{host}/process_event"
 
     register_system()
 
     # wire up the cleanup of the registration
     atexit.register(clean_up)
+
+
+def start_app():
+    # forward ngrok port
+    logger.info("using ngrok to forward ports")
+    listener = ngrok.forward(APP_PORT, authtoken_from_env=True)
+    cdr_startup(listener.url())
 
     app.run(host="0.0.0.0", port=APP_PORT)
 
@@ -401,6 +419,7 @@ def main():
     if p.mode == "host":
         start_app()
     elif p.mode == "process":
+        cdr_startup("https://mock.example")
         process_image(p.cog_id)
 
     # TODO: ensure propoer closure of channels

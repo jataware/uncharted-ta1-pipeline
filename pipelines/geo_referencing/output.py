@@ -5,12 +5,15 @@ import uuid
 
 from tasks.common.pipeline import (
     BaseModelOutput,
-    GeopackageOutput,
     ObjectOutput,
     Output,
     TabularOutput,
     OutputCreator,
     PipelineResult,
+)
+from tasks.geo_referencing.entities import (
+    GeoferenceResult,
+    GroundControlPoint as LARAGroundControlPoint,
 )
 from schema.ta1_schema import (
     Map,
@@ -23,7 +26,6 @@ from schema.ta1_schema import (
 from shapely import Polygon, Point
 from pandas import DataFrame
 from geopandas import GeoDataFrame
-from criticalmaas.ta1_geopackage import GeopackageDatabase
 
 from typing import Any, Dict, List
 
@@ -335,130 +337,42 @@ class IntegrationModelOutput(OutputCreator):
         )
 
 
-class GeopackageIntegrationOutput(OutputCreator):
-    def __init__(self, id: str, output_dir: str):
+class LARAModelOutput(OutputCreator):
+    def __init__(self, id):
         super().__init__(id)
-        self._output_dir = output_dir
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
-        """
-        Creates a geopackage output from the pipeline result.
-
-        Args:
-            pipeline_result (PipelineResult): The pipeline result.
-
-        Returns:
-            GeopackageOutput: A geopackage containing the metadata extraction results.
-        """
+        # capture query points as output
         query_points = pipeline_result.data["query_pts"]
         projection_raw = pipeline_result.data["projection"]
         datum_raw = pipeline_result.data["datum"]
         projection_mapped = get_projection(datum_raw)
-        os.makedirs(self._output_dir, exist_ok=True)
-
-        filepath = os.path.join(self._output_dir, f"{pipeline_result.raster_id}.pkg")
-        if os.path.exists(filepath):
-            os.remove(filepath)
-
-        db = GeopackageDatabase(filepath, crs="EPSG:4326")
-
-        if db.model is None:
-            raise ValueError("db.model is None")
-
-        db.write_models(
-            [
-                db.model.map(
-                    id=pipeline_result.raster_id,
-                    name=pipeline_result.raster_id,
-                    source_url="",
-                    image_url="",
-                    image_width=(
-                        pipeline_result.image.width if pipeline_result.image else -1
-                    ),
-                    image_height=(
-                        pipeline_result.image.height if pipeline_result.image else -1
-                    ),
-                )
-            ]
-        )
-
-        geometa = dict(
-            id=f"geometa-uncharted-{pipeline_result.raster_id}",
-            map_id=pipeline_result.raster_id,
-            projection=projection_mapped if projection_mapped else "",
-            provenance="modelled",
-            bounds=Polygon([]),
-        )
-        print([geometa])
-        db.write_dataframe(
-            GeoDataFrame([geometa], geometry="bounds"), "georeference_meta"
-        )
 
         gcps = []
         count = 0
+        confidence = 0
         for qp in query_points:
             count = count + 1
-            # gcp = db.model.ground_control_point(
-            #    id=f"gcp-uncharted-{count}",
-            #    map_id=pipeline_result.raster_id,
-            #    geometry=Point(qp.lonlat[0], qp.lonlat[1]),
-            #    x=qp.xy[0],
-            #    y=qp.xy[1],
-            #    confidence=qp.confidence,
-            #    provenance=ProvenanceType.modelled,
-            # )
-            gcp = dict(
-                id=f"gcp-uncharted-{pipeline_result.raster_id}-{count}",
-                map_id=pipeline_result.raster_id,
-                geometry=Point(qp.lonlat[0], qp.lonlat[1]),
-                x=qp.xy[0],
-                y=qp.xy[1],
+            gcp = LARAGroundControlPoint(
+                id=f"gcp-{count}",
+                pixel_x=qp.xy[0],
+                pixel_y=qp.xy[1],
+                latitude=qp.lonlat[1],
+                longitude=qp.lonlat[0],
                 confidence=qp.confidence,
-                provenance="modelled",
             )
-            # gcp = {
-            #    "geometry": {"type": "Point", "coordinates": (int(qp.lonlat[0]), int(qp.lonlat[1]))},
-            #    "properties": {
-            #        "id": f"gcp-uncharted-{count}",
-            #        "map_id": pipeline_result.raster_id,
-            #        "x": qp.xy[0],
-            #        "y": qp.xy[1],
-            #        "confidence": qp.confidence,
-            #        "provenance": ProvenanceType.modelled,
-            #    },
-            # "geometry": {"type": "Point", "coordinates": (qp.lonlat[0], qp.lonlat[1])},
-            # }
             gcps.append(gcp)
-        if gcps:
-            print(gcps)
-            db.write_dataframe(GeoDataFrame(gcps, geometry="geometry"), "ground_control_point")  # type: ignore
-        # db.write_features("ground_control_point", gcps)
-        # db.write_models(gcps)
+            confidence = qp.confidence
 
-        geometa = {
-            "properties": {
-                "id": f"geometa-uncharted-{pipeline_result.raster_id}",
-                "map_id": pipeline_result.raster_id,
-                "projection": projection_mapped if projection_mapped else "",
-                "provenance": ProvenanceType.modelled,
-                "bounds": {
-                    "type": "Polygon",
-                    "coordinates": [[0, 0], [0, 1], [1, 1], [1, 0]],
-                },
-            },
-        }
-        print([geometa])
-        db.write_features("georeference_meta", [geometa])
-        # models.append(db.model.georeference_meta(
-        #    id=f"geometa-uncharted-{pipeline_result.raster_id}",
-        #    map_id=pipeline_result.raster_id,
-        #    projection=projection_mapped,
-        #    bounds = Polygon([]),
-        #    #bounds = {"type": "Polygon", "coordinates": [[[0, 0], [1,1], [0,0]]]},
-        #    provenance=ProvenanceType.modelled
-        # ))
-        return GeopackageOutput(
-            pipeline_result.pipeline_id, pipeline_result.pipeline_name, db
+        result = GeoferenceResult(
+            map_id=pipeline_result.raster_id,
+            gcps=gcps,
+            projection=projection_mapped,
+            provenance=ProvenanceType.modelled,
+            confidence=confidence,
+        )
+        return BaseModelOutput(
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, result
         )
 
 
