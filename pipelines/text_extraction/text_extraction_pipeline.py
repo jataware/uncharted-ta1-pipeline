@@ -1,19 +1,23 @@
 from pathlib import Path
 from typing import List
+from schema.cdr_schemas.feature_results import FeatureResults
+from schema.cdr_schemas.area_extraction import Area_Extraction, AreaType
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.common.pipeline import (
     Pipeline,
-    BaseModelListOutput,
     BaseModelOutput,
     Output,
     OutputCreator,
     ImageOutput,
     PipelineResult,
 )
-from schema.ta1_schema import PageExtraction, ExtractionIdentifier, ProvenanceType
 from PIL import ImageDraw, ImageFont
-import tqdm
+
+import importlib.metadata
+
+MODEL_NAME = "lara-text-extraction"  # should match name in pyproject.toml
+MODEL_VERSION = importlib.metadata.version(MODEL_NAME)
 
 
 class TextExtractionPipeline(Pipeline):
@@ -38,9 +42,9 @@ class TextExtractionPipeline(Pipeline):
                 ResizeTextExtractor("resize_text", work_dir, False, True, pixel_limit)
             ]
 
-        outputs = [
-            IntegrationOutput("integration_output"),
+        outputs: List[OutputCreator] = [
             DocTextExtractionOutput("doc_text_extraction_output"),
+            CDROutput("doc_text_extraction_cdr_output"),
         ]
         if debug_images:
             outputs.append(OCRImageOutput("ocr_image_output"))
@@ -51,48 +55,6 @@ class TextExtractionPipeline(Pipeline):
             outputs,
             tasks,
         )
-
-
-class IntegrationOutput(OutputCreator):
-    """
-    OutputCreator for text extraction pipeline.
-
-    Args:
-        id (str): The ID of the output creator.
-
-    Returns:
-        Output: The output of the pipeline.
-    """
-
-    def __init__(self, id):
-        """Initializes the output creator."""
-        super().__init__(id)
-
-    def create_output(self, pipeline_result: PipelineResult) -> Output:
-        """Validates the pipeline result and converts into the TA1 schema representation"""
-        doc_text_extraction = DocTextExtraction.model_validate(
-            pipeline_result.data[TEXT_EXTRACTION_OUTPUT_KEY]
-        )
-
-        page_extractions: List[PageExtraction] = []
-        for i, text_extraction in enumerate(doc_text_extraction.extractions):
-            page_extraction = PageExtraction(
-                name="ocr",
-                model=ExtractionIdentifier(
-                    id=i, model="google-cloud-vision", field="ocr"
-                ),
-                ocr_text=text_extraction.text,
-                bounds=[(v.x, v.y) for v in text_extraction.bounds],
-                color_estimation=None,
-                confidence=text_extraction.confidence,
-                provenance=ProvenanceType.modelled,
-            )
-            page_extractions.append(page_extraction)
-
-        result = BaseModelListOutput(
-            pipeline_result.pipeline_id, pipeline_result.pipeline_name, page_extractions
-        )
-        return result
 
 
 class DocTextExtractionOutput(OutputCreator):
@@ -119,6 +81,69 @@ class DocTextExtractionOutput(OutputCreator):
             pipeline_result.pipeline_id,
             pipeline_result.pipeline_name,
             doc_text_extraction,
+        )
+
+
+class CDROutput(OutputCreator):
+    def __init__(self, id):
+        """Initializes the output creator."""
+        super().__init__(id)
+
+    @staticmethod
+    def _get_bounding_box(text) -> List[float | int]:
+        """
+        Get the bounding box of the text.
+
+        Args:
+            text (TextExtraction): The text extraction.
+
+        Returns:
+            List[Union[float, int]]: The bounding box of the text expressed as llx, lly, urx, ury coordintes.
+        """
+        return [text.bounds[0].x, text.bounds[0].y, text.bounds[2].x, text.bounds[2].y]
+
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
+        """
+        Creates a CDR output from the pipeline result.
+
+        Args:
+            pipeline_result (PipelineResult): The pipeline result.
+
+        Returns:
+            Output: The output of the pipeline in the CDR schema format.
+        """
+        doc_text_extraction = DocTextExtraction.model_validate(
+            pipeline_result.data[TEXT_EXTRACTION_OUTPUT_KEY]
+        )
+
+        area_extractions: List[Area_Extraction] = []
+        # create CDR area extractions for segment we've identified in the map
+        for text in doc_text_extraction.extractions:
+            area_extractions.append(
+                Area_Extraction(
+                    category=AreaType.OCR,
+                    coordinates=[[[point.x, point.y] for point in text.bounds]],
+                    bbox=CDROutput._get_bounding_box(text),
+                    text=text.text,
+                    confidence=text.confidence,
+                    model=MODEL_NAME,
+                    model_version=MODEL_VERSION,
+                )
+            )
+
+        feature_results = FeatureResults(
+            cog_id=doc_text_extraction.doc_id,
+            cog_area_extractions=area_extractions,
+            system=MODEL_NAME,
+            system_version=MODEL_VERSION,
+            line_feature_results=None,
+            point_feature_results=None,
+            polygon_feature_results=None,
+            cog_metadata_extractions=None,
+        )
+
+        return BaseModelOutput(
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, feature_results
         )
 
 

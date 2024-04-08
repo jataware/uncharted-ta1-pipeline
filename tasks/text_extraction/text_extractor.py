@@ -195,7 +195,8 @@ class TileTextExtractor(TextExtractor):
         ocr_blocks: List[Dict[str, Any]] = (
             []
         )  # list for OCR results across all tiles (whole image)
-        for tile in im_tiles:
+        for tile_num, tile in enumerate(im_tiles):
+            logger.info(f"Processing tile {tile_num + 1} of {len(im_tiles)}")
             # get OCR results for this tile
             tile_ocr_blocks = self._extract_text(tile.image)
             # convert OCR poly-bounds to global pixel coords and add to results

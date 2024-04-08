@@ -1,6 +1,6 @@
+import argparse
 from flask import Flask, request, Response
 import logging, json
-from pathlib import Path
 from hashlib import sha1
 
 import io
@@ -38,10 +38,15 @@ def process_image():
             logging.warning(msg)
             return (msg, 500)
 
-        # convert result to a JSON array
-        result = results["doc_text_extraction_output"]
-        if type(result) == BaseModelOutput:
-            result_json = json.dumps(result.data.model_dump())
+        cdr_schema = app.config.get("cdr_schema", False)
+        text_result = (
+            results["doc_text_extraction_cdr_output"]
+            if cdr_schema
+            else results["doc_text_extraction_output"]
+        )
+
+        if type(text_result) == BaseModelOutput:
+            result_json = json.dumps(text_result.data.model_dump())
             return Response(result_json, status=200, mimetype="application/json")
         else:
             msg = "No text extracted"
@@ -51,7 +56,7 @@ def process_image():
     except Exception as e:
         msg = f"Error with process_image: {repr(e)}"
         logging.error(msg)
-        print(repr(e))
+        logging.exception(e)
         return Response(msg, status=500)
 
 
@@ -72,10 +77,17 @@ if __name__ == "__main__":
     logger = logging.getLogger("text_extractor app")
     logger.info("*** Starting Text Extractor App ***")
 
-    pipeline = TextExtractionPipeline(Path("/tmp/lara/workdir"), tile=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
+    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--cdr_schema", action="store_true")
+    p = parser.parse_args()
+
+    pipeline = TextExtractionPipeline(p.workdir, tile=True)
 
     #### start flask server
-    app.run(host="0.0.0.0", port=5000)
-
-    # TEMP Use this for debug mode
-    # app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    app.config["cdr_schema"] = p.cdr_schema
+    if p.debug:
+        app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    else:
+        app.run(host="0.0.0.0", port=5000)

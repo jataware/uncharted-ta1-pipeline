@@ -18,7 +18,7 @@ def main():
     parser.add_argument("--output", type=str, required=True)
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument(
-        "--ta1_schema", action=argparse.BooleanOptionalAction, default=False
+        "--cdr_schema", action=argparse.BooleanOptionalAction, default=False
     )
     parser.add_argument(
         "--no-tile", action=argparse.BooleanOptionalAction, default=False
@@ -42,22 +42,21 @@ def main():
         results = pipeline.run(PipelineInput(raster_id=doc_id, image=image))
 
         # write the results out to the file system or s3 bucket
-        for _, output_data in results.items():
+        for output_type, output_data in results.items():
             if isinstance(output_data, BaseModelOutput):  # type assertion
-                path = os.path.join(p.output, f"{doc_id}_text_extraction.json")
-                file_writer.process(path, output_data.data)
-            elif (
-                isinstance(output_data, BaseModelListOutput) and p.ta1_schema
-            ):  # type assertion
-                path = os.path.join(p.output, f"{doc_id}_text_extraction_schema.json")
-                file_writer.process(path, output_data.data)
+                if output_type == "doc_text_extraction_output":
+                    path = os.path.join(p.output, f"{doc_id}_text_extraction.json")
+                    file_writer.process(path, output_data.data)
+                elif output_type == "doc_text_extraction_cdr_output" and p.cdr_schema:
+                    path = os.path.join(
+                        p.output, f"{doc_id}_text_extraction_schema.json"
+                    )
+                    file_writer.process(path, output_data.data)
             elif isinstance(output_data, ImageOutput):
                 # write out the image
                 path = os.path.join(p.output, f"{doc_id}_text_extraction.png")
                 assert isinstance(output_data.data, PILImage)
                 image_writer.process(path, output_data.data)
-            else:
-                continue
 
 
 if __name__ == "__main__":
