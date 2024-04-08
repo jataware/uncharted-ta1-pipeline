@@ -5,9 +5,7 @@ from pathlib import Path
 from pipelines.geo_referencing.output import (
     OutputCreator,
     GCPOutput,
-    GeopackageIntegrationOutput,
     GeoReferencingOutput,
-    IntegrationModelOutput,
     IntegrationOutput,
     UserLeverOutput,
     SummaryOutput,
@@ -127,7 +125,6 @@ def create_geo_referencing_pipelines(
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
                 IntegrationModelOutput("model"),
-                # GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )
@@ -220,10 +217,6 @@ def create_geo_referencing_pipelines(
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
-                IntegrationModelOutput("model"),
-                # GeopackageIntegrationOutput(
-                #    "geopackage", os.path.join(output_dir, "geopackage")
-                # ),
             ],
             tasks,
         )
@@ -306,7 +299,6 @@ def create_geo_referencing_pipelines(
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
                 IntegrationModelOutput("model"),
-                # GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )
@@ -389,7 +381,6 @@ def create_geo_referencing_pipelines(
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
                 IntegrationModelOutput("model"),
-                # GeopackageIntegrationOutput("geopackage", os.path.join(output_dir, "geopackage")),
             ],
             tasks,
         )

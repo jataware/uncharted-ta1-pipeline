@@ -8,8 +8,14 @@ import pika
 from PIL.Image import Image as PILImage
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
-from pipelines.geo_referencing.output import CDROutput, JSONWriter
-from tasks.common.pipeline import ObjectOutput, OutputCreator, Pipeline, PipelineInput
+from pipelines.geo_referencing.output import LARAModelOutput, JSONWriter
+from tasks.common.pipeline import (
+    BaseModelOutput,
+    ObjectOutput,
+    OutputCreator,
+    Pipeline,
+    PipelineInput,
+)
 from tasks.common.io import ImageFileInputIterator
 from util.image import download_file
 
@@ -103,13 +109,13 @@ class RequestQueue:
         outputs = pipeline.run(input)
 
         # create the response
-        output_raw: ObjectOutput = outputs[request.output_format]  # type: ignore
+        output_raw: BaseModelOutput = outputs["lara"]  # type: ignore
         return self._create_output(request, image_path, output_raw)
 
     def _get_output(self, request: Request) -> OutputCreator:
         match request.output_format:
             case "cdr":
-                return CDROutput("cdr")
+                return LARAModelOutput("lara")
         raise Exception("unrecognized output format specified in request")
 
     def _get_pipeline(self, request: Request) -> Pipeline:
@@ -130,13 +136,11 @@ class RequestQueue:
         return input
 
     def _create_output(
-        self, request: Request, image_path: str, output: ObjectOutput
+        self, request: Request, image_path: str, output: BaseModelOutput
     ) -> RequestResult:
-        # assume json output
-        writer_json = JSONWriter()
         return RequestResult(
             request=request,
-            output=writer_json.output([output], {}),
+            output=json.dumps(output.data.model_dump()),
             success=True,
             image_path=image_path,
         )
