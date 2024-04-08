@@ -12,16 +12,8 @@ from tasks.common.pipeline import (
     PipelineResult,
 )
 from tasks.geo_referencing.entities import (
-    GeoferenceResult,
+    GeoreferenceResult,
     GroundControlPoint as LARAGroundControlPoint,
-)
-from schema.ta1_schema import (
-    Map,
-    GeoReferenceMeta,
-    GroundControlPoint,
-    MapFeatureExtractions,
-    MapMetadata,
-    ProvenanceType,
 )
 from shapely import Polygon, Point
 from pandas import DataFrame
@@ -279,64 +271,6 @@ class IntegrationOutput(OutputCreator):
         return res
 
 
-class IntegrationModelOutput(OutputCreator):
-    def __init__(self, id):
-        super().__init__(id)
-
-    def create_output(self, pipeline_result: PipelineResult) -> Output:
-        # capture query points as output
-        query_points = pipeline_result.data["query_pts"]
-        projection_raw = pipeline_result.data["projection"]
-        datum_raw = pipeline_result.data["datum"]
-        projection_mapped = get_projection(datum_raw)
-
-        gcps = []
-        count = 0
-        for qp in query_points:
-            count = count + 1
-            gcp = GroundControlPoint(
-                id=f"gcp-{count}",
-                map_geom=(qp.lonlat[0], qp.lonlat[1]),
-                px_geom=(qp.xy[0], qp.xy[1]),
-                confidence=qp.confidence,
-                provenance=ProvenanceType.modelled,
-            )
-            gcps.append(gcp)
-
-        schema_georeference = GeoReferenceMeta(
-            gcps=gcps,
-            projection=projection_mapped,
-            bounds=None,
-            provenance=ProvenanceType.modelled,
-        )
-        schema_metadata = MapMetadata(
-            id=pipeline_result.raster_id,
-            authors="",
-            publisher="",
-            year=-1,
-            organization="",
-            scale="",
-            confidence=None,
-            provenance=ProvenanceType.skipped,
-        )
-        schema_map = Map(
-            name="",
-            id=pipeline_result.raster_id,
-            source_url="",
-            image_url="",
-            image_size=[],
-            map_metadata=schema_metadata,
-            features=MapFeatureExtractions(
-                lines=[], points=[], polygons=[], pipelines=[]
-            ),
-            cross_sections=None,
-            projection_info=schema_georeference,
-        )
-        return BaseModelOutput(
-            pipeline_result.pipeline_id, pipeline_result.pipeline_name, schema_map
-        )
-
-
 class LARAModelOutput(OutputCreator):
     def __init__(self, id):
         super().__init__(id)
@@ -364,11 +298,11 @@ class LARAModelOutput(OutputCreator):
             gcps.append(gcp)
             confidence = qp.confidence
 
-        result = GeoferenceResult(
+        result = GeoreferenceResult(
             map_id=pipeline_result.raster_id,
             gcps=gcps,
             projection=projection_mapped,
-            provenance=ProvenanceType.modelled,
+            provenance="modelled",
             confidence=confidence,
         )
         return BaseModelOutput(

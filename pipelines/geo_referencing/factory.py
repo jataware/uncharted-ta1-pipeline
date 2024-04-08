@@ -6,7 +6,6 @@ from pipelines.geo_referencing.output import (
     OutputCreator,
     GCPOutput,
     GeoReferencingOutput,
-    IntegrationModelOutput,
     IntegrationOutput,
     UserLeverOutput,
     SummaryOutput,
@@ -218,7 +217,6 @@ def create_geo_referencing_pipelines(
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
-                IntegrationModelOutput("model"),
             ],
             tasks,
         )

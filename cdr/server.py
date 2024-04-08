@@ -28,7 +28,7 @@ from process.queue import (
 from cdr.mapper import get_mapper
 from schema.cdr_schemas.events import Event, MapEventPayload
 from schema.cdr_schemas.georeference import GeoreferenceResults, GroundControlPoint
-from tasks.geo_referencing.entities import GeoferenceResult as LARAGeoreferenceResult
+from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoreferenceResult
 
 from typing import Any, Dict, List, Optional
 

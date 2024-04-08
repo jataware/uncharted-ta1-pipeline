@@ -7,7 +7,7 @@ from schema.cdr_schemas.georeference import (
     ProjectionResult,
 )
 
-from tasks.geo_referencing.entities import GeoferenceResult as LARAGeoferenceResult
+from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoferenceResult
 
 from pydantic import BaseModel
 

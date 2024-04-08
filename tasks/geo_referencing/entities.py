@@ -27,7 +27,7 @@ class GroundControlPoint(BaseModel):
     confidence: float
 
 
-class GeoferenceResult(BaseModel):
+class GeoreferenceResult(BaseModel):
     map_id: str
     projection: str
     gcps: List[GroundControlPoint]
