@@ -37,7 +37,7 @@ class PolyRegression:
         predicted_outputs = self.polyreg_model.predict(
             self.polyreg.fit_transform(np.array(inputs_pts))
         )
-        return predicted_outputs
+        return predicted_outputs.tolist()
 
 
 class GeoProjection:

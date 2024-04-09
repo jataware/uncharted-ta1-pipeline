@@ -11,7 +11,6 @@ from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
 from pipelines.geo_referencing.output import LARAModelOutput, JSONWriter
 from tasks.common.pipeline import (
     BaseModelOutput,
-    ObjectOutput,
     OutputCreator,
     Pipeline,
     PipelineInput,
@@ -24,7 +23,7 @@ from pika import spec
 
 from pydantic import BaseModel
 
-from typing import Any, Optional, Tuple
+from typing import Tuple
 
 LARA_REQUEST_QUEUE_NAME = "lara-request"
 LARA_RESULT_QUEUE_NAME = "lara-result"
