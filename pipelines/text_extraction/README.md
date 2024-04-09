@@ -29,8 +29,7 @@ pip install -e .
 * Input is a image (ie binary image file buffer)
 * Output is the set of extracted text items materialized as a:
   * `DocTextExtraction` JSON object
-  * List of `PageExtraction` objects as defined in the CMA TA1
-  * [Geopackage](geopackage.org) adhering to the CMA TA1 schema
+  * List of `FeatureResults` objects as defined in the CMA TA1 CDR schema
 
 ### Command Line Execution ###
 `run_pipeline.py` provides a command line wrapper around the map extraction pipeline, and allows for a directory map images to be processed serially.
