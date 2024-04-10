@@ -68,6 +68,9 @@ class GeoReference(Task):
         scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
 
+        if not scale_value:
+            scale_value = 0
+
         query_pts = None
         if "query_pts" in input.request:
             logger.info("reading query points from request")
@@ -125,6 +128,7 @@ class GeoReference(Task):
         result.output["error_scale"] = scale_error
         result.output["datum"] = datum
         result.output["projection"] = projection
+        print(rmse)
         return result
 
     def _calculate_confidence(
