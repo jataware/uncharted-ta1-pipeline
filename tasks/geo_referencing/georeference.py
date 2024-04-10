@@ -128,7 +128,6 @@ class GeoReference(Task):
         result.output["error_scale"] = scale_error
         result.output["datum"] = datum
         result.output["projection"] = projection
-        print(rmse)
         return result
 
     def _calculate_confidence(
