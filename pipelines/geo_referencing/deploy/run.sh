@@ -12,5 +12,4 @@ docker run \
     -p 5000:5000 \
     uncharted/lara-georef:latest \
         --workdir /workdir \
-        --model pipelines/segmentation_weights/layoutlmv3_xsection_20231201 \
-        --cdr_schema
+        --model pipelines/segmentation_weights/layoutlmv3_xsection_20231201
