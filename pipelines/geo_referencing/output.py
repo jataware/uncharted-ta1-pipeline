@@ -1,6 +1,5 @@
 import jsons
 import os
-from pathlib import Path
 import uuid
 
 from tasks.common.pipeline import (
@@ -15,9 +14,6 @@ from tasks.geo_referencing.entities import (
     GeoreferenceResult,
     GroundControlPoint as LARAGroundControlPoint,
 )
-from shapely import Polygon, Point
-from pandas import DataFrame
-from geopandas import GeoDataFrame
 
 from typing import Any, Dict, List
 
