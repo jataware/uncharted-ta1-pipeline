@@ -14,8 +14,9 @@ cp -r ../../../util .
 mkdir -p pipelines/segmentation_weights
 if [ -z "$1" ]
 then
-    echo "No segment model weights dir supplied"
+    echo "ERROR - No segment model weights dir supplied"
     segment_model=""
+    exit 1
 else
     segment_model=$1
     echo "Segment model weights dir: $segment_model"

@@ -14,8 +14,9 @@ cp -r ../../../tasks .
 mkdir -p pipelines/point_extraction_weights
 if [ -z "$1" ]
 then
-    echo "No point model weights file supplied"
+    echo "ERROR - No point model weights file supplied"
     point_model=""
+    exit 1
 else
     point_model=$1
     echo "Point model weights file: $point_model"
@@ -25,8 +26,9 @@ fi
 mkdir -p pipelines/segmentation_weights
 if [ -z "$2" ]
 then
-    echo "No segment model weights dir supplied"
+    echo "ERROR - No segment model weights dir supplied"
     segment_model=""
+    exit 1
 else
     segment_model=$2
     echo "Segment model weights dir: $segment_model"
