@@ -5,10 +5,14 @@ import os
 
 import pika
 
+from enum import Enum
 from PIL.Image import Image as PILImage
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
-from pipelines.geo_referencing.output import LARAModelOutput, JSONWriter
+from pipelines.geo_referencing.output import LARAModelOutput
+from pipelines.metadata_extraction.metadata_extraction_pipeline import (
+    MetadataExtractionOutput,
+)
 from tasks.common.pipeline import (
     BaseModelOutput,
     OutputCreator,
@@ -23,12 +27,17 @@ from pika import spec
 
 from pydantic import BaseModel
 
-from typing import Tuple
+from typing import List, Tuple
 
 LARA_REQUEST_QUEUE_NAME = "lara-request"
 LARA_RESULT_QUEUE_NAME = "lara-result"
 
 logger = logging.getLogger("process_queue")
+
+
+class OutputType(int, Enum):
+    GEOREFERENCING = 1
+    METADATA = 2
 
 
 class Request(BaseModel):
@@ -45,6 +54,7 @@ class RequestResult(BaseModel):
     success: bool
     output: str
     image_path: str
+    output_type: OutputType
 
 
 class RequestQueue:
@@ -83,18 +93,19 @@ class RequestQueue:
         channel.basic_ack(delivery_tag=method.delivery_tag)
 
         # process the request
-        result = self._process_request(request)
+        results = self._process_request(request)
         logger.info("writing request result to output queue")
 
         # run queue operations
-        self._output_channel[0].basic_publish(
-            exchange="",
-            routing_key=self._output_channel[1],
-            body=json.dumps(result.model_dump()),
-        )
-        logger.info("result written to output queue")
+        for r in results:
+            self._output_channel[0].basic_publish(
+                exchange="",
+                routing_key=self._output_channel[1],
+                body=json.dumps(r.model_dump()),
+            )
+            logger.info("result written to output queue")
 
-    def _process_request(self, request: Request) -> RequestResult:
+    def _process_request(self, request: Request) -> List[RequestResult]:
         image_path, image_it = self._get_image(
             self._working_dir, request.image_id, request.image_url
         )
@@ -108,21 +119,23 @@ class RequestQueue:
         outputs = pipeline.run(input)
 
         # create the response
-        output_raw: BaseModelOutput = outputs["lara"]  # type: ignore
-        return self._create_output(request, image_path, output_raw)
+        return [
+            self._create_output(request, image_path, OutputType.GEOREFERENCING, outputs["georef"]),  # type: ignore
+            self._create_output(request, image_path, OutputType.METADATA, outputs["metadata"]),  # type: ignore
+        ]
 
-    def _get_output(self, request: Request) -> OutputCreator:
+    def _get_outputs(self, request: Request) -> List[OutputCreator]:
         match request.output_format:
             case "cdr":
-                return LARAModelOutput("lara")
+                return [LARAModelOutput("georef"), MetadataExtractionOutput("metadata")]
         raise Exception("unrecognized output format specified in request")
 
     def _get_pipeline(self, request: Request) -> Pipeline:
-        output = self._get_output(request)
+        outputs = self._get_outputs(request)
         # TODO: USE THE REQUEST TO FIGURE OUT THE PROPER PIPELINE TO CREATE
         return create_geo_referencing_pipeline(
             "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
-            [output],
+            outputs,
         )
 
     def _create_pipeline_input(
@@ -135,13 +148,18 @@ class RequestQueue:
         return input
 
     def _create_output(
-        self, request: Request, image_path: str, output: BaseModelOutput
+        self,
+        request: Request,
+        image_path: str,
+        output_type: OutputType,
+        output: BaseModelOutput,
     ) -> RequestResult:
         return RequestResult(
             request=request,
             output=json.dumps(output.data.model_dump()),
             success=True,
             image_path=image_path,
+            output_type=output_type,
         )
 
     def _get_image(
