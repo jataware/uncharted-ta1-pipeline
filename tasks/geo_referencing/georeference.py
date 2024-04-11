@@ -68,6 +68,9 @@ class GeoReference(Task):
         scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
 
+        if not scale_value:
+            scale_value = 0
+
         query_pts = None
         if "query_pts" in input.request:
             logger.info("reading query points from request")

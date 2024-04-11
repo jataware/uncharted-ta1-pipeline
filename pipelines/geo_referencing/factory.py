@@ -124,7 +124,6 @@ def create_geo_referencing_pipelines(
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
-                IntegrationModelOutput("model"),
             ],
             tasks,
         )
@@ -298,7 +297,6 @@ def create_geo_referencing_pipelines(
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
-                IntegrationModelOutput("model"),
             ],
             tasks,
         )
@@ -380,7 +378,6 @@ def create_geo_referencing_pipelines(
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
                 IntegrationOutput("schema"),
-                IntegrationModelOutput("model"),
             ],
             tasks,
         )
