@@ -28,11 +28,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install torch==2.0.1
           pip install ./tasks[development]
-          pip install ./cdr
           pip install ./pipelines/segmentation
           pip install ./pipelines/text_extraction
           pip install ./pipelines/metadata_extraction
           pip install ./pipelines/geo_referencing
+          pip install ./cdr
       - name: Pyright type checking
         uses: jakebailey/pyright-action@v1
         with:
