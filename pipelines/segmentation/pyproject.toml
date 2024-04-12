@@ -7,7 +7,7 @@ name = "lara-map-segmentation"
 version = "0.1.0"
 description = "LARA map segmentation pipeline and server"
 readme = "README.md"
-dependencies = ["flask", "mypy-boto3-s3", "lara-tasks[segmentation]", "criticalmaas.ta1-geopackage"]
+dependencies = ["flask", "mypy-boto3-s3", "lara-tasks[segmentation]"]
 
 [tool.setuptools.packages]
 find = {}

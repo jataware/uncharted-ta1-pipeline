@@ -40,22 +40,17 @@ def process_image():
             logging.warning(msg)
             return (msg, 500)
 
-        ta1_schema = app.config.get("ta1_schema", False)
+        cdr_schema = app.config.get("cdr_schema", False)
         # get ta1 schema output or internal output format
         point_extraction_result = (
-            result["integration_output"]
-            if ta1_schema
+            result["map_point_label_cdr_output"]
+            if cdr_schema
             else result["map_point_label_output"]
         )
 
         # convert result to a JSON string and return
         if isinstance(point_extraction_result, BaseModelOutput):
             result_json = json.dumps(point_extraction_result.data.model_dump())
-            return Response(result_json, status=200, mimetype="application/json")
-        elif isinstance(point_extraction_result, BaseModelListOutput):
-            result_json = json.dumps(
-                [d.model_dump() for d in point_extraction_result.data]
-            )
             return Response(result_json, status=200, mimetype="application/json")
         else:
             msg = "No point extraction results"
@@ -91,13 +86,8 @@ if __name__ == "__main__":
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model_point_extractor", type=str, required=True)
     parser.add_argument("--model_segmenter", type=str, default=None)
-    parser.add_argument("--debug", type=bool, default=False)
-    parser.add_argument(
-        "--ta1_schema",
-        type=bool,
-        default=False,
-        help="Output results as TA1 json schema format",
-    )
+    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--cdr_schema", action="store_true")
     p = parser.parse_args()
 
     # init point extraction pipeline
@@ -106,7 +96,7 @@ if __name__ == "__main__":
     )
 
     #### start flask server
-    app.config["ta1_schema"] = p.ta1_schema
+    app.config["cdr_schema"] = p.cdr_schema
     if p.debug:
         app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
     else:

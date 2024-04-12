@@ -3,8 +3,7 @@ from pathlib import Path
 import logging
 import os
 
-
-from tasks.common.pipeline import BaseModelListOutput, PipelineInput, BaseModelOutput
+from tasks.common.pipeline import PipelineInput, BaseModelOutput
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter
 
@@ -24,7 +23,7 @@ def main():
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model_point_extractor", type=str, required=True)
     parser.add_argument("--model_segmenter", type=str, default=None)
-    parser.add_argument("--ta1_schema", type=bool, default=False)
+    parser.add_argument("--cdr_schema", action="store_true")
     p = parser.parse_args()
 
     # setup an input stream
@@ -44,13 +43,16 @@ def main():
         results = pipeline.run(image_input)
 
         # write the results out to the file system or s3 bucket
-        for _, output_data in results.items():
+        for output_type, output_data in results.items():
             if isinstance(output_data, BaseModelOutput):
-                path = os.path.join(p.output, f"{doc_id}_point_extraction.json")
-                file_writer.process(path, output_data.data)
-            elif isinstance(output_data, BaseModelListOutput) and p.ta1_schema:
-                path = os.path.join(p.output, f"{doc_id}_point_extraction_schema.json")
-                file_writer.process(path, output_data.data)
+                if output_type == "map_point_label_output":
+                    path = os.path.join(p.output, f"{doc_id}_point_extraction.json")
+                    file_writer.process(path, output_data.data)
+                elif output_type == "map_point_label_cdr_output" and p.cdr_schema:
+                    path = os.path.join(p.output, f"{doc_id}_point_extraction_cdr.json")
+                    file_writer.process(path, output_data.data)
+            else:
+                logger.warning(f"Unknown output data: {output_data}")
 
 
 if __name__ == "__main__":

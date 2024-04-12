@@ -18,6 +18,23 @@ class DocGeoFence(BaseModel):
     geofence: GeoFence
 
 
+class GroundControlPoint(BaseModel):
+    id: str
+    pixel_x: float
+    pixel_y: float
+    latitude: float
+    longitude: float
+    confidence: float
+
+
+class GeoreferenceResult(BaseModel):
+    map_id: str
+    projection: str
+    gcps: List[GroundControlPoint]
+    provenance: str
+    confidence: float
+
+
 class Coordinate:
     _type: str = ""
     _text: str = ""

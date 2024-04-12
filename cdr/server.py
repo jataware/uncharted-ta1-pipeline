@@ -1,7 +1,9 @@
 import argparse
+import atexit
 import httpx
 import json
 import logging
+import ngrok
 import os
 import pika
 import rasterio as rio
@@ -23,7 +25,10 @@ from process.queue import (
     LARA_RESULT_QUEUE_NAME,
 )
 
+from cdr.mapper import get_mapper
 from schema.cdr_schemas.events import Event, MapEventPayload
+from schema.cdr_schemas.georeference import GeoreferenceResults, GroundControlPoint
+from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoreferenceResult
 
 from typing import Any, Dict, List, Optional
 
@@ -35,12 +40,21 @@ request_channel: Optional[Channel] = None
 
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 CDR_HOST = "https://api.cdr.land"
+CDR_SYSTEM_NAME = "uncharted"
+CDR_SYSTEM_VERSION = "0.0.1"
+CDR_CALLBACK_SECRET = "maps rock"
+APP_PORT = 5001
 
 
 class Settings:
     cdr_api_token: str
     cdr_host: str
     workdir: str
+    system_name: str
+    system_version: str
+    callback_secret: str
+    callback_url: str
+    registration_id: str
 
 
 settings: Settings
@@ -52,10 +66,13 @@ def create_channel(host: str) -> Channel:
     return connection.channel()
 
 
-def queue_event(channel: Channel, req: Request):
+def queue_event(req: Request):
+    request_channel = create_channel("localhost")
+    request_channel.queue_declare(queue=LARA_REQUEST_QUEUE_NAME)
+
     logger.info(f"sending request {req.id} for image {req.image_id} to lara queue")
     # send request to queue
-    channel.basic_publish(
+    request_channel.basic_publish(
         exchange="",
         routing_key=LARA_REQUEST_QUEUE_NAME,
         body=json.dumps(req.model_dump()),
@@ -97,14 +114,16 @@ def project_image(
                 )
 
 
-def cps_to_transform(gcps: List[Dict[str, Any]], height: int, to_crs: str) -> Affine:
+def cps_to_transform(
+    gcps: List[GroundControlPoint], height: int, to_crs: str
+) -> Affine:
     cps = [
         {
-            "row": height - float(gcp["px_geom"]["rows_from_top"]),
-            "col": float(gcp["px_geom"]["columns_from_left"]),
-            "x": float(gcp["map_geom"]["longitude"]),
-            "y": float(gcp["map_geom"]["latitude"]),
-            "crs": gcp["crs"],
+            "row": height - float(gcp.px_geom.rows_from_top),
+            "col": float(gcp.px_geom.columns_from_left),
+            "x": float(gcp.map_geom.longitude),  #   type: ignore
+            "y": float(gcp.map_geom.latitude),  #   type: ignore
+            "crs": gcp.crs,
         }
         for gcp in gcps
     ]
@@ -123,7 +142,7 @@ def project_georeference(
     source_image_path: str,
     target_image_path: str,
     target_crs: str,
-    gcps: List[Dict[str, Any]],
+    gcps: List[GroundControlPoint],
 ):
     # open the image
     img = Image.open(source_image_path)
@@ -138,19 +157,21 @@ def project_georeference(
 
 @app.route("/process_event", methods=["POST"])
 def process_event():
-    evt = request.json
+    logger.info("event callback started")
+    evt = request.get_json(force=True)
+    logger.info(f"event data received {evt}")
     lara_req = None
 
     try:
         # handle event directly or create lara request
-        match evt:
-            case Event(event="ping"):
+        match evt["event"]:
+            case "ping":
                 logger.info("received ping event")
-            case Event(event="map.process"):
+            case "map.process":
                 logger.info("Received map event")
-                map_event = MapEventPayload.model_validate(evt.payload)
+                map_event = MapEventPayload.model_validate(evt["payload"])
                 lara_req = Request(
-                    id=evt.id,
+                    id=evt["id"],
                     task="georeference",
                     image_id=map_event.cog_id,
                     image_url=map_event.cog_url,
@@ -168,13 +189,12 @@ def process_event():
         return Response({"ok": "success"}, status=200, mimetype="application/json")
 
     # queue event in background since it may be blocking on the queue
-    assert request_channel is not None
-    queue_event(request_channel, lara_req)
+    # assert request_channel is not None
+    queue_event(lara_req)
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
 
 def process_image(image_id: str):
-    assert request_channel is not None
     logger.info(f"processing image with id {image_id}")
 
     # build the request
@@ -187,11 +207,7 @@ def process_image(image_id: str):
     )
 
     # push the request onto the queue
-    queue_event(request_channel, req)
-
-
-def start_app():
-    pass
+    queue_event(req)
 
 
 def process_result(
@@ -210,17 +226,34 @@ def process_result(
     logger.info(f"processing result for request {result.request.id}")
 
     # reproject image to file on disk for pushing to CDR
-    georef_result = json.loads(result.output)[0]
-    projection = georef_result["georeference_results"][0]["projections"][0]
-    gcps = georef_result["gcps"]
-    output_file_name = projection["file_name"]
+    georef_result_raw = json.loads(result.output)
+
+    # validate the result by building the model classes
+    cdr_result: Optional[GeoreferenceResults] = None
+    try:
+        lara_result = LARAGeoreferenceResult.model_validate(georef_result_raw)
+        mapper = get_mapper(settings.system_name, settings.system_version)
+        cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
+    except:
+        logger.error(
+            "bad georeferencing result received so unable to send results to cdr"
+        )
+        raise
+
+    assert cdr_result is not None
+    assert cdr_result.georeference_results is not None
+    assert cdr_result.georeference_results[0] is not None
+    assert cdr_result.georeference_results[0].projections is not None
+    projection = cdr_result.georeference_results[0].projections[0]
+    gcps = cdr_result.gcps
+    output_file_name = projection.file_name
     output_file_name_full = os.path.join(settings.workdir, output_file_name)
+
+    assert gcps is not None
     logger.info(
-        f"projecting image {result.image_path} to {output_file_name_full} using crs {projection['crs']}"
+        f"projecting image {result.image_path} to {output_file_name_full} using crs {projection.crs}"
     )
-    project_georeference(
-        result.image_path, output_file_name_full, projection["crs"], gcps
-    )
+    project_georeference(result.image_path, output_file_name_full, projection.crs, gcps)
 
     files_ = []
     files_.append(("files", (output_file_name, open(output_file_name_full, "rb"))))
@@ -231,12 +264,12 @@ def process_result(
     client = httpx.Client(follow_redirects=True)
     resp = client.post(
         f"{settings.cdr_host}/v1/maps/publish/georef",
-        data={"georef_result": json.dumps(georef_result)},
+        data={"georef_result": json.dumps(cdr_result.model_dump())},
         files=files_,
         headers=headers,
     )
     logger.info(
-        f"result for request {result.request.id} sent to CDR with response {resp.status_code}"
+        f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
     )
 
 
@@ -254,6 +287,91 @@ def start_result_listener(result_queue: str):
         queue=LARA_RESULT_QUEUE_NAME, on_message_callback=process_result
     )
     result_channel.start_consuming()
+
+
+def register_system():
+    logger.info("registering system with cdr")
+    headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
+
+    registration = {
+        "name": settings.system_name,
+        "version": settings.system_version,
+        "callback_url": settings.callback_url,
+        "webhook_secret": settings.callback_secret,
+        # Leave blank if callback url has no auth requirement
+        # "auth_header": "",
+        # "auth_token": "",
+        # Registers for ALL events
+        "events": [],
+    }
+
+    client = httpx.Client(follow_redirects=True)
+
+    r = client.post(
+        f"{settings.cdr_host}/user/me/register", json=registration, headers=headers
+    )
+
+    # Log our registration_id such we can delete it when we close the program.
+    response_raw = r.json()
+    settings.registration_id = response_raw["id"]
+    logger.info("system registered with cdr")
+
+
+def get_registrations() -> List[Dict[str, Any]]:
+    logger.info("getting list of existing registrations in CDR")
+
+    # query the listing endpoint in CDR
+    headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
+    client = httpx.Client(follow_redirects=True)
+    response = client.get(
+        f"{settings.cdr_host}/user/me/registrations",
+        headers=headers,
+    )
+
+    # parse json response
+    return json.loads(response.content)
+
+
+def unregister(registration_id: str):
+    headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
+    client = httpx.Client(follow_redirects=True)
+    client.delete(
+        f"{settings.cdr_host}/user/me/register/{registration_id}",
+        headers=headers,
+    )
+
+
+def clean_up():
+    logger.info("unregistering system with cdr")
+    # delete our registered system at CDR on program end
+    unregister(settings.registration_id)
+    logger.info("system no longer registered with cdr")
+
+
+def cdr_startup(host: str):
+    # check if already registered and delete existing registrations for this name and token combination
+    registrations = get_registrations()
+    if len(registrations) > 0:
+        for r in registrations:
+            if r["name"] == settings.system_name:
+                unregister(r["id"])
+
+    # make it accessible from the outside
+    settings.callback_url = f"{host}/process_event"
+
+    register_system()
+
+    # wire up the cleanup of the registration
+    atexit.register(clean_up)
+
+
+def start_app():
+    # forward ngrok port
+    logger.info("using ngrok to forward ports")
+    listener = ngrok.forward(APP_PORT, authtoken_from_env=True)
+    cdr_startup(listener.url())
+
+    app.run(host="0.0.0.0", port=APP_PORT)
 
 
 def main():
@@ -276,20 +394,23 @@ def main():
     settings.cdr_api_token = CDR_API_TOKEN
     settings.cdr_host = CDR_HOST
     settings.workdir = p.workdir
+    settings.system_name = CDR_SYSTEM_NAME
+    settings.system_version = CDR_SYSTEM_VERSION
+    settings.callback_secret = CDR_CALLBACK_SECRET
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
     if p.mode == "process" and (p.cog_id == "" or p.cog_id is None):
-        print("process mode requires a cog id")
+        logger.info("process mode requires a cog id")
         exit(1)
-    elif p.mode == "host" and (not p.cog_id == "" or p.cog_id is not None):
-        print("a cog id cannot be provided if host mode is selected")
+    elif p.mode == "host" and (not p.cog_id == "" and p.cog_id is not None):
+        logger.info("a cog id cannot be provided if host mode is selected")
         exit(1)
     logger.info(f"starting cdr in {p.mode} mode")
 
     # initializae the request channel
-    global request_channel
-    request_channel = create_channel(p.request_queue)
-    request_channel.queue_declare(queue=LARA_REQUEST_QUEUE_NAME)
+    # global request_channel
+    # request_channel = create_channel(p.request_queue)
+    # request_channel.queue_declare(queue=LARA_REQUEST_QUEUE_NAME)
 
     # start the listener for the results
     threading.Thread(target=start_result_listener, args=(p.result_queue,)).start()
@@ -298,9 +419,10 @@ def main():
     if p.mode == "host":
         start_app()
     elif p.mode == "process":
+        cdr_startup("https://mock.example")
         process_image(p.cog_id)
 
-    # ensure propoer closure of channels
+    # TODO: ensure propoer closure of channels
 
 
 if __name__ == "__main__":

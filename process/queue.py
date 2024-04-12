@@ -8,8 +8,13 @@ import pika
 from PIL.Image import Image as PILImage
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
-from pipelines.geo_referencing.output import CDROutput, JSONWriter
-from tasks.common.pipeline import ObjectOutput, OutputCreator, Pipeline, PipelineInput
+from pipelines.geo_referencing.output import LARAModelOutput, JSONWriter
+from tasks.common.pipeline import (
+    BaseModelOutput,
+    OutputCreator,
+    Pipeline,
+    PipelineInput,
+)
 from tasks.common.io import ImageFileInputIterator
 from util.image import download_file
 
@@ -18,7 +23,7 @@ from pika import spec
 
 from pydantic import BaseModel
 
-from typing import Any, Optional, Tuple
+from typing import Tuple
 
 LARA_REQUEST_QUEUE_NAME = "lara-request"
 LARA_RESULT_QUEUE_NAME = "lara-result"
@@ -75,13 +80,13 @@ class RequestQueue:
         body_decoded = json.loads(body.decode())
         # parse body as request
         request = Request.model_validate(body_decoded)
+        channel.basic_ack(delivery_tag=method.delivery_tag)
 
         # process the request
         result = self._process_request(request)
         logger.info("writing request result to output queue")
 
         # run queue operations
-        channel.basic_ack(delivery_tag=method.delivery_tag)
         self._output_channel[0].basic_publish(
             exchange="",
             routing_key=self._output_channel[1],
@@ -103,13 +108,13 @@ class RequestQueue:
         outputs = pipeline.run(input)
 
         # create the response
-        output_raw: ObjectOutput = outputs[request.output_format]  # type: ignore
+        output_raw: BaseModelOutput = outputs["lara"]  # type: ignore
         return self._create_output(request, image_path, output_raw)
 
     def _get_output(self, request: Request) -> OutputCreator:
         match request.output_format:
             case "cdr":
-                return CDROutput("cdr")
+                return LARAModelOutput("lara")
         raise Exception("unrecognized output format specified in request")
 
     def _get_pipeline(self, request: Request) -> Pipeline:
@@ -130,13 +135,11 @@ class RequestQueue:
         return input
 
     def _create_output(
-        self, request: Request, image_path: str, output: ObjectOutput
+        self, request: Request, image_path: str, output: BaseModelOutput
     ) -> RequestResult:
-        # assume json output
-        writer_json = JSONWriter()
         return RequestResult(
             request=request,
-            output=writer_json.output([output], {}),
+            output=json.dumps(output.data.model_dump()),
             success=True,
             image_path=image_path,
         )
@@ -179,15 +182,19 @@ def main():
 
     # setup input and output queue
     request_connection = pika.BlockingConnection(
-        pika.ConnectionParameters(p.request_queue)
+        pika.ConnectionParameters(
+            p.request_queue, heartbeat=900, blocked_connection_timeout=600
+        )
     )
     request_channel = request_connection.channel()
     request_channel.queue_declare(queue=LARA_REQUEST_QUEUE_NAME)
 
-    request_connection = pika.BlockingConnection(
-        pika.ConnectionParameters(p.result_queue)
+    result_connection = pika.BlockingConnection(
+        pika.ConnectionParameters(
+            p.result_queue, heartbeat=900, blocked_connection_timeout=600
+        )
     )
-    result_channel = request_connection.channel()
+    result_channel = result_connection.channel()
     result_channel.queue_declare(queue=LARA_RESULT_QUEUE_NAME)
 
     # start the queue

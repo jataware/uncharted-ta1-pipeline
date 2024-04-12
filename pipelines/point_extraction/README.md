@@ -54,8 +54,7 @@ The segmentation dependencies are required due to the use of the map segmentatio
 * Input is a image (ie binary image file buffer)
 * Ouput is the set of extracted points materialized as a:
   * `MapImage` JSON object, which contains a list of `MapPointLabel` capturing the point information
-  * List of `PointFeature` JSON objects as defined in the CMA TA1 schema
-  * [Geopackage](geopackage.org) adhering to the CMA TA1 schema
+  * List of `FeatureResults` JSON objects as defined in the CMA TA1 CDR schema
 
 ### Command Line Execution ###
 `run_pipeline.py` provides a command line wrapper around the point extraction pipeline, and allows for a directory map images to be processed serially.
