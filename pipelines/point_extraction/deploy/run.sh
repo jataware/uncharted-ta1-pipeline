@@ -4,6 +4,7 @@
 
 docker network ls | grep -q 'lara' || docker network create lara
 docker run \
+    --pull always \
     --rm \
     --name point_extraction \
     -e GOOGLE_APPLICATION_CREDENTIALS=/credentials.json \

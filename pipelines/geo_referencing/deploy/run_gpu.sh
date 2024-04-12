@@ -4,6 +4,8 @@
 
 docker network ls | grep -q 'lara' || docker network create lara
 docker run \
+    --runtime=nvidia \
+    --gpus all \
     --pull always \
     -e OPENAI_API_KEY=$OPENAI_API_KEY \
     -e GOOGLE_APPLICATION_CREDENTIALS=/credentials.json \

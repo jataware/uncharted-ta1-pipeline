@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # args: $1 - path to local directory to mount as /workdir in docker container
-# args: $2 - s3 url pointing to model folder
 
 docker network create lara
 docker run \
+    --pull always \
     --runtime=nvidia \
     --gpus all \
     --rm \
