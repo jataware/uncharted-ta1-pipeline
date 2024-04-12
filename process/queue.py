@@ -59,8 +59,9 @@ class RequestResult(BaseModel):
 
 class RequestQueue:
 
-    def __init__(self, working_dir: str):
+    def __init__(self, working_dir: str, model: str):
         self._working_dir = working_dir
+        self._model = model
         logger.info(f"initialize queue using work dir {working_dir}")
 
     def setup_queue(self, input: Tuple[Channel, str], output: Tuple[Channel, str]):
@@ -134,7 +135,7 @@ class RequestQueue:
         outputs = self._get_outputs(request)
         # TODO: USE THE REQUEST TO FIGURE OUT THE PROPER PIPELINE TO CREATE
         return create_geo_referencing_pipeline(
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
+            self._model,
             outputs,
         )
 
@@ -189,6 +190,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, required=True)
+    parser.add_argument("--model", type=str, default=None)
     parser.add_argument("--request_queue", type=str, default="localhost")
     parser.add_argument("--result_queue", type=str, default="localhost")
     p = parser.parse_args()
@@ -216,7 +218,7 @@ def main():
     result_channel.queue_declare(queue=LARA_RESULT_QUEUE_NAME)
 
     # start the queue
-    queue = RequestQueue(p.workdir)
+    queue = RequestQueue(p.workdir, p.model)
     queue.setup_queue(
         (request_channel, LARA_REQUEST_QUEUE_NAME),
         (result_channel, LARA_RESULT_QUEUE_NAME),
