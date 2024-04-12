@@ -6,10 +6,15 @@ from schema.cdr_schemas.georeference import (
     GeoreferenceResult,
     ProjectionResult,
 )
+from schema.cdr_schemas.metadata import MapMetaData, CogMetaData
 
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoferenceResult
+from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
 
 from pydantic import BaseModel
+
+MODEL_NAME = "uncharted-lara"
+MODEL_VERSION = "0.0.1"
 
 
 class CDRMapper:
@@ -37,8 +42,8 @@ class GeoreferenceMapper(CDRMapper):
                     rows_from_top=gcp.pixel_y, columns_from_left=gcp.pixel_x
                 ),
                 confidence=gcp.confidence,
-                model="uncharted-lara",
-                model_version="0.0.1",
+                model=MODEL_NAME,
+                model_version=MODEL_VERSION,
                 crs=model.projection,
             )
             gcps.append(cdr_gcp)
@@ -67,6 +72,40 @@ class GeoreferenceMapper(CDRMapper):
         raise NotImplementedError()
 
 
-def get_mapper(system_name: str, system_version: str) -> CDRMapper:
-    # TODO: CREATE THE MAPPER BASED ON INPUT PARAMS (PERHAPS KEY OFF BASE MODEL TYPE)
-    return GeoreferenceMapper(system_name, system_version)
+class MetadataMapper(CDRMapper):
+
+    def map_to_cdr(self, model: LARAMetadata) -> CogMetaData:
+        return CogMetaData(
+            cog_id=model.map_id,
+            system=self._system_name,
+            system_version=self._system_version,
+            multiple_maps=False,
+            map_metadata=[
+                MapMetaData(
+                    title=model.title,
+                    year=int(model.year),
+                    scale=int(model.scale.split(":")[1]),
+                    crs=None,
+                    authors=model.authors,
+                    organization=None,
+                    quadrangle_name=",".join(model.quadrangles),
+                    map_shape=None,
+                    map_color_scheme=None,
+                    publisher=None,
+                    state=",".join(model.states),
+                    model=MODEL_NAME,
+                    model_version=MODEL_VERSION,
+                ),
+            ],
+        )
+
+    def map_from_cdr(self, model: CogMetaData) -> LARAMetadata:
+        raise NotImplementedError()
+
+
+def get_mapper(model: BaseModel, system_name: str, system_version: str) -> CDRMapper:
+    if isinstance(model, LARAGeoferenceResult):
+        return GeoreferenceMapper(system_name, system_version)
+    elif isinstance(model, LARAMetadata):
+        return MetadataMapper(system_name, system_version)
+    raise Exception("mapping does not support the requested type")

@@ -25,6 +25,7 @@ from tasks.common.pipeline import (
 )
 
 from schema.cdr_schemas.metadata import MapMetaData, CogMetaData
+from schema.mappers.cdr import MetadataMapper
 
 import importlib.metadata
 
@@ -120,30 +121,9 @@ class CDROutput(OutputCreator):
         metadata_extraction = MetadataExtraction.model_validate(
             pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
         )
+        mapper = MetadataMapper(MODEL_NAME, MODEL_VERSION)
 
-        cdr_metadata = CogMetaData(
-            cog_id=metadata_extraction.map_id,
-            system=MODEL_NAME,
-            system_version=MODEL_VERSION,
-            multiple_maps=False,
-            map_metadata=[
-                MapMetaData(
-                    title=metadata_extraction.title,
-                    year=int(metadata_extraction.year),
-                    scale=int(metadata_extraction.scale.split(":")[1]),
-                    crs=None,
-                    authors=metadata_extraction.authors,
-                    organization=None,
-                    quadrangle_name=",".join(metadata_extraction.quadrangles),
-                    map_shape=None,
-                    map_color_scheme=None,
-                    publisher=None,
-                    state=",".join(metadata_extraction.states),
-                    model=MODEL_NAME,
-                    model_version=MODEL_VERSION,
-                ),
-            ],
-        )
+        cdr_metadata = mapper.map_to_cdr(metadata_extraction)
         return BaseModelOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, cdr_metadata
         )

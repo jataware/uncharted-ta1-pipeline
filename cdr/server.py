@@ -19,16 +19,20 @@ from rasterio.transform import Affine
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 
 from process.queue import (
+    OutputType,
     Request,
     RequestResult,
     LARA_REQUEST_QUEUE_NAME,
     LARA_RESULT_QUEUE_NAME,
 )
 
-from cdr.mapper import get_mapper
+from schema.mappers.cdr import get_mapper
 from schema.cdr_schemas.events import Event, MapEventPayload
+from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.georeference import GeoreferenceResults, GroundControlPoint
+from schema.cdr_schemas.metadata import CogMetaData
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoreferenceResult
+from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
 
 from typing import Any, Dict, List, Optional
 
@@ -210,21 +214,7 @@ def process_image(image_id: str):
     queue_event(req)
 
 
-def process_result(
-    channel: Channel,
-    method: spec.Basic.Deliver,
-    properties: spec.BasicProperties,
-    body: bytes,
-):
-    # ack the result which will result in dropped messages in cases of errors in the processing but prevents blocking on bad data
-    channel.basic_ack(delivery_tag=method.delivery_tag)
-
-    logger.info("received data from result channel")
-    # parse the result
-    body_decoded = json.loads(body.decode())
-    result = RequestResult.model_validate(body_decoded)
-    logger.info(f"processing result for request {result.request.id}")
-
+def push_georeferencing(result: RequestResult):
     # reproject image to file on disk for pushing to CDR
     georef_result_raw = json.loads(result.output)
 
@@ -232,7 +222,7 @@ def process_result(
     cdr_result: Optional[GeoreferenceResults] = None
     try:
         lara_result = LARAGeoreferenceResult.model_validate(georef_result_raw)
-        mapper = get_mapper(settings.system_name, settings.system_version)
+        mapper = get_mapper(lara_result, settings.system_name, settings.system_version)
         cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
     except:
         logger.error(
@@ -271,6 +261,78 @@ def process_result(
     logger.info(
         f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
     )
+
+
+def push_metadata(result: RequestResult):
+    metadata_result_raw = json.loads(result.output)
+
+    # validate the result by building the model classes
+    cdr_result: Optional[CogMetaData] = None
+    try:
+        lara_result = LARAMetadata.model_validate(metadata_result_raw)
+        mapper = get_mapper(lara_result, settings.system_name, settings.system_version)
+        cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
+    except:
+        logger.error("bad metadata result received so unable to send results to cdr")
+        raise
+
+    assert cdr_result is not None
+
+    # wrap metadata into feature result
+    final_result = FeatureResults(
+        cog_id=result.request.image_id,
+        line_feature_results=None,
+        point_feature_results=None,
+        polygon_feature_results=None,
+        cog_area_extractions=None,
+        cog_metadata_extractions=[cdr_result],
+        system=cdr_result.system,
+        system_version=cdr_result.system_version,
+    )
+
+    logger.info(f"pushing metadata result for request {result.request.id} to CDR")
+    print(json.dumps(final_result.model_dump()))
+    headers = {
+        "Authorization": f"Bearer {settings.cdr_api_token}",
+        "Content-Type": "application/json",
+    }
+    client = httpx.Client(follow_redirects=True)
+    resp = client.post(
+        f"{settings.cdr_host}/v1/maps/publish/features",
+        data=final_result.model_dump_json(),  #   type: ignore
+        headers=headers,
+    )
+    logger.info(
+        f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
+    )
+
+
+def process_result(
+    channel: Channel,
+    method: spec.Basic.Deliver,
+    properties: spec.BasicProperties,
+    body: bytes,
+):
+    # ack the result which will result in dropped messages in cases of errors in the processing but prevents blocking on bad data
+    channel.basic_ack(delivery_tag=method.delivery_tag)
+
+    logger.info("received data from result channel")
+    # parse the result
+    body_decoded = json.loads(body.decode())
+    result = RequestResult.model_validate(body_decoded)
+    logger.info(
+        f"processing result for request {result.request.id} of type {result.output_type}"
+    )
+
+    # reproject image to file on disk for pushing to CDR
+    match result.output_type:
+        case OutputType.GEOREFERENCING:
+            push_georeferencing(result)
+        case OutputType.METADATA:
+            push_metadata(result)
+        case _:
+            logger.info("unsupported output type received from queue")
+    logger.info("result processing finished")
 
 
 def start_result_listener(result_queue: str):
