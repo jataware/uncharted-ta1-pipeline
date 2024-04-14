@@ -1,11 +1,14 @@
 import argparse
+import re
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
 from io import BytesIO
+
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
+from tasks.common.queue import RequestQueue
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
 from tasks.metadata_extraction.entities import METADATA_EXTRACTION_OUTPUT_KEY
@@ -90,6 +93,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Output results as TA1 json schema format",
     )
+    parser.add_argument("--rest", action="store_true")
     p = parser.parse_args()
 
     # init segmenter
@@ -98,8 +102,14 @@ if __name__ == "__main__":
     )
 
     #### start flask server
-    app.config["cdr_schema"] = p.cdr_schema
-    if p.debug:
-        app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    if p.rest:
+        app.config["cdr_schema"] = p.cdr_schema
+        if p.debug:
+            app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+        else:
+            app.run(host="0.0.0.0", port=5000)
     else:
-        app.run(host="0.0.0.0", port=5000)
+        queue = RequestQueue(
+            metadata_extraction, "metadata_request", "metadata_result", p.workdir
+        )
+        queue.start_request_queue()

@@ -6,7 +6,6 @@ cp ../*.py cdr
 cp ../pyproject.toml cdr
 cp -r ../../schema .
 cp -r ../../tasks .
-cp -r ../../process .
 
 # run the build
 docker build -t uncharted/lara-cdr:latest .
@@ -15,4 +14,3 @@ docker build -t uncharted/lara-cdr:latest .
 rm -rf cdr
 rm -rf schema
 rm -rf tasks
-rm -rf process
