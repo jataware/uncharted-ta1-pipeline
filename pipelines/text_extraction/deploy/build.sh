@@ -10,7 +10,7 @@ cp -r ../../../schema .
 cp -r ../../../tasks .
 
 # run the build
-docker build -t docker.uncharted.software/text-extraction:latest .
+docker build -t uncharted/lara-text-extract:latest .
 
 # cleanup the temp files
 rm -rf pipelines
