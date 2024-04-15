@@ -6,6 +6,8 @@ from hashlib import sha1
 import io
 from PIL import Image
 
+from tasks.common.queue import RequestQueue
+
 from .text_extraction_pipeline import TextExtractionPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput
 
@@ -38,12 +40,8 @@ def process_image():
             logging.warning(msg)
             return (msg, 500)
 
-        cdr_schema = app.config.get("cdr_schema", False)
-        text_result = (
-            results["doc_text_extraction_cdr_output"]
-            if cdr_schema
-            else results["doc_text_extraction_output"]
-        )
+        result_key = app.config.get("result_key", "doc_text_extraction_output")
+        text_result = results[result_key]
 
         if type(text_result) == BaseModelOutput:
             result_json = json.dumps(text_result.data.model_dump())
@@ -81,13 +79,32 @@ if __name__ == "__main__":
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
+    parser.add_argument("--rest", action="store_true")
+    parser.add_argument("--request_queue", type=str, default="text_request")
+    parser.add_argument("--result_queue", type=str, default="text_result")
     p = parser.parse_args()
 
     pipeline = TextExtractionPipeline(p.workdir, tile=True)
 
-    #### start flask server
-    app.config["cdr_schema"] = p.cdr_schema
-    if p.debug:
-        app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    result_key = (
+        "doc_text_extracction_output"
+        if not p.cdr_schema
+        else "doc_text_extraction_cdr_output"
+    )
+    app.config["result_key"] = result_key
+
+    #### start flask server or startup up the message queue
+    if p.rest:
+        if p.debug:
+            app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+        else:
+            app.run(host="0.0.0.0", port=5000)
     else:
-        app.run(host="0.0.0.0", port=5000)
+        queue = RequestQueue(
+            pipeline,
+            p.request_queue,
+            p.result_queue,
+            result_key,
+            p.workdir,
+        )
+        queue.start_request_queue()

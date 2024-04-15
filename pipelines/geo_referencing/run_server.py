@@ -5,16 +5,15 @@ import os
 from flask import Flask, request, Response
 from hashlib import sha1
 from io import BytesIO
-from pathlib import Path
 from PIL.Image import Image as PILImage
 from PIL import Image
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
 from pipelines.geo_referencing.output import GCPOutput, JSONWriter, ObjectOutput
 from tasks.common.pipeline import Pipeline, PipelineInput
-from tasks.geo_referencing.georeference import QueryPoint
+from tasks.common.queue import RequestQueue
 
-from typing import Dict, List, Tuple
+from typing import Tuple
 
 Image.MAX_IMAGE_PIXELS = 400000000
 
@@ -116,12 +115,31 @@ def start_server():
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--min_confidence", type=float, default=0.25)
     parser.add_argument("--debug", type=float, default=False)
+    parser.add_argument("--rest", action="store_true")
+    parser.add_argument("--request_queue", type=str, default="georef_request")
+    parser.add_argument("--result_queue", type=str, default="georef_result")
     p = parser.parse_args()
 
     global georef_pipeline
     georef_pipeline = create_geo_referencing_pipeline(p.model, [GCPOutput("schema")])
 
     app.run(host="0.0.0.0", port=5000)
+
+    #### start flask server or startup up the message queue
+    if p.rest:
+        if p.debug:
+            app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+        else:
+            app.run(host="0.0.0.0", port=5000)
+    else:
+        queue = RequestQueue(
+            georef_pipeline,
+            p.request_queue,
+            p.result_queue,
+            "schema",
+            p.workdir,
+        )
+        queue.start_request_queue()
 
 
 if __name__ == "__main__":

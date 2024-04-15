@@ -101,10 +101,10 @@ class RequestQueue:
             )
         )
         self._input_channel = request_connection.channel()
-        self._input_channel.queue_declare(queue="metadata_request")
+        self._input_channel.queue_declare(queue=self._request_queue)
         self._input_channel.basic_qos(prefetch_count=1)
         self._input_channel.basic_consume(
-            queue="metadata_request",
+            queue=self._request_queue,
             on_message_callback=self._process_queue_input,
             auto_ack=True,  # manually ack based on message validity
         )

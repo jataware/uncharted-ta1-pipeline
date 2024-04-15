@@ -40,13 +40,8 @@ def process_image():
             logging.warning(msg)
             return (msg, 500)
 
-        cdr_schema = app.config.get("cdr_schema", False)
-        # get ta1 schema output or internal output format
-        metadata_result = (
-            result[METADATA_EXTRACTION_OUTPUT_KEY]
-            if not cdr_schema
-            else result["metadata_cdr_output"]
-        )
+        result_key = app.config.get("result_key", METADATA_EXTRACTION_OUTPUT_KEY)
+        metadata_result = result[result_key]
 
         # convert result to a JSON string and return
         if isinstance(metadata_result, BaseModelOutput):
@@ -103,9 +98,13 @@ if __name__ == "__main__":
         p.workdir, p.model, cdr_schema=p.cdr_schema
     )
 
+    metadata_result_key = (
+        METADATA_EXTRACTION_OUTPUT_KEY if not p.cdr_schema else "metadata_cdr_output"
+    )
+
     #### start flask server or startup up the message queue
     if p.rest:
-        app.config["cdr_schema"] = p.cdr_schema
+        app.config["result_key"] = metadata_result_key
         if p.debug:
             app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
         else:
@@ -115,7 +114,7 @@ if __name__ == "__main__":
             metadata_extraction,
             p.request_queue,
             p.result_queue,
-            METADATA_EXTRACTION_OUTPUT_KEY,
+            metadata_result_key,
             p.workdir,
         )
         queue.start_request_queue()

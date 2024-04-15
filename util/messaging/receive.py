@@ -1,6 +1,9 @@
 #!/usr/bin/env python
+import json
+import pprint
 import pika, sys, os
 import argparse
+from tasks.common.queue import RequestResult
 
 
 def main():
@@ -14,7 +17,11 @@ def main():
     channel.queue_declare(queue=args.queue_name)
 
     def callback(ch, method, properties, body):
-        print(f" [x] Received {body}")
+        body_decoded = json.loads(body.decode())
+        request_result = RequestResult.model_validate(body_decoded)
+        print(request_result)
+        obj_output = json.loads(request_result.output)
+        pprint.pprint(obj_output)
 
     channel.basic_consume(
         queue=args.queue_name, on_message_callback=callback, auto_ack=True
