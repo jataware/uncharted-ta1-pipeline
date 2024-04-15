@@ -94,6 +94,8 @@ if __name__ == "__main__":
         help="Output results as TA1 json schema format",
     )
     parser.add_argument("--rest", action="store_true")
+    parser.add_argument("--request_queue", type=str, default="metadata_request")
+    parser.add_argument("--result_queue", type=str, default="metadata_result")
     p = parser.parse_args()
 
     # init segmenter
@@ -101,7 +103,7 @@ if __name__ == "__main__":
         p.workdir, p.model, cdr_schema=p.cdr_schema
     )
 
-    #### start flask server
+    #### start flask server or startup up the message queue
     if p.rest:
         app.config["cdr_schema"] = p.cdr_schema
         if p.debug:
@@ -110,6 +112,10 @@ if __name__ == "__main__":
             app.run(host="0.0.0.0", port=5000)
     else:
         queue = RequestQueue(
-            metadata_extraction, "metadata_request", "metadata_result", p.workdir
+            metadata_extraction,
+            p.request_queue,
+            p.result_queue,
+            METADATA_EXTRACTION_OUTPUT_KEY,
+            p.workdir,
         )
         queue.start_request_queue()

@@ -1,5 +1,3 @@
-import abc
-import argparse
 import json
 import logging
 import os
@@ -14,12 +12,9 @@ from tasks.common.pipeline import (
     Pipeline,
     PipelineInput,
 )
-from tasks.common.io import ImageFileInputIterator
-from tasks.common.image import download_file
-
+from tasks.common.io import ImageFileInputIterator, download_file
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import spec
-
 from pydantic import BaseModel
 
 from typing import Tuple
@@ -70,6 +65,7 @@ class RequestQueue:
         pipeline: Pipeline,
         request_queue: str,
         result_queue: str,
+        output_key: str,
         workdir: Path,
         host="localhost",
         heartbeat=900,
@@ -82,6 +78,7 @@ class RequestQueue:
         self._host = host
         self._request_queue = request_queue
         self._result_queue = result_queue
+        self._output_key = output_key
         self._heartbeat = heartbeat
         self._blocked_connection_timeout = blocked_connection_timeout
         self._working_dir = workdir
@@ -109,7 +106,7 @@ class RequestQueue:
         self._input_channel.basic_consume(
             queue="metadata_request",
             on_message_callback=self._process_queue_input,
-            auto_ack=False,  # manually ack based on message validity
+            auto_ack=True,  # manually ack based on message validity
         )
 
         result_connection = pika.BlockingConnection(
@@ -131,7 +128,7 @@ class RequestQueue:
         self,
         channel: Channel,
         method: spec.Basic.Deliver,
-        _: spec.BasicProperties,
+        props: spec.BasicProperties,
         body: bytes,
     ) -> None:
         """
@@ -150,7 +147,6 @@ class RequestQueue:
             body_decoded = json.loads(body.decode())
             # parse body as request
             request = Request.model_validate(body_decoded)
-            channel.basic_ack(delivery_tag=method.delivery_tag)
 
             # process the request
             # result = self._process_request(request)
@@ -163,10 +159,11 @@ class RequestQueue:
 
             # run the pipeline
             outputs = self._pipeline.run(input)
+            print(outputs)
 
             # create the response
-            output_raw: BaseModelOutput = outputs["lara"]  # type: ignore
-            result = self._create_output(request, image_path, output_raw)
+            output_raw: BaseModelOutput = outputs[self._output_key]  # type: ignore
+            result = self._create_output(request, str(image_path), output_raw)
 
             logger.info("writing request result to output queue")
 
@@ -179,7 +176,6 @@ class RequestQueue:
             logger.info("result written to output queue")
         except Exception as e:
             logger.exception(e)
-            channel.basic_reject(requeue=False, delivery_tag=method.delivery_tag)
 
     def _create_pipeline_input(
         self, request: Request, image: PILImage
@@ -223,20 +219,21 @@ class RequestQueue:
 
     def _get_image(
         self, working_dir: Path, image_id: str, image_url: str
-    ) -> Tuple[str, ImageFileInputIterator]:
+    ) -> Tuple[Path, ImageFileInputIterator]:
         """
         Get the image for the request.
         """
         # check working dir for the image
-        disk_filename = str(working_dir / "images" / f"{image_id}.tif")
+        filename = working_dir / Path("images") / f"{image_id}.tif"
 
-        if not os.path.isfile(disk_filename):
+        if not filename.exists():
             # download image
             image_data = download_file(image_url)
 
-            # write it to working dir
-            with open(disk_filename, "wb") as file:
+            # write it to working dir, creating the directory if necessary
+            filename.parent.mkdir(parents=True, exist_ok=True)
+            with open(filename, "wb") as file:
                 file.write(image_data)
 
-        # load image from disk
-        return disk_filename, ImageFileInputIterator(disk_filename)
+        # load images from file
+        return filename, ImageFileInputIterator(str(filename))
