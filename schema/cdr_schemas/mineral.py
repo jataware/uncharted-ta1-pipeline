@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from cdr_schemas.document import Document
+from schema.cdr_schemas.document import Document
 
 
 class Geometry(Enum):

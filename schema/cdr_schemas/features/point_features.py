@@ -2,7 +2,7 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cdr_schemas.common import (
+from schema.cdr_schemas.common import (
     CRITICALMAAS_PIXEL,
     GeoJsonType,
     GeomType,

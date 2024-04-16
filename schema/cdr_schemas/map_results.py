@@ -2,8 +2,8 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from cdr_schemas.feature_results import FeatureResults
-from cdr_schemas.georeference import GeoreferenceResults
+from schema.cdr_schemas.feature_results import FeatureResults
+from schema.cdr_schemas.georeference import GeoreferenceResults
 
 
 class MapResults(BaseModel):
