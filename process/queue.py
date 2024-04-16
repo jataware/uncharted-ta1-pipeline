@@ -13,6 +13,7 @@ from pipelines.geo_referencing.output import LARAModelOutput
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractionOutput,
 )
+from pipelines.segmentation.segmentation_pipeline import MapSegmentationOutput
 from tasks.common.pipeline import (
     BaseModelOutput,
     OutputCreator,
@@ -38,6 +39,7 @@ logger = logging.getLogger("process_queue")
 class OutputType(int, Enum):
     GEOREFERENCING = 1
     METADATA = 2
+    SEGMENTATION = 3
 
 
 class Request(BaseModel):
@@ -123,12 +125,17 @@ class RequestQueue:
         return [
             self._create_output(request, image_path, OutputType.GEOREFERENCING, outputs["georef"]),  # type: ignore
             self._create_output(request, image_path, OutputType.METADATA, outputs["metadata"]),  # type: ignore
+            self._create_output(request, image_path, OutputType.SEGMENTATION, outputs["segmentation"]),  # type: ignore
         ]
 
     def _get_outputs(self, request: Request) -> List[OutputCreator]:
         match request.output_format:
             case "cdr":
-                return [LARAModelOutput("georef"), MetadataExtractionOutput("metadata")]
+                return [
+                    LARAModelOutput("georef"),
+                    MetadataExtractionOutput("metadata"),
+                    MapSegmentationOutput("segmentation"),
+                ]
         raise Exception("unrecognized output format specified in request")
 
     def _get_pipeline(self, request: Request) -> Pipeline:
