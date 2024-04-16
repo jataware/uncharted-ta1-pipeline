@@ -203,11 +203,8 @@ class CDROutput(OutputCreator):
             point_features_result = PointLegendAndFeaturesResult(
                 id="id",
                 crs="CRITICALMAAS:pixel",
-                cdr_projection_id=None,
                 name=class_name,
-                description=None,
-                legend_bbox=None,
-                point_features=[PointFeatureCollection(features=features)],
+                point_features=PointFeatureCollection(features=features),
             )
 
         # add to our final list of features results and create the output
@@ -215,11 +212,7 @@ class CDROutput(OutputCreator):
 
         feature_results = FeatureResults(
             cog_id=pipeline_result.raster_id,
-            line_feature_results=None,
             point_feature_results=point_features,
-            polygon_feature_results=None,
-            cog_area_extractions=None,
-            cog_metadata_extractions=None,
             system=MODEL_NAME,
             system_version=MODEL_VERSION,
         )
