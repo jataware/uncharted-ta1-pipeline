@@ -11,6 +11,7 @@ from tasks.common.pipeline import (
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from schema.cdr_schemas.area_extraction import Area_Extraction, AreaType
 from schema.cdr_schemas.feature_results import FeatureResults
+from schema.mappers.cdr import SegmentationMapper
 
 logger = logging.getLogger("segmentation_pipeline")
 
@@ -85,13 +86,6 @@ class CDROutput(OutputCreator):
     CDR OutputCreator for map segmentation pipeline.
     """
 
-    AREA_MAPPING = {
-        "cross_section": AreaType.CrossSection,
-        "legend_points_lines": AreaType.Line_Point_Legend_Area,
-        "legend_polygons": AreaType.Polygon_Legend_Area,
-        "map": AreaType.Map_Area,
-    }
-
     def __init__(self, id):
         """
         Initializes the output creator.
@@ -114,45 +108,9 @@ class CDROutput(OutputCreator):
         map_segmentation = MapSegmentation.model_validate(
             pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
         )
+        mapper = SegmentationMapper(MODEL_NAME, MODEL_VERSION)
 
-        area_extractions: List[Area_Extraction] = []
-        # create CDR area extractions for segment we've identified in the map
-        for i, segment in enumerate(map_segmentation.segments):
-            coordinates = [list(point) for point in segment.poly_bounds]
-
-            if segment.class_label in CDROutput.AREA_MAPPING:
-                area_type = CDROutput.AREA_MAPPING[segment.class_label]
-            else:
-                logger.warning(
-                    f"Unknown area type {segment.class_label} for map {pipeline_result.raster_id}"
-                )
-                area_type = AreaType.Map_Area
-
-            area_extraction = Area_Extraction(
-                coordinates=[coordinates],
-                bbox=segment.bbox,
-                category=area_type,
-                confidence=segment.confidence,  # assume two points - ll, ur
-                model=MODEL_NAME,
-                model_version=MODEL_VERSION,
-                text=None,
-            )
-            area_extractions.append(area_extraction)
-
-        feature_results = FeatureResults(
-            # relevant to segment extractions
-            cog_id=pipeline_result.raster_id,
-            cog_area_extractions=area_extractions,
-            system=MODEL_NAME,
-            system_version=MODEL_VERSION,
-            # other
-            line_feature_results=None,
-            point_feature_results=None,
-            polygon_feature_results=None,
-            cog_metadata_extractions=None,
+        cdr_segmentation = mapper.map_to_cdr(map_segmentation)
+        return BaseModelOutput(
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, cdr_segmentation
         )
-
-        result = BaseModelOutput(
-            pipeline_result.pipeline_id, pipeline_result.pipeline_name, feature_results
-        )
-        return result
