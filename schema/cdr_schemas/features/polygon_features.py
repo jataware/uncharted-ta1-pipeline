@@ -30,7 +30,7 @@ class PolygonProperty(BaseModel):
 
     model: str = Field(description="Name of the model used for extraction")
     model_version: str = Field(description="Version of the model used for extraction")
-    confidence: Optional[Union[float | int]] = Field(
+    confidence: Optional[float | int] = Field(
         default=None, description="The prediction confidence of the model"
     )
 

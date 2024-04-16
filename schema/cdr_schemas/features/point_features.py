@@ -33,7 +33,7 @@ class PointProperties(BaseModel):
         description="Version of the model used to generate this data"
     )
     model_config = ConfigDict(protected_namespaces=())
-    confidence: Optional[Union[float | int]] = Field(
+    confidence: Optional[float | int] = Field(
         default=None, description="The prediction confidence of the model"
     )
 

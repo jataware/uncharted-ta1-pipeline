@@ -94,13 +94,10 @@ class MetadataMapper(CDRMapper):
                     title=model.title,
                     year=int(model.year),
                     scale=int(model.scale.split(":")[1]),
-                    crs=None,
                     authors=model.authors,
-                    organization=None,
                     quadrangle_name=",".join(model.quadrangles),
                     map_shape=None,
                     map_color_scheme=None,
-                    publisher=None,
                     state=",".join(model.states),
                     model=MODEL_NAME,
                     model_version=MODEL_VERSION,
@@ -141,7 +138,6 @@ class SegmentationMapper(CDRMapper):
                 confidence=segment.confidence,  # assume two points - ll, ur
                 model=MODEL_NAME,
                 model_version=MODEL_VERSION,
-                text=None,
             )
             area_extractions.append(area_extraction)
 
@@ -151,11 +147,6 @@ class SegmentationMapper(CDRMapper):
             cog_area_extractions=area_extractions,
             system=self._system_name,
             system_version=self._system_version,
-            # other
-            line_feature_results=None,
-            point_feature_results=None,
-            polygon_feature_results=None,
-            cog_metadata_extractions=None,
         )
 
     def map_from_cdr(self, model: FeatureResults) -> LARASegmentation:

@@ -50,7 +50,7 @@ class DepositTypeCandidate(BaseModel):
     normalized_uri: DepositType = Field(
         description="The deposit type of an inventory item"
     )
-    confidence: Optional[Union[float | int]] = Field(
+    confidence: Optional[float | int] = Field(
         description="Score deposit type of an inventory item"
     )
     source: str = Field(
