@@ -1,5 +1,5 @@
 import argparse
-import re
+from unittest.mock import DEFAULT
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
@@ -8,7 +8,12 @@ from io import BytesIO
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
-from tasks.common.queue import OutputType, RequestQueue
+from tasks.common.queue import (
+    OutputType,
+    RequestQueue,
+    METADATA_REQUEST_QUEUE,
+    METADATA_RESULT_QUEUE,
+)
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
 from tasks.metadata_extraction.entities import METADATA_EXTRACTION_OUTPUT_KEY
@@ -89,8 +94,8 @@ if __name__ == "__main__":
         help="Output results as TA1 json schema format",
     )
     parser.add_argument("--rest", action="store_true")
-    parser.add_argument("--request_queue", type=str, default="metadata_request")
-    parser.add_argument("--result_queue", type=str, default="metadata_result")
+    parser.add_argument("--request_queue", type=str, default=METADATA_REQUEST_QUEUE)
+    parser.add_argument("--result_queue", type=str, default=METADATA_RESULT_QUEUE)
     p = parser.parse_args()
 
     # init segmenter

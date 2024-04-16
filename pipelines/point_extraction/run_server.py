@@ -7,7 +7,12 @@ from io import BytesIO
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
-from tasks.common.queue import OutputType, RequestQueue
+from tasks.common.queue import (
+    POINTS_REQUEST_QUEUE,
+    POINTS_RESULT_QUEUE,
+    OutputType,
+    RequestQueue,
+)
 
 
 #
@@ -85,8 +90,8 @@ if __name__ == "__main__":
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
     parser.add_argument("--rest", action="store_true")
-    parser.add_argument("--request_queue", type=str, default="point_extraction_request")
-    parser.add_argument("--result_queue", type=str, default="point_extraction_result")
+    parser.add_argument("--request_queue", type=str, default=POINTS_REQUEST_QUEUE)
+    parser.add_argument("--result_queue", type=str, default=POINTS_RESULT_QUEUE)
     p = parser.parse_args()
 
     # init point extraction pipeline

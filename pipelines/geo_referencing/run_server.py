@@ -18,7 +18,12 @@ from pipelines.geo_referencing.output import (
     ObjectOutput,
 )
 from tasks.common.pipeline import BaseModelOutput, Pipeline, PipelineInput
-from tasks.common.queue import RequestQueue, OutputType
+from tasks.common.queue import (
+    GEO_REFERENCE_REQUEST_QUEUE,
+    GEO_REFERENCE_RESULT_QUEUE,
+    RequestQueue,
+    OutputType,
+)
 
 from typing import Tuple
 
@@ -127,8 +132,10 @@ def start_server():
     parser.add_argument("--min_confidence", type=float, default=0.25)
     parser.add_argument("--debug", type=float, default=False)
     parser.add_argument("--rest", action="store_true")
-    parser.add_argument("--request_queue", type=str, default="georef_request")
-    parser.add_argument("--result_queue", type=str, default="georef_result")
+    parser.add_argument(
+        "--request_queue", type=str, default=GEO_REFERENCE_REQUEST_QUEUE
+    )
+    parser.add_argument("--result_queue", type=str, default=GEO_REFERENCE_RESULT_QUEUE)
     p = parser.parse_args()
 
     global georef_pipeline

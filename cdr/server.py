@@ -19,6 +19,8 @@ from rasterio.transform import Affine
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 
 from tasks.common.queue import (
+    GEO_REFERENCE_REQUEST_QUEUE,
+    METADATA_REQUEST_QUEUE,
     OutputType,
     Request,
     RequestResult,
@@ -84,7 +86,7 @@ def publish_lara_request(req: Request, request_queue: str, host="localhost"):
         body=json.dumps(req.model_dump()),
     )
     logger.info(f"request {req.id} published to lara queue")
-    # request_channel.connection.close()
+    request_channel.connection.close()
 
 
 def project_image(
@@ -177,14 +179,12 @@ def process_cdr_event():
             case "map.process":
                 logger.info("Received map event")
                 map_event = MapEventPayload.model_validate(evt["payload"])
-                lara_reqs.append(
-                    Request(
-                        id=evt["id"],
-                        task="georeferencing",
-                        image_id=map_event.cog_id,
-                        image_url=map_event.cog_url,
-                        output_format="cdr",
-                    )
+                lara_req = Request(
+                    id=evt["id"],
+                    task="",
+                    image_id=map_event.cog_id,
+                    image_url=map_event.cog_url,
+                    output_format="cdr",
                 )
                 lara_reqs.append(
                     Request(
@@ -208,7 +208,8 @@ def process_cdr_event():
 
     # queue event in background since it may be blocking on the queue
     # assert request_channel is not None
-    publish_lara_request(lara_req, "georef_request")
+    publish_lara_request(lara_req, GEO_REFERENCE_REQUEST_QUEUE)
+    publish_lara_request(lara_req, METADATA_REQUEST_QUEUE)
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
 
@@ -216,15 +217,12 @@ def process_image(image_id: str):
     logger.info(f"processing image with id {image_id}")
 
     # build the request
-    lara_reqs = []
-    lara_reqs.append(
-        Request(
-            id="mock",
-            task="georeferencing",
-            image_id=image_id,
-            image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
-            output_format="cdr",
-        )
+    req = Request(
+        id="mock",
+        task="georeference",
+        image_id=image_id,
+        image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
+        output_format="cdr",
     )
     lara_reqs.append(
         Request(
@@ -237,8 +235,8 @@ def process_image(image_id: str):
     )
 
     # push the request onto the queue
-    publish_lara_request(req, "georef_request")
-    # publish_lara_request(req, "metadata_request")
+    publish_lara_request(req, GEO_REFERENCE_REQUEST_QUEUE)
+    publish_lara_request(req, METADATA_REQUEST_QUEUE)
 
 
 def push_georeferencing(result: RequestResult):
@@ -291,7 +289,9 @@ def push_georeferencing(result: RequestResult):
 
 
 def push_features(result: RequestResult, model: FeatureResults):
-
+    """
+    Pushes the features result to the CDR
+    """
     logger.info(f"pushing features result for request {result.request.id} to CDR")
     headers = {
         "Authorization": f"Bearer {settings.cdr_api_token}",
@@ -309,6 +309,9 @@ def push_features(result: RequestResult, model: FeatureResults):
 
 
 def push_segmentation(result: RequestResult):
+    """
+    Pushes the segmentation result to the CDR
+    """
     segmentation_raw_result = json.loads(result.output)
 
     # validate the result by building the model classes
@@ -318,7 +321,9 @@ def push_segmentation(result: RequestResult):
         mapper = get_mapper(lara_result, settings.system_name, settings.system_version)
         cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
     except:
-        logger.error("bad metadata result received so unable to send results to cdr")
+        logger.error(
+            "bad segmentation result received so unable to send results to cdr"
+        )
         raise
 
     assert cdr_result is not None
@@ -343,6 +348,9 @@ def push_points(result: RequestResult):
 
 
 def push_metadata(result: RequestResult):
+    """
+    Pushes the metadata result to the CDR
+    """
     metadata_result_raw = json.loads(result.output)
 
     # validate the result by building the model classes
@@ -389,9 +397,9 @@ def process_lara_result(
     match result.output_type:
         case OutputType.GEOREFERENCING:
             logger.info("georeferencing results received")
-            # push_georeferencing(result)
+            push_georeferencing(result)
         case OutputType.METADATA:
-            # push_metadata(result)
+            push_metadata(result)
             logger.info("metadata results received")
         case OutputType.SEGMENTATION:
             # push_segmentation(result)

@@ -7,7 +7,12 @@ from io import BytesIO
 from pipelines.segmentation.segmentation_pipeline import SegmentationPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
-from tasks.common.queue import RequestQueue, OutputType
+from tasks.common.queue import (
+    SEGMENTATION_REQUEST_QUEUE,
+    SEGMENTATION_RESULT_QUEUE,
+    RequestQueue,
+    OutputType,
+)
 
 
 #
@@ -87,8 +92,8 @@ if __name__ == "__main__":
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
     parser.add_argument("--rest", action="store_true")
-    parser.add_argument("--request_queue", type=str, default="segmentation_request")
-    parser.add_argument("--result_queue", type=str, default="segmentation_result")
+    parser.add_argument("--request_queue", type=str, default=SEGMENTATION_REQUEST_QUEUE)
+    parser.add_argument("--result_queue", type=str, default=SEGMENTATION_RESULT_QUEUE)
     p = parser.parse_args()
 
     # init segmenter

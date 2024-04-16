@@ -6,7 +6,12 @@ from hashlib import sha1
 import io
 from PIL import Image
 
-from tasks.common.queue import RequestQueue, OutputType
+from tasks.common.queue import (
+    TEXT_REQUEST_QUEUE,
+    TEXT_RESULT_QUEUE,
+    RequestQueue,
+    OutputType,
+)
 
 from .text_extraction_pipeline import TextExtractionPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput
@@ -80,8 +85,8 @@ if __name__ == "__main__":
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
     parser.add_argument("--rest", action="store_true")
-    parser.add_argument("--request_queue", type=str, default="text_request")
-    parser.add_argument("--result_queue", type=str, default="text_result")
+    parser.add_argument("--request_queue", type=str, default=TEXT_REQUEST_QUEUE)
+    parser.add_argument("--result_queue", type=str, default=TEXT_RESULT_QUEUE)
     p = parser.parse_args()
 
     pipeline = TextExtractionPipeline(p.workdir, tile=True)

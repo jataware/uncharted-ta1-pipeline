@@ -8,6 +8,7 @@ import pprint
 import pika
 
 from PIL.Image import Image as PILImage
+from sqlalchemy import TEXT
 
 from tasks.common.pipeline import (
     BaseModelOutput,
@@ -22,6 +23,23 @@ from pydantic import BaseModel
 from typing import Tuple
 
 logger = logging.getLogger("process_queue")
+
+# default queue names
+
+METADATA_REQUEST_QUEUE = "metadata_request"
+METADATA_RESULT_QUEUE = "metadata_result"
+
+GEO_REFERENCE_REQUEST_QUEUE = "georef_request"
+GEO_REFERENCE_RESULT_QUEUE = "georef_result"
+
+SEGMENTATION_REQUEST_QUEUE = "segmentation_request"
+SEGMENTATION_RESULT_QUEUE = "segmentation_result"
+
+POINTS_REQUEST_QUEUE = "points_request"
+POINTS_RESULT_QUEUE = "points_result"
+
+TEXT_REQUEST_QUEUE = "text_request"
+TEXT_RESULT_QUEUE = "text_result"
 
 
 class Request(BaseModel):
@@ -174,10 +192,6 @@ class RequestQueue:
             pprint.pprint(output_raw)
             if type(output_raw) == BaseModelOutput:
                 result = self._create_output(request, str(image_path), output_raw)
-            elif type(output_raw) == ObjectOutput:
-                output_schema: ObjectOutput = outputs["schema"]  # type: ignore
-                writer_json = JSONWriter()
-                result_json = writer_json.output([output_schema], {})
             else:
                 raise ValueError("Unsupported output type")
             logger.info("writing request result to output queue")
