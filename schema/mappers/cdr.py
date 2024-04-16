@@ -1,3 +1,5 @@
+import logging
+
 from schema.cdr_schemas.georeference import (
     GeoreferenceResults as CDRGeoreferenceResults,
     GroundControlPoint,
@@ -6,12 +8,19 @@ from schema.cdr_schemas.georeference import (
     GeoreferenceResult,
     ProjectionResult,
 )
+from schema.cdr_schemas.area_extraction import Area_Extraction, AreaType
 from schema.cdr_schemas.metadata import MapMetaData, CogMetaData
+from schema.cdr_schemas.feature_results import FeatureResults
 
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoferenceResult
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
+from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 
 from pydantic import BaseModel
+
+from typing import List
+
+logger = logging.getLogger("mapper")
 
 MODEL_NAME = "uncharted-lara"
 MODEL_VERSION = "0.0.1"
@@ -103,9 +112,61 @@ class MetadataMapper(CDRMapper):
         raise NotImplementedError()
 
 
+class SegmentationMapper(CDRMapper):
+    AREA_MAPPING = {
+        "cross_section": AreaType.CrossSection,
+        "legend_points_lines": AreaType.Line_Point_Legend_Area,
+        "legend_polygons": AreaType.Polygon_Legend_Area,
+        "map": AreaType.Map_Area,
+    }
+
+    def map_to_cdr(self, model: LARASegmentation) -> FeatureResults:
+        area_extractions: List[Area_Extraction] = []
+        # create CDR area extractions for segment we've identified in the map
+        for i, segment in enumerate(model.segments):
+            coordinates = [list(point) for point in segment.poly_bounds]
+
+            if segment.class_label in SegmentationMapper.AREA_MAPPING:
+                area_type = SegmentationMapper.AREA_MAPPING[segment.class_label]
+            else:
+                logger.warning(
+                    f"Unknown area type {segment.class_label} for map {model.doc_id}"
+                )
+                area_type = AreaType.Map_Area
+
+            area_extraction = Area_Extraction(
+                coordinates=[coordinates],
+                bbox=segment.bbox,
+                category=area_type,
+                confidence=segment.confidence,  # assume two points - ll, ur
+                model=MODEL_NAME,
+                model_version=MODEL_VERSION,
+                text=None,
+            )
+            area_extractions.append(area_extraction)
+
+        return FeatureResults(
+            # relevant to segment extractions
+            cog_id=model.doc_id,
+            cog_area_extractions=area_extractions,
+            system=self._system_name,
+            system_version=self._system_version,
+            # other
+            line_feature_results=None,
+            point_feature_results=None,
+            polygon_feature_results=None,
+            cog_metadata_extractions=None,
+        )
+
+    def map_from_cdr(self, model: FeatureResults) -> LARASegmentation:
+        raise NotImplementedError()
+
+
 def get_mapper(model: BaseModel, system_name: str, system_version: str) -> CDRMapper:
     if isinstance(model, LARAGeoferenceResult):
         return GeoreferenceMapper(system_name, system_version)
     elif isinstance(model, LARAMetadata):
         return MetadataMapper(system_name, system_version)
+    elif isinstance(model, LARASegmentation):
+        return SegmentationMapper(system_name, system_version)
     raise Exception("mapping does not support the requested type")

@@ -33,6 +33,7 @@ from schema.cdr_schemas.georeference import GeoreferenceResults, GroundControlPo
 from schema.cdr_schemas.metadata import CogMetaData
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoreferenceResult
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
+from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 
 from typing import Any, Dict, List, Optional
 
@@ -263,6 +264,41 @@ def push_georeferencing(result: RequestResult):
     )
 
 
+def push_features(result: RequestResult, model: FeatureResults):
+
+    logger.info(f"pushing features result for request {result.request.id} to CDR")
+    headers = {
+        "Authorization": f"Bearer {settings.cdr_api_token}",
+        "Content-Type": "application/json",
+    }
+    client = httpx.Client(follow_redirects=True)
+    resp = client.post(
+        f"{settings.cdr_host}/v1/maps/publish/features",
+        data=model.model_dump_json(),  #   type: ignore
+        headers=headers,
+    )
+    logger.info(
+        f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
+    )
+
+
+def push_segmentation(result: RequestResult):
+    segmentation_raw_result = json.loads(result.output)
+
+    # validate the result by building the model classes
+    cdr_result: Optional[CogMetaData] = None
+    try:
+        lara_result = LARASegmentation.model_validate(segmentation_raw_result)
+        mapper = get_mapper(lara_result, settings.system_name, settings.system_version)
+        cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
+    except:
+        logger.error("bad metadata result received so unable to send results to cdr")
+        raise
+
+    assert cdr_result is not None
+    push_features(result, cdr_result)  #   type:   ignore
+
+
 def push_metadata(result: RequestResult):
     metadata_result_raw = json.loads(result.output)
 
@@ -290,21 +326,7 @@ def push_metadata(result: RequestResult):
         system_version=cdr_result.system_version,
     )
 
-    logger.info(f"pushing metadata result for request {result.request.id} to CDR")
-    print(json.dumps(final_result.model_dump()))
-    headers = {
-        "Authorization": f"Bearer {settings.cdr_api_token}",
-        "Content-Type": "application/json",
-    }
-    client = httpx.Client(follow_redirects=True)
-    resp = client.post(
-        f"{settings.cdr_host}/v1/maps/publish/features",
-        data=final_result.model_dump_json(),  #   type: ignore
-        headers=headers,
-    )
-    logger.info(
-        f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
-    )
+    push_features(result, final_result)
 
 
 def process_result(
@@ -330,6 +352,8 @@ def process_result(
             push_georeferencing(result)
         case OutputType.METADATA:
             push_metadata(result)
+        case OutputType.SEGMENTATION:
+            push_segmentation(result)
         case _:
             logger.info("unsupported output type received from queue")
     logger.info("result processing finished")
