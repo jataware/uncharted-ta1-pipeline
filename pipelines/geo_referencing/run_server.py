@@ -11,14 +11,11 @@ from PIL import Image
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
 from pipelines.geo_referencing.output import GCPOutput, JSONWriter, ObjectOutput
 from tasks.common.pipeline import Pipeline, PipelineInput
-from tasks.common.queue import RequestQueue
+from tasks.common.queue import RequestQueue, OutputType
 
 from typing import Tuple
 
 Image.MAX_IMAGE_PIXELS = 400000000
-
-
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/credentials.json"
 
 app = Flask(__name__)
 
@@ -123,8 +120,6 @@ def start_server():
     global georef_pipeline
     georef_pipeline = create_geo_referencing_pipeline(p.model, [GCPOutput("schema")])
 
-    app.run(host="0.0.0.0", port=5000)
-
     #### start flask server or startup up the message queue
     if p.rest:
         if p.debug:
@@ -137,6 +132,7 @@ def start_server():
             p.request_queue,
             p.result_queue,
             "schema",
+            OutputType.GEOREFERENCING,
             p.workdir,
         )
         queue.start_request_queue()

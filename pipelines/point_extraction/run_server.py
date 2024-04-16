@@ -7,7 +7,7 @@ from io import BytesIO
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
-from tasks.common.queue import RequestQueue
+from tasks.common.queue import OutputType, RequestQueue
 
 
 #
@@ -111,6 +111,7 @@ if __name__ == "__main__":
             p.request_queue,
             p.result_queue,
             result_key,
+            OutputType.POINTS,
             p.workdir,
         )
         queue.start_request_queue()

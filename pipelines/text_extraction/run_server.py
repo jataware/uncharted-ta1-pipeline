@@ -6,7 +6,7 @@ from hashlib import sha1
 import io
 from PIL import Image
 
-from tasks.common.queue import RequestQueue
+from tasks.common.queue import RequestQueue, OutputType
 
 from .text_extraction_pipeline import TextExtractionPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput
@@ -105,6 +105,7 @@ if __name__ == "__main__":
             p.request_queue,
             p.result_queue,
             result_key,
+            OutputType.TEXT,
             p.workdir,
         )
         queue.start_request_queue()

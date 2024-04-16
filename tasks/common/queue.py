@@ -1,7 +1,9 @@
+from enum import Enum
 import json
 import logging
 import os
 from pathlib import Path
+import pprint
 
 import pika
 
@@ -34,15 +36,23 @@ class Request(BaseModel):
     output_format: str
 
 
+class OutputType(int, Enum):
+    GEOREFERENCING = 1
+    METADATA = 2
+    SEGMENTATION = 3
+    POINTS = 4
+    TEXT = 5
+
+
 class RequestResult(BaseModel):
     """
     The result of a pipeline request.
     """
 
     request: Request
-
     success: bool
     output: str
+    output_type: OutputType
     image_path: str
 
 
@@ -66,6 +76,7 @@ class RequestQueue:
         request_queue: str,
         result_queue: str,
         output_key: str,
+        output_type: OutputType,
         workdir: Path,
         host="localhost",
         heartbeat=900,
@@ -79,6 +90,7 @@ class RequestQueue:
         self._request_queue = request_queue
         self._result_queue = result_queue
         self._output_key = output_key
+        self._output_type = output_type
         self._heartbeat = heartbeat
         self._blocked_connection_timeout = blocked_connection_timeout
         self._working_dir = workdir
@@ -106,7 +118,7 @@ class RequestQueue:
         self._input_channel.basic_consume(
             queue=self._request_queue,
             on_message_callback=self._process_queue_input,
-            auto_ack=True,  # manually ack based on message validity
+            auto_ack=True,
         )
 
         result_connection = pika.BlockingConnection(
@@ -148,9 +160,6 @@ class RequestQueue:
             # parse body as request
             request = Request.model_validate(body_decoded)
 
-            # process the request
-            # result = self._process_request(request)
-
             # create the input
             image_path, image_it = self._get_image(
                 self._working_dir, request.image_id, request.image_url
@@ -159,12 +168,18 @@ class RequestQueue:
 
             # run the pipeline
             outputs = self._pipeline.run(input)
-            print(outputs)
 
             # create the response
-            output_raw: BaseModelOutput = outputs[self._output_key]  # type: ignore
-            result = self._create_output(request, str(image_path), output_raw)
-
+            output_raw = outputs[self._output_key]
+            pprint.pprint(output_raw)
+            if type(output_raw) == BaseModelOutput:
+                result = self._create_output(request, str(image_path), output_raw)
+            elif type(output_raw) == ObjectOutput:
+                output_schema: ObjectOutput = outputs["schema"]  # type: ignore
+                writer_json = JSONWriter()
+                result_json = writer_json.output([output_schema], {})
+            else:
+                raise ValueError("Unsupported output type")
             logger.info("writing request result to output queue")
 
             # run queue operations
@@ -215,6 +230,7 @@ class RequestQueue:
             output=json.dumps(output.data.model_dump()),
             success=True,
             image_path=image_path,
+            output_type=self._output_type,
         )
 
     def _get_image(

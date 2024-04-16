@@ -8,7 +8,7 @@ from io import BytesIO
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
-from tasks.common.queue import RequestQueue
+from tasks.common.queue import OutputType, RequestQueue
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
 from tasks.metadata_extraction.entities import METADATA_EXTRACTION_OUTPUT_KEY
@@ -115,6 +115,7 @@ if __name__ == "__main__":
             p.request_queue,
             p.result_queue,
             metadata_result_key,
+            OutputType.METADATA,
             p.workdir,
         )
         queue.start_request_queue()
