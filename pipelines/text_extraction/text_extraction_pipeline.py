@@ -136,10 +136,6 @@ class CDROutput(OutputCreator):
             cog_area_extractions=area_extractions,
             system=MODEL_NAME,
             system_version=MODEL_VERSION,
-            line_feature_results=None,
-            point_feature_results=None,
-            polygon_feature_results=None,
-            cog_metadata_extractions=None,
         )
 
         return BaseModelOutput(

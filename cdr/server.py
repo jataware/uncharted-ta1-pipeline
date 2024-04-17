@@ -360,10 +360,6 @@ def push_metadata(result: RequestResult):
     # wrap metadata into feature result
     final_result = FeatureResults(
         cog_id=result.request.image_id,
-        line_feature_results=None,
-        point_feature_results=None,
-        polygon_feature_results=None,
-        cog_area_extractions=None,
         cog_metadata_extractions=[cdr_result],
         system=cdr_result.system,
         system_version=cdr_result.system_version,
