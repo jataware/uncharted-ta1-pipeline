@@ -1,5 +1,5 @@
 import argparse
-import os
+import logging, os
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
 from tasks.common.pipeline import (
     PipelineInput,
@@ -12,6 +12,13 @@ from PIL.Image import Image as PILImage
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    logger = logging.getLogger("text_extraction_pipeline")
+
     # parse command line args
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=str, required=True)
@@ -24,6 +31,7 @@ def main():
         "--no-tile", action=argparse.BooleanOptionalAction, default=False
     )
     parser.add_argument("--pixel_limit", type=int, default=6000)
+    parser.add_argument("--gamma_corr", type=float, default=1.0)
     parser.add_argument("--debug", action=argparse.BooleanOptionalAction, default=False)
 
     p = parser.parse_args()
@@ -32,7 +40,9 @@ def main():
     input = ImageFileInputIterator(p.input)
 
     # run the extraction pipeline
-    pipeline = TextExtractionPipeline(p.workdir, not p.no_tile, p.pixel_limit, p.debug)
+    pipeline = TextExtractionPipeline(
+        p.workdir, not p.no_tile, p.pixel_limit, p.gamma_corr, p.debug
+    )
 
     file_writer = JSONFileWriter()
     image_writer = ImageFileWriter()
