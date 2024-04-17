@@ -267,27 +267,32 @@ def push_georeferencing(result: RequestResult):
     output_file_name_full = os.path.join(settings.workdir, output_file_name)
 
     assert gcps is not None
-    logger.info(
-        f"projecting image {result.image_path} to {output_file_name_full} using crs {projection.crs}"
-    )
-    project_georeference(result.image_path, output_file_name_full, projection.crs, gcps)
+    try:
+        logger.info(
+            f"projecting image {result.image_path} to {output_file_name_full} using crs {projection.crs}"
+        )
+        project_georeference(
+            result.image_path, output_file_name_full, projection.crs, gcps
+        )
 
-    files_ = []
-    files_.append(("files", (output_file_name, open(output_file_name_full, "rb"))))
+        files_ = []
+        files_.append(("files", (output_file_name, open(output_file_name_full, "rb"))))
 
-    # push the result to CDR
-    logger.info(f"pushing result for request {result.request.id} to CDR")
-    headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
-    client = httpx.Client(follow_redirects=True)
-    resp = client.post(
-        f"{settings.cdr_host}/v1/maps/publish/georef",
-        data={"georef_result": json.dumps(cdr_result.model_dump())},
-        files=files_,
-        headers=headers,
-    )
-    logger.info(
-        f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
-    )
+        # push the result to CDR
+        logger.info(f"pushing result for request {result.request.id} to CDR")
+        headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
+        client = httpx.Client(follow_redirects=True)
+        resp = client.post(
+            f"{settings.cdr_host}/v1/maps/publish/georef",
+            data={"georef_result": json.dumps(cdr_result.model_dump())},
+            files=files_,
+            headers=headers,
+        )
+        logger.info(
+            f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
+        )
+    except:
+        logger.info("error when attempting to submit georeferencing results")
 
 
 def push_features(result: RequestResult, model: FeatureResults):
@@ -318,8 +323,10 @@ def push_segmentation(result: RequestResult):
         mapper = get_mapper(lara_result, settings.system_name, settings.system_version)
         cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
     except:
-        logger.error("bad metadata result received so unable to send results to cdr")
-        raise
+        logger.error(
+            "bad segmentation result received so unable to send results to cdr"
+        )
+        return
 
     assert cdr_result is not None
     push_features(result, cdr_result)
@@ -335,8 +342,8 @@ def push_points(result: RequestResult):
         mapper = get_mapper(lara_result, settings.system_name, settings.system_version)
         cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
     except:
-        logger.error("bad metadata result received so unable to send results to cdr")
-        raise
+        logger.error("bad points result received so unable to send results to cdr")
+        return
 
     assert cdr_result is not None
     push_features(result, cdr_result)
@@ -353,7 +360,7 @@ def push_metadata(result: RequestResult):
         cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
     except:
         logger.error("bad metadata result received so unable to send results to cdr")
-        raise
+        return
 
     assert cdr_result is not None
 
