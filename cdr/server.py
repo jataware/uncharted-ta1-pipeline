@@ -3,6 +3,7 @@ import atexit
 import httpx
 import json
 import logging
+import coloredlogs
 import ngrok
 import os
 import pika
@@ -382,9 +383,6 @@ def process_lara_result(
     properties: spec.BasicProperties,
     body: bytes,
 ):
-    # ack the result which will result in dropped messages in cases of errors in the processing but prevents blocking on bad data
-    channel.basic_ack(delivery_tag=method.delivery_tag)
-
     logger.info("received data from result channel")
     # parse the result
     body_decoded = json.loads(body.decode())
@@ -517,6 +515,8 @@ def main():
         format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    coloredlogs.DEFAULT_FIELD_STYLES["levelname"] = {"color": "white"}
+    coloredlogs.install(logger=logger)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("process", "host"), required=True)
