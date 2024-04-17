@@ -36,6 +36,7 @@ class MapImage(BaseModel):
     """
 
     path: str
+    raster_id: str
     labels: Optional[List[MapPointLabel]] = None
     map_bounds: Optional[List[int]] = (
         None  # [x1, y1, h, w] location of map. TODO: Accept polygonal seg mask.

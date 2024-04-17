@@ -13,6 +13,7 @@ from pipelines.geo_referencing.output import LARAModelOutput
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractionOutput,
 )
+from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
 from pipelines.segmentation.segmentation_pipeline import MapSegmentationOutput
 from tasks.common.pipeline import (
     BaseModelOutput,
@@ -40,6 +41,7 @@ class OutputType(int, Enum):
     GEOREFERENCING = 1
     METADATA = 2
     SEGMENTATION = 3
+    POINTS = 4
 
 
 class Request(BaseModel):
@@ -61,9 +63,17 @@ class RequestResult(BaseModel):
 
 class RequestQueue:
 
-    def __init__(self, working_dir: str, model: str):
+    OUTPUT_TYPES = {
+        "georef": OutputType.GEOREFERENCING,
+        "metadata": OutputType.METADATA,
+        "segmentation": OutputType.SEGMENTATION,
+        "map_point_label_output": OutputType.POINTS,
+    }
+
+    def __init__(self, working_dir: str, model: str, points_model: str):
         self._working_dir = working_dir
         self._model = model
+        self._points_model = points_model
         logger.info(f"initialize queue using work dir {working_dir}")
 
     def setup_queue(self, input: Tuple[Channel, str], output: Tuple[Channel, str]):
@@ -123,9 +133,10 @@ class RequestQueue:
 
         # create the response
         return [
-            self._create_output(request, image_path, OutputType.GEOREFERENCING, outputs["georef"]),  # type: ignore
-            self._create_output(request, image_path, OutputType.METADATA, outputs["metadata"]),  # type: ignore
-            self._create_output(request, image_path, OutputType.SEGMENTATION, outputs["segmentation"]),  # type: ignore
+            self._create_output(
+                request, image_path, self.OUTPUT_TYPES[o[0]], o[1]  #   type: ignore
+            )
+            for o in outputs.items()
         ]
 
     def _get_outputs(self, request: Request) -> List[OutputCreator]:
@@ -139,12 +150,20 @@ class RequestQueue:
         raise Exception("unrecognized output format specified in request")
 
     def _get_pipeline(self, request: Request) -> Pipeline:
-        outputs = self._get_outputs(request)
-        # TODO: USE THE REQUEST TO FIGURE OUT THE PROPER PIPELINE TO CREATE
-        return create_geo_referencing_pipeline(
-            self._model,
-            outputs,
-        )
+        if request.task == "georeferencing":
+            outputs = self._get_outputs(request)
+            return create_geo_referencing_pipeline(
+                self._model,
+                outputs,
+            )
+        elif request.task == "points":
+            return PointExtractionPipeline(
+                self._points_model,
+                self._model,
+                self._working_dir,
+                include_cdr_output=False,
+            )
+        raise Exception("unsupported task type received")
 
     def _create_pipeline_input(
         self, request: Request, image: PILImage
@@ -198,6 +217,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, required=True)
     parser.add_argument("--model", type=str, default=None)
+    parser.add_argument("--points_model", type=str, default=None)
     parser.add_argument("--request_queue", type=str, default="localhost")
     parser.add_argument("--result_queue", type=str, default="localhost")
     p = parser.parse_args()
@@ -225,7 +245,7 @@ def main():
     result_channel.queue_declare(queue=LARA_RESULT_QUEUE_NAME)
 
     # start the queue
-    queue = RequestQueue(p.workdir, p.model)
+    queue = RequestQueue(p.workdir, p.model, p.points_model)
     queue.setup_queue(
         (request_channel, LARA_REQUEST_QUEUE_NAME),
         (result_channel, LARA_RESULT_QUEUE_NAME),

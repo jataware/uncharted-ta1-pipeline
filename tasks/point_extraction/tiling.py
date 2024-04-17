@@ -192,7 +192,9 @@ class Untiler(Task):
                 )
 
                 all_predictions.append(global_prediction)
-        map_image = MapImage(path=map_path, labels=all_predictions)
+        map_image = MapImage(
+            path=map_path, raster_id=input.raster_id, labels=all_predictions
+        )
         return TaskResult(task_id=self._task_id, output={"map_image": map_image})
 
     def _is_prediction_redundant(
