@@ -22,6 +22,7 @@ from rasterio.warp import Resampling, calculate_default_transform, reproject
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
     METADATA_REQUEST_QUEUE,
+    POINTS_REQUEST_QUEUE,
     OutputType,
     Request,
     RequestResult,
@@ -32,6 +33,7 @@ from schema.cdr_schemas.events import Event, MapEventPayload
 from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.georeference import GeoreferenceResults, GroundControlPoint
 from schema.cdr_schemas.metadata import CogMetaData
+from tasks.geo_referencing.coordinates_extractor import RE_DEG
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoreferenceResult
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
 from tasks.point_extraction.entities import MapImage as LARAPoints
@@ -170,7 +172,7 @@ def process_cdr_event():
     logger.info("event callback started")
     evt = request.get_json(force=True)
     logger.info(f"event data received {evt}")
-    lara_reqs = []
+    lara_reqs: Dict[str, Request] = {}
 
     try:
         # handle event directly or create lara request
@@ -180,22 +182,21 @@ def process_cdr_event():
             case "map.process":
                 logger.info("Received map event")
                 map_event = MapEventPayload.model_validate(evt["payload"])
-                lara_req = Request(
+                lara_reqs[GEO_REFERENCE_REQUEST_QUEUE] = Request(
                     id=evt["id"],
-                    task="",
+                    task="georeference",
                     image_id=map_event.cog_id,
                     image_url=map_event.cog_url,
                     output_format="cdr",
                 )
-                lara_reqs.append(
-                    Request(
-                        id=evt["id"],
-                        task="points",
-                        image_id=map_event.cog_id,
-                        image_url=map_event.cog_url,
-                        output_format="cdr",
-                    )
+                lara_reqs[POINTS_REQUEST_QUEUE] = Request(
+                    id=evt["id"],
+                    task="points",
+                    image_id=map_event.cog_id,
+                    image_url=map_event.cog_url,
+                    output_format="cdr",
                 )
+
             case _:
                 logger.info(f"received unsupported {evt} event")
 
@@ -209,8 +210,9 @@ def process_cdr_event():
 
     # queue event in background since it may be blocking on the queue
     # assert request_channel is not None
-    publish_lara_request(lara_req, GEO_REFERENCE_REQUEST_QUEUE)
-    publish_lara_request(lara_req, METADATA_REQUEST_QUEUE)
+    for queue_name, lara_req in lara_reqs.items():
+        publish_lara_request(lara_req, queue_name)
+
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
 
@@ -218,26 +220,25 @@ def process_image(image_id: str):
     logger.info(f"processing image with id {image_id}")
 
     # build the request
-    req = Request(
+    lara_reqs: Dict[str, Request] = {}
+    lara_reqs[GEO_REFERENCE_REQUEST_QUEUE] = Request(
         id="mock",
         task="georeference",
         image_id=image_id,
         image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
         output_format="cdr",
     )
-    lara_reqs.append(
-        Request(
-            id="mock-pts",
-            task="points",
-            image_id=image_id,
-            image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
-            output_format="cdr",
-        )
+    lara_reqs[POINTS_REQUEST_QUEUE] = Request(
+        id="mock-pts",
+        task="points",
+        image_id=image_id,
+        image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
+        output_format="cdr",
     )
 
     # push the request onto the queue
-    publish_lara_request(req, GEO_REFERENCE_REQUEST_QUEUE)
-    publish_lara_request(req, METADATA_REQUEST_QUEUE)
+    for queue_name, request in lara_reqs.items():
+        publish_lara_request(request, queue_name)
 
 
 def push_georeferencing(result: RequestResult):
@@ -397,14 +398,14 @@ def process_lara_result(
             logger.info("georeferencing results received")
             push_georeferencing(result)
         case OutputType.METADATA:
-            push_metadata(result)
             logger.info("metadata results received")
+            push_metadata(result)
         case OutputType.SEGMENTATION:
-            # push_segmentation(result)
             logger.info("segmentation results received")
+            push_segmentation(result)
         case OutputType.POINTS:
-            # push_points(result)
             logger.info("points results received")
+            push_points(result)
         case _:
             logger.info("unsupported output type received from queue")
     logger.info("result processing finished")
