@@ -11,14 +11,22 @@ from schema.cdr_schemas.georeference import (
 from schema.cdr_schemas.area_extraction import Area_Extraction, AreaType
 from schema.cdr_schemas.metadata import MapMetaData, CogMetaData
 from schema.cdr_schemas.feature_results import FeatureResults
+from schema.cdr_schemas.features.point_features import (
+    PointFeatureCollection,
+    PointLegendAndFeaturesResult,
+    PointFeature,
+    Point,
+    PointProperties,
+)
 
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoferenceResult
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
+from tasks.point_extraction.entities import MapImage as LARAPoints
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 
 from pydantic import BaseModel
 
-from typing import List
+from typing import Dict, List
 
 logger = logging.getLogger("mapper")
 
@@ -153,6 +161,82 @@ class SegmentationMapper(CDRMapper):
         raise NotImplementedError()
 
 
+class PointsMapper(CDRMapper):
+
+    def map_to_cdr(self, model: LARAPoints) -> FeatureResults:
+        point_features: List[PointLegendAndFeaturesResult] = []
+
+        # create seperate lists for each point class since they are groupded by class
+        # in the results
+        point_features_by_class: Dict[str, List[PointFeature]] = {}
+        point_id = 0
+        if model.labels:
+            for map_pt_label in model.labels:
+                if map_pt_label.class_name not in point_features_by_class:
+                    point_features_by_class[map_pt_label.class_name] = []
+
+                # create the point geometry
+                point = Point(
+                    coordinates=[
+                        (map_pt_label.x1 + map_pt_label.x2) / 2,
+                        (map_pt_label.y1 + map_pt_label.y2) / 2,
+                    ]
+                )
+
+                # create the additional point properties
+                properties = PointProperties(
+                    model=MODEL_NAME,
+                    model_version=MODEL_VERSION,
+                    confidence=map_pt_label.score,
+                    bbox=[
+                        map_pt_label.x1,
+                        map_pt_label.y1,
+                        map_pt_label.x2,
+                        map_pt_label.y2,
+                    ],
+                    dip=round(map_pt_label.dip) if map_pt_label.dip else None,
+                    dip_direction=(
+                        round(map_pt_label.direction)
+                        if map_pt_label.direction
+                        else None
+                    ),
+                )
+
+                # add the point geometry and properties to the point feature
+                point_feature = PointFeature(
+                    id=f"{map_pt_label.class_id}.{point_id}",
+                    geometry=point,
+                    properties=properties,
+                )
+                point_id += 1
+
+                # add to the list of point features for the class
+                point_features_by_class[map_pt_label.class_name].append(point_feature)
+
+        # create a PointLegendAndFeaturesResult for each class - we don't use the legend
+        # so the legend bbox is empty
+        for class_name, features in point_features_by_class.items():
+            point_features_result = PointLegendAndFeaturesResult(
+                id="id",
+                crs="CRITICALMAAS:pixel",
+                name=class_name,
+                point_features=PointFeatureCollection(features=features),
+            )
+
+        # add to our final list of features results and create the output
+        point_features.append(point_features_result)
+
+        return FeatureResults(
+            cog_id=model.raster_id,
+            point_feature_results=point_features,
+            system=MODEL_NAME,
+            system_version=MODEL_VERSION,
+        )
+
+    def map_from_cdr(self, model: FeatureResults) -> LARAPoints:
+        raise NotImplementedError()
+
+
 def get_mapper(model: BaseModel, system_name: str, system_version: str) -> CDRMapper:
     if isinstance(model, LARAGeoferenceResult):
         return GeoreferenceMapper(system_name, system_version)
@@ -160,4 +244,6 @@ def get_mapper(model: BaseModel, system_name: str, system_version: str) -> CDRMa
         return MetadataMapper(system_name, system_version)
     elif isinstance(model, LARASegmentation):
         return SegmentationMapper(system_name, system_version)
+    elif isinstance(model, LARAPoints):
+        return PointsMapper(system_name, system_version)
     raise Exception("mapping does not support the requested type")

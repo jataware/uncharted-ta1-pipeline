@@ -33,6 +33,7 @@ from schema.cdr_schemas.georeference import GeoreferenceResults, GroundControlPo
 from schema.cdr_schemas.metadata import CogMetaData
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoreferenceResult
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
+from tasks.point_extraction.entities import MapImage as LARAPoints
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 
 from typing import Any, Dict, List, Optional
@@ -45,7 +46,7 @@ request_channel: Optional[Channel] = None
 
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 CDR_HOST = "https://api.cdr.land"
-CDR_SYSTEM_NAME = "uncharted"
+CDR_SYSTEM_NAME = "uncharted-ph"
 CDR_SYSTEM_VERSION = "0.0.1"
 CDR_CALLBACK_SECRET = "maps rock"
 APP_PORT = 5001
@@ -165,7 +166,7 @@ def process_event():
     logger.info("event callback started")
     evt = request.get_json(force=True)
     logger.info(f"event data received {evt}")
-    lara_req = None
+    lara_reqs = []
 
     try:
         # handle event directly or create lara request
@@ -175,12 +176,23 @@ def process_event():
             case "map.process":
                 logger.info("Received map event")
                 map_event = MapEventPayload.model_validate(evt["payload"])
-                lara_req = Request(
-                    id=evt["id"],
-                    task="georeference",
-                    image_id=map_event.cog_id,
-                    image_url=map_event.cog_url,
-                    output_format="cdr",
+                lara_reqs.append(
+                    Request(
+                        id=evt["id"],
+                        task="georeferencing",
+                        image_id=map_event.cog_id,
+                        image_url=map_event.cog_url,
+                        output_format="cdr",
+                    )
+                )
+                lara_reqs.append(
+                    Request(
+                        id=evt["id"],
+                        task="points",
+                        image_id=map_event.cog_id,
+                        image_url=map_event.cog_url,
+                        output_format="cdr",
+                    )
                 )
             case _:
                 logger.info(f"received unsupported {evt} event")
@@ -189,13 +201,14 @@ def process_event():
         logger.error(f"exception processing {evt} event")
         raise
 
-    if lara_req is None:
+    if len(lara_reqs) == 0:
         # assume ping or ignored event type
         return Response({"ok": "success"}, status=200, mimetype="application/json")
 
     # queue event in background since it may be blocking on the queue
     # assert request_channel is not None
-    queue_event(lara_req)
+    for lr in lara_reqs:
+        queue_event(lr)
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
 
@@ -203,16 +216,29 @@ def process_image(image_id: str):
     logger.info(f"processing image with id {image_id}")
 
     # build the request
-    req = Request(
-        id="mock",
-        task="georeference",
-        image_id=image_id,
-        image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
-        output_format="cdr",
+    lara_reqs = []
+    lara_reqs.append(
+        Request(
+            id="mock",
+            task="georeferencing",
+            image_id=image_id,
+            image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
+            output_format="cdr",
+        )
+    )
+    lara_reqs.append(
+        Request(
+            id="mock-pts",
+            task="points",
+            image_id=image_id,
+            image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
+            output_format="cdr",
+        )
     )
 
     # push the request onto the queue
-    queue_event(req)
+    for req in lara_reqs:
+        queue_event(req)
 
 
 def push_georeferencing(result: RequestResult):
@@ -286,7 +312,7 @@ def push_segmentation(result: RequestResult):
     segmentation_raw_result = json.loads(result.output)
 
     # validate the result by building the model classes
-    cdr_result: Optional[CogMetaData] = None
+    cdr_result: Optional[FeatureResults] = None
     try:
         lara_result = LARASegmentation.model_validate(segmentation_raw_result)
         mapper = get_mapper(lara_result, settings.system_name, settings.system_version)
@@ -296,7 +322,24 @@ def push_segmentation(result: RequestResult):
         raise
 
     assert cdr_result is not None
-    push_features(result, cdr_result)  #   type:   ignore
+    push_features(result, cdr_result)
+
+
+def push_points(result: RequestResult):
+    points_raw_result = json.loads(result.output)
+
+    # validate the result by building the model classes
+    cdr_result: Optional[FeatureResults] = None
+    try:
+        lara_result = LARAPoints.model_validate(points_raw_result)
+        mapper = get_mapper(lara_result, settings.system_name, settings.system_version)
+        cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
+    except:
+        logger.error("bad metadata result received so unable to send results to cdr")
+        raise
+
+    assert cdr_result is not None
+    push_features(result, cdr_result)
 
 
 def push_metadata(result: RequestResult):
@@ -350,6 +393,8 @@ def process_result(
             push_metadata(result)
         case OutputType.SEGMENTATION:
             push_segmentation(result)
+        case OutputType.POINTS:
+            push_points(result)
         case _:
             logger.info("unsupported output type received from queue")
     logger.info("result processing finished")
