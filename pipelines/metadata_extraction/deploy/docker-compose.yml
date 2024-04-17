@@ -1,0 +1,26 @@
+version: '3'
+services:
+  lara-metadata-extract:
+    image: uncharted/lara-metadata-extract:latest
+    command: ["--workdir", "/workdir", "--model", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--cdr_schema"]
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/credentials.json
+      - ${WORKDIR}:/workdir
+    networks:
+      - lara
+    ports:
+      - 5000:5000
+    restart: on-failure
+  rabbitmq:
+    image: rabbitmq:3-management
+    command: ["rabbitmq-server"]
+    ports:
+      - 5672:5672
+      - 15672:15672
+    restart: on-failure
+networks:
+  lara:
+    driver: bridge

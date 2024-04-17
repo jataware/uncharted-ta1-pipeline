@@ -7,6 +7,12 @@ from io import BytesIO
 from pipelines.segmentation.segmentation_pipeline import SegmentationPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
+from tasks.common.queue import (
+    SEGMENTATION_REQUEST_QUEUE,
+    SEGMENTATION_RESULT_QUEUE,
+    RequestQueue,
+    OutputType,
+)
 
 
 #
@@ -40,13 +46,8 @@ def process_image():
             logging.warning(msg)
             return (msg, 500)
 
-        cdr_schema = app.config.get("cdr_schema", False)
-        # get ta1 schema output or internal output format
-        segmentation_result = (
-            result["map_segmentation_cdr_output"]
-            if cdr_schema
-            else result["map_segmentation_output"]
-        )
+        result_key = app.config.get("result_key", "map_segmentation_output")
+        segmentation_result = result[result_key]
 
         # convert result to a JSON string and return
         if isinstance(segmentation_result, BaseModelOutput):
@@ -90,14 +91,33 @@ if __name__ == "__main__":
     parser.add_argument("--min_confidence", type=float, default=0.25)
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
+    parser.add_argument("--rest", action="store_true")
+    parser.add_argument("--request_queue", type=str, default=SEGMENTATION_REQUEST_QUEUE)
+    parser.add_argument("--result_queue", type=str, default=SEGMENTATION_RESULT_QUEUE)
     p = parser.parse_args()
 
     # init segmenter
     segmentation_pipeline = SegmentationPipeline(p.model, p.workdir, p.min_confidence)
 
+    # get ta1 schema output or internal output format
+    result_key = (
+        "map_segmentation_cdr_output" if p.cdr_schema else "map_segmentation_output"
+    )
+    app.config["result_key"] = result_key
+
     #### start flask server
-    app.config["cdr_schema"] = p.cdr_schema
-    if p.debug:
-        app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    if p.rest:
+        if p.debug:
+            app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+        else:
+            app.run(host="0.0.0.0", port=5000)
     else:
-        app.run(host="0.0.0.0", port=5000)
+        queue = RequestQueue(
+            segmentation_pipeline,
+            p.request_queue,
+            p.result_queue,
+            result_key,
+            OutputType.SEGMENTATION,
+            p.workdir,
+        )
+        queue.start_request_queue()

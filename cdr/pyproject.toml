@@ -7,7 +7,7 @@ name = "lara-cdr"
 version = "0.1.0"
 description = "LARA CDR integration supporting both one-off processing and webhook event-driven processing"
 readme = "README.md"
-dependencies = ["jsons", "flask", "lara-tasks", "mypy-boto3-s3", "rasterio", "ngrok", "lara-georeferencing", "pika"]
+dependencies = ["jsons", "flask", "lara-tasks", "mypy-boto3-s3", "rasterio", "ngrok", "pika", "pyproj", "coloredlogs"]
 
 [tool.setuptools.packages]
 find = {}
