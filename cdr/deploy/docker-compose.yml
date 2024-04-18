@@ -16,7 +16,7 @@ services:
 
   cdr:
     image: uncharted/lara-cdr:latest
-    command: ["--mode", "host", "--workdir", "$WORKDIR", "--host", "rabbitmq"]
+    command: ["--mode", "host", "--workdir", "/workdir", "--host", "rabbitmq"]
     ports:
       - 5000:5000
     environment:
