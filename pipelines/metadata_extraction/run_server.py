@@ -1,10 +1,18 @@
 import argparse
+from unittest.mock import DEFAULT
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
 from io import BytesIO
+
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
+)
+from tasks.common.queue import (
+    OutputType,
+    RequestQueue,
+    METADATA_REQUEST_QUEUE,
+    METADATA_RESULT_QUEUE,
 )
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
@@ -37,13 +45,8 @@ def process_image():
             logging.warning(msg)
             return (msg, 500)
 
-        cdr_schema = app.config.get("cdr_schema", False)
-        # get ta1 schema output or internal output format
-        metadata_result = (
-            result[METADATA_EXTRACTION_OUTPUT_KEY]
-            if not cdr_schema
-            else result["metadata_cdr_output"]
-        )
+        result_key = app.config.get("result_key", METADATA_EXTRACTION_OUTPUT_KEY)
+        metadata_result = result[result_key]
 
         # convert result to a JSON string and return
         if isinstance(metadata_result, BaseModelOutput):
@@ -90,6 +93,9 @@ if __name__ == "__main__":
         action="store_true",
         help="Output results as TA1 json schema format",
     )
+    parser.add_argument("--rest", action="store_true")
+    parser.add_argument("--request_queue", type=str, default=METADATA_REQUEST_QUEUE)
+    parser.add_argument("--result_queue", type=str, default=METADATA_RESULT_QUEUE)
     p = parser.parse_args()
 
     # init segmenter
@@ -97,9 +103,24 @@ if __name__ == "__main__":
         p.workdir, p.model, cdr_schema=p.cdr_schema
     )
 
-    #### start flask server
-    app.config["cdr_schema"] = p.cdr_schema
-    if p.debug:
-        app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    metadata_result_key = (
+        METADATA_EXTRACTION_OUTPUT_KEY if not p.cdr_schema else "metadata_cdr_output"
+    )
+
+    #### start flask server or startup up the message queue
+    if p.rest:
+        app.config["result_key"] = metadata_result_key
+        if p.debug:
+            app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+        else:
+            app.run(host="0.0.0.0", port=5000)
     else:
-        app.run(host="0.0.0.0", port=5000)
+        queue = RequestQueue(
+            metadata_extraction,
+            p.request_queue,
+            p.result_queue,
+            metadata_result_key,
+            OutputType.METADATA,
+            p.workdir,
+        )
+        queue.start_request_queue()

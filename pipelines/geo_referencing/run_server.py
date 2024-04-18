@@ -1,25 +1,33 @@
 import argparse
+import json
 import logging
 import os
+from unittest import result
 
 from flask import Flask, request, Response
 from hashlib import sha1
 from io import BytesIO
-from pathlib import Path
 from PIL.Image import Image as PILImage
 from PIL import Image
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
-from pipelines.geo_referencing.output import GCPOutput, JSONWriter, ObjectOutput
-from tasks.common.pipeline import Pipeline, PipelineInput
-from tasks.geo_referencing.georeference import QueryPoint
+from pipelines.geo_referencing.output import (
+    GCPOutput,
+    JSONWriter,
+    LARAModelOutput,
+    ObjectOutput,
+)
+from tasks.common.pipeline import BaseModelOutput, Pipeline, PipelineInput
+from tasks.common.queue import (
+    GEO_REFERENCE_REQUEST_QUEUE,
+    GEO_REFERENCE_RESULT_QUEUE,
+    RequestQueue,
+    OutputType,
+)
 
-from typing import Dict, List, Tuple
+from typing import Tuple
 
 Image.MAX_IMAGE_PIXELS = 400000000
-
-
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/credentials.json"
 
 app = Flask(__name__)
 
@@ -83,10 +91,17 @@ def process_image():
             msg = "No georeferencing information derived"
             logging.warning(msg)
             return (msg, 500)
-        output_schema: ObjectOutput = outputs["schema"]  # type: ignore
-        writer_json = JSONWriter()
-        result_json = writer_json.output([output_schema], {})
+
+        result = outputs["georef_output"]
+        if isinstance(result, BaseModelOutput):
+            result_json = json.dumps(result.data.model_dump())
+        else:
+            msg = "No point extraction results"
+            logging.warning(msg)
+            return (msg, 500)
+
         return Response(result_json, status=200, mimetype="application/json")
+
     except Exception as e:
         msg = f"Error with process_image: {repr(e)}"
         logging.error(msg)
@@ -116,12 +131,34 @@ def start_server():
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--min_confidence", type=float, default=0.25)
     parser.add_argument("--debug", type=float, default=False)
+    parser.add_argument("--rest", action="store_true")
+    parser.add_argument(
+        "--request_queue", type=str, default=GEO_REFERENCE_REQUEST_QUEUE
+    )
+    parser.add_argument("--result_queue", type=str, default=GEO_REFERENCE_RESULT_QUEUE)
     p = parser.parse_args()
 
     global georef_pipeline
-    georef_pipeline = create_geo_referencing_pipeline(p.model, [GCPOutput("schema")])
+    georef_pipeline = create_geo_referencing_pipeline(
+        p.model, [LARAModelOutput("georef_output")]
+    )
 
-    app.run(host="0.0.0.0", port=5000)
+    #### start flask server or startup up the message queue
+    if p.rest:
+        if p.debug:
+            app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+        else:
+            app.run(host="0.0.0.0", port=5000)
+    else:
+        queue = RequestQueue(
+            georef_pipeline,
+            p.request_queue,
+            p.result_queue,
+            "georef_output",
+            OutputType.GEOREFERENCING,
+            p.workdir,
+        )
+        queue.start_request_queue()
 
 
 if __name__ == "__main__":

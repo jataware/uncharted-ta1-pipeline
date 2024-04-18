@@ -5,6 +5,7 @@ import json
 from urllib.parse import urlparse
 from enum import Enum
 from pathlib import Path
+import httpx
 from pydantic import BaseModel
 from typing import Iterator, List, Tuple, Sequence, Union
 from PIL.Image import Image as PILImage
@@ -269,3 +270,8 @@ class ImageFileWriter:
         with io.BytesIO() as output:
             image.save(output, format="PNG")
             client.put_object(Body=output.getvalue(), Bucket=bucket, Key=key)
+
+
+def download_file(image_url: str) -> bytes:
+    r = httpx.get(image_url, timeout=1000)
+    return r.content
