@@ -66,6 +66,7 @@ class Settings:
     callback_secret: str
     callback_url: str
     registration_id: str
+    rabbitmq_host: str
 
 
 settings: Settings
@@ -211,7 +212,7 @@ def process_cdr_event():
     # queue event in background since it may be blocking on the queue
     # assert request_channel is not None
     for queue_name, lara_req in lara_reqs.items():
-        publish_lara_request(lara_req, queue_name)
+        publish_lara_request(lara_req, queue_name, settings.rabbitmq_host)
 
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
@@ -539,6 +540,7 @@ def main():
     settings.system_name = CDR_SYSTEM_NAME
     settings.system_version = CDR_SYSTEM_VERSION
     settings.callback_secret = CDR_CALLBACK_SECRET
+    settings.rabbitmq_host = p.host
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
     if p.mode == "process" and (p.cog_id == "" or p.cog_id is None):
@@ -550,13 +552,17 @@ def main():
     logger.info(f"starting cdr in {p.mode} mode")
 
     # start the listener for the results
-    threading.Thread(
-        target=start_lara_result_listener,
-        args=(
-            "lara_result_queue",
-            p.host,
-        ),
-    ).start()
+    try:
+        threading.Thread(
+            target=start_lara_result_listener,
+            args=(
+                "lara_result_queue",
+                p.host,
+            ),
+        ).start()
+    except Exception as e:
+        logger.error(f"An exception occurred: {e}")
+        exit(1)
 
     # either start the flask app if host mode selected or run the image specified if in process mode
     if p.mode == "host":

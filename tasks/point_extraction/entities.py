@@ -1,11 +1,8 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
-from matplotlib.mathtext import RasterParse
-import numpy as np
 from PIL import Image
 from pydantic import BaseModel, validator, model_serializer
-import torch
-from typing import Optional, List, Dict, Union, Any
+
+from typing import Optional, List, Any
 
 
 ## Data Objects
@@ -89,12 +86,6 @@ class MapTile(BaseModel):
     def validate_image(cls, value):
         if value is None:
             return value
-        if isinstance(value, torch.Tensor):
-            value = value.permute(1, 2, 0)  # Convert from (C, H, W) to (H, W, C)
-            value = value.numpy()
-            if value.dtype == np.float32:
-                value = (value * 255).astype(np.uint8)
-            value = Image.fromarray(value)
         if not isinstance(value, Image.Image):
             raise TypeError(f"Expected PIL or torch.Tensor Image, got {type(value)}")
         if value.size[0] == 0 or value.size[1] == 0:
@@ -104,11 +95,6 @@ class MapTile(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
-
-    def img_to_torchvision_tensor(self):
-        return (
-            torch.tensor(self.image).float().permute(2, 0, 1)
-        )  # Convert from (H, W, C) to (C, H, W)
 
 
 class MapTiles(BaseModel):

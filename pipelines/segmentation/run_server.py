@@ -92,6 +92,7 @@ if __name__ == "__main__":
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
     parser.add_argument("--rest", action="store_true")
+    parser.add_argument("--rabbit_host", type=str, default="localhost")
     parser.add_argument("--request_queue", type=str, default=SEGMENTATION_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=SEGMENTATION_RESULT_QUEUE)
     p = parser.parse_args()
@@ -119,5 +120,6 @@ if __name__ == "__main__":
             result_key,
             OutputType.SEGMENTATION,
             p.workdir,
+            host=p.rabbit_host,
         )
         queue.start_request_queue()

@@ -1,14 +1,12 @@
 from enum import Enum
 import json
 import logging
-import os
 from pathlib import Path
 import pprint
 
 import pika
 
 from PIL.Image import Image as PILImage
-from sqlalchemy import TEXT
 
 from tasks.common.pipeline import (
     BaseModelOutput,
@@ -125,7 +123,7 @@ class RequestQueue:
         # setup input and output queue
         request_connection = pika.BlockingConnection(
             pika.ConnectionParameters(
-                "localhost",
+                self._host,
                 heartbeat=900,
                 blocked_connection_timeout=600,
             )

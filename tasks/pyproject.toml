@@ -27,7 +27,8 @@ dependencies = [
     "Shapely",
     "utm",
     "parmap",
-    "scipy"
+    "scipy",
+    "pika"
 ]
 
 [project.optional-dependencies]
