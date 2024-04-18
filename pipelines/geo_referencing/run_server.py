@@ -132,6 +132,7 @@ def start_server():
     parser.add_argument("--min_confidence", type=float, default=0.25)
     parser.add_argument("--debug", type=float, default=False)
     parser.add_argument("--rest", action="store_true")
+    parser.add_argument("--rabbit_host", type=str, default="localhost")
     parser.add_argument(
         "--request_queue", type=str, default=GEO_REFERENCE_REQUEST_QUEUE
     )
@@ -157,6 +158,7 @@ def start_server():
             "georef_output",
             OutputType.GEOREFERENCING,
             p.workdir,
+            host=p.rabbit_host,
         )
         queue.start_request_queue()
 
