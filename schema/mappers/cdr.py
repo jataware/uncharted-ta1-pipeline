@@ -228,8 +228,8 @@ class PointsMapper(CDRMapper):
                 point_features=PointFeatureCollection(features=features),
             )
 
-        # add to our final list of features results and create the output
-        point_features.append(point_features_result)
+            # add to our final list of features results and create the output
+            point_features.append(point_features_result)
 
         return FeatureResults(
             cog_id=model.raster_id,
