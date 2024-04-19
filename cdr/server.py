@@ -574,6 +574,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("process", "host"), required=True)
+    parser.add_argument("--system", type=str, default=CDR_SYSTEM_NAME)
     parser.add_argument("--workdir", type=str, required=True)
     parser.add_argument("--cog_id", type=str, required=False)
     parser.add_argument("--host", type=str, default="localhost")
@@ -584,7 +585,7 @@ def main():
     settings.cdr_api_token = CDR_API_TOKEN
     settings.cdr_host = CDR_HOST
     settings.workdir = p.workdir
-    settings.system_name = CDR_SYSTEM_NAME
+    settings.system_name = p.system
     settings.system_version = CDR_SYSTEM_VERSION
     settings.callback_secret = CDR_CALLBACK_SECRET
     settings.rabbitmq_host = p.host

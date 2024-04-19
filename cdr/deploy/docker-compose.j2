@@ -15,7 +15,7 @@ services:
       retries: 5
 
   cdr:
-    image: uncharted/lara-cdr:latest
+    image: uncharted/lara-cdr:{{ tag }}
     command: ["--mode", "host", "--workdir", "/workdir", "--host", "rabbitmq"]
     ports:
       - 5000:5000
@@ -32,7 +32,7 @@ services:
     restart: on-failure
 
   geo_referencing:
-    image: uncharted/lara-georef:latest
+    image: uncharted/lara-georef:{{ tag }}
     command: ["--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
     environment:
       - OPENAI_API_KEY={{ openai_api_key }}
@@ -49,7 +49,7 @@ services:
     restart: on-failure
 
   point_extraction:
-    image: uncharted/lara-point-extract:latest
+    image: uncharted/lara-point-extract:{{ tag }}
     command: [
       "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq","--model_point_extractor", "pipelines/point_extraction_weights/lara_yolo_20240320_best.pt", "--model_segmenter", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
     environment:
@@ -66,9 +66,9 @@ services:
     restart:  on-failure
 
   segmentation:
-    image: uncharted/lara-segmentation:latest
+    image: uncharted/lara-segmentation:{{ tag }}
     command: [
-      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq","--model_point_extractor", "--model_segmenter", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
+      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
     volumes:
       - {{ segmentation_workdir }}:/workdir
       - {{ cdr_workdir }}:/imagedir
