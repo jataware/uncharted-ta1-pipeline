@@ -65,6 +65,21 @@ services:
       - lara
     restart:  on-failure
 
+  segmentation:
+    image: uncharted/lara-segmentation:latest
+    command: [
+      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq","--model_point_extractor", "--model_segmenter", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
+    volumes:
+      - {{ segmentation_workdir }}:/workdir
+      - {{ cdr_workdir }}:/imagedir
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - lara
+    restart:  on-failure
+
+
 networks:
   lara:
     name: lara

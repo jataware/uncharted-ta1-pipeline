@@ -24,6 +24,7 @@ from tasks.common.io import ImageFileInputIterator, download_file
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,
+    SEGMENTATION_REQUEST_QUEUE,
     OutputType,
     Request,
     RequestResult,
@@ -215,6 +216,13 @@ def process_cdr_event():
                     image_url=map_event.cog_url,
                     output_format="cdr",
                 )
+                lara_reqs[SEGMENTATION_REQUEST_QUEUE] = Request(
+                    id=evt["id"],
+                    task="segments",
+                    image_id=map_event.cog_id,
+                    image_url=map_event.cog_url,
+                    output_format="cdr",
+                )
 
             case _:
                 logger.info(f"received unsupported {evt} event")
@@ -255,6 +263,13 @@ def process_image(image_id: str):
     lara_reqs[POINTS_REQUEST_QUEUE] = Request(
         id="mock-pts",
         task="points",
+        image_id=image_id,
+        image_url=image_url,
+        output_format="cdr",
+    )
+    lara_reqs[POINTS_REQUEST_QUEUE] = Request(
+        id="mock-segments",
+        task="segments",
         image_id=image_id,
         image_url=image_url,
         output_format="cdr",

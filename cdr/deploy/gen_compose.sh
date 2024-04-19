@@ -1,2 +1,2 @@
 #!/bin/bash
-jinja --data ~/dev/lara_config/vars.json --format json --output docker-compose.yml docker-compose.j2 
+jinja --data $1 --format json --output docker-compose.yml docker-compose.j2 
