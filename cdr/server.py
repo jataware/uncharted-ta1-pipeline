@@ -1,5 +1,6 @@
 import argparse
 import atexit
+from pathlib import Path
 import httpx
 import json
 import logging
@@ -19,6 +20,7 @@ from pyproj import Transformer
 from rasterio.transform import Affine
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 
+from tasks.common.io import ImageFileInputIterator, download_file
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,
@@ -38,7 +40,7 @@ from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadat
 from tasks.point_extraction.entities import MapImage as LARAPoints
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("cdr")
 
@@ -90,6 +92,23 @@ def publish_lara_request(req: Request, request_queue: str, host="localhost"):
     )
     logger.info(f"request {req.id} published to lara queue")
     request_channel.connection.close()
+
+
+def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
+    """
+    Prefetches the image from the CDR for use by the pipelines.
+    """
+    # check working dir for the image
+    filename = working_dir / f"{image_id}.tif"
+
+    if not filename.exists():
+        # download image
+        image_data = download_file(image_url)
+
+        # write it to working dir, creating the directory if necessary
+        filename.parent.mkdir(parents=True, exist_ok=True)
+        with open(filename, "wb") as file:
+            file.write(image_data)
 
 
 def project_image(
@@ -208,6 +227,9 @@ def process_cdr_event():
         # assume ping or ignored event type
         return Response({"ok": "success"}, status=200, mimetype="application/json")
 
+    # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
+    # image_dir arg that should be configured to point at this location.
+    prefetch_image(Path(settings.workdir), map_event.cog_id, map_event.cog_url)
     # queue event in background since it may be blocking on the queue
     # assert request_channel is not None
     for queue_name, lara_req in lara_reqs.items():
@@ -219,22 +241,28 @@ def process_cdr_event():
 def process_image(image_id: str):
     logger.info(f"processing image with id {image_id}")
 
+    image_url = f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif"
+
     # build the request
     lara_reqs: Dict[str, Request] = {}
     lara_reqs[GEO_REFERENCE_REQUEST_QUEUE] = Request(
         id="mock",
         task="georeference",
         image_id=image_id,
-        image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
+        image_url=image_url,
         output_format="cdr",
     )
     lara_reqs[POINTS_REQUEST_QUEUE] = Request(
         id="mock-pts",
         task="points",
         image_id=image_id,
-        image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
+        image_url=image_url,
         output_format="cdr",
     )
+
+    # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
+    # image_dir arg that should be configured to point at this location.
+    prefetch_image(Path(settings.workdir), image_id, image_url)
 
     # push the request onto the queue
     for queue_name, request in lara_reqs.items():

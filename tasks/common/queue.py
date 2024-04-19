@@ -17,7 +17,6 @@ from tasks.common.io import ImageFileInputIterator, download_file
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import spec
 from pydantic import BaseModel
-
 from typing import Tuple
 
 logger = logging.getLogger("process_queue")
@@ -84,6 +83,8 @@ class RequestQueue:
         host: The host of the queue.
         heartbeat: The heartbeat interval.
         blocked_connection_timeout: The blocked connection timeout.
+        workdir: Intermediate output storage directory.
+        image_dir: Drectory for storing source images.
     """
 
     def __init__(
@@ -94,6 +95,7 @@ class RequestQueue:
         output_key: str,
         output_type: OutputType,
         workdir: Path,
+        image_dir: Path,
         host="localhost",
         heartbeat=900,
         blocked_connection_timeout=600,
@@ -110,6 +112,7 @@ class RequestQueue:
         self._heartbeat = heartbeat
         self._blocked_connection_timeout = blocked_connection_timeout
         self._working_dir = workdir
+        self._image_dir = image_dir
 
         self.setup_queues()
 
@@ -246,13 +249,13 @@ class RequestQueue:
         )
 
     def _get_image(
-        self, working_dir: Path, image_id: str, image_url: str
+        self, image_dir: Path, image_id: str, image_url: str
     ) -> Tuple[Path, ImageFileInputIterator]:
         """
         Get the image for the request.
         """
         # check working dir for the image
-        filename = working_dir / Path("images") / f"{image_id}.tif"
+        filename = image_dir / f"{image_id}.tif"
 
         if not filename.exists():
             # download image

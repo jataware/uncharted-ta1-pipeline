@@ -82,6 +82,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
+    parser.add_argument("--image_dir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
     parser.add_argument("--rest", action="store_true")
@@ -113,6 +114,7 @@ if __name__ == "__main__":
             result_key,
             OutputType.TEXT,
             p.workdir,
+            p.image_dir,
             host=p.rabbit_host,
         )
         queue.start_request_queue()
