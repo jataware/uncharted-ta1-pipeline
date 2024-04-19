@@ -21,7 +21,6 @@ from rasterio.warp import Resampling, calculate_default_transform, reproject
 
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
-    METADATA_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,
     OutputType,
     Request,
@@ -390,30 +389,35 @@ def process_lara_result(
     properties: spec.BasicProperties,
     body: bytes,
 ):
-    logger.info("received data from result channel")
-    # parse the result
-    body_decoded = json.loads(body.decode())
-    result = RequestResult.model_validate(body_decoded)
-    logger.info(
-        f"processing result for request {result.request.id} of type {result.output_type}"
-    )
+    try:
+        logger.info("received data from result channel")
+        # parse the result
+        body_decoded = json.loads(body.decode())
+        result = RequestResult.model_validate(body_decoded)
+        logger.info(
+            f"processing result for request {result.request.id} of type {result.output_type}"
+        )
 
-    # reproject image to file on disk for pushing to CDR
-    match result.output_type:
-        case OutputType.GEOREFERENCING:
-            logger.info("georeferencing results received")
-            push_georeferencing(result)
-        case OutputType.METADATA:
-            logger.info("metadata results received")
-            push_metadata(result)
-        case OutputType.SEGMENTATION:
-            logger.info("segmentation results received")
-            push_segmentation(result)
-        case OutputType.POINTS:
-            logger.info("points results received")
-            push_points(result)
-        case _:
-            logger.info("unsupported output type received from queue")
+        # reproject image to file on disk for pushing to CDR
+        match result.output_type:
+            case OutputType.GEOREFERENCING:
+                logger.info("georeferencing results received")
+                push_georeferencing(result)
+            case OutputType.METADATA:
+                logger.info("metadata results received")
+                push_metadata(result)
+            case OutputType.SEGMENTATION:
+                logger.info("segmentation results received")
+                push_segmentation(result)
+            case OutputType.POINTS:
+                logger.info("points results received")
+                push_points(result)
+            case _:
+                logger.info("unsupported output type received from queue")
+
+    except Exception as e:
+        logger.exception(f"Error processing result: {str(e)}")
+
     logger.info("result processing finished")
 
 
@@ -552,17 +556,13 @@ def main():
     logger.info(f"starting cdr in {p.mode} mode")
 
     # start the listener for the results
-    try:
-        threading.Thread(
-            target=start_lara_result_listener,
-            args=(
-                "lara_result_queue",
-                p.host,
-            ),
-        ).start()
-    except Exception as e:
-        logger.error(f"An exception occurred: {e}")
-        exit(1)
+    threading.Thread(
+        target=start_lara_result_listener,
+        args=(
+            "lara_result_queue",
+            p.host,
+        ),
+    ).start()
 
     # either start the flask app if host mode selected or run the image specified if in process mode
     if p.mode == "host":
