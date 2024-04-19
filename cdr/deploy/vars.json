@@ -1,0 +1,9 @@
+{
+    "cdr_api_token": "",
+    "cdr_workdir": "",
+    "georef_workdir": "",
+    "point_extract_workdir": "",
+    "ngrok_authtoken": "",
+    "openai_api_key": "",
+    "google_application_credentials": ""
+}

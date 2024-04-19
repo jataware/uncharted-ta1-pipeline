@@ -20,10 +20,10 @@ services:
     ports:
       - 5000:5000
     environment:
-      - CDR_API_TOKEN=$CDR_API_TOKEN
-      - NGROK_AUTHTOKEN=$NGROK_AUTHTOKEN
+      - CDR_API_TOKEN={{ cdr_api_token }}
+      - NGROK_AUTHTOKEN={{ ngrok_authtoken }}
     volumes:
-      - $CDR_WORKDIR:/workdir
+      - {{ cdr_workdir }}:/workdir
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -35,12 +35,12 @@ services:
     image: uncharted/lara-georef:latest
     command: ["--workdir", "/workdir", "--image_dir", "/image_dir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
     environment:
-      - OPENAI_API_KEY=$OPENAI_API_KEY
+      - OPENAI_API_KEY={{ openai_api_key }}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
-      - $GOOGLE_APPLICATION_CREDENTIALS:/credentials.json
-      - $GEOREF_WORKDIR:/workdir
-      - $CDR_WORKDIR:/image_dir
+      - {{ google_application_credentials }}:/credentials.json
+      - {{ georef_workdir }}:/workdir
+      - {{ cdr_workdir }}:/image_dir
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -55,9 +55,9 @@ services:
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
-      - $GOOGLE_APPLICATION_CREDENTIALS:/credentials.json
-      - $POINT_EXTRACT_WORKDIR:/workdir
-      - $CDR_WORKDIR:/image_dir
+      - {{ google_application_credentials }}:/credentials.json
+      - {{ point_extract_workdir }}:/workdir
+      - {{ cdr_workdir }}:/image_dir
     depends_on:
       rabbitmq:
         condition: service_healthy

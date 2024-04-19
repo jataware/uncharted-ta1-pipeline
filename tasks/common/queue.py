@@ -181,7 +181,7 @@ class RequestQueue:
 
             # create the input
             image_path, image_it = self._get_image(
-                self._working_dir, request.image_id, request.image_url
+                self._image_dir, request.image_id, request.image_url
             )
             input = self._create_pipeline_input(request, next(image_it)[1])
 
@@ -258,6 +258,8 @@ class RequestQueue:
         filename = image_dir / f"{image_id}.tif"
 
         if not filename.exists():
+            logger.info(f"image not found - downloading to {filename}")
+
             # download image
             image_data = download_file(image_url)
 
