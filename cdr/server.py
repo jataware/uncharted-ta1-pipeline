@@ -228,7 +228,7 @@ def process_cdr_event():
         return Response({"ok": "success"}, status=200, mimetype="application/json")
 
     # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
-    # image_dir arg that should be configured to point at this location.
+    # imagedir arg that should be configured to point at this location.
     prefetch_image(Path(settings.workdir), map_event.cog_id, map_event.cog_url)
     # queue event in background since it may be blocking on the queue
     # assert request_channel is not None
@@ -261,7 +261,7 @@ def process_image(image_id: str):
     )
 
     # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
-    # image_dir arg that should be configured to point at this location.
+    # imagedir arg that should be configured to point at this location.
     prefetch_image(Path(settings.workdir), image_id, image_url)
 
     # push the request onto the queue

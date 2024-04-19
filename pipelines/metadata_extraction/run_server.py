@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 from unittest.mock import DEFAULT
 from flask import Flask, request, Response
 import logging, json
@@ -85,8 +86,8 @@ if __name__ == "__main__":
     logger.info("*** Starting map metadata app ***")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--image_dir", type=str, default="tmp/lara/workdir")
+    parser.add_argument("--workdir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--debug", action="store_true")
     parser.add_argument(
@@ -124,7 +125,7 @@ if __name__ == "__main__":
             metadata_result_key,
             OutputType.METADATA,
             p.workdir,
-            p.image_dir,
+            p.imagedir,
             host=p.rabbit_host,
         )
         queue.start_request_queue()

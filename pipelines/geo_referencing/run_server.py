@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import os
+from pathlib import Path
 from unittest import result
 
 from flask import Flask, request, Response
@@ -127,8 +128,8 @@ def start_server():
     logger.info("*** Starting geo referencing app ***")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--image_dir", type=str, default="tmp/lara/workdir")
+    parser.add_argument("--workdir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--min_confidence", type=float, default=0.25)
     parser.add_argument("--debug", type=float, default=False)
@@ -159,7 +160,7 @@ def start_server():
             "georef_output",
             OutputType.GEOREFERENCING,
             p.workdir,
-            p.image_dir,
+            p.imagedir,
             host=p.rabbit_host,
         )
         queue.start_request_queue()

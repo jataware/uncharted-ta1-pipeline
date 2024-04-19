@@ -84,7 +84,7 @@ class RequestQueue:
         heartbeat: The heartbeat interval.
         blocked_connection_timeout: The blocked connection timeout.
         workdir: Intermediate output storage directory.
-        image_dir: Drectory for storing source images.
+        imagedir: Drectory for storing source images.
     """
 
     def __init__(
@@ -95,7 +95,7 @@ class RequestQueue:
         output_key: str,
         output_type: OutputType,
         workdir: Path,
-        image_dir: Path,
+        imagedir: Path,
         host="localhost",
         heartbeat=900,
         blocked_connection_timeout=600,
@@ -112,7 +112,7 @@ class RequestQueue:
         self._heartbeat = heartbeat
         self._blocked_connection_timeout = blocked_connection_timeout
         self._working_dir = workdir
-        self._image_dir = image_dir
+        self._imagedir = imagedir
 
         self.setup_queues()
 
@@ -181,7 +181,7 @@ class RequestQueue:
 
             # create the input
             image_path, image_it = self._get_image(
-                self._image_dir, request.image_id, request.image_url
+                self._imagedir, request.image_id, request.image_url
             )
             input = self._create_pipeline_input(request, next(image_it)[1])
 
@@ -249,13 +249,13 @@ class RequestQueue:
         )
 
     def _get_image(
-        self, image_dir: Path, image_id: str, image_url: str
+        self, imagedir: Path, image_id: str, image_url: str
     ) -> Tuple[Path, ImageFileInputIterator]:
         """
         Get the image for the request.
         """
         # check working dir for the image
-        filename = image_dir / f"{image_id}.tif"
+        filename = imagedir / f"{image_id}.tif"
 
         if not filename.exists():
             logger.info(f"image not found - downloading to {filename}")
