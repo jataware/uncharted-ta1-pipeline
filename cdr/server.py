@@ -225,7 +225,7 @@ def process_cdr_event():
                 )
 
             case _:
-                logger.info(f"received unsupported {evt} event")
+                logger.info(f"received unsupported {evt['event']} event")
 
     except Exception:
         logger.error(f"exception processing {evt} event")
