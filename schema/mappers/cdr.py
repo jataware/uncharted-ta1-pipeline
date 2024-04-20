@@ -209,7 +209,7 @@ class PointsMapper(CDRMapper):
 
                 # add the point geometry and properties to the point feature
                 point_feature = PointFeature(
-                    id=f"{map_pt_label.class_id}.{point_id}",
+                    id=f"{map_pt_label.class_name}.{point_id}",
                     geometry=point,
                     properties=properties,
                 )
