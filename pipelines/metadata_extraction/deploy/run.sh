@@ -9,9 +9,11 @@ docker run \
     -e GOOGLE_APPLICATION_CREDENTIALS=/credentials.json \
     -v $GOOGLE_APPLICATION_CREDENTIALS:/credentials.json \
     -v $1:/workdir \
+    -v $2:/imagedir \
     --net lara \
     -p 5000:5000 \
     uncharted/lara-metadata-extract:latest\
         --workdir /workdir \
+        --imagedir /imagedir \
         --model pipelines/segmentation_weights/layoutlmv3_xsection_20231201 \
         --cdr_schema

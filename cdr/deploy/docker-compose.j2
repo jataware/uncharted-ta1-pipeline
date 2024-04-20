@@ -16,7 +16,7 @@ services:
 
   cdr:
     image: uncharted/lara-cdr:{{ tag }}
-    command: ["--mode", "host", "--workdir", "/workdir", "--host", "rabbitmq"]
+    command: ["--mode", "host", "--workdir", "/workdir", "--imagedir", "/imagedir", "--host", "rabbitmq"]
     ports:
       - 5000:5000
     environment:
@@ -24,6 +24,7 @@ services:
       - NGROK_AUTHTOKEN={{ ngrok_authtoken }}
     volumes:
       - {{ cdr_workdir }}:/workdir
+      - {{ image_dir }}:/imagedir
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -40,7 +41,7 @@ services:
     volumes:
       - {{ google_application_credentials }}:/credentials.json
       - {{ georef_workdir }}:/workdir
-      - {{ cdr_workdir }}:/imagedir
+      - {{ image_dir }}:/imagedir
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -51,13 +52,13 @@ services:
   point_extraction:
     image: uncharted/lara-point-extract:{{ tag }}
     command: [
-      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq","--model_point_extractor", "pipelines/point_extraction_weights/lara_yolo_20240320_best.pt", "--model_segmenter", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
+      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq","--model_point_extractor", "pipelines/point_extraction_weights/lara_yolo_20240406_best.pt", "--model_segmenter", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
       - {{ google_application_credentials }}:/credentials.json
       - {{ point_extract_workdir }}:/workdir
-      - {{ cdr_workdir }}:/imagedir
+      - {{ image_dir }}:/imagedir
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -71,7 +72,7 @@ services:
       "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
     volumes:
       - {{ segmentation_workdir }}:/workdir
-      - {{ cdr_workdir }}:/imagedir
+      - {{ image_dir }}:/imagedir
     depends_on:
       rabbitmq:
         condition: service_healthy

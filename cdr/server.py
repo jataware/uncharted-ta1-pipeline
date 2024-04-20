@@ -63,6 +63,7 @@ class Settings:
     cdr_api_token: str
     cdr_host: str
     workdir: str
+    imagedir: str
     system_name: str
     system_version: str
     callback_secret: str
@@ -191,7 +192,7 @@ def project_georeference(
 def process_cdr_event():
     logger.info("event callback started")
     evt = request.get_json(force=True)
-    logger.info(f"event data received {evt}")
+    logger.info(f"event data received {evt['event']}")
     lara_reqs: Dict[str, Request] = {}
 
     try:
@@ -228,7 +229,7 @@ def process_cdr_event():
                 logger.info(f"received unsupported {evt['event']} event")
 
     except Exception:
-        logger.error(f"exception processing {evt} event")
+        logger.error(f"exception processing {evt['event']} event")
         raise
 
     if len(lara_reqs) == 0:
@@ -237,7 +238,7 @@ def process_cdr_event():
 
     # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
     # imagedir arg that should be configured to point at this location.
-    prefetch_image(Path(settings.workdir), map_event.cog_id, map_event.cog_url)
+    prefetch_image(Path(settings.imagedir), map_event.cog_id, map_event.cog_url)
     # queue event in background since it may be blocking on the queue
     # assert request_channel is not None
     for queue_name, lara_req in lara_reqs.items():
@@ -576,6 +577,7 @@ def main():
     parser.add_argument("--mode", choices=("process", "host"), required=True)
     parser.add_argument("--system", type=str, default=CDR_SYSTEM_NAME)
     parser.add_argument("--workdir", type=str, required=True)
+    parser.add_argument("--imagedir", type=str, required=True)
     parser.add_argument("--cog_id", type=str, required=False)
     parser.add_argument("--host", type=str, default="localhost")
     p = parser.parse_args()
@@ -585,6 +587,7 @@ def main():
     settings.cdr_api_token = CDR_API_TOKEN
     settings.cdr_host = CDR_HOST
     settings.workdir = p.workdir
+    settings.imagedir = p.imagedir
     settings.system_name = p.system
     settings.system_version = CDR_SYSTEM_VERSION
     settings.callback_secret = CDR_CALLBACK_SECRET
