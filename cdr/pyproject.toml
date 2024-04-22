@@ -11,7 +11,7 @@ dependencies = ["jsons", "flask", "lara-tasks", "mypy-boto3-s3", "rasterio", "ng
 
 [project.optional-dependencies]
 development = [
-    "jinja2"
+    "jinja2", "jinja-cli"
 ]
 
 [tool.setuptools.packages]
