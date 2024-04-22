@@ -1,5 +1,6 @@
 import argparse
 import atexit
+from pathlib import Path
 import httpx
 import json
 import logging
@@ -19,10 +20,11 @@ from pyproj import Transformer
 from rasterio.transform import Affine
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 
+from tasks.common.io import ImageFileInputIterator, download_file
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
-    METADATA_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,
+    SEGMENTATION_REQUEST_QUEUE,
     OutputType,
     Request,
     RequestResult,
@@ -39,7 +41,7 @@ from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadat
 from tasks.point_extraction.entities import MapImage as LARAPoints
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("cdr")
 
@@ -61,6 +63,7 @@ class Settings:
     cdr_api_token: str
     cdr_host: str
     workdir: str
+    imagedir: str
     system_name: str
     system_version: str
     callback_secret: str
@@ -91,6 +94,23 @@ def publish_lara_request(req: Request, request_queue: str, host="localhost"):
     )
     logger.info(f"request {req.id} published to lara queue")
     request_channel.connection.close()
+
+
+def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
+    """
+    Prefetches the image from the CDR for use by the pipelines.
+    """
+    # check working dir for the image
+    filename = working_dir / f"{image_id}.tif"
+
+    if not filename.exists():
+        # download image
+        image_data = download_file(image_url)
+
+        # write it to working dir, creating the directory if necessary
+        filename.parent.mkdir(parents=True, exist_ok=True)
+        with open(filename, "wb") as file:
+            file.write(image_data)
 
 
 def project_image(
@@ -172,7 +192,7 @@ def project_georeference(
 def process_cdr_event():
     logger.info("event callback started")
     evt = request.get_json(force=True)
-    logger.info(f"event data received {evt}")
+    logger.info(f"event data received {evt['event']}")
     lara_reqs: Dict[str, Request] = {}
 
     try:
@@ -197,18 +217,28 @@ def process_cdr_event():
                     image_url=map_event.cog_url,
                     output_format="cdr",
                 )
+                lara_reqs[SEGMENTATION_REQUEST_QUEUE] = Request(
+                    id=evt["id"],
+                    task="segments",
+                    image_id=map_event.cog_id,
+                    image_url=map_event.cog_url,
+                    output_format="cdr",
+                )
 
             case _:
-                logger.info(f"received unsupported {evt} event")
+                logger.info(f"received unsupported {evt['event']} event")
 
     except Exception:
-        logger.error(f"exception processing {evt} event")
+        logger.error(f"exception processing {evt['event']} event")
         raise
 
     if len(lara_reqs) == 0:
         # assume ping or ignored event type
         return Response({"ok": "success"}, status=200, mimetype="application/json")
 
+    # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
+    # imagedir arg that should be configured to point at this location.
+    prefetch_image(Path(settings.imagedir), map_event.cog_id, map_event.cog_url)
     # queue event in background since it may be blocking on the queue
     # assert request_channel is not None
     for queue_name, lara_req in lara_reqs.items():
@@ -220,22 +250,35 @@ def process_cdr_event():
 def process_image(image_id: str):
     logger.info(f"processing image with id {image_id}")
 
+    image_url = f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif"
+
     # build the request
     lara_reqs: Dict[str, Request] = {}
     lara_reqs[GEO_REFERENCE_REQUEST_QUEUE] = Request(
         id="mock",
         task="georeference",
         image_id=image_id,
-        image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
+        image_url=image_url,
         output_format="cdr",
     )
     lara_reqs[POINTS_REQUEST_QUEUE] = Request(
         id="mock-pts",
         task="points",
         image_id=image_id,
-        image_url=f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif",
+        image_url=image_url,
         output_format="cdr",
     )
+    lara_reqs[POINTS_REQUEST_QUEUE] = Request(
+        id="mock-segments",
+        task="segments",
+        image_id=image_id,
+        image_url=image_url,
+        output_format="cdr",
+    )
+
+    # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
+    # imagedir arg that should be configured to point at this location.
+    prefetch_image(Path(settings.workdir), image_id, image_url)
 
     # push the request onto the queue
     for queue_name, request in lara_reqs.items():
@@ -390,30 +433,35 @@ def process_lara_result(
     properties: spec.BasicProperties,
     body: bytes,
 ):
-    logger.info("received data from result channel")
-    # parse the result
-    body_decoded = json.loads(body.decode())
-    result = RequestResult.model_validate(body_decoded)
-    logger.info(
-        f"processing result for request {result.request.id} of type {result.output_type}"
-    )
+    try:
+        logger.info("received data from result channel")
+        # parse the result
+        body_decoded = json.loads(body.decode())
+        result = RequestResult.model_validate(body_decoded)
+        logger.info(
+            f"processing result for request {result.request.id} of type {result.output_type}"
+        )
 
-    # reproject image to file on disk for pushing to CDR
-    match result.output_type:
-        case OutputType.GEOREFERENCING:
-            logger.info("georeferencing results received")
-            push_georeferencing(result)
-        case OutputType.METADATA:
-            logger.info("metadata results received")
-            push_metadata(result)
-        case OutputType.SEGMENTATION:
-            logger.info("segmentation results received")
-            push_segmentation(result)
-        case OutputType.POINTS:
-            logger.info("points results received")
-            push_points(result)
-        case _:
-            logger.info("unsupported output type received from queue")
+        # reproject image to file on disk for pushing to CDR
+        match result.output_type:
+            case OutputType.GEOREFERENCING:
+                logger.info("georeferencing results received")
+                push_georeferencing(result)
+            case OutputType.METADATA:
+                logger.info("metadata results received")
+                push_metadata(result)
+            case OutputType.SEGMENTATION:
+                logger.info("segmentation results received")
+                push_segmentation(result)
+            case OutputType.POINTS:
+                logger.info("points results received")
+                push_points(result)
+            case _:
+                logger.info("unsupported output type received from queue")
+
+    except Exception as e:
+        logger.exception(f"Error processing result: {str(e)}")
+
     logger.info("result processing finished")
 
 
@@ -527,7 +575,9 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("process", "host"), required=True)
+    parser.add_argument("--system", type=str, default=CDR_SYSTEM_NAME)
     parser.add_argument("--workdir", type=str, required=True)
+    parser.add_argument("--imagedir", type=str, required=True)
     parser.add_argument("--cog_id", type=str, required=False)
     parser.add_argument("--host", type=str, default="localhost")
     p = parser.parse_args()
@@ -537,7 +587,8 @@ def main():
     settings.cdr_api_token = CDR_API_TOKEN
     settings.cdr_host = CDR_HOST
     settings.workdir = p.workdir
-    settings.system_name = CDR_SYSTEM_NAME
+    settings.imagedir = p.imagedir
+    settings.system_name = p.system
     settings.system_version = CDR_SYSTEM_VERSION
     settings.callback_secret = CDR_CALLBACK_SECRET
     settings.rabbitmq_host = p.host
@@ -552,17 +603,13 @@ def main():
     logger.info(f"starting cdr in {p.mode} mode")
 
     # start the listener for the results
-    try:
-        threading.Thread(
-            target=start_lara_result_listener,
-            args=(
-                "lara_result_queue",
-                p.host,
-            ),
-        ).start()
-    except Exception as e:
-        logger.error(f"An exception occurred: {e}")
-        exit(1)
+    threading.Thread(
+        target=start_lara_result_listener,
+        args=(
+            "lara_result_queue",
+            p.host,
+        ),
+    ).start()
 
     # either start the flask app if host mode selected or run the image specified if in process mode
     if p.mode == "host":

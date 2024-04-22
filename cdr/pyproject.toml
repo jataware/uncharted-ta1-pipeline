@@ -9,5 +9,10 @@ description = "LARA CDR integration supporting both one-off processing and webho
 readme = "README.md"
 dependencies = ["jsons", "flask", "lara-tasks", "mypy-boto3-s3", "rasterio", "ngrok", "pyproj", "coloredlogs"]
 
+[project.optional-dependencies]
+development = [
+    "jinja2", "jinja-cli"
+]
+
 [tool.setuptools.packages]
 find = {}
