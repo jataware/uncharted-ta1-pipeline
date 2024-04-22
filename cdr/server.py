@@ -1,5 +1,6 @@
 import argparse
 import atexit
+import datetime
 from pathlib import Path
 import httpx
 import json
@@ -51,12 +52,28 @@ request_channel: Optional[Channel] = None
 
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 CDR_HOST = "https://api.cdr.land"
-CDR_SYSTEM_NAME = "uncharted-ph"
+CDR_SYSTEM_NAME = "uncharted"
 CDR_SYSTEM_VERSION = "0.0.1"
 CDR_CALLBACK_SECRET = "maps rock"
 APP_PORT = 5001
+CDR_EVENT_LOG = "events.log"
 
 LARA_RESULT_QUEUE_NAME = "lara_result_queue"
+
+
+class JSONLog:
+    def __init__(self, file: str):
+        self._file = file
+
+    def log(self, log_type: str, data: Dict[str, Any]):
+        # append the data as json, treating the file as a json lines file
+        log_data = {
+            "timestamp": f"{datetime.datetime.now()}",
+            "log_type": log_type,
+            "data": data,
+        }
+        with open(self._file, "a") as log_file:
+            log_file.write(f"{json.dumps(log_data)}\n")
 
 
 class Settings:
@@ -70,6 +87,7 @@ class Settings:
     callback_url: str
     registration_id: str
     rabbitmq_host: str
+    json_log: JSONLog
 
 
 settings: Settings
@@ -192,6 +210,7 @@ def project_georeference(
 def process_cdr_event():
     logger.info("event callback started")
     evt = request.get_json(force=True)
+    settings.json_log.log("event", evt)
     logger.info(f"event data received {evt['event']}")
     lara_reqs: Dict[str, Request] = {}
 
@@ -458,6 +477,9 @@ def process_lara_result(
                 push_points(result)
             case _:
                 logger.info("unsupported output type received from queue")
+        settings.json_log.log(
+            "result", {"type": result.output_type, "cog_id": result.request.image_id}
+        )
 
     except Exception as e:
         logger.exception(f"Error processing result: {str(e)}")
@@ -480,7 +502,7 @@ def start_lara_result_listener(result_queue: str, host="localhost"):
 
 
 def register_cdr_system():
-    logger.info("registering system with cdr")
+    logger.info(f"registering system {settings.system_name} with cdr")
     headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
 
     registration = {
@@ -504,7 +526,7 @@ def register_cdr_system():
     # Log our registration_id such we can delete it when we close the program.
     response_raw = r.json()
     settings.registration_id = response_raw["id"]
-    logger.info("system registered with cdr")
+    logger.info(f"system {settings.system_name} registered with cdr")
 
 
 def get_cdr_registrations() -> List[Dict[str, Any]]:
@@ -532,10 +554,10 @@ def cdr_unregister(registration_id: str):
 
 
 def cdr_clean_up():
-    logger.info("unregistering system with cdr")
+    logger.info(f"unregistering system {settings.registration_id} with cdr")
     # delete our registered system at CDR on program end
     cdr_unregister(settings.registration_id)
-    logger.info("system no longer registered with cdr")
+    logger.info(f"system {settings.registration_id} no longer registered with cdr")
 
 
 def cdr_startup(host: str):
@@ -580,6 +602,7 @@ def main():
     parser.add_argument("--imagedir", type=str, required=True)
     parser.add_argument("--cog_id", type=str, required=False)
     parser.add_argument("--host", type=str, default="localhost")
+    parser.add_argument("--cdr_event_log", type=str, default=CDR_EVENT_LOG)
     p = parser.parse_args()
 
     global settings
@@ -592,6 +615,7 @@ def main():
     settings.system_version = CDR_SYSTEM_VERSION
     settings.callback_secret = CDR_CALLBACK_SECRET
     settings.rabbitmq_host = p.host
+    settings.json_log = JSONLog(os.path.join(p.workdir, p.cdr_event_log))
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
     if p.mode == "process" and (p.cog_id == "" or p.cog_id is None):
