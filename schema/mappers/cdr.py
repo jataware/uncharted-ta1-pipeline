@@ -92,6 +92,11 @@ class GeoreferenceMapper(CDRMapper):
 class MetadataMapper(CDRMapper):
 
     def map_to_cdr(self, model: LARAMetadata) -> CogMetaData:
+        scale_str = "0"
+        if model.scale:
+            scale_split = model.scale.split(":")
+            if len(scale_split) > 1:
+                scale_str = scale_split[1]
         return CogMetaData(
             cog_id=model.map_id,
             system=self._system_name,
@@ -101,7 +106,7 @@ class MetadataMapper(CDRMapper):
                 MapMetaData(
                     title=model.title,
                     year=int(model.year),
-                    scale=int(model.scale.split(":")[1]),
+                    scale=int(scale_str),
                     authors=model.authors,
                     quadrangle_name=",".join(model.quadrangles),
                     map_shape=None,

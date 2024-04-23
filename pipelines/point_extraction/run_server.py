@@ -7,6 +7,12 @@ from io import BytesIO
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
+from tasks.common.queue import (
+    POINTS_REQUEST_QUEUE,
+    POINTS_RESULT_QUEUE,
+    OutputType,
+    RequestQueue,
+)
 
 
 #
@@ -40,13 +46,8 @@ def process_image():
             logging.warning(msg)
             return (msg, 500)
 
-        cdr_schema = app.config.get("cdr_schema", False)
-        # get ta1 schema output or internal output format
-        point_extraction_result = (
-            result["map_point_label_cdr_output"]
-            if cdr_schema
-            else result["map_point_label_output"]
-        )
+        result_key = app.config.get("result_key", "map_point_label_output")
+        point_extraction_result = result[result_key]
 
         # convert result to a JSON string and return
         if isinstance(point_extraction_result, BaseModelOutput):
@@ -88,6 +89,10 @@ if __name__ == "__main__":
     parser.add_argument("--model_segmenter", type=str, default=None)
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
+    parser.add_argument("--rest", action="store_true")
+    parser.add_argument("--rabbit_host", type=str, default="localhost")
+    parser.add_argument("--request_queue", type=str, default=POINTS_REQUEST_QUEUE)
+    parser.add_argument("--result_queue", type=str, default=POINTS_RESULT_QUEUE)
     p = parser.parse_args()
 
     # init point extraction pipeline
@@ -95,9 +100,25 @@ if __name__ == "__main__":
         p.model_point_extractor, p.model_segmenter, p.workdir
     )
 
-    #### start flask server
-    app.config["cdr_schema"] = p.cdr_schema
-    if p.debug:
-        app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+    result_key = (
+        "map_point_label_output" if not p.cdr_schema else "map_point_label_cdr_output"
+    )
+    app.config["result_key"] = result_key
+
+    #### start flask server or startup up the message queue
+    if p.rest:
+        if p.debug:
+            app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+        else:
+            app.run(host="0.0.0.0", port=5000)
     else:
-        app.run(host="0.0.0.0", port=5000)
+        queue = RequestQueue(
+            point_extraction_pipeline,
+            p.request_queue,
+            p.result_queue,
+            result_key,
+            OutputType.POINTS,
+            p.workdir,
+            host=p.rabbit_host,
+        )
+        queue.start_request_queue()

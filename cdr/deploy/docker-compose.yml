@@ -1,0 +1,69 @@
+version: '3'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      - lara
+    restart: on-failure
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  cdr:
+    image: uncharted/lara-cdr:latest
+    command: ["--mode", "host", "--workdir", "/workdir", "--host", "rabbitmq"]
+    ports:
+      - 5000:5000
+    environment:
+      - CDR_API_TOKEN=$CDR_API_TOKEN
+      - NGROK_AUTHTOKEN=$NGROK_AUTHTOKEN
+    volumes:
+      - $CDR_WORKDIR:/workdir
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - lara
+    restart: on-failure
+
+  geo_referencing:
+    image: uncharted/lara-georef:latest
+    command: ["--workdir", "/workdir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
+    environment:
+      - OPENAI_API_KEY=$OPENAI_API_KEY
+      - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
+    volumes:
+      - $GOOGLE_APPLICATION_CREDENTIALS:/credentials.json
+      - $GEOREF_WORKDIR:/workdir
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - lara
+    restart: on-failure
+
+  point_extraction:
+    image: uncharted/lara-point-extract:latest
+    command: [
+      "--workdir", "/workdir", "--rabbit_host", "rabbitmq","--model_point_extractor", "pipelines/point_extraction_weights/lara_yolo_20240320_best.pt", "--model_segmenter", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
+    volumes:
+      - $GOOGLE_APPLICATION_CREDENTIALS:/credentials.json
+      - $POINT_EXTRACT_WORKDIR:/workdir
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - lara
+    restart:  on-failure
+
+networks:
+  lara:
+    name: lara
+    driver: bridge
