@@ -1,14 +1,15 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
-from matplotlib.mathtext import RasterParse
+import logging
 import numpy as np
 from PIL import Image
-from pydantic import BaseModel, validator, model_serializer
+from pydantic import BaseModel, validator, Field
 import torch
-from typing import Optional, List, Dict, Union, Any
+from typing import Optional, List, Union, Any
 
-
+logger = logging.getLogger(__name__)
 ## Data Objects
+
+LEGEND_ITEMS_OUTPUT_KEY = "legend_point_items"
 
 
 class MapPointLabel(BaseModel):
@@ -28,6 +29,8 @@ class MapPointLabel(BaseModel):
     score: float
     direction: Optional[float] = None  # [deg] orientation of point symbol
     dip: Optional[float] = None  # [deg] dip angle associated with symbol
+    legend_name: str
+    legend_bbox: List[Union[float, int]]
 
 
 class MapImage(BaseModel):
@@ -157,3 +160,75 @@ class MapTiles(BaseModel):
         except Exception as e:
             print(f"Exception in join_with_cached_predictions: {str(e)}")
             return False
+
+
+class LegendPointItem(BaseModel):
+    """
+    Class for internally storing info about legend items for point symbols
+    """
+
+    # TODO -- could be modified to use CDR PointLegendAndFeaturesResult class in the future
+
+    name: str = Field(description="Label of the map unit in the legend")
+    description: str = Field(
+        default="", description="Description of the map unit in the legend"
+    )
+    legend_bbox: List[Union[float, int]] = Field(
+        default_factory=list,
+        description="""The rough 2 point bounding box of the map units label.
+                    Format is expected to be [x1,y1,x2,y2] where the top left
+                    is the origin (0,0).""",
+    )
+    legend_contour: List[List[Union[float, int]]] = Field(
+        default_factory=list,
+        description="""The more precise polygon bounding box of the map units
+                    label. Format is expected to be [x,y] coordinate pairs
+                    where the top left is the origin (0,0).""",
+    )
+
+
+class LegendPointItems(BaseModel):
+    """
+    Class for a collection of LegendPointItem objects
+    """
+
+    items: List[LegendPointItem]
+    provenance: str = Field(
+        default="", description="where did these legend items come from"
+    )
+
+    @staticmethod
+    def parse_legend_point_hints(legend_hints: dict) -> LegendPointItems:
+        """
+        parse legend hints JSON data (from the CMA contest)
+        and convert to LegendPointItem objects
+
+        legend_hints -- input hints dict
+        only_keep_points -- if True, will discard any hints about line or polygon features
+        """
+
+        legend_point_items = []
+        for shape in legend_hints["shapes"]:
+            label = shape["label"]
+            if not label.endswith("_pt") and not label.endswith("_point"):
+                continue  # not a point symbol, skip
+
+            # contour coords for the legend item's thumbnail swatch
+            xy_pts = shape["points"]
+            x_min = xy_pts[0][0]
+            x_max = xy_pts[0][0]
+            y_min = xy_pts[0][1]
+            y_max = xy_pts[0][1]
+            for x, y in xy_pts:
+                x_min = int(min(x, x_min))
+                x_max = int(max(x, x_max))
+                y_min = int(min(y, y_min))
+                y_max = int(max(y, y_max))
+            legend_point_items.append(
+                LegendPointItem(
+                    name=label,
+                    legend_bbox=[x_min, y_min, x_max, y_max],
+                    legend_contour=xy_pts,
+                )
+            )
+        return LegendPointItems(items=legend_point_items, provenance="ground_truth")

@@ -233,7 +233,9 @@ class PointOrientationExtractor(Task):
             # --- 2. estimate symbol orientation (using template matching)
             # --- pre-process the main image and template image, before template matching
             im, im_templ = point_extractor_utils.template_pre_processing(
-                np.array(input.image.copy()), self.templates[c]
+                np.array(input.image),
+                self.templates[c],
+                np.array([]),
             )
 
             # convert to gray and get foregnd mask for template
@@ -250,7 +252,7 @@ class PointOrientationExtractor(Task):
             for rot_deg in range(
                 0, task_config.rotate_max, task_config.rotate_interval
             ):
-                logger.debug("template rotation: {}".format(rot_deg))  #
+                logger.debug("template rotation: {}".format(rot_deg))
                 # get rotated template
                 if rot_deg > 0:
                     im_templ_rot = ndimage.rotate(im_templ, rot_deg, cval=255)

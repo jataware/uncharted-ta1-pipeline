@@ -3,12 +3,12 @@ import numpy as np
 from tqdm import tqdm
 from typing import List
 import logging
-from shapely.geometry import Polygon
 
 from common.task import Task, TaskInput, TaskResult
 
 from tasks.point_extraction.entities import MapTile, MapTiles, MapImage, MapPointLabel
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
+from tasks.segmentation.segmenter_utils import get_segment_bounds
 
 SEGMENT_MAP_CLASS = "map"  # class label for map area segmentation
 TILE_OVERLAP_DEFAULT = (  # default tliing overlap = point bbox + 10%
@@ -50,31 +50,17 @@ class Tiler(Task):
 
         # use image segmentation to restrict point extraction to map area only
         if SEGMENTATION_OUTPUT_KEY in task_input.data:
-            segments = MapSegmentation.model_validate(
-                task_input.data[SEGMENTATION_OUTPUT_KEY]
-            ).segments
-            # filter segments for class "map"
-            segments = list(
-                filter(lambda s: (s.class_label == SEGMENT_MAP_CLASS), segments)
+            p_map = get_segment_bounds(
+                MapSegmentation.model_validate(
+                    task_input.data[SEGMENTATION_OUTPUT_KEY]
+                ),
+                SEGMENT_MAP_CLASS,
             )
-            if not segments:
-                logger.warning("No map area segment found. Tiling whole image")
-                poly_xy = None
-            elif len(segments) > 1:
-                logger.warning(
-                    f"{len(segments)} map segments found. Using segment with highest confidence for tiling"
-                )
-                # TODO: or could use largest map segment?
-                segments.sort(key=lambda s: s.confidence, reverse=True)
-                poly_xy = segments[0].poly_bounds
-            else:
-                poly_xy = segments[0].poly_bounds
-
-            if poly_xy:
+            p_map = p_map[:1]
+            if p_map:
                 # restrict tiling to use *only* the bounding rectangle of map area
                 # TODO: ideally should use map polygon area as a binary mask
-                p_map = Polygon(poly_xy)
-                (x_min, y_min, x_max, y_max) = [int(b) for b in p_map.bounds]
+                (x_min, y_min, x_max, y_max) = [int(b) for b in p_map[0].bounds]
 
         step_x = int(self.tile_size[0] - self.overlap[0])
         step_y = int(self.tile_size[1] - self.overlap[1])
@@ -181,14 +167,16 @@ class Untiler(Task):
                     classifier_version=pred.classifier_version,
                     class_id=pred.class_id,
                     class_name=label_name,
-                    x1=x1
-                    + x_offset,  # Add offset of tile to project onto original map.
+                    # Add offset of tile to project onto original map...
+                    x1=x1 + x_offset,
                     y1=y1 + y_offset,
                     x2=x2 + x_offset,
                     y2=y2 + y_offset,
                     score=score,
                     direction=pred.direction,
                     dip=pred.dip,
+                    legend_name=pred.legend_name,
+                    legend_bbox=pred.legend_bbox,  # bbox coords assumed to be in global pixel coords
                 )
 
                 all_predictions.append(global_prediction)

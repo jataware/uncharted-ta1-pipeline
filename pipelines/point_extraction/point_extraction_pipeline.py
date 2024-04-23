@@ -1,19 +1,14 @@
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import List
 
-from matplotlib.dates import MO
-from schema.cdr_schemas.feature_results import FeatureResults
-from schema.cdr_schemas.features.point_features import (
-    PointFeatureCollection,
-    PointLegendAndFeaturesResult,
-    PointFeature,
-    Point,
-    PointProperties,
-)
 from schema.mappers.cdr import PointsMapper
+from tasks.point_extraction.legend_analyzer import PointLegendAnalyzer
 from tasks.point_extraction.point_extractor import YOLOPointDetector
 from tasks.point_extraction.point_orientation_extractor import PointOrientationExtractor
+from tasks.point_extraction.template_match_point_extractor import (
+    TemplateMatchPointExtractor,
+)
 from tasks.point_extraction.tiling import Tiler, Untiler
 from tasks.point_extraction.entities import MapImage
 from tasks.common.pipeline import (
@@ -79,6 +74,7 @@ class PointExtractionPipeline(Pipeline):
             logger.warning(
                 "Not using image segmentation. 'model_path_segmenter' param not given"
             )
+        tasks.append(PointLegendAnalyzer("legend_analyzer", ""))
         tasks.extend(
             [
                 Tiler("tiling"),
@@ -91,6 +87,12 @@ class PointExtractionPipeline(Pipeline):
                 Untiler("untiling"),
                 PointOrientationExtractor("point_orientation_extraction"),
             ]
+        )
+        tasks.append(
+            TemplateMatchPointExtractor(
+                "template_match_point_extraction",
+                str(Path(work_dir).joinpath("template_match_points")),
+            ),
         )
 
         outputs: List[OutputCreator] = [

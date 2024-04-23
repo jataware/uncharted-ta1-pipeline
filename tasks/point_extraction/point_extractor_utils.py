@@ -1,4 +1,6 @@
 import cv2
+import re
+import logging
 import numpy as np
 
 from tasks.text_extraction.entities import TextExtraction
@@ -6,11 +8,16 @@ from shapely.geometry import Polygon
 from shapely.strtree import STRtree
 from typing import List, Tuple
 
-
+# TODO TEMP check these
 COLOUR_RANGE_L = 40  # for separating foreground vs background pixels (lower == more aggressive foregnd masking)
 COLOUR_RANGE_AB = 35
 WHITE_SHIFT = 100  # emphasize the foreground features by whitening
 WHITE_LAB = (255, 128, 128)  # white in LAB colour-space
+
+# matches chars that are not numbers or letters
+RE_NON_ALPHANUMERIC = re.compile(r"[^0-9A-Za-z]")
+
+logger = logging.getLogger(__name__)
 
 
 def build_ocr_index(text_extractions: List[TextExtraction]) -> STRtree:
@@ -77,10 +84,14 @@ def crop_template(
     return template
 
 
-def template_pre_processing(im: np.ndarray, im_templ: np.ndarray) -> Tuple:
+def template_pre_processing(
+    im: np.ndarray, im_templ: np.ndarray, im_templ_raw: np.ndarray
+) -> Tuple:
     """
     pre-process the main image and template image, prior to template matching
     (assume input images are opencv format with RGB colour format)
+
+    Returns the pre-processed image and template image in RGB colour space
     """
 
     # ---- Foreground and background colour analysis of the template image
@@ -91,6 +102,20 @@ def template_pre_processing(im: np.ndarray, im_templ: np.ndarray) -> Tuple:
         255,
         cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU,
     )  # Currently foreground is only a mask
+
+    if im_templ_raw.size > 0:
+        fore_y, fore_x = np.where(fore_mask > 0)  # type: ignore
+        if len(fore_x) < im_templ.shape[0] * im_templ.shape[1] * 0.01:
+            # less than 1 percent of template image is 'foreground'?
+            # oops! try without masking OCR!
+            logger.warning("OCR masking too aggressive for template image")
+            im_templ = im_templ_raw
+            templ_thres, fore_mask = cv2.threshold(
+                cv2.cvtColor(im_templ, cv2.COLOR_RGB2GRAY),
+                0,
+                255,
+                cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU,
+            )
 
     # ---- Convert to LAB colour-space
     im_templ = cv2.cvtColor(im_templ, cv2.COLOR_RGB2LAB)
@@ -198,3 +223,64 @@ def angle_in_range(theta: float, a: float, b: float) -> bool:
     else:
         # angle does wrap around 0 deg
         return theta1 >= a1 or theta1 <= b1
+
+
+def mask_ocr_blocks(
+    im: np.ndarray,
+    text_extractions: List[TextExtraction],
+    max_area: int,
+    ybuffer: int = 0,
+    min_len: int = 1,
+    prune_symbols=False,
+):
+    """
+    mask text blocks with median pixel values
+    """
+
+    if text_extractions:
+        for blk in text_extractions:
+            prose = blk.text.strip()
+            if prune_symbols:
+                prose = RE_NON_ALPHANUMERIC.sub("", prose).strip()
+            if min_len > 0 and len(prose) <= min_len:
+                continue
+
+            p = Polygon([(pt.x, pt.y) for pt in blk.bounds])
+            (xmin, ymin, xmax, ymax) = [int(b) for b in p.bounds]
+            if xmin == xmax or ymin == ymax:
+                continue
+            ocr_blk_area = (ymax - ymin) * (xmax - xmin)
+            if max_area > 0 and ocr_blk_area > max_area:
+                # area is too big, skip masking
+                continue
+            if ybuffer > 0:
+                # ymin = max(ymin-ybuffer,0)
+                ymax += ybuffer
+            ocr_pxl_slice = im[
+                ymin:ymax, xmin:xmax, :
+            ]  # TODO - or just get median val along the top?
+            if ocr_pxl_slice.size > 0:
+                med_val = np.median(ocr_pxl_slice, axis=[0, 1])
+                ocr_pxl_slice[:, :, 0] = med_val[0]
+                ocr_pxl_slice[:, :, 1] = med_val[1]
+                ocr_pxl_slice[:, :, 2] = med_val[2]
+
+    return im
+
+
+# dgdg-------
+#
+# predict_xy_pts
+#
+def predict_xy_pts(
+    self,
+    xy_pts: List[Tuple[float, float]],
+    regression_xy: Tuple,
+) -> List[Tuple[float, float]]:
+    regression_X, regression_Y = regression_xy
+    x_warped = regression_X.predict_pts(xy_pts)
+    y_warped = regression_Y.predict_pts(xy_pts)
+
+    xy_warped = [(x_w, y_w) for x_w, y_w in zip(x_warped, y_warped)]
+
+    return xy_warped

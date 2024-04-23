@@ -141,6 +141,8 @@ class YOLOPointDetector(Task):
                         x2=int(x2),
                         y2=int(y2),
                         score=score,
+                        legend_name=self.model.names[int(class_id)],
+                        legend_bbox=[],
                     )
                 )
         return pt_labels
