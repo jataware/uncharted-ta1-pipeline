@@ -25,7 +25,7 @@ fi
 docker build -t uncharted/lara-segmentation:latest .
 
 # cleanup the temp files
-rm -rf pipelines/segmentation
+rm -rf pipelines
 rm -rf tasks
 rm -rf schema
 

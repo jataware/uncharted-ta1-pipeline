@@ -17,7 +17,6 @@ from tasks.common.io import ImageFileInputIterator, download_file
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import spec
 from pydantic import BaseModel
-
 from typing import Tuple
 
 logger = logging.getLogger("process_queue")
@@ -84,6 +83,8 @@ class RequestQueue:
         host: The host of the queue.
         heartbeat: The heartbeat interval.
         blocked_connection_timeout: The blocked connection timeout.
+        workdir: Intermediate output storage directory.
+        imagedir: Drectory for storing source images.
     """
 
     def __init__(
@@ -94,6 +95,7 @@ class RequestQueue:
         output_key: str,
         output_type: OutputType,
         workdir: Path,
+        imagedir: Path,
         host="localhost",
         heartbeat=900,
         blocked_connection_timeout=600,
@@ -110,6 +112,7 @@ class RequestQueue:
         self._heartbeat = heartbeat
         self._blocked_connection_timeout = blocked_connection_timeout
         self._working_dir = workdir
+        self._imagedir = imagedir
 
         self.setup_queues()
 
@@ -178,7 +181,7 @@ class RequestQueue:
 
             # create the input
             image_path, image_it = self._get_image(
-                self._working_dir, request.image_id, request.image_url
+                self._imagedir, request.image_id, request.image_url
             )
             input = self._create_pipeline_input(request, next(image_it)[1])
 
@@ -246,15 +249,17 @@ class RequestQueue:
         )
 
     def _get_image(
-        self, working_dir: Path, image_id: str, image_url: str
+        self, imagedir: Path, image_id: str, image_url: str
     ) -> Tuple[Path, ImageFileInputIterator]:
         """
         Get the image for the request.
         """
         # check working dir for the image
-        filename = working_dir / Path("images") / f"{image_id}.tif"
+        filename = imagedir / f"{image_id}.tif"
 
         if not filename.exists():
+            logger.info(f"image not found - downloading to {filename}")
+
             # download image
             image_data = download_file(image_url)
 
