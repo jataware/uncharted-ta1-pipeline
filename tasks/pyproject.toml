@@ -37,7 +37,7 @@ segmentation=[
     # install runs - it should be installed manually as a precondition
     # (see https://github.com/facebookresearch/detectron2/issues/4472)#
     # "torch==2.0.1",
-    "detectron2 @ git+https://github.com/facebookresearch/detectron2.git",
+    "detectron2 @ git+https://github.com/facebookresearch/detectron2.git@a59f05630a8f205756064244bf5beb8661f96180",
     "torchvision==0.15.2",
     "transformers",
     "timm"
