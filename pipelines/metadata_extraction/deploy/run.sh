@@ -1,11 +1,19 @@
-docker network create lara
+#!/bin/bash
+
+# args $1 - path to local directory to mount as /workdir in docker container
+
+docker network ls | grep -q 'lara' || docker network create lara
 docker run \
+    --pull always \
     -e OPENAI_API_KEY=$OPENAI_API_KEY \
     -e GOOGLE_APPLICATION_CREDENTIALS=/credentials.json \
-    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
     -v $GOOGLE_APPLICATION_CREDENTIALS:/credentials.json \
     -v $1:/workdir \
+    -v $2:/imagedir \
     --net lara \
     -p 5000:5000 \
-    docker.uncharted.software/metadata-extraction:latest --workdir /workdir --model $2
+    uncharted/lara-metadata-extract:latest\
+        --workdir /workdir \
+        --imagedir /imagedir \
+        --model pipelines/segmentation_weights/layoutlmv3_xsection_20231201 \
+        --cdr_schema

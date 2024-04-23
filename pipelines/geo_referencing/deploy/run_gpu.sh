@@ -2,21 +2,17 @@
 
 # args: $1 - path to local directory to mount as /workdir in docker container
 
-
 docker network ls | grep -q 'lara' || docker network create lara
 docker run \
+    --runtime=nvidia \
+    --gpus all \
     --pull always \
-    --rm \
-    --name point_extraction \
+    -e OPENAI_API_KEY=$OPENAI_API_KEY \
     -e GOOGLE_APPLICATION_CREDENTIALS=/credentials.json \
     -v $GOOGLE_APPLICATION_CREDENTIALS:/credentials.json \
     -v $1:/workdir \
-    -v $2:/imagedir \
     --net lara \
     -p 5000:5000 \
-    uncharted/lara-point-extract:latest \
+    uncharted/lara-georef:latest \
         --workdir /workdir \
-        --imagedir /imagedir \
-        --model_point_extractor pipelines/point_extraction_weights/lara_yolo_20240320_best.pt \
-        --model_segmenter pipelines/segmentation_weights/layoutlmv3_xsection_20231201 \
-        --cdr_schema
+        --model pipelines/segmentation_weights/layoutlmv3_xsection_20231201

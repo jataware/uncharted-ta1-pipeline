@@ -28,18 +28,29 @@ class TextExtractionPipeline(Pipeline):
         work_dir (Path): The directory where OCR output will be saved.
         tile (bool): Whether to tile the image before OCR.
         pixel_limit (int): The maximum number of pixels in the image before resizing / tiling will apply.
+        gamma_corr (float): Image gamma correction prior to OCR. 1= no change (disabled); <1 lightens the image; >1 darkens the image
+                            NOTE: gamma = 0.5 recommended for OCR pre-processing
         debug_images (bool): Whether to output debug images.
 
     Returns:
         List[DocTextExtraction]: A list of DocTextExtraction objects containing the extracted text.
     """
 
-    def __init__(self, work_dir: Path, tile=True, pixel_limit=6000, debug_images=False):
+    def __init__(
+        self,
+        work_dir: Path,
+        tile=True,
+        pixel_limit=6000,
+        gamma_corr=1.0,
+        debug_images=False,
+    ):
         if tile:
-            tasks = [TileTextExtractor("tile_text", work_dir, pixel_limit)]
+            tasks = [TileTextExtractor("tile_text", work_dir, pixel_limit, gamma_corr)]
         else:
             tasks = [
-                ResizeTextExtractor("resize_text", work_dir, False, True, pixel_limit)
+                ResizeTextExtractor(
+                    "resize_text", work_dir, False, True, pixel_limit, gamma_corr
+                )
             ]
 
         outputs: List[OutputCreator] = [
@@ -136,10 +147,6 @@ class CDROutput(OutputCreator):
             cog_area_extractions=area_extractions,
             system=MODEL_NAME,
             system_version=MODEL_VERSION,
-            line_feature_results=None,
-            point_feature_results=None,
-            polygon_feature_results=None,
-            cog_metadata_extractions=None,
         )
 
         return BaseModelOutput(
@@ -169,7 +176,7 @@ class OCRImageOutput(OutputCreator):
         text_image = pipeline_result.image.copy()
         draw = ImageDraw.Draw(text_image)
         # draw in the text bounds
-        font = ImageFont.truetype("Pillow/Tests/fonts/FreeMono.ttf", 40)
+        font = ImageFont.load_default(30)
         for text in extracted_text.extractions:
             points = [(point.x, point.y) for point in text.bounds]
             draw.polygon(

@@ -11,6 +11,7 @@ from schema.cdr_schemas.features.point_features import (
     Point,
     PointProperties,
 )
+from schema.mappers.cdr import PointsMapper
 from tasks.point_extraction.point_extractor import YOLOPointDetector
 from tasks.point_extraction.point_orientation_extractor import PointOrientationExtractor
 from tasks.point_extraction.tiling import Tiler, Untiler
@@ -54,6 +55,7 @@ class PointExtractionPipeline(Pipeline):
         model_path_segmenter: str,
         work_dir: str,
         verbose=False,
+        include_cdr_output=True,
     ):
         # extract text from image, segmentation to only keep the map area,
         # tile, extract points, untile, predict direction
@@ -91,10 +93,11 @@ class PointExtractionPipeline(Pipeline):
             ]
         )
 
-        outputs = [
+        outputs: List[OutputCreator] = [
             MapPointLabelOutput("map_point_label_output"),
-            CDROutput("map_point_label_cdr_output"),
         ]
+        if include_cdr_output:
+            outputs.append(CDROutput("map_point_label_cdr_output"))
 
         super().__init__("point_extraction", "Point Extraction", outputs, tasks)
         self._verbose = verbose
@@ -147,84 +150,9 @@ class CDROutput(OutputCreator):
             Output: The output of the pipeline.
         """
         map_image = MapImage.model_validate(pipeline_result.data["map_image"])
+        mapper = PointsMapper(MODEL_NAME, MODEL_VERSION)
 
-        point_features: List[PointLegendAndFeaturesResult] = []
-
-        # create seperate lists for each point class since they are groupded by class
-        # in the results
-        point_features_by_class: Dict[str, List[PointFeature]] = {}
-        point_id = 0
-        if map_image.labels:
-            for map_pt_label in map_image.labels:
-                if map_pt_label.class_name not in point_features_by_class:
-                    point_features_by_class[map_pt_label.class_name] = []
-
-                # create the point geometry
-                point = Point(
-                    coordinates=[
-                        (map_pt_label.x1 + map_pt_label.x2) / 2,
-                        (map_pt_label.y1 + map_pt_label.y2) / 2,
-                    ]
-                )
-
-                # create the additional point properties
-                properties = PointProperties(
-                    model=MODEL_NAME,
-                    model_version=MODEL_VERSION,
-                    confidence=map_pt_label.score,
-                    bbox=[
-                        map_pt_label.x1,
-                        map_pt_label.y1,
-                        map_pt_label.x2,
-                        map_pt_label.y2,
-                    ],
-                    dip=round(map_pt_label.dip) if map_pt_label.dip else None,
-                    dip_direction=(
-                        round(map_pt_label.direction)
-                        if map_pt_label.direction
-                        else None
-                    ),
-                )
-
-                # add the point geometry and properties to the point feature
-                point_feature = PointFeature(
-                    id=f"{map_pt_label.class_id}.{point_id}",
-                    geometry=point,
-                    properties=properties,
-                )
-                point_id += 1
-
-                # add to the list of point features for the class
-                point_features_by_class[map_pt_label.class_name].append(point_feature)
-
-        # create a PointLegendAndFeaturesResult for each class - we don't use the legend
-        # so the legend bbox is empty
-        for class_name, features in point_features_by_class.items():
-            point_features_result = PointLegendAndFeaturesResult(
-                id="id",
-                crs="CRITICALMAAS:pixel",
-                cdr_projection_id=None,
-                name=class_name,
-                description=None,
-                legend_bbox=None,
-                point_features=[PointFeatureCollection(features=features)],
-            )
-
-        # add to our final list of features results and create the output
-        point_features.append(point_features_result)
-
-        feature_results = FeatureResults(
-            cog_id=pipeline_result.raster_id,
-            line_feature_results=None,
-            point_feature_results=point_features,
-            polygon_feature_results=None,
-            cog_area_extractions=None,
-            cog_metadata_extractions=None,
-            system=MODEL_NAME,
-            system_version=MODEL_VERSION,
+        cdr_points = mapper.map_to_cdr(map_image)
+        return BaseModelOutput(
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, cdr_points
         )
-
-        result = BaseModelOutput(
-            pipeline_result.pipeline_id, pipeline_result.pipeline_name, feature_results
-        )
-        return result

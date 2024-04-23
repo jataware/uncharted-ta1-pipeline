@@ -7,6 +7,7 @@ from typing import Tuple, List, Dict, Any
 from pathlib import Path
 from PIL import Image
 from PIL.Image import Image as PILImage
+import cv2
 from .ocr.google_vision_ocr import GoogleVisionOCR
 from .entities import (
     DocTextExtraction,
@@ -22,6 +23,10 @@ from ..common.task import Task, TaskInput, TaskResult
 
 PIXEL_LIM_DEFAULT = 6000  # default max pixel limit for input image (determines amount of image resizing)
 
+# default image gamma correction; =1 no change (disabled); <1 lightens the image; >1 darkens the image
+# NOTE: gamma = 0.5 recommended for OCR pre-processing
+GAMMA_CORR_DEFAULT = 1.0
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,12 +41,44 @@ class TextExtractor(Task):
         cache_dir: Path,
         to_blocks: bool = True,
         document_ocr: bool = False,
+        gamma_correction: float = GAMMA_CORR_DEFAULT,
     ):
         super().__init__(task_id, str(cache_dir))
         self._ocr = GoogleVisionOCR()
         self._model_id = "google-cloud-vision"
         self._to_blocks = to_blocks
         self._document_ocr = document_ocr
+        self._gamma_correction = gamma_correction
+
+        # init gamma correction look up table
+        self._gamma_lut = np.empty((1, 256), np.uint8)
+        if self._gamma_correction != 1.0:
+            # from https://docs.opencv.org/4.x/d3/dc1/tutorial_basic_linear_transform.html
+            for i in range(256):
+                self._gamma_lut[0, i] = np.clip(
+                    pow(i / 255.0, self._gamma_correction) * 255.0, 0, 255
+                )
+
+    def _apply_gamma_correction(self, img: PILImage) -> PILImage:
+        """
+        Apply image gamma correction prior to OCR
+        """
+        if self._gamma_correction == 1.0:
+            # skip gamma correction
+            return img
+
+        # convert image from PIL to opencv (numpy) format --  assumed color channel order is RGB
+        im = np.array(img)
+
+        im = cv2.cvtColor(im, cv2.COLOR_RGB2LAB)
+        (L, A, B) = cv2.split(im)
+        # apply gamma correction to L channel
+        L_gamma = cv2.LUT(L, self._gamma_lut)
+        # re-merge channels
+        im_gamma = cv2.merge([L_gamma, A, B])
+        im_gamma = cv2.cvtColor(im_gamma, cv2.COLOR_LAB2RGB)
+
+        return Image.fromarray(im_gamma)
 
     def _extract_text(self, im: PILImage) -> List[Dict[str, Any]]:
         img_gv = GoogleVisionOCR.pil_to_vision_image(im)
@@ -73,8 +110,9 @@ class ResizeTextExtractor(TextExtractor):
         to_blocks=True,
         document_ocr=False,
         pixel_lim: int = PIXEL_LIM_DEFAULT,
+        gamma_correction: float = GAMMA_CORR_DEFAULT,
     ):
-        super().__init__(task_id, cache_dir, to_blocks, document_ocr)
+        super().__init__(task_id, cache_dir, to_blocks, document_ocr, gamma_correction)
         self._pixel_lim = pixel_lim
         self._model_id += f"_resize-{pixel_lim}"
 
@@ -82,8 +120,6 @@ class ResizeTextExtractor(TextExtractor):
         # im_orig_size = im.size   #(width, height)
         if input.image is None:
             return self._create_result(input)
-
-        im_resized, im_resize_ratio = self._resize_image(input.image)
 
         doc_key = f"{input.raster_id}_{self._model_id}"
 
@@ -96,6 +132,11 @@ class ResizeTextExtractor(TextExtractor):
                 DocTextExtraction(**cached_json).model_dump(),
             )
             return result
+
+        # pre-processing: apply gamma correction and re-size image, as needed
+        im_resized, im_resize_ratio = self._resize_image(
+            self._apply_gamma_correction(input.image)
+        )
 
         ocr_blocks = self._extract_text(im_resized)
 
@@ -152,9 +193,13 @@ class TileTextExtractor(TextExtractor):
     """
 
     def __init__(
-        self, task_id: str, cache_dir: Path, split_lim: int = PIXEL_LIM_DEFAULT
+        self,
+        task_id: str,
+        cache_dir: Path,
+        split_lim: int = PIXEL_LIM_DEFAULT,
+        gamma_correction: float = GAMMA_CORR_DEFAULT,
     ):
-        super().__init__(task_id, cache_dir)
+        super().__init__(task_id, cache_dir, gamma_correction=gamma_correction)
         self.split_lim = split_lim
         self._model_id += f"_tile-{split_lim}"
 
@@ -187,7 +232,10 @@ class TileTextExtractor(TextExtractor):
             )
             return result
 
-        im_tiles = self._split_image(input.image, self.split_lim)
+        # pre-processing: apply gamma correction and tile image, as needed
+        im_tiles = self._split_image(
+            self._apply_gamma_correction(input.image), self.split_lim
+        )
         logger.info(
             f"Image split into {len(im_tiles)} tiles. Extracting OCR text from each..."
         )

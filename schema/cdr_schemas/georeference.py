@@ -70,8 +70,8 @@ class GroundControlPoint(BaseModel):
             Point geometry, in pixel coordinates.
         """,
     )
-    confidence: Optional[float] = Field(
-        ...,
+    confidence: Optional[float | int] = Field(
+        default=None,
         description="""
             Confidence associated with this extraction.
         """,
@@ -88,7 +88,7 @@ class GroundControlPoint(BaseModel):
             The version of the model.
         """,
     )
-    crs: Optional[str] = Field(
+    crs: str = Field(
         ...,
         description="""
             Coordinate reference system. i.e. "EPSG:4267"
@@ -128,15 +128,15 @@ class GeoreferenceResult(BaseModel):
     Georeference Result.
     """
 
-    likely_CRSs: Optional[List[str]] = Field(
-        ...,
+    likely_CRSs: List[str] = Field(
+        default_factory=list,
         description="""
             List of potential Coordinate Reference System specifically
             Projection Coordinate System for the map. ie ["EPSG:32612", "EPSG:32613"]
         """,
     )
     map_area: Optional[Area_Extraction] = Field(
-        ...,
+        default=None,
         description="""
             Polygon bordering the map area for this georeference result. There can
             be many map areas on a cog so this would be the pixel polygon of one of those
@@ -144,8 +144,8 @@ class GeoreferenceResult(BaseModel):
             The optional projections attached to this GeoreferenceResult should be referring to this area.
         """,
     )
-    projections: Optional[List[ProjectionResult]] = Field(
-        ...,
+    projections: List[ProjectionResult] = Field(
+        default_factory=list,
         description="""
             For each projection raster produced return crs
             and gcp ids used in the transform
@@ -164,14 +164,14 @@ class GeoreferenceResults(BaseModel):
             Cog id.
         """,
     )
-    georeference_results: Optional[List[GeoreferenceResult]] = Field(
-        ...,
+    georeference_results: List[GeoreferenceResult] = Field(
+        default_factory=list,
         description="""
             A list of georeferencing results, which include projections, gcps, and crs info.
         """,
     )
-    gcps: Optional[List[GroundControlPoint]] = Field(
-        ...,
+    gcps: List[GroundControlPoint] = Field(
+        default_factory=list,
         description="""
             List of all gcps extracted for the cog image.
         """,

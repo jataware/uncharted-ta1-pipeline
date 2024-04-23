@@ -11,13 +11,16 @@ RUN apt-get install -y libgdal-dev g++ --no-install-recommends && apt-get clean 
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
 
+# install torch separately to avoid conflicts with detectron2
+RUN pip install torch==2.0.1
+
+# install the tasks library with segmentation extras
+COPY tasks tasks
+RUN pip install -e ./tasks[segmentation]
+
+# install the segmentation pipeline
 COPY schema schema
 COPY pipelines pipelines
-COPY tasks tasks
-
-# install lara packages - including segmentation extras (timm, transformers)
-RUN pip install torch==2.0.1
-RUN pip install -e ./tasks[segmentation]
 RUN pip install -e ./pipelines/segmentation
 
 ENTRYPOINT ["python3", "-m", "pipelines.segmentation.run_server"]

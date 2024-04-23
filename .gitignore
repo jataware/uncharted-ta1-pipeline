@@ -163,5 +163,7 @@ temp
 # VS code
 .vscode
 
+# project specific
 pipelines/metadata_extraction/working/
 pipelines/metadata_extraction/deploy/**/
+docker-compose.yml

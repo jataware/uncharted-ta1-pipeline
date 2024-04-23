@@ -9,12 +9,23 @@ cp -r ../../../schema .
 
 cp -r ../../../tasks .
 
+mkdir -p pipelines/segmentation_weights
+if [ -z "$1" ]
+then
+    echo "ERROR - No segment model weights dir supplied"
+    segment_model=""
+    exit 1
+else
+    segment_model=$1
+    echo "Segment model weights dir: $segment_model"
+    cp -r $segment_model pipelines/segmentation_weights
+fi
+
 # run the build
-echo $GPU
-docker build -t docker.uncharted.software/segmentation:latest .
+docker build -t uncharted/lara-segmentation:latest .
 
 # cleanup the temp files
-rm -rf pipelines/segmentation
+rm -rf pipelines
 rm -rf tasks
 rm -rf schema
 
