@@ -28,8 +28,9 @@ def get_projection(datum: str) -> str:
 
 
 class GeoReferencingOutput(OutputCreator):
-    def __init__(self, id):
+    def __init__(self, id: str, extended: bool = False):
         super().__init__(id)
+        self._extended = extended
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         res = TabularOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
@@ -40,20 +41,23 @@ class GeoReferencingOutput(OutputCreator):
             "col",
             "NAD83_x",
             "NAD83_y",
-            "actual_x",
-            "actual_y",
-            "error_x",
-            "error_y",
-            "Distance",
-            "error_scale",
-            "pixel_dist_xx",
-            "pixel_dist_xy",
-            "pixel_dist_x",
-            "pixel_dist_yx",
-            "pirxel_dist_yy",
-            "pixel_dist_y",
-            "confidence",
         ]
+        if self._extended:
+            res.fields = res.fields + [
+                "actual_x",
+                "actual_y",
+                "error_x",
+                "error_y",
+                "Distance",
+                "error_scale",
+                "pixel_dist_xx",
+                "pixel_dist_xy",
+                "pixel_dist_x",
+                "pixel_dist_yx",
+                "pirxel_dist_yy",
+                "pixel_dist_y",
+                "confidence",
+            ]
 
         if "query_pts" not in pipeline_result.data:
             return res
@@ -66,9 +70,8 @@ class GeoReferencingOutput(OutputCreator):
                 "col": qp.xy[0],
                 "NAD83_x": qp.lonlat[0],
                 "NAD83_y": qp.lonlat[1],
-                "confidence": qp.confidence,
             }
-            if qp.lonlat_gtruth:
+            if self._extended and qp.lonlat_gtruth:
                 o["actual_x"] = qp.lonlat_gtruth[0]
                 o["actual_y"] = qp.lonlat_gtruth[1]
                 o["error_x"] = qp.error_lonlat[0]
@@ -81,12 +84,13 @@ class GeoReferencingOutput(OutputCreator):
                 o["pixel_dist_yx"] = qp.lonlat_yp[0]
                 o["pixel_dist_yy"] = qp.lonlat_yp[1]
                 o["pixel_dist_y"] = qp.dist_yp_km
+                o["confidence"] = qp.confidence
             res.data.append(o)
         return res
 
 
 class SummaryOutput(OutputCreator):
-    def __init__(self, id):
+    def __init__(self, id: str):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
@@ -123,7 +127,7 @@ class SummaryOutput(OutputCreator):
 
 
 class UserLeverOutput(OutputCreator):
-    def __init__(self, id):
+    def __init__(self, id: str):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
@@ -186,7 +190,7 @@ class JSONWriter:
 
 
 class GCPOutput(OutputCreator):
-    def __init__(self, id):
+    def __init__(self, id: str):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
@@ -228,7 +232,7 @@ class GCPOutput(OutputCreator):
 
 
 class IntegrationOutput(OutputCreator):
-    def __init__(self, id):
+    def __init__(self, id: str):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
@@ -268,7 +272,7 @@ class IntegrationOutput(OutputCreator):
 
 
 class LARAModelOutput(OutputCreator):
-    def __init__(self, id):
+    def __init__(self, id: str):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
@@ -307,7 +311,7 @@ class LARAModelOutput(OutputCreator):
 
 
 class CDROutput(OutputCreator):
-    def __init__(self, id):
+    def __init__(self, id: str):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
