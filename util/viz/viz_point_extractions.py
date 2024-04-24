@@ -74,11 +74,12 @@ def run(input_path: Path, json_pred_path: Path):
     for img_path in input_files:
 
         img_filen = Path(img_path).stem
+        # --- TEMP code needed to run with contest dir-based data
         if (
-            img_filen.endswith("pt")
-            or img_filen.endswith("poly")
-            or img_filen.endswith("line")
-            or img_filen.endswith("point")
+            img_filen.endswith("_pt")
+            or img_filen.endswith("_poly")
+            or img_filen.endswith("_line")
+            or img_filen.endswith("_point")
         ):
             print(f"Skipping {img_filen}")
             continue

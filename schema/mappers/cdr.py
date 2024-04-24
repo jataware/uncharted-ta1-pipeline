@@ -177,8 +177,27 @@ class PointsMapper(CDRMapper):
         point_id = 0
         if model.labels:
             for map_pt_label in model.labels:
-                if map_pt_label.class_name not in point_features_by_class:
-                    point_features_by_class[map_pt_label.class_name] = []
+                # point label
+                pt_label = (
+                    map_pt_label.legend_name
+                    if map_pt_label.legend_name
+                    else map_pt_label.class_name
+                )
+
+                if pt_label not in point_features_by_class:
+                    # init result object for this point type...
+                    # TODO -- fill in legend item info if available in future
+                    point_features_by_class[pt_label] = []
+                    point_features_result = PointLegendAndFeaturesResult(
+                        id="id",
+                        crs="CRITICALMAAS:pixel",
+                        name=pt_label,
+                        abbreviation=pt_label,
+                        description=pt_label.replace("_", " ").strip().lower(),
+                        legend_bbox=map_pt_label.legend_bbox,
+                        point_features=None,  # points are filled in below
+                    )
+                    point_features.append(point_features_result)
 
                 # create the point geometry
                 point = Point(
@@ -209,27 +228,23 @@ class PointsMapper(CDRMapper):
 
                 # add the point geometry and properties to the point feature
                 point_feature = PointFeature(
-                    id=f"{map_pt_label.class_name}.{point_id}",
+                    id=f"{pt_label}.{point_id}",
                     geometry=point,
                     properties=properties,
                 )
                 point_id += 1
 
                 # add to the list of point features for the class
-                point_features_by_class[map_pt_label.class_name].append(point_feature)
+                point_features_by_class[pt_label].append(point_feature)
 
-        # create a PointLegendAndFeaturesResult for each class - we don't use the legend
-        # so the legend bbox is empty
-        for class_name, features in point_features_by_class.items():
-            point_features_result = PointLegendAndFeaturesResult(
-                id="id",
-                crs="CRITICALMAAS:pixel",
-                name=class_name,
-                point_features=PointFeatureCollection(features=features),
-            )
-
-            # add to our final list of features results and create the output
-            point_features.append(point_features_result)
+        # append our final list of feature results and create the output
+        for pt_feat in point_features:
+            if pt_feat.name not in point_features_by_class:
+                logger.warning(f"Point type {pt_feat.name} not found in results!")
+            else:
+                pt_feat.point_features = PointFeatureCollection(
+                    features=point_features_by_class[pt_feat.name]
+                )
 
         return FeatureResults(
             cog_id=model.raster_id,

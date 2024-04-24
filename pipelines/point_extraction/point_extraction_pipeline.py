@@ -17,6 +17,7 @@ from tasks.common.pipeline import (
     PipelineResult,
     OutputCreator,
     Output,
+    ImageDictOutput,
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import TileTextExtractor
@@ -51,6 +52,7 @@ class PointExtractionPipeline(Pipeline):
         work_dir: str,
         verbose=False,
         include_cdr_output=True,
+        include_bitmasks_output=False,
     ):
         # extract text from image, segmentation to only keep the map area,
         # tile, extract points, untile, predict direction
@@ -100,6 +102,8 @@ class PointExtractionPipeline(Pipeline):
         ]
         if include_cdr_output:
             outputs.append(CDROutput("map_point_label_cdr_output"))
+        if include_bitmasks_output:
+            outputs.append(BitmasksOutput("map_point_label_bitmasks_output"))
 
         super().__init__("point_extraction", "Point Extraction", outputs, tasks)
         self._verbose = verbose
@@ -129,7 +133,7 @@ class MapPointLabelOutput(OutputCreator):
 
 class CDROutput(OutputCreator):
     """
-    OutputCreator for point extraction pipeline.
+    Create CDR output objects for point extraction pipeline.
     """
 
     def __init__(self, id):
@@ -157,4 +161,40 @@ class CDROutput(OutputCreator):
         cdr_points = mapper.map_to_cdr(map_image)
         return BaseModelOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, cdr_points
+        )
+
+
+class BitmasksOutput(OutputCreator):
+    """
+    Create bitmasks output (in CMA-contest format) for point extraction pipeline.
+    """
+
+    def __init__(self, id):
+        """
+        Initializes the output creator.
+
+        Args:
+            id (str): The ID of the output creator.
+        """
+        super().__init__(id)
+
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
+        """
+        Validates the point extraction pipeline result and converts to bitmasks
+
+        Args:
+            pipeline_result (PipelineResult): The pipeline result.
+
+        Returns:
+            Output: The output of the pipeline.
+        """
+        map_image = MapImage.model_validate(pipeline_result.data["map_image"])
+
+        if pipeline_result.image is None:
+            raise ValueError("Pipeline result image is None")
+        (w, h) = pipeline_result.image.size
+        bitmasks_dict = map_image.convert_to_bitmasks(w, h)
+
+        return ImageDictOutput(
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, bitmasks_dict
         )

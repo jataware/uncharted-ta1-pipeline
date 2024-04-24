@@ -3,8 +3,11 @@ from __future__ import annotations
 import logging
 from PIL import Image
 from pydantic import BaseModel, validator, Field
-from typing import Optional, List, Union, Any
+from typing import Optional, List, Union, Any, Dict
+from collections import defaultdict
+import numpy as np
 
+from tasks.point_extraction.label_map import LABEL_MAPPING
 
 logger = logging.getLogger(__name__)
 ## Data Objects
@@ -69,6 +72,46 @@ class MapImage(BaseModel):
             self._cached_image = img
         # TODO: Use polygonal segmask stored in self.map_bounds to filter the image and crop out the non-map regions.
         return img
+
+    def convert_to_bitmasks(
+        self, width: int, height: int, binary_pixel_val=1
+    ) -> Dict[str, Image.Image]:
+        """
+        Convert the MapImage point predictions to CMA contest style bitmasks
+        """
+        if not self.labels:
+            logger.warning(
+                f"No point predictions for raster id {self.raster_id}. Skipping creation of bitmasks."
+            )
+            return {}
+
+        # group predictions by legend label or class name
+        point_preds_by_class = defaultdict(list)
+        for map_pt_label in self.labels:
+            # point label
+            pt_label = (
+                map_pt_label.legend_name
+                if map_pt_label.legend_name
+                else map_pt_label.class_name
+            )
+            # bbox center
+            xc = int((map_pt_label.x1 + map_pt_label.x2) / 2)
+            yc = int((map_pt_label.y1 + map_pt_label.y2) / 2)
+
+            point_preds_by_class[pt_label].append((xc, yc))
+
+        logger.info(
+            f"Creating {len(point_preds_by_class)} bitmasks for raster id {self.raster_id}"
+        )
+
+        bitmasks = {}
+        for pt_label, pts_xy in point_preds_by_class.items():
+            im_binary = np.zeros((height, width), dtype=np.uint8)
+            for x, y in pts_xy:
+                im_binary[y, x] = binary_pixel_val
+            bitmasks[pt_label] = Image.fromarray(im_binary.astype(np.uint8))
+
+        return bitmasks
 
 
 class MapTile(BaseModel):
@@ -221,3 +264,36 @@ class LegendPointItems(BaseModel):
                 )
             )
         return LegendPointItems(items=legend_point_items, provenance="ground_truth")
+
+    @staticmethod
+    def find_label_matches(
+        legend_items: LegendPointItems,
+        raster_id: str,
+    ) -> Dict[str, LegendPointItem]:
+        """
+        find label matching
+        point extractor model class -> legend label
+        """
+
+        def find_label_match(legend_item: LegendPointItem, raster_id: str) -> str:
+            leg_label_norm = raster_id + "_" + legend_item.name.strip().lower()
+            for symbol_class, suffixs in LABEL_MAPPING.items():
+                for s in suffixs:
+                    if s in leg_label_norm:
+                        # match found
+                        logger.info(
+                            f"Legend label: {legend_item.name} matches point class: {symbol_class}"
+                        )
+                        return symbol_class
+
+            logger.info(
+                f"No point class match found for legend label: {legend_item.name}"
+            )
+            return ""
+
+        label_mappings = {}
+        for legend_item in legend_items.items:
+            symbol_class = find_label_match(legend_item, raster_id)
+            if symbol_class:
+                label_mappings[symbol_class] = legend_item
+        return label_mappings

@@ -3,9 +3,9 @@ import json
 import logging
 import os
 
-from tasks.common.pipeline import PipelineInput, BaseModelOutput
+from tasks.common.pipeline import PipelineInput, BaseModelOutput, ImageDictOutput
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
-from tasks.common.io import ImageFileInputIterator, JSONFileWriter
+from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
 from tasks.point_extraction.entities import (
     LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
@@ -27,7 +27,8 @@ def main():
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model_point_extractor", type=str, required=True)
     parser.add_argument("--model_segmenter", type=str, default=None)
-    parser.add_argument("--cdr_schema", action="store_true")
+    parser.add_argument("--cdr_schema", action="store_true")  # False by default
+    parser.add_argument("--bitmasks", action="store_true")  # False by default
     parser.add_argument("--legend_hints_dir", type=str, default="")
     p = parser.parse_args()
 
@@ -36,13 +37,15 @@ def main():
 
     # setup an output writer
     file_writer = JSONFileWriter()
+    image_writer = ImageFileWriter()
 
     # create the pipeline
     pipeline = PointExtractionPipeline(
         p.model_point_extractor,
         p.model_segmenter,
         p.workdir,
-        p.cdr_schema,
+        include_cdr_output=p.cdr_schema,
+        include_bitmasks_output=p.bitmasks,
     )
 
     # run the extraction pipeline
@@ -81,6 +84,14 @@ def main():
             except Exception as e:
                 logger.error("EXCEPTION loading legend hints json: " + repr(e))
 
+        if p.bitmasks:
+            bitmasks_out_dir = os.path.join(p.output, "bitmasks")
+            os.makedirs(bitmasks_out_dir, exist_ok=True)
+            if not p.legend_hints_dir:
+                logger.warning(
+                    'Points pipeline is configured to create CMA contest bitmasks without using legend hints! Setting "legend_hints_dir" param is recommended.'
+                )
+
         results = pipeline.run(image_input)
 
         # write the results out to the file system or s3 bucket
@@ -92,6 +103,13 @@ def main():
                 elif output_type == "map_point_label_cdr_output" and p.cdr_schema:
                     path = os.path.join(p.output, f"{doc_id}_point_extraction_cdr.json")
                     file_writer.process(path, output_data.data)
+            elif isinstance(output_data, ImageDictOutput) and p.bitmasks:
+                # write out the binary raster images
+                for pt_label, pil_im in output_data.data.items():
+                    raster_path = os.path.join(
+                        bitmasks_out_dir, f"{doc_id}_{pt_label}.tif"
+                    )
+                    image_writer.process(raster_path, pil_im)
             else:
                 logger.warning(f"Unknown output data: {output_data}")
 

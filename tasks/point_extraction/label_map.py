@@ -1,53 +1,84 @@
 LABEL_MAPPING = {
+    # --- STRIKE and DIP (aka INCLINED BEDDING)
     "strike_and_dip": [
-        "strike_dip_bedding_pt",
-        "strikedip_pt",
-        "strike_dip",
-        "inclined_bedding_pt",
-        "incl_or_imp_bedding_p",
-        "AZ_HouseRock_MF2364_bedding_pt",
-        "implied_bedding_pt",
-        "AZ_PeachSprings_bedding_pt",
-        "bedding_top_known_pt",
-        "bedding_inclined_pt",
-        "AK_Ikpikpuk_inclined_pt",
-        "AK_Valdez_Inclined_pt",
-        "inclbed_pt",
-        "AZ_Cane_basemap_inclined_pt.tif",
-        "Inclined_bedding_-_S_pt",
-        "bedding_inclined_pt",
-        "strike_dip_beds_pt",
-        "CA_InyoMtns_bedding_pt",
+        "strike_and_dip",
+        "strike_dip_beds",
+        "bedding_inclined",
+        "inclined_bedding",
+        "bedding_pt",
+        "inclined_pt",
+        "strikedip",
     ],
+    # --- HORIZONTAL BEDDING
     "horizontal_bedding": [
-        "horiz_bedding_pt",
-        "horizontal_pt",
-        "bedding_horizontal_pt",
-        "AK_Ikpikpuk_horizontal_pt.tif",
-        "AK_PointLay_Horizontal_pt",
-        "AR_Buffalo_west_horizbed_pt",
-        "horzbed_pt",
-        "horizbed_pt",
-        "horiz_bedding_pt",
-        "Horizontal_bedding_pt",
-        "horizon_bedding_pt",
+        "horizontal_bedding",
+        "bedding_horizontal",
+        "horiz_bedding",
+        "bedding_horiz",
+        "horizbed",
     ],
-    # 'approximate_bedding': ['bedding_approx_pt',  ],
-    # 'estimated_bedding': ['AK_Ikpikpuk_estimated_pt.tif', ],
+    # --- OVERTURNED BEDDING
     "overturned_bedding": [
-        "overturned_bedding_pt",
-        "overturned_pt",
-        "bedding_overturned_pt",
-        "overturn_bedding_pt",
-        "Overturned_bedding_-_pt",
+        "overturned_bedding",
+        "bedding_overturned",
+        "overturn_bedding",
     ],
+    # --- VERTICAL BEDDING
     "vertical_bedding": [
-        "vertical_bedding_pt",
-        "vertical_pt",
-        "vertical_top_pt",
-        "bedding_vertical_pt",
-        "Vertical_bedding_-_S_p",
+        "vertical_bedding",
+        "bedding_vertical",
     ],
-    #    'mine_shaft': ['geo_mosaic_2_pt', ],
-    #    'prospect_pit': ['geo_mosaic_3_pt', ],
+    # --- INCLINED FOLIATION (with solid triangle)
+    "inclined_foliation": [
+        "inclined_foliation",
+        "foliation_inclined",
+        "incl_meta_foliation_pt",
+    ],
+    # --- INCLINED FOLIATION IGNEOUS (with hollow triangle)
+    "inclined_foliation_igneous": [
+        "inclined_foliation_igneous",
+        "igneous_foliation",
+        "platy_parting",
+    ],
+    # --- VERTICAL FOLIATION
+    "vertical_foliation": [
+        "vertical_foliation",
+        "vert_meta_foliation",
+    ],
+    # --- VERTICAL JOINT (line with square in middle, solid or hollow)
+    "vertical_joint": ["vertical_joint", "joint_vertical"],
+    # --- GRAVEL PIT or BORROW PIT  (1_pt -- two crossed shovels)
+    "gravel_borrow_pit": [
+        "gravel_borrow_pit",
+        "geo_mosiac_1_pt",
+    ],
+    # --- MINE SHAFT    (2_pt -- square, black and white)
+    "mine_shaft": [
+        "mine_shaft",
+        "geo_mosiac_2_pt",
+    ],
+    # --- PROSPECT PIT  (3_pt -- tall X)
+    "prospect": [
+        "prospect",
+        "prospect_pit",
+        "geo_mosiac_3_pt",
+    ],
+    # --- MINE TUNNEL (4_pt -- aka ADIT, rotated Y)
+    "mine_tunnel": [
+        "mine_tunnel",
+        "geo_mosiac_4_pt",
+    ],
+    # --- MINE or QUARRY or OPEN PIT    (5_pt -- crossed pick-axes)
+    "mine_quarry": [
+        "mine_quarry",
+        "geo_mosiac_5_pt",
+    ],
+    # --- SINK HOLE
+    "sink_hole": [
+        "sink_hole",
+    ],
+    # --- LINEATION -- skip for now
+    "lineation": [
+        "lineation",
+    ],
 }

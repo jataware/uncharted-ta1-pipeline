@@ -1,4 +1,12 @@
-from tasks.point_extraction.entities import MapTile, MapTiles, MapPointLabel
+from tasks.point_extraction.entities import (
+    MapTile,
+    MapTiles,
+    MapPointLabel,
+    LegendPointItem,
+    LegendPointItems,
+    LEGEND_ITEMS_OUTPUT_KEY,
+)
+
 from tasks.common.s3_data_cache import S3DataCache
 from tasks.common.task import Task, TaskInput, TaskResult
 from enum import Enum
@@ -115,7 +123,9 @@ class YOLOPointDetector(Task):
 
         return local_model_data_path
 
-    def process_output(self, predictions: Results) -> List[MapPointLabel]:
+    def process_output(
+        self, predictions: Results, point_legend_mapping: Dict[str, LegendPointItem]
+    ) -> List[MapPointLabel]:
         """
         Convert point detection inference results from YOLO model format
         to a list of MapPointLabel objects
@@ -130,6 +140,15 @@ class YOLOPointDetector(Task):
                 continue
             for box in pred.boxes.data.detach().cpu().tolist():
                 x1, y1, x2, y2, score, class_id = box
+
+                # map YOLO class name to legend item name, if available
+                class_name = self.model.names[int(class_id)]
+                legend_name = class_name
+                legend_bbox = []
+                if class_name in point_legend_mapping:
+                    legend_name = point_legend_mapping[class_name].name
+                    legend_bbox = point_legend_mapping[class_name].legend_bbox
+
                 pt_labels.append(
                     MapPointLabel(
                         classifier_name="unchartNet_point_extractor",
@@ -141,29 +160,45 @@ class YOLOPointDetector(Task):
                         x2=int(x2),
                         y2=int(y2),
                         score=score,
-                        legend_name=self.model.names[int(class_id)],
-                        legend_bbox=[],
+                        legend_name=legend_name,
+                        legend_bbox=legend_bbox,
                     )
                 )
         return pt_labels
 
-    def run(self, input: TaskInput) -> TaskResult:
+    def run(self, task_input: TaskInput) -> TaskResult:
         """
         run YOLO model inference for point symbol detection
         """
-        map_tiles = MapTiles.model_validate(input.data["map_tiles"])
+        map_tiles = MapTiles.model_validate(task_input.data["map_tiles"])
+
+        if LEGEND_ITEMS_OUTPUT_KEY in task_input.data:
+            legend_pt_items = LegendPointItems.model_validate(
+                task_input.data[LEGEND_ITEMS_OUTPUT_KEY]
+            )
+        elif LEGEND_ITEMS_OUTPUT_KEY in task_input.request:
+            legend_pt_items = LegendPointItems.model_validate(
+                task_input.request[LEGEND_ITEMS_OUTPUT_KEY]
+            )
+        # find mappings between legend item labels and YOLO model class names
+        if legend_pt_items:
+            point_legend_mapping = LegendPointItems.find_label_matches(
+                legend_pt_items, task_input.raster_id
+            )
 
         if self.device == "auto":
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         if self.device not in ["cuda", "cpu"]:
             raise ValueError(f"Invalid device: {self.device}")
 
-        doc_key = f"{input.raster_id}_points-{self._model_id}"
+        doc_key = f"{task_input.raster_id}_points-{self._model_id}"
         # check cache and re-use existing file if present
         json_data = self.fetch_cached_result(doc_key)
         if json_data and map_tiles.join_with_cached_predictions(MapTiles(**json_data)):
             # cached point predictions loaded successfully
-            logger.info(f"Using cached point extractions for raster: {input.raster_id}")
+            logger.info(
+                f"Using cached point extractions for raster: {task_input.raster_id}"
+            )
             return TaskResult(
                 task_id=self._task_id,
                 output={"map_tiles": map_tiles},
@@ -180,7 +215,7 @@ class YOLOPointDetector(Task):
             # (e.g., predict(... imgsz=[1024,1024]))
             batch_preds = self.model.predict(images, device=self.device)
             for tile, preds in zip(batch, batch_preds):
-                tile.predictions = self.process_output(preds)
+                tile.predictions = self.process_output(preds, point_legend_mapping)
                 output.append(tile)
         result_map_tiles = MapTiles(raster_id=map_tiles.raster_id, tiles=output)
 

@@ -1,16 +1,15 @@
-from tasks.common.task import Task, TaskInput, TaskResult
-
 import cv2
 import logging
 import math
 import numpy as np
 from typing import List, Tuple
 from scipy import ndimage
+from collections import defaultdict
 
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.segmentation.segmenter_utils import get_segment_bounds
-from tasks.point_extraction.entities import LegendPointItems, LegendPointItem
 from tasks.point_extraction import point_extractor_utils as pe_utils
+from tasks.common.task import Task, TaskInput, TaskResult
 
 from tasks.text_extraction.entities import (
     DocTextExtraction,
@@ -20,11 +19,12 @@ from tasks.point_extraction.entities import (
     MapImage,
     MapPointLabel,
     LegendPointItem,
+    LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
 )
 
 MODEL_NAME = "uncharted_template_pointextractor"
-MODEL_VER = "0.1"
+MODEL_VER = "0.0.1"
 
 # class labels for map and points legend areas
 SEGMENT_MAP_CLASS = "map"
@@ -47,6 +47,7 @@ XCORR_MAX = 0.8
 MATCH_DIST_FACTOR = 0.5  # TODO TEMP lower?
 
 MAX_MATCHES = 250  # TODO TEMP too low?
+MIN_MATCHES = 10  # if YOLO finds > min_matches, then skip template point extraction
 
 logger = logging.getLogger(__name__)
 
@@ -95,12 +96,14 @@ class TemplateMatchPointExtractor(Task):
                 path="", raster_id=task_input.raster_id, labels=[]
             )
 
+        # --- check which legend points still need to be processed, if any?
+        pt_features = self._which_points_need_processing(
+            map_image_results.labels, legend_pt_items.items, min_predictions=MIN_MATCHES  # type: ignore
+        )
+
         # convert image from PIL to opencv (numpy) format --  assumed color channel order is RGB
         im_in = np.array(task_input.image)
-        # TODO TEMP ideally, should put in points found by YOLO here? (esp if associated with an existing legend item)
-        matches_dedup = []
 
-        pt_features = legend_pt_items.items
         # get legend template images
         im_templates_with_text = self._get_template_images(
             im_in,
@@ -120,7 +123,11 @@ class TemplateMatchPointExtractor(Task):
 
         # --- mask OCR blocks
         im_in = pe_utils.mask_ocr_blocks(
-            im_in, img_text.extractions, max_area=0, min_len=2, prune_symbols=True
+            im_in,
+            img_text.extractions,
+            max_area=0,
+            min_len=OCR_MIN_LEN,
+            prune_symbols=True,
         )
 
         # get legend template images with ocr text masked
@@ -149,6 +156,7 @@ class TemplateMatchPointExtractor(Task):
         # loop through all available point legend items
         for i, pt_feature in enumerate(pt_features):
             logger.info(f"Processing {pt_feature.name}")
+            matches_dedup = []
 
             # --- pre-process the main image and template image, before template matching
             im, im_templ = pe_utils.template_pre_processing(
@@ -323,6 +331,7 @@ class TemplateMatchPointExtractor(Task):
                 preds = self._process_output(
                     matches_dedup, pt_feature.name, map_roi, pt_feature.legend_bbox
                 )
+
                 map_image_results.labels.extend(preds)  # type: ignore
 
         return TaskResult(
@@ -421,3 +430,35 @@ class TemplateMatchPointExtractor(Task):
             )
 
         return pt_labels
+
+    def _which_points_need_processing(
+        self,
+        map_point_labels: List[MapPointLabel],
+        legend_pt_items: List[LegendPointItem],
+        min_predictions=10,
+    ) -> List[LegendPointItem]:
+        """
+        Check which legend items still need processing
+        (Since some point classes may've already been handled by the YOLO point extractor)
+        """
+        if min_predictions < 0:
+            # process all legend items regardless of upstream YOLO predictions
+            return legend_pt_items
+
+        legend_items_unprocessed = []
+        preds_per_class = defaultdict(int)
+        for pred in map_point_labels:
+            if pred.legend_name:
+                preds_per_class[pred.legend_name] += 1
+            elif pred.class_name:
+                preds_per_class[pred.class_name] += 1
+
+        for legend_item in legend_pt_items:
+            if legend_item.name not in preds_per_class:
+                # no YOLO predictions for this point type; needs processing
+                legend_items_unprocessed.append(legend_item)
+            elif preds_per_class[legend_item.name] < min_predictions:
+                # only a few YOLO predictions for this point type; still needs processing
+                legend_items_unprocessed.append(legend_item)
+
+        return legend_items_unprocessed

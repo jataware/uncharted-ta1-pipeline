@@ -76,6 +76,14 @@ class ImageOutput(Output):
         self.data = data
 
 
+class ImageDictOutput(Output):
+    data: Dict[str, PILImage]
+
+    def __init__(self, pipeline_id: str, pipeline_name: str, data: Dict[str, PILImage]):
+        super().__init__(pipeline_id, pipeline_name)
+        self.data = data
+
+
 class ListOutput(Output):
     data = []
 
