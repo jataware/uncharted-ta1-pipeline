@@ -266,21 +266,3 @@ def mask_ocr_blocks(
                 ocr_pxl_slice[:, :, 2] = med_val[2]
 
     return im
-
-
-# dgdg-------
-#
-# predict_xy_pts
-#
-def predict_xy_pts(
-    self,
-    xy_pts: List[Tuple[float, float]],
-    regression_xy: Tuple,
-) -> List[Tuple[float, float]]:
-    regression_X, regression_Y = regression_xy
-    x_warped = regression_X.predict_pts(xy_pts)
-    y_warped = regression_Y.predict_pts(xy_pts)
-
-    xy_warped = [(x_w, y_w) for x_w, y_w in zip(x_warped, y_warped)]
-
-    return xy_warped
