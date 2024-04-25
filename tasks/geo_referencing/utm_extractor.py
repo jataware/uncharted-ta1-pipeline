@@ -1,5 +1,6 @@
 import logging
 import re
+import statistics
 import utm
 import uuid
 
@@ -321,7 +322,8 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     )
         # convert from utm to lat/lon, using average values of northing and easting for the mapping coordinate
         # northing first as some may be excluded, then eastings
-        easting_clue = sum(map(lambda x: x[0], eastings)) / len(eastings)
+        if len(eastings) > 0:
+            easting_clue = statistics.median(map(lambda x: x[0], eastings))
         for n, span, idx in northings:
             # latitude keypoint (y-axis)
             # check that it falls within the geofence by checking the lat absolute values
@@ -365,7 +367,8 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             else:
                 logger.info("Excluding candidate northing point: {}".format(n))
 
-        northing_clue = sum(map(lambda x: x[0], northings)) / len(northings)
+        if len(northings) > 0:
+            northing_clue = statistics.median(map(lambda x: x[0], northings))
         for e, span, idx in eastings:
             x_ranges = (
                 (0.0, 1.0)
