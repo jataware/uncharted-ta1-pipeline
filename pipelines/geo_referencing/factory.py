@@ -202,6 +202,7 @@ def create_geo_referencing_pipelines(
             )
         )
         tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
