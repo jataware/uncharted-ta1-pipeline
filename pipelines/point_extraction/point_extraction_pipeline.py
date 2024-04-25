@@ -10,7 +10,11 @@ from tasks.point_extraction.template_match_point_extractor import (
     TemplateMatchPointExtractor,
 )
 from tasks.point_extraction.tiling import Tiler, Untiler
-from tasks.point_extraction.entities import MapImage
+from tasks.point_extraction.entities import (
+    MapImage,
+    LegendPointItems,
+    LEGEND_ITEMS_OUTPUT_KEY,
+)
 from tasks.common.pipeline import (
     BaseModelOutput,
     Pipeline,
@@ -21,10 +25,7 @@ from tasks.common.pipeline import (
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import TileTextExtractor
-from tasks.segmentation.detectron_segmenter import (
-    DetectronSegmenter,
-    SEGMENTATION_OUTPUT_KEY,
-)
+from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 
 
 logger = logging.getLogger(__name__)
@@ -189,11 +190,17 @@ class BitmasksOutput(OutputCreator):
             Output: The output of the pipeline.
         """
         map_image = MapImage.model_validate(pipeline_result.data["map_image"])
+        legend_labels = []
+        if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
+            legend_pt_items = LegendPointItems.model_validate(
+                pipeline_result.data[LEGEND_ITEMS_OUTPUT_KEY]
+            )
+            legend_labels = [pt_type.name for pt_type in legend_pt_items.items]
 
         if pipeline_result.image is None:
             raise ValueError("Pipeline result image is None")
         (w, h) = pipeline_result.image.size
-        bitmasks_dict = map_image.convert_to_bitmasks(w, h)
+        bitmasks_dict = map_image.convert_to_bitmasks(legend_labels, (w, h))
 
         return ImageDictOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, bitmasks_dict

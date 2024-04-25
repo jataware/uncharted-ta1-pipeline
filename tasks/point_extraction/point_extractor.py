@@ -176,10 +176,6 @@ class YOLOPointDetector(Task):
             legend_pt_items = LegendPointItems.model_validate(
                 task_input.data[LEGEND_ITEMS_OUTPUT_KEY]
             )
-        elif LEGEND_ITEMS_OUTPUT_KEY in task_input.request:
-            legend_pt_items = LegendPointItems.model_validate(
-                task_input.request[LEGEND_ITEMS_OUTPUT_KEY]
-            )
         # find mappings between legend item labels and YOLO model class names
         if legend_pt_items:
             point_legend_mapping = LegendPointItems.find_label_matches(

@@ -1,15 +1,9 @@
 import logging
-
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.point_extraction.entities import (
-    LegendPointItem,
+    LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
 )
-
-# class labels for map and points legend areas
-# SEGMENT_MAP_CLASS = "map"
-SEGMENT_PT_LEGEND_CLASS = "legend_points_lines"
 
 logger = logging.getLogger(__name__)
 
@@ -32,22 +26,24 @@ class PointLegendAnalyzer(Task):
         run point symbol legend analysis
         """
 
-        if (
-            LEGEND_ITEMS_OUTPUT_KEY in task_input.data
-            or LEGEND_ITEMS_OUTPUT_KEY in task_input.request
-        ):
+        if LEGEND_ITEMS_OUTPUT_KEY in task_input.data:
             # legend items for point symbols already exist
             result = self._create_result(task_input)
             return result
+        elif LEGEND_ITEMS_OUTPUT_KEY in task_input.request:
+            # legend items for point symbols already exist as a request param
+            # (ie, loaded from a JSON hints file)
+            # convert to a TaskResult...
+            legend_pt_items = LegendPointItems.model_validate(
+                task_input.request[LEGEND_ITEMS_OUTPUT_KEY]
+            )
+            return TaskResult(
+                task_id=self._task_id, output={LEGEND_ITEMS_OUTPUT_KEY: legend_pt_items}
+            )
 
-        # TODO TEMP WIP
+        # TODO WIP
         # Continue here...
-        # If no legend item hints available then do our own naive version using segmentation, ocr, etc.
-        # legend_items = List of LegendPointItems(items=legend_point_items, provenance="modelled")
-        # return TaskResult(
-        #    task_id=self._task_id, output={LEGEND_ITEMS_OUTPUT_KEY: legend_items  ) ##result_map_tiles.model_dump()}
-        # )
+        # If no legend item hints available then could do our own naive version using segmentation, ocr, etc.?
 
-        # TODO TEMP
         result = self._create_result(task_input)
         return result
