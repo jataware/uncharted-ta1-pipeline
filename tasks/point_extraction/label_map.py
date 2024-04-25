@@ -50,28 +50,28 @@ LABEL_MAPPING = {
     # --- GRAVEL PIT or BORROW PIT  (1_pt -- two crossed shovels)
     "gravel_borrow_pit": [
         "gravel_borrow_pit",
-        "geo_mosiac_1_pt",
+        "geo_mosaic_1_pt",
     ],
     # --- MINE SHAFT    (2_pt -- square, black and white)
     "mine_shaft": [
         "mine_shaft",
-        "geo_mosiac_2_pt",
+        "geo_mosaic_2_pt",
     ],
     # --- PROSPECT PIT  (3_pt -- tall X)
     "prospect": [
         "prospect",
         "prospect_pit",
-        "geo_mosiac_3_pt",
+        "geo_mosaic_3_pt",
     ],
     # --- MINE TUNNEL (4_pt -- aka ADIT, rotated Y)
     "mine_tunnel": [
         "mine_tunnel",
-        "geo_mosiac_4_pt",
+        "geo_mosaic_4_pt",
     ],
     # --- MINE or QUARRY or OPEN PIT    (5_pt -- crossed pick-axes)
     "mine_quarry": [
         "mine_quarry",
-        "geo_mosiac_5_pt",
+        "geo_mosaic_5_pt",
     ],
     # --- SINK HOLE
     "sink_hole": [
