@@ -67,6 +67,7 @@ class GeoReference(Task):
         lat_pts = input.get_data("lats")
         scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
+        clue_point = input.get_request_info("clue_point")
 
         if not scale_value:
             scale_value = 0
@@ -360,10 +361,10 @@ class GeoReference(Task):
 
         # no geographic-projection polynomial available,
         # just use the 'clue' midpoint as a fallback answer for any query points
-        lon_clue = (
-            lon_minmax[0] + lon_minmax[1]
-        ) / 2  # mid-points of lon/lat clue area
-        lat_clue = (lat_minmax[0] + lat_minmax[1]) / 2
+        lon_clue = abs(
+            (lon_minmax[0] + lon_minmax[1]) / 2
+        )  # mid-points of lon/lat clue area
+        lat_clue = abs((lat_minmax[0] + lat_minmax[1]) / 2)
         for qp in query_pts:
             qp.lonlat = (lon_clue, lat_clue)
             qp.lonlat_xp = (lon_clue, lat_clue)
