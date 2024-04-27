@@ -7,6 +7,7 @@ import pprint
 import pika
 
 from PIL.Image import Image as PILImage
+import pika.exceptions
 
 from tasks.common.pipeline import (
     BaseModelOutput,
@@ -124,14 +125,40 @@ class RequestQueue:
         logger.info("wiring up request queue to input and output queues")
 
         # setup input and output queue
-        request_connection = pika.BlockingConnection(
+        self._connect_request()
+        self._connect_result()
+
+    def start_request_queue(self):
+        """Start the request queue."""
+        logger.info("starting request queue")
+        self._input_channel.start_consuming()
+
+    def _connect_result(self):
+        """
+        Setup the connection, channel and queue to service outgoing results.
+        """
+        self._result_connection = pika.BlockingConnection(
             pika.ConnectionParameters(
                 self._host,
-                heartbeat=900,
-                blocked_connection_timeout=600,
+                heartbeat=self._heartbeat,
+                blocked_connection_timeout=self._blocked_connection_timeout,
             )
         )
-        self._input_channel = request_connection.channel()
+        self._output_channel = self._result_connection.channel()
+        self._output_channel.queue_declare(queue=self._result_queue)
+
+    def _connect_request(self):
+        """
+        Setup the connection, channel and queue to service incoming requests.
+        """
+        self._request_connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                self._host,
+                heartbeat=self._heartbeat,
+                blocked_connection_timeout=self._blocked_connection_timeout,
+            )
+        )
+        self._input_channel = self._request_connection.channel()
         self._input_channel.queue_declare(queue=self._request_queue)
         self._input_channel.basic_qos(prefetch_count=1)
         self._input_channel.basic_consume(
@@ -140,20 +167,31 @@ class RequestQueue:
             auto_ack=True,
         )
 
-        result_connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                self._host,
-                heartbeat=self._heartbeat,
-                blocked_connection_timeout=self._blocked_connection_timeout,
-            )
-        )
-        self._output_channel = result_connection.channel()
-        self._output_channel.queue_declare(queue=self._result_queue)
+    def _publish_result(self, result: RequestResult) -> None:
+        """
+        Publish the result of a request to the output queue, reconnecting if the connection
+        is no longer open.
 
-    def start_request_queue(self):
-        """Start the request queue."""
-        logger.info("starting request queue")
-        self._input_channel.start_consuming()
+        Args:
+            result: The result of the request.
+        """
+
+        # Attempt to publish, reconnecting if the connection is closed
+        if self._connect_result._is_closed():
+            logger.warn("result queue connection closed, reconnecting")
+            self._connect_result()
+        try:
+            self._output_channel.basic_publish(
+                exchange="",
+                routing_key=self._result_queue,
+                body=json.dumps(result.model_dump()),
+            )
+        except pika.exceptions.ConnectionClosed:
+            logger.warn("connection closed, reconnecting")
+            self._connect_result()
+        except pika.exceptions.ChannelWrongStateError:
+            logger.warn("channel wrong state, reconnecting")
+            self._connect_result()
 
     def _process_queue_input(
         self,
@@ -190,7 +228,6 @@ class RequestQueue:
 
             # create the response
             output_raw = outputs[self._output_key]
-            pprint.pprint(output_raw)
             if type(output_raw) == BaseModelOutput:
                 result = self._create_output(request, str(image_path), output_raw)
             else:
@@ -198,11 +235,7 @@ class RequestQueue:
             logger.info("writing request result to output queue")
 
             # run queue operations
-            self._output_channel.basic_publish(
-                exchange="",
-                routing_key=self._result_queue,
-                body=json.dumps(result.model_dump()),
-            )
+            self._publish_result(result)
             logger.info("result written to output queue")
         except Exception as e:
             logger.exception(e)
