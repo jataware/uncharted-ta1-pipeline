@@ -121,7 +121,7 @@ def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
     # check working dir for the image
     filename = working_dir / f"{image_id}.tif"
 
-    if not filename.exists():
+    if not os.path.exists(filename):
         # download image
         image_data = download_file(image_url)
 

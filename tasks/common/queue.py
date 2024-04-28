@@ -1,8 +1,8 @@
 from enum import Enum
 import json
 import logging
+import os
 from pathlib import Path
-import pprint
 
 import pika
 
@@ -125,15 +125,15 @@ class RequestQueue:
         logger.info("wiring up request queue to input and output queues")
 
         # setup input and output queue
-        self._connect_request()
-        self._connect_result()
+        self._connect_to_request()
+        self._connect_to_result()
 
     def start_request_queue(self):
         """Start the request queue."""
         logger.info("starting request queue")
         self._input_channel.start_consuming()
 
-    def _connect_result(self):
+    def _connect_to_result(self):
         """
         Setup the connection, channel and queue to service outgoing results.
         """
@@ -147,7 +147,7 @@ class RequestQueue:
         self._output_channel = self._result_connection.channel()
         self._output_channel.queue_declare(queue=self._result_queue)
 
-    def _connect_request(self):
+    def _connect_to_request(self):
         """
         Setup the connection, channel and queue to service incoming requests.
         """
@@ -177,9 +177,9 @@ class RequestQueue:
         """
 
         # Attempt to publish, reconnecting if the connection is closed
-        if self._connect_result._is_closed():
+        if self._result_connection.is_closed:
             logger.warn("result queue connection closed, reconnecting")
-            self._connect_result()
+            self._connect_to_result()
         try:
             self._output_channel.basic_publish(
                 exchange="",
@@ -188,10 +188,10 @@ class RequestQueue:
             )
         except pika.exceptions.ConnectionClosed:
             logger.warn("connection closed, reconnecting")
-            self._connect_result()
+            self._connect_to_result()
         except pika.exceptions.ChannelWrongStateError:
             logger.warn("channel wrong state, reconnecting")
-            self._connect_result()
+            self._connect_to_result()
 
     def _process_queue_input(
         self,
@@ -290,7 +290,7 @@ class RequestQueue:
         # check working dir for the image
         filename = imagedir / f"{image_id}.tif"
 
-        if not filename.exists():
+        if not os.path.exists(filename):
             logger.info(f"image not found - downloading to {filename}")
 
             # download image
