@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # args: $1 - path to local directory to mount as /workdir in docker container
-
+# args: $2 - path to local directory to mount as /imagedir in docker container
 
 docker network ls | grep -q 'lara' || docker network create lara
 docker run \
@@ -17,6 +17,7 @@ docker run \
     uncharted/lara-point-extract:latest \
         --workdir /workdir \
         --imagedir /imagedir \
-        --model_point_extractor pipelines/point_extraction_weights/lara_yolo_20240320_best.pt \
+        --model_point_extractor pipelines/point_extraction_weights/lara_yolo_20240406_best.pt \
         --model_segmenter pipelines/segmentation_weights/layoutlmv3_xsection_20231201 \
-        --cdr_schema
+        --cdr_schema \
+	--rabbit_host rabbitmq
