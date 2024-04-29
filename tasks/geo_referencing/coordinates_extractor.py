@@ -183,8 +183,12 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
             # ----- do Region-of-Interest analysis (automatic cropping)
             roi_xy = input.input.get_data("roi")
             self._add_param(input.input, str(uuid.uuid4()), "roi", {"bounds": roi_xy})
+            roi_inner_xy = input.input.get_data("roi_inner")
+            self._add_param(
+                input.input, str(uuid.uuid4()), "roi_inner", {"bounds": roi_inner_xy}
+            )
             lon_pts, lat_pts = self._validate_lonlat_extractions(
-                input, lon_pts, lat_pts, input.input.image.size, roi_xy
+                input, lon_pts, lat_pts, input.input.image.size, roi_xy, roi_inner_xy
             )
 
         return lon_pts, lat_pts
@@ -755,9 +759,13 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
     def _check_degree_increments(self, minutes: int, seconds: int) -> bool:
         # support 1/16 or 1/12 degree increments
-        return (minutes * 60 + seconds) % 225 == 0 or (
-            minutes * 60 + seconds
-        ) % 300 == 0
+        # disabled for now as inner roi targets the same issue
+        # TODO: coordinate this function with inner ROI filtering somehow
+        return (
+            (minutes * 60 + seconds) % 225 == 0
+            or (minutes * 60 + seconds) % 300 == 0
+            or True
+        )
 
     def _check_consecutive(self, deg: float, minutes: float, seconds: float) -> bool:
         # checks if lat/lon extraction is a series of consecutive numbers
@@ -780,6 +788,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         lat_results: Dict[Tuple[float, float], Coordinate],
         im_size: Tuple[float, float],
         roi_xy: List[Tuple[float, float]] = [],
+        roi_inner_xy: List[Tuple[float, float]] = [],
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
@@ -796,7 +805,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
         if roi_xy and (num_lat_pts > 4 or num_lon_pts > 4):
             for (deg, y), coord in list(lat_results.items()):
-                if not self._in_polygon(coord.get_pixel_alignment(), roi_xy):
+                if not self._in_polygon(coord.get_pixel_alignment(), roi_xy) or (
+                    len(roi_inner_xy) > 0
+                    and self._in_polygon(coord.get_pixel_alignment(), roi_inner_xy)
+                ):
                     logger.info(
                         f"Excluding out-of-bounds latitude point: {deg} ({coord.get_pixel_alignment()})"
                     )
@@ -815,7 +827,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "excluded due to being outside roi",
                     )
             for (deg, x), coord in list(lon_results.items()):
-                if not self._in_polygon(coord.get_pixel_alignment(), roi_xy):
+                if not self._in_polygon(coord.get_pixel_alignment(), roi_xy) or (
+                    len(roi_inner_xy) > 0
+                    and self._in_polygon(coord.get_pixel_alignment(), roi_inner_xy)
+                ):
                     logger.info(
                         f"Excluding out-of-bounds longitude point: {deg} ({coord.get_pixel_alignment()})"
                     )
