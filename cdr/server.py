@@ -2,6 +2,7 @@ import argparse
 import atexit
 import datetime
 from pathlib import Path
+import re
 import httpx
 import json
 import logging
@@ -16,6 +17,7 @@ import threading
 from flask import Flask, request, Response
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import spec
+from pika.exceptions import ChannelClosed, ChannelWrongStateError, ConnectionClosed
 from PIL import Image
 from pyproj import Transformer
 from rasterio.transform import Affine
@@ -488,17 +490,30 @@ def process_lara_result(
 
 
 def start_lara_result_listener(result_queue: str, host="localhost"):
-    logger.info(f"starting the listener on the result queue ({host}:{result_queue})")
-    # setup the result queue
-    result_channel = create_channel(host)
-    result_channel.queue_declare(queue=result_queue)
+    while True:
+        try:
+            logger.info(
+                f"starting the listener on the result queue ({host}:{result_queue})"
+            )
+            # setup the result queue
+            result_channel = create_channel(host)
+            result_channel.queue_declare(queue=result_queue)
 
-    # start consuming the results
-    result_channel.basic_qos(prefetch_count=1)
-    result_channel.basic_consume(
-        queue=result_queue, on_message_callback=process_lara_result, auto_ack=True
-    )
-    result_channel.start_consuming()
+            # start consuming the results
+            result_channel.basic_qos(prefetch_count=1)
+            result_channel.basic_consume(
+                queue=result_queue,
+                on_message_callback=process_lara_result,
+                auto_ack=True,
+            )
+            result_channel.start_consuming()
+        except (ChannelClosed, ConnectionClosed, ChannelWrongStateError):
+            logger.warning(f"result channel closed")
+            # channel is closed - make sure the connection is closed to facilitate a
+            # clean reconnect
+            if result_channel and not result_channel.connection.is_closed:
+                logger.info("closing result connection")
+                result_channel.connection.close()
 
 
 def register_cdr_system():

@@ -5,9 +5,9 @@ import os
 from pathlib import Path
 
 import pika
+from pika.exceptions import ChannelClosed, ChannelWrongStateError, ConnectionClosed
 
 from PIL.Image import Image as PILImage
-import pika.exceptions
 
 from tasks.common.pipeline import (
     BaseModelOutput,
@@ -131,7 +131,15 @@ class RequestQueue:
     def start_request_queue(self):
         """Start the request queue."""
         logger.info("starting request queue")
-        self._input_channel.start_consuming()
+        while True:
+            try:
+                self._input_channel.start_consuming()
+            except (ChannelClosed, ConnectionClosed, ChannelWrongStateError):
+                logger.warn(f"request channel closed")
+                if self._input_channel and not self._input_channel.connection.is_closed:
+                    logger.info("closing request connection")
+                    self._input_channel.connection.close()
+                self._connect_to_request()
 
     def _connect_to_result(self):
         """
@@ -186,10 +194,10 @@ class RequestQueue:
                 routing_key=self._result_queue,
                 body=json.dumps(result.model_dump()),
             )
-        except pika.exceptions.ConnectionClosed:
+        except ConnectionClosed:
             logger.warn("connection closed, reconnecting")
             self._connect_to_result()
-        except pika.exceptions.ChannelWrongStateError:
+        except ChannelWrongStateError:
             logger.warn("channel wrong state, reconnecting")
             self._connect_to_result()
 
