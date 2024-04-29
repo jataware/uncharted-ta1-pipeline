@@ -12,8 +12,9 @@ docker run \
     -v $2:/imagedir \
     --net lara \
     -p 5000:5000 \
-    uncharted/lara-segmentation:latest \
+    uncharted/lara-segmentation:test \
         --workdir /workdir \
         --imagedir /imagedir \
         --model pipelines/segmentation_weights/layoutlmv3_xsection_20231201 \
-        --cdr_schema
+        --cdr_schema \
+        --rabbit_host rabbitmq
