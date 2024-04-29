@@ -618,6 +618,7 @@ def main():
     parser.add_argument("--cog_id", type=str, required=False)
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--cdr_event_log", type=str, default=CDR_EVENT_LOG)
+    parser.add_argument("--input", type=str, default=None)
     p = parser.parse_args()
 
     global settings
@@ -633,9 +634,10 @@ def main():
     settings.json_log = JSONLog(os.path.join(p.workdir, p.cdr_event_log))
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
-    if p.mode == "process" and (p.cog_id == "" or p.cog_id is None):
-        logger.info("process mode requires a cog id")
-        exit(1)
+    if p.mode == "process":
+        if (p.cog_id == "" or p.cog_id is None) and (p.input == "" or p.input is None):
+            logger.info("process mode requires a cog id or an input file")
+            exit(1)
     elif p.mode == "host" and (not p.cog_id == "" and p.cog_id is not None):
         logger.info("a cog id cannot be provided if host mode is selected")
         exit(1)
@@ -655,7 +657,14 @@ def main():
         start_app()
     elif p.mode == "process":
         cdr_startup("https://mock.example")
-        process_image(p.cog_id)
+        if p.input:
+            # open the cog csv file and process each line
+            with open(p.input, "r") as f:
+                for line in f:
+                    cog_id = line.strip()
+                    process_image(cog_id)
+        else:
+            process_image(p.cog_id)
 
 
 if __name__ == "__main__":
