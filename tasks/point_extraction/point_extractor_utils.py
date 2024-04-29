@@ -112,7 +112,6 @@ def template_conncomp_denoise(
         cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU,
     )  # Currently foreground is only a mask
 
-
     templ_area_thres = im_templ.shape[0] * im_templ.shape[1] * area_thres
     (im_labels, cc_label_max, cc_area_max) = get_max_area_conncomp(fore_mask)
 
