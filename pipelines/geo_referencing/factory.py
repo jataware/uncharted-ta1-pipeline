@@ -257,7 +257,6 @@ def create_geo_referencing_pipelines(
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
             TextFilter(
@@ -284,8 +283,18 @@ def create_geo_referencing_pipelines(
                 run_points=True,
             )
         )
+        tasks.append(
+            Geocoder(
+                "geo-centres",
+                NominatimGeocoder(10, 1),
+                run_bounds=False,
+                run_points=False,
+                run_centres=True,
+            )
+        )
+        tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(rfGeocoder("geocoded-georeferencing"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     """p.append(
@@ -338,7 +347,6 @@ def create_geo_referencing_pipelines(
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
             TextFilter(
@@ -365,8 +373,18 @@ def create_geo_referencing_pipelines(
                 run_points=True,
             )
         )
+        tasks.append(
+            Geocoder(
+                "geo-centres",
+                NominatimGeocoder(10, 1),
+                run_bounds=False,
+                run_points=False,
+                run_centres=True,
+            )
+        )
+        tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(rfGeocoder("geocoded-georeferencing"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     """p.append(
