@@ -352,6 +352,7 @@ def push_georeferencing(result: RequestResult):
             data={"georef_result": json.dumps(cdr_result.model_dump())},
             files=files_,
             headers=headers,
+            timeout=None,
         )
         logger.info(
             f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
@@ -374,6 +375,7 @@ def push_features(result: RequestResult, model: FeatureResults):
         f"{settings.cdr_host}/v1/maps/publish/features",
         data=model.model_dump_json(),  #   type: ignore
         headers=headers,
+        timeout=None,
     )
     logger.info(
         f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
