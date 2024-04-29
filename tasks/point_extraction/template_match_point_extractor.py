@@ -30,13 +30,12 @@ MODEL_VER = "0.0.1"
 SEGMENT_MAP_CLASS = "map"
 SEGMENT_PT_LEGEND_CLASS = "legend_points_lines"
 
-OCR_MIN_LEN = 2  # 3 TODO TEMP
+OCR_MIN_LEN = 3
 CONTOUR_SIZE_FACTOR = 2.0
 CONTOUR_THICKNESS = 2
 MORPH_ITER = 2
 WHITE_SHIFT_LINES = 65
-ROTATE_INTERVAL = 23  # TODO TEMP 3 lower?
-# WHITE_LAB = (255, 128, 128)  # white in LAB colour-space
+ROTATE_INTERVAL = 23
 
 # good range (0.05 to 0.2) -- higher = better recall, but worse precision
 XCORR_DELTA = 0.17
@@ -44,10 +43,10 @@ XCORR_DELTA = 0.17
 XCORR_MIN = 0.45
 XCORR_MAX = 0.8
 
-MATCH_DIST_FACTOR = 0.5  # TODO TEMP lower?
+MATCH_DIST_FACTOR = 0.5
 
-MAX_MATCHES = 250  # TODO TEMP too low?
-MIN_MATCHES = 10  # if YOLO finds > min_matches, then skip template point extraction
+MAX_MATCHES = 250
+MIN_MATCHES = 0  # if YOLO finds > min_matches, then skip template point extraction
 
 logger = logging.getLogger(__name__)
 
@@ -100,11 +99,12 @@ class TemplateMatchPointExtractor(Task):
         # convert image from PIL to opencv (numpy) format --  assumed color channel order is RGB
         im_in = np.array(task_input.image)
 
-        # get legend template images
-        im_templates_with_text = self._get_template_images(
-            im_in,
-            pt_features,
-        )
+        # get legend template images,
+        # de-noise templates and create binary masks
+        im_template_and_masks = [
+            pe_utils.template_conncomp_denoise(x)
+            for x in self._get_template_images(im_in, pt_features)
+        ]
 
         # --- get OCR output
         img_text = (
@@ -114,8 +114,6 @@ class TemplateMatchPointExtractor(Task):
             if TEXT_EXTRACTION_OUTPUT_KEY in task_input.data
             else DocTextExtraction(doc_id=task_input.raster_id, extractions=[])
         )
-        # build OCR tree index
-        # ocr_polygon_index = pe_utils.build_ocr_index(img_text.extractions)
 
         # --- mask OCR blocks
         im_in = pe_utils.mask_ocr_blocks(
@@ -124,12 +122,6 @@ class TemplateMatchPointExtractor(Task):
             max_area=0,
             min_len=OCR_MIN_LEN,
             prune_symbols=True,
-        )
-
-        # get legend template images with ocr text masked
-        im_templates = self._get_template_images(
-            im_in,
-            pt_features,
         )
 
         # --- get segment info for the map ROI
@@ -155,8 +147,8 @@ class TemplateMatchPointExtractor(Task):
             matches_dedup = []
 
             # --- pre-process the main image and template image, before template matching
-            im, im_templ = pe_utils.template_pre_processing(
-                im_in.copy(), im_templates[i], im_templates_with_text[i]
+            im, im_templ = pe_utils.image_pre_processing(
+                im_in.copy(), im_template_and_masks[i][0], im_template_and_masks[i][1]
             )
             # note: im and im_templ are in RGB colour-space
 
@@ -206,11 +198,9 @@ class TemplateMatchPointExtractor(Task):
 
             # ---- De-emphasize long, continuous lines by fading to white
             idx = im_large_contours > 0  # type: ignore # pxl x,y for large contours
-            # im = cv2.cvtColor(im, cv2.COLOR_LAB2RGB)
             im = im.astype(np.float32)
             im[idx] = np.clip(im[idx] + WHITE_SHIFT_LINES, 0, 255)
             im = im.astype(np.uint8)
-            # im = cv2.cvtColor(im, cv2.COLOR_RGB2LAB)
 
             # ---- Template matching
             # TODO -- re-factor and clean up dup code with point_orientation_extractor?
@@ -284,15 +274,6 @@ class TemplateMatchPointExtractor(Task):
             matches = self._find_match_candidates(im_xcorr_all, xcorr_thres, templ_hw)
 
             # ---- de-duplicate matches (prune overlapping template matches)
-            # TODO TEMP templ_center = (
-            #     templ_pts[0][0] + int(float(templ_hw[1]) / 2),
-            #     templ_pts[0][1] + int(float(templ_hw[0]) / 2),
-            # )
-            # if roi_xy:
-            #     templ_center = (
-            #         templ_center[0] - roi_xy[0][0],
-            #         templ_center[1] - roi_xy[0][1],
-            #     )
             templ_dim = float(templ_hw[0] + templ_hw[1]) / 2
             templ_dim_thres = math.pow(templ_dim * MATCH_DIST_FACTOR, 2)
 
@@ -300,13 +281,6 @@ class TemplateMatchPointExtractor(Task):
                 if len(matches_dedup) >= MAX_MATCHES:
                     # we have enough good matches
                     break
-                # TODO TEMP # check if overlaps with orig template
-                # dist_sq = math.pow(x - templ_center[0], 2) + math.pow(
-                #     y - templ_center[1], 2
-                # )
-                # if dist_sq < templ_dim_thres / MATCH_DIST_FACTOR / MATCH_DIST_FACTOR:
-                #     # discard - overlaps with orig template location
-                #     continue
                 match_ok = True
                 for mx, my, m_val in matches_dedup:
                     dist_sq = math.pow(x - mx, 2) + math.pow(y - my, 2)
@@ -327,7 +301,6 @@ class TemplateMatchPointExtractor(Task):
                 preds = self._process_output(
                     matches_dedup, pt_feature.name, map_roi, pt_feature.legend_bbox
                 )
-
                 map_image_results.labels.extend(preds)  # type: ignore
 
         return TaskResult(
@@ -431,7 +404,7 @@ class TemplateMatchPointExtractor(Task):
         self,
         map_point_labels: List[MapPointLabel],
         legend_pt_items: List[LegendPointItem],
-        min_predictions=10,
+        min_predictions=0,
     ) -> List[LegendPointItem]:
         """
         Check which legend items still need processing

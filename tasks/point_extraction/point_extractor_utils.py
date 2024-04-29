@@ -8,7 +8,6 @@ from shapely.geometry import Polygon
 from shapely.strtree import STRtree
 from typing import List, Tuple
 
-# TODO TEMP check these
 COLOUR_RANGE_L = 40  # for separating foreground vs background pixels (lower == more aggressive foregnd masking)
 COLOUR_RANGE_AB = 35
 WHITE_SHIFT = 100  # emphasize the foreground features by whitening
@@ -84,15 +83,25 @@ def crop_template(
     return template
 
 
-def template_pre_processing(
-    im: np.ndarray, im_templ: np.ndarray, im_templ_raw: np.ndarray
-) -> Tuple:
+def template_conncomp_denoise(
+    im_templ: np.ndarray, area_thres=0.02
+) -> Tuple[np.ndarray, np.ndarray]:
     """
-    pre-process the main image and template image, prior to template matching
-    (assume input images are opencv format with RGB colour format)
+    De-noising of template image using connected component analysis
+    """
 
-    Returns the pre-processed image and template image in RGB colour space
-    """
+    def get_max_area_conncomp(im_binary: np.ndarray):
+        num_cc, im_labels, stats, centroids = cv2.connectedComponentsWithStats(
+            fore_mask, connectivity=8
+        )
+        # Find the largest non background component.
+        # Note: range() starts from 1 since 0 is the background label.
+        cc_label_max, cc_area_max = max(
+            [(i, stats[i, cv2.CC_STAT_AREA]) for i in range(1, num_cc)],
+            key=lambda x: x[1],
+        )
+
+        return (im_labels, cc_label_max, cc_area_max)
 
     # ---- Foreground and background colour analysis of the template image
     # Perform Otsu thresholding and extract the foreground
@@ -103,19 +112,57 @@ def template_pre_processing(
         cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU,
     )  # Currently foreground is only a mask
 
-    if im_templ_raw.size > 0:
-        fore_y, fore_x = np.where(fore_mask > 0)  # type: ignore
-        if len(fore_x) < im_templ.shape[0] * im_templ.shape[1] * 0.01:
-            # less than 1 percent of template image is 'foreground'?
-            # oops! try without masking OCR!
-            logger.warning("OCR masking too aggressive for template image")
-            im_templ = im_templ_raw
-            templ_thres, fore_mask = cv2.threshold(
-                cv2.cvtColor(im_templ, cv2.COLOR_RGB2GRAY),
-                0,
-                255,
-                cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU,
+
+    templ_area_thres = im_templ.shape[0] * im_templ.shape[1] * area_thres
+    (im_labels, cc_label_max, cc_area_max) = get_max_area_conncomp(fore_mask)
+
+    if cc_area_max < templ_area_thres:
+        # area of largest cc is too small, re-try with dilation
+        kernel_morph = np.ones((3, 3), np.uint8)
+        fore_mask = cv2.dilate(fore_mask, kernel_morph, iterations=1)
+        (im_labels, cc_label_max, cc_area_max) = get_max_area_conncomp(fore_mask)
+        if cc_area_max < templ_area_thres:
+            # area still too small, just use original, raw template image
+            logger.warning(
+                "Template denoising too aggressive. Using raw template image."
             )
+            return im_templ, fore_mask
+
+    # get median colour (for background)
+    med_val = np.median(im_templ, axis=[0, 1]).astype(np.uint8)
+
+    # generate de-noised versions of template and mask images
+    idx = im_labels == cc_label_max
+    im_templ_denoise = np.ones(im_templ.shape).astype(np.uint8)
+    im_templ_denoise[:, :, 0] = med_val[0]
+    im_templ_denoise[:, :, 1] = med_val[1]
+    im_templ_denoise[:, :, 2] = med_val[2]
+    im_templ_denoise[idx] = im_templ[idx]
+    fore_mask_denoise = np.zeros(im_labels.shape).astype(np.uint8)
+    fore_mask_denoise[idx] = 255
+
+    return im_templ_denoise, fore_mask_denoise
+
+
+def image_pre_processing(
+    im: np.ndarray, im_templ: np.ndarray, im_templ_mask: np.ndarray
+) -> Tuple:
+    """
+    pre-process the main image and template image, prior to template matching
+    (assume input images are opencv format with RGB colour format)
+
+    Returns the pre-processed image and template image in RGB colour space
+    """
+
+    # ---- Foreground and background colour analysis of the template image
+    # Perform Otsu thresholding and extract the foreground mask
+    if im_templ_mask.size == 0:
+        templ_thres, im_templ_mask = cv2.threshold(
+            cv2.cvtColor(im_templ, cv2.COLOR_RGB2GRAY),
+            0,
+            255,
+            cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU,
+        )
 
     # ---- Convert to LAB colour-space
     im_templ = cv2.cvtColor(im_templ, cv2.COLOR_RGB2LAB)
@@ -123,7 +170,7 @@ def template_pre_processing(
 
     # get the 'foreground' pixel values from the template, and
     # get template colour stats
-    idx = fore_mask != 0
+    idx = im_templ_mask != 0
     templ_fore = im_templ[idx]
     colour_med_val = np.median(templ_fore, axis=0)  # type: ignore
 
@@ -134,25 +181,20 @@ def template_pre_processing(
     # ---- De-emphasize (whiten) non-foreground pixels in the main image
     # create a mask to separate foreground and background pixels
     im_mask = cv2.inRange(im, colour_lower, colour_upper)
-
     kernel_morph = np.ones((3, 3), np.uint8)
     im_mask = cv2.dilate(im_mask, kernel_morph, iterations=1)
-    im_mask = cv2.bitwise_not(im_mask)  # mask now for background pixels
-
-    # emphasize the foreground features by whitening the 'background' pixels
-    # (perform whitening in RGB colour-space)
+    idx = im_mask == 0  # pxl x,y for background
     im = cv2.cvtColor(im, cv2.COLOR_LAB2RGB)
-    im = cv2.add(im, WHITE_SHIFT, mask=im_mask)  # type: ignore
-    im = cv2.cvtColor(im, cv2.COLOR_RGB2LAB)
+    im = im.astype(np.float32)
+    im[idx] = np.clip(im[idx] + WHITE_SHIFT, 0, 255)
+    im = im.astype(np.uint8)
 
     # final cropping of the template and size normalization
     im_templ = crop_template(
-        im_templ, fore_mask, crop_buffer=5, backgnd_colour=WHITE_LAB
+        im_templ, im_templ_mask, crop_buffer=5, backgnd_colour=WHITE_LAB
     )
-
     # convert results back to RGB colour space
     im_templ = cv2.cvtColor(im_templ, cv2.COLOR_LAB2RGB)
-    im = cv2.cvtColor(im, cv2.COLOR_LAB2RGB)
 
     return (im, im_templ)
 

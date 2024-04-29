@@ -77,9 +77,9 @@ class PointExtractionPipeline(Pipeline):
             logger.warning(
                 "Not using image segmentation. 'model_path_segmenter' param not given"
             )
-        tasks.append(PointLegendAnalyzer("legend_analyzer", ""))
         tasks.extend(
             [
+                PointLegendAnalyzer("legend_analyzer", ""),
                 Tiler("tiling"),
                 YOLOPointDetector(
                     "point_detection",
@@ -89,13 +89,11 @@ class PointExtractionPipeline(Pipeline):
                 ),
                 Untiler("untiling"),
                 PointOrientationExtractor("point_orientation_extraction"),
+                TemplateMatchPointExtractor(
+                    "template_match_point_extraction",
+                    str(Path(work_dir).joinpath("template_match_points")),
+                ),
             ]
-        )
-        tasks.append(
-            TemplateMatchPointExtractor(
-                "template_match_point_extraction",
-                str(Path(work_dir).joinpath("template_match_points")),
-            ),
         )
 
         outputs: List[OutputCreator] = [

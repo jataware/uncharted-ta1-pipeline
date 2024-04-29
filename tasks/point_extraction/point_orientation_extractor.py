@@ -232,7 +232,7 @@ class PointOrientationExtractor(Task):
 
             # --- 2. estimate symbol orientation (using template matching)
             # --- pre-process the main image and template image, before template matching
-            im, im_templ = point_extractor_utils.template_pre_processing(
+            im, im_templ = point_extractor_utils.image_pre_processing(
                 np.array(input.image),
                 self.templates[c],
                 np.array([]),

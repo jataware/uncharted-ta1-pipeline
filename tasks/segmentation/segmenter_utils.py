@@ -13,7 +13,7 @@ def get_segment_bounds(
     Parse segmentation result and return the polygon bounds for the desired segmentation class, if present
 
     segment_class -- class to fetch
-    max_results -- max segments to return (sorted by decreasing confidence),
+    max_results -- max segments to return - sorted by heuristic of (confidence * area), highest to lowest,
                 if =0, all matching segments are returned
     """
     # TODO -- should be improved to better handle noisy results with overlapping segments
@@ -27,8 +27,8 @@ def get_segment_bounds(
         logger.warning(f"No {segment_class} segment found")
         return []
 
-    # sort results by confidence and return top 'max_results' polygon bounds
-    segments.sort(key=lambda s: s.confidence, reverse=True)
+    # sort results by heuristic of (confidence * area) and return top 'max_results' polygon bounds
+    segments.sort(key=lambda s: (s.confidence * s.area), reverse=True)
     if max_results > 0:
         segments = segments[:max_results]
     return [Polygon(s.poly_bounds) for s in segments]
