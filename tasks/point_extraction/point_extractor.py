@@ -6,6 +6,7 @@ from tasks.point_extraction.entities import (
     LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
 )
+from tasks.point_extraction.point_extractor_utils import find_legend_label_matches
 
 from tasks.common.s3_data_cache import S3DataCache
 from tasks.common.task import Task, TaskInput, TaskResult
@@ -178,7 +179,7 @@ class YOLOPointDetector(Task):
             )
         # find mappings between legend item labels and YOLO model class names
         if legend_pt_items:
-            point_legend_mapping = LegendPointItems.find_label_matches(
+            point_legend_mapping = find_legend_label_matches(
                 legend_pt_items, task_input.raster_id
             )
 

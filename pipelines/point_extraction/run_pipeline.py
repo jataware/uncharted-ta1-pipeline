@@ -6,6 +6,7 @@ import os
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, ImageDictOutput
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
+from tasks.point_extraction.point_extractor_utils import parse_legend_point_hints
 from tasks.point_extraction.entities import (
     LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
@@ -72,9 +73,7 @@ def main():
                     os.path.join(p.legend_hints_dir, doc_id + ".json"), "r"
                 ) as fp:
                     legend_hints = json.load(fp)
-                    legend_pt_items = LegendPointItems.parse_legend_point_hints(
-                        legend_hints
-                    )
+                    legend_pt_items = parse_legend_point_hints(legend_hints)
                     # add legend item hints as a pipeline input param
                     image_input.params[LEGEND_ITEMS_OUTPUT_KEY] = legend_pt_items
                     logger.info(

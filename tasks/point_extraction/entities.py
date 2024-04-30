@@ -3,11 +3,7 @@ from __future__ import annotations
 import logging
 from PIL import Image
 from pydantic import BaseModel, validator, Field
-from typing import Optional, List, Union, Any, Dict, Tuple
-from collections import defaultdict
-import numpy as np
-
-from tasks.point_extraction.label_map import LABEL_MAPPING
+from typing import Optional, List, Union, Any
 
 logger = logging.getLogger(__name__)
 ## Data Objects
@@ -72,50 +68,6 @@ class MapImage(BaseModel):
             self._cached_image = img
         # TODO: Use polygonal segmask stored in self.map_bounds to filter the image and crop out the non-map regions.
         return img
-
-    def convert_to_bitmasks(
-        self, legend_pt_labels: List[str], w_h: Tuple[int, int], binary_pixel_val=1
-    ) -> Dict[str, Image.Image]:
-        """
-        Convert the MapImage point predictions to CMA contest style bitmasks
-        """
-        if not self.labels:
-            logger.warning(
-                f"No point predictions for raster id {self.raster_id}. Skipping creation of bitmasks."
-            )
-            return {}
-
-        # group predictions by legend label or class name
-        point_preds_by_class = defaultdict(list)
-        # initialize with any available legend labels, so we will create an empty bitmask
-        # even if no extractions were found for a given point type
-        for pt_label in legend_pt_labels:
-            point_preds_by_class[pt_label] = []
-        for map_pt_label in self.labels:
-            # point label
-            pt_label = (
-                map_pt_label.legend_name
-                if map_pt_label.legend_name
-                else map_pt_label.class_name
-            )
-            # bbox center
-            xc = int((map_pt_label.x1 + map_pt_label.x2) / 2)
-            yc = int((map_pt_label.y1 + map_pt_label.y2) / 2)
-
-            point_preds_by_class[pt_label].append((xc, yc))
-
-        logger.info(
-            f"Creating {len(point_preds_by_class)} bitmasks for raster id {self.raster_id}"
-        )
-
-        bitmasks = {}
-        for pt_label, pts_xy in point_preds_by_class.items():
-            im_binary = np.zeros((w_h[1], w_h[0]), dtype=np.uint8)
-            for x, y in pts_xy:
-                im_binary[y, x] = binary_pixel_val
-            bitmasks[pt_label] = Image.fromarray(im_binary.astype(np.uint8))
-
-        return bitmasks
 
 
 class MapTile(BaseModel):
@@ -232,78 +184,3 @@ class LegendPointItems(BaseModel):
     provenance: str = Field(
         default="", description="where did these legend items come from"
     )
-
-    @staticmethod
-    def parse_legend_point_hints(legend_hints: dict) -> LegendPointItems:
-        """
-        parse legend hints JSON data (from the CMA contest)
-        and convert to LegendPointItem objects
-
-        legend_hints -- input hints dict
-        only_keep_points -- if True, will discard any hints about line or polygon features
-        """
-
-        legend_point_items = []
-        for shape in legend_hints["shapes"]:
-            label = shape["label"]
-            if not label.endswith("_pt") and not label.endswith("_point"):
-                continue  # not a point symbol, skip
-
-            # contour coords for the legend item's thumbnail swatch
-            xy_pts = shape["points"]
-            x_min = xy_pts[0][0]
-            x_max = xy_pts[0][0]
-            y_min = xy_pts[0][1]
-            y_max = xy_pts[0][1]
-            for x, y in xy_pts:
-                x_min = int(min(x, x_min))
-                x_max = int(max(x, x_max))
-                y_min = int(min(y, y_min))
-                y_max = int(max(y, y_max))
-            legend_point_items.append(
-                LegendPointItem(
-                    name=label,
-                    legend_bbox=[x_min, y_min, x_max, y_max],
-                    legend_contour=xy_pts,
-                )
-            )
-        return LegendPointItems(items=legend_point_items, provenance="ground_truth")
-
-    @staticmethod
-    def find_label_matches(
-        legend_items: LegendPointItems,
-        raster_id: str,
-    ) -> Dict[str, LegendPointItem]:
-        """
-        find label matching
-        point extractor model class -> legend label
-        """
-
-        def find_label_match(legend_item: LegendPointItem, raster_id: str) -> str:
-            leg_label_norm = raster_id + "_" + legend_item.name.strip().lower()
-            matches = []
-            for symbol_class, suffixs in LABEL_MAPPING.items():
-                for s in suffixs:
-                    if s in leg_label_norm:
-                        # match found
-                        matches.append((s, symbol_class))
-            if matches:
-                # sort to get longest suffix match
-                matches.sort(key=lambda a: len(a[0]), reverse=True)
-                symbol_class = matches[0][1]
-                logger.info(
-                    f"Legend label: {legend_item.name} matches point class: {symbol_class}"
-                )
-                return symbol_class
-
-            logger.info(
-                f"No point class match found for legend label: {legend_item.name}"
-            )
-            return ""
-
-        label_mappings = {}
-        for legend_item in legend_items.items:
-            symbol_class = find_label_match(legend_item, raster_id)
-            if symbol_class:
-                label_mappings[symbol_class] = legend_item
-        return label_mappings

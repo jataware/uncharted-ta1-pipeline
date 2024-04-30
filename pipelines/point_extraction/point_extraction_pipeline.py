@@ -6,6 +6,7 @@ from schema.mappers.cdr import PointsMapper
 from tasks.point_extraction.legend_analyzer import PointLegendAnalyzer
 from tasks.point_extraction.point_extractor import YOLOPointDetector
 from tasks.point_extraction.point_orientation_extractor import PointOrientationExtractor
+from tasks.point_extraction.point_extractor_utils import convert_preds_to_bitmasks
 from tasks.point_extraction.template_match_point_extractor import (
     TemplateMatchPointExtractor,
 )
@@ -198,7 +199,7 @@ class BitmasksOutput(OutputCreator):
         if pipeline_result.image is None:
             raise ValueError("Pipeline result image is None")
         (w, h) = pipeline_result.image.size
-        bitmasks_dict = map_image.convert_to_bitmasks(legend_labels, (w, h))
+        bitmasks_dict = convert_preds_to_bitmasks(map_image, legend_labels, (w, h))
 
         return ImageDictOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, bitmasks_dict
