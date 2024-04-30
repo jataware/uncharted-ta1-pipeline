@@ -33,7 +33,7 @@ class2colour = {
     "overturned_bedding": "green",
     "vertical_bedding": "orange",
     "inclined_foliation": "darkmagenta",
-    "inclined_foliation_igenous": "limegreen",
+    "inclined_foliation_igneous": "limegreen",
     "vertical_foliation": "springgreen",
     "vertical_joint": "turquoise",
     "gravel_borrow_pit": "hotpink",

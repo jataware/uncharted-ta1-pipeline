@@ -1,3 +1,4 @@
+# mapping of YOLO model classes to legend item labels
 LABEL_MAPPING = {
     # --- STRIKE and DIP (aka INCLINED BEDDING)
     "strike_and_dip": [
@@ -82,3 +83,7 @@ LABEL_MAPPING = {
         "lineation",
     ],
 }
+
+# mapping of YOLO model classes to output CDR point types
+# (if different)
+YOLO_TO_CDR_LABEL = {"strike_and_dip": "inclined_bedding"}
