@@ -71,8 +71,8 @@ python3 -m pipelines.point_extraction.run_pipeline \
     --workdir /model/working/dir \
     --model_point_extractor https://s3/compatible/endpoint/point_extractor_model_weights_dir \
     --model_segmenter https://s3/compatible/endpoint/segmentation_model_weights_dir \
-    --cdr_schema False \
-    --bitmasks False \
+    --cdr_schema=True \
+    --bitmasks=True \
     --legend_hints_dir /legend/hints/dir
 ```
 
@@ -84,9 +84,9 @@ The `model_segmenter` param is optional. If present each image will be segmented
 
 OCR text extraction is used to extract the "dip" magnitude labels for strike/dip point symbols. For this functionality, the `GOOGLE_APPLICATION_CREDENTIALS` environment variables must be set.
 
-If `cdr_schema` == True, the pipeline will also produce point extractions in the CDR JSON format.
+If `cdr_schema` is set, the pipeline will also produce point extractions in the CDR JSON format.
 
-If `bitmasks` = True, the pipeline will produce points extractions in bitmask image format (AI4CMA Contest format)
+If `bitmasks` is set, the pipeline will produce points extractions in bitmask image format (AI4CMA Contest format)
 
 Legend hints JSON files (ie from the AI4CMA Contest) can be used to improve points extractions, using the `legend_hints_dir` parameter.
 
