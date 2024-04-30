@@ -22,6 +22,7 @@ from schema.cdr_schemas.features.point_features import (
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoferenceResult
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
 from tasks.point_extraction.entities import MapImage as LARAPoints
+from tasks.point_extraction.label_map import YOLO_TO_CDR_LABEL
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 
 from pydantic import BaseModel
@@ -183,6 +184,10 @@ class PointsMapper(CDRMapper):
                     if map_pt_label.legend_name
                     else map_pt_label.class_name
                 )
+
+                if pt_label in YOLO_TO_CDR_LABEL:
+                    # map from YOLO point class to CDR point label
+                    pt_label = YOLO_TO_CDR_LABEL[pt_label]
 
                 if pt_label not in point_features_by_class:
                     # init result object for this point type...
