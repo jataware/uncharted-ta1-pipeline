@@ -21,7 +21,7 @@ from tasks.metadata_extraction.entities import (
 )
 from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("utm_extractor")
 
@@ -69,7 +69,11 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             p for p in geocoded_places.places if p.place_type == "population"
         ]
 
-        utm_zone = self._determine_utm_zone(metadata, population_centres, geofence_raw)
+        clue_point = input.input.get_request_info("clue_point")
+
+        utm_zone = self._determine_utm_zone(
+            metadata, population_centres, geofence_raw, clue_point
+        )
         self._add_param(
             input.input,
             str(uuid.uuid4()),
@@ -149,10 +153,17 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         metadata: MetadataExtraction,
         geocoded_centres: List[GeocodedPlace],
         raw_geofence: DocGeoFence,
+        clue_point: Optional[Tuple[float, float]],
     ) -> Tuple[int, bool, str]:
         # determine the UTM zone number and direction
         zone_number = 1
         northern = False
+
+        # check clue point first
+        if clue_point is not None:
+            # determine zone from lat & lon
+            coord = utm.from_latlon(clue_point[1], clue_point[0])
+            return coord[2], clue_point[1] > 0, "clue point"
 
         # extract the zone number from the coordinate systems
         for crs in metadata.coordinate_systems:
