@@ -1,11 +1,14 @@
 from __future__ import annotations
+
+import logging
 from PIL import Image
-from pydantic import BaseModel, validator, model_serializer
+from pydantic import BaseModel, validator, Field
+from typing import Optional, List, Union, Any
 
-from typing import Optional, List, Any
-
-
+logger = logging.getLogger(__name__)
 ## Data Objects
+
+LEGEND_ITEMS_OUTPUT_KEY = "legend_point_items"
 
 
 class MapPointLabel(BaseModel):
@@ -25,6 +28,8 @@ class MapPointLabel(BaseModel):
     score: float
     direction: Optional[float] = None  # [deg] orientation of point symbol
     dip: Optional[float] = None  # [deg] dip angle associated with symbol
+    legend_name: str
+    legend_bbox: List[Union[float, int]]
 
 
 class MapImage(BaseModel):
@@ -143,3 +148,39 @@ class MapTiles(BaseModel):
         except Exception as e:
             print(f"Exception in join_with_cached_predictions: {str(e)}")
             return False
+
+
+class LegendPointItem(BaseModel):
+    """
+    Class for internally storing info about legend items for point symbols
+    """
+
+    # TODO -- could be modified to use CDR PointLegendAndFeaturesResult class in the future
+
+    name: str = Field(description="Label of the map unit in the legend")
+    description: str = Field(
+        default="", description="Description of the map unit in the legend"
+    )
+    legend_bbox: List[Union[float, int]] = Field(
+        default_factory=list,
+        description="""The rough 2 point bounding box of the map units label.
+                    Format is expected to be [x1,y1,x2,y2] where the top left
+                    is the origin (0,0).""",
+    )
+    legend_contour: List[List[Union[float, int]]] = Field(
+        default_factory=list,
+        description="""The more precise polygon bounding box of the map units
+                    label. Format is expected to be [x,y] coordinate pairs
+                    where the top left is the origin (0,0).""",
+    )
+
+
+class LegendPointItems(BaseModel):
+    """
+    Class for a collection of LegendPointItem objects
+    """
+
+    items: List[LegendPointItem]
+    provenance: str = Field(
+        default="", description="where did these legend items come from"
+    )

@@ -79,20 +79,22 @@ A pipeline using this task, along with a CLI and sever wrapper are available at 
 
 ### Point Extraction Tasks ###
 
-**Goal:** Extracts bedding point symbols from a map, along with their orientation and associated incline information
+**Goal:** Extracts point symbols from a map, along with their orientation and associated incline information
 
 The model leverages [YOLOv8](https://github.com/ultralytics/ultralytics) for the baseline object detection task
 
 #### Extracted Point Types ####
-Initial efforts have focused on identifying and extracting the following symbols:
+Initial efforts have focused on identifying and extracting the following 15 symbols:
 * Inclined Bedding (aka strike/dip)
 * Vertical Bedding
 * Horizontal Bedding
 * Overturned Bedding
 * Inclined Foliation
+* Inclined Foliation (Igneous)
 * Vertical Foliation
 * Vertical Joint
 * Sink Hole
+* Lineation
 * Gravel Borrow Pit
 * Mine Shaft
 * Prospect
@@ -106,13 +108,14 @@ Point orientation (ie "strike" direction) and the "dip" magnitude are also extra
 * Vertical Bedding
 * Overturned Bedding
 * Inclined Foliation
+* Inclined Foliation (Igneous)
 * Vertical Foliation
 * Vertical Joint
+* Lineation
 * Mine Tunnel
 
 #### Using the Point Extraction Tasks ####
 * The main point extraction is available in the `YOLOPointDetector` task
-* A faster but lower accuracy point extractor is available through the `MobileNetDetector` task
 * Ouput is a`MapImage` JSON object, which contains a list of `MapPointLabel` capturing the point information.
 * Both dectector tasks take `MapTiles` objects as inputs - `MapTiles` are produced by the `Tiler` task
 * `MapTiles` can be re-assembled into a `MapImage` using the `Untiler` task

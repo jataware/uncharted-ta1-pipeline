@@ -1,34 +1,32 @@
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import List
 
-from matplotlib.dates import MO
-from schema.cdr_schemas.feature_results import FeatureResults
-from schema.cdr_schemas.features.point_features import (
-    PointFeatureCollection,
-    PointLegendAndFeaturesResult,
-    PointFeature,
-    Point,
-    PointProperties,
-)
 from schema.mappers.cdr import PointsMapper
+from tasks.point_extraction.legend_analyzer import PointLegendAnalyzer
 from tasks.point_extraction.point_extractor import YOLOPointDetector
 from tasks.point_extraction.point_orientation_extractor import PointOrientationExtractor
+from tasks.point_extraction.point_extractor_utils import convert_preds_to_bitmasks
+from tasks.point_extraction.template_match_point_extractor import (
+    TemplateMatchPointExtractor,
+)
 from tasks.point_extraction.tiling import Tiler, Untiler
-from tasks.point_extraction.entities import MapImage
+from tasks.point_extraction.entities import (
+    MapImage,
+    LegendPointItems,
+    LEGEND_ITEMS_OUTPUT_KEY,
+)
 from tasks.common.pipeline import (
     BaseModelOutput,
     Pipeline,
     PipelineResult,
     OutputCreator,
     Output,
+    ImageDictOutput,
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import TileTextExtractor
-from tasks.segmentation.detectron_segmenter import (
-    DetectronSegmenter,
-    SEGMENTATION_OUTPUT_KEY,
-)
+from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 
 
 logger = logging.getLogger(__name__)
@@ -56,6 +54,7 @@ class PointExtractionPipeline(Pipeline):
         work_dir: str,
         verbose=False,
         include_cdr_output=True,
+        include_bitmasks_output=False,
     ):
         # extract text from image, segmentation to only keep the map area,
         # tile, extract points, untile, predict direction
@@ -81,6 +80,7 @@ class PointExtractionPipeline(Pipeline):
             )
         tasks.extend(
             [
+                PointLegendAnalyzer("legend_analyzer", ""),
                 Tiler("tiling"),
                 YOLOPointDetector(
                     "point_detection",
@@ -90,6 +90,10 @@ class PointExtractionPipeline(Pipeline):
                 ),
                 Untiler("untiling"),
                 PointOrientationExtractor("point_orientation_extraction"),
+                TemplateMatchPointExtractor(
+                    "template_match_point_extraction",
+                    str(Path(work_dir).joinpath("template_match_points")),
+                ),
             ]
         )
 
@@ -98,6 +102,8 @@ class PointExtractionPipeline(Pipeline):
         ]
         if include_cdr_output:
             outputs.append(CDROutput("map_point_label_cdr_output"))
+        if include_bitmasks_output:
+            outputs.append(BitmasksOutput("map_point_label_bitmasks_output"))
 
         super().__init__("point_extraction", "Point Extraction", outputs, tasks)
         self._verbose = verbose
@@ -127,7 +133,7 @@ class MapPointLabelOutput(OutputCreator):
 
 class CDROutput(OutputCreator):
     """
-    OutputCreator for point extraction pipeline.
+    Create CDR output objects for point extraction pipeline.
     """
 
     def __init__(self, id):
@@ -155,4 +161,46 @@ class CDROutput(OutputCreator):
         cdr_points = mapper.map_to_cdr(map_image)
         return BaseModelOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, cdr_points
+        )
+
+
+class BitmasksOutput(OutputCreator):
+    """
+    Create bitmasks output (in CMA-contest format) for point extraction pipeline.
+    """
+
+    def __init__(self, id):
+        """
+        Initializes the output creator.
+
+        Args:
+            id (str): The ID of the output creator.
+        """
+        super().__init__(id)
+
+    def create_output(self, pipeline_result: PipelineResult) -> Output:
+        """
+        Validates the point extraction pipeline result and converts to bitmasks
+
+        Args:
+            pipeline_result (PipelineResult): The pipeline result.
+
+        Returns:
+            Output: The output of the pipeline.
+        """
+        map_image = MapImage.model_validate(pipeline_result.data["map_image"])
+        legend_labels = []
+        if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
+            legend_pt_items = LegendPointItems.model_validate(
+                pipeline_result.data[LEGEND_ITEMS_OUTPUT_KEY]
+            )
+            legend_labels = [pt_type.name for pt_type in legend_pt_items.items]
+
+        if pipeline_result.image is None:
+            raise ValueError("Pipeline result image is None")
+        (w, h) = pipeline_result.image.size
+        bitmasks_dict = convert_preds_to_bitmasks(map_image, legend_labels, (w, h))
+
+        return ImageDictOutput(
+            pipeline_result.pipeline_id, pipeline_result.pipeline_name, bitmasks_dict
         )
