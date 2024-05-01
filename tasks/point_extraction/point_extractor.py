@@ -33,9 +33,11 @@ class POINT_CLASS(str, Enum):
     OVERTURNED_BEDDING = "overturned_bedding"
     VERTICAL_BEDDING = "vertical_bedding"
     INCLINED_FOLIATION = "inclined_foliation"
+    INCLINED_FOLIATION_IGNEOUS = "inclined_foliation_igneous"
     VERTICAL_FOLIATION = "vertical_foliation"
     VERTICAL_JOINT = "vertical_joint"
     SINK_HOLE = "sink_hole"
+    LINEATION = "lineation"
     GRAVEL_BORROW_PIT = "gravel_borrow_pit"
     MINE_SHAFT = "mine_shaft"
     PROSPECT = "prospect"
@@ -173,12 +175,12 @@ class YOLOPointDetector(Task):
         """
         map_tiles = MapTiles.model_validate(task_input.data["map_tiles"])
 
+        point_legend_mapping: Dict[str, LegendPointItem] = {}
         if LEGEND_ITEMS_OUTPUT_KEY in task_input.data:
             legend_pt_items = LegendPointItems.model_validate(
                 task_input.data[LEGEND_ITEMS_OUTPUT_KEY]
             )
-        # find mappings between legend item labels and YOLO model class names
-        if legend_pt_items:
+            # find mappings between legend item labels and YOLO model class names
             point_legend_mapping = find_legend_label_matches(
                 legend_pt_items, task_input.raster_id
             )

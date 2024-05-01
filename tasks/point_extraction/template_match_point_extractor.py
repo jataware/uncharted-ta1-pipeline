@@ -73,6 +73,8 @@ class TemplateMatchPointExtractor(Task):
             legend_pt_items = LegendPointItems.model_validate(
                 task_input.data[LEGEND_ITEMS_OUTPUT_KEY]
             )
+        else:
+            legend_pt_items = LegendPointItems(items=[])
 
         if not legend_pt_items or not legend_pt_items.items:
             logger.warning(

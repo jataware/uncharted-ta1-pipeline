@@ -46,6 +46,9 @@ class PointOrientationExtractor(Task):
             POINT_CLASS.INCLINED_FOLIATION
         ): "tasks/point_extraction/templates/inclined_foliation_pt_north.png",
         str(
+            POINT_CLASS.INCLINED_FOLIATION_IGNEOUS
+        ): "tasks/point_extraction/templates/inclined_foliation_igneous_pt_north.png",
+        str(
             POINT_CLASS.VERTICAL_FOLIATION
         ): "tasks/point_extraction/templates/vertical_foliation_pt_north.png",
         str(
@@ -54,6 +57,9 @@ class PointOrientationExtractor(Task):
         str(
             POINT_CLASS.MINE_TUNNEL
         ): "tasks/point_extraction/templates/mine_tunnel_pt_north.png",
+        str(
+            POINT_CLASS.LINEATION
+        ): "tasks/point_extraction/templates/lineation_pt_north.png",
     }
 
     # ---- task config per point class
@@ -72,6 +78,10 @@ class PointOrientationExtractor(Task):
         str(POINT_CLASS.INCLINED_FOLIATION): PointOrientationConfig(
             point_class=str(POINT_CLASS.INCLINED_FOLIATION), mirroring_correction=True
         ),
+        str(POINT_CLASS.INCLINED_FOLIATION_IGNEOUS): PointOrientationConfig(
+            point_class=str(POINT_CLASS.INCLINED_FOLIATION_IGNEOUS),
+            mirroring_correction=True,
+        ),
         str(POINT_CLASS.VERTICAL_FOLIATION): PointOrientationConfig(
             point_class=str(POINT_CLASS.VERTICAL_FOLIATION),
             dip_number_extraction=False,
@@ -85,6 +95,9 @@ class PointOrientationExtractor(Task):
         str(POINT_CLASS.MINE_TUNNEL): PointOrientationConfig(
             point_class=str(POINT_CLASS.MINE_TUNNEL),
             dip_number_extraction=False,
+        ),
+        str(POINT_CLASS.LINEATION): PointOrientationConfig(
+            point_class=str(POINT_CLASS.LINEATION), mirroring_correction=False
         ),
     }
 
