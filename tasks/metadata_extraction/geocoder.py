@@ -1,4 +1,6 @@
+import json
 import logging
+import os
 import random
 
 from abc import ABC, abstractmethod
@@ -18,7 +20,7 @@ from tasks.metadata_extraction.entities import (
 )
 from tasks.text_extraction.entities import TextExtraction
 
-from typing import List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("geocoder")
 
@@ -32,20 +34,32 @@ class GeocodingService(ABC):
 class NominatimGeocoder(GeocodingService):
     _service: Nominatim
 
-    def __init__(self, timeout: int, limit_hits: int = 4) -> None:
+    def __init__(self, timeout: int, cache_location: str, limit_hits: int = 4) -> None:
         self._service = Nominatim(
-            timeout=timeout, user_agent="uncharted-cma-challenge-geocoder"  # type: ignore
+            timeout=timeout, user_agent="uncharted-lara-geocoder"  # type: ignore
         )
         self._limit_hits = limit_hits
+        self._cache = self._load_cache(cache_location)
+        self._cache_location = cache_location
 
-    def geocode(self, place: GeocodedPlace) -> Tuple[GeocodedPlace, bool]:
+    def _load_cache(self, cache_location: str) -> Dict[Any, Any]:
+        cache = {}
+
+        # assume the cache is just a json file
+        if os.path.isfile(cache_location):
+            with open(cache_location, "rb") as f:
+                cache = json.load(f)
+        return cache
+
+    def _cache_doc(self, key: str, doc: Any):
+        self._cache[key] = doc
+
+        with open(self._cache_location, "w") as f:
+            json.dump(self._cache, f)
+
+    def _geocode_place(self, place: GeocodedPlace) -> Tuple[GeocodedPlace, bool]:
         place_copy = deepcopy(place)
-        res = self._service.geocode(
-            place.place_name,  # type: ignore
-            exactly_one=False,  # type: ignore
-            limit=self._limit_hits,  # type: ignore
-            country_codes="us",  # type: ignore
-        )
+        res = self._get_geocode(place_copy)
 
         if res is None:
             return place_copy, False
@@ -96,6 +110,34 @@ class NominatimGeocoder(GeocodingService):
                 ]
             )
         return place_copy, True
+
+    def geocode(self, place: GeocodedPlace) -> Tuple[GeocodedPlace, bool]:
+        place_geocoded = None
+        # TODO: update key to use country codes once they no longer get fixed to us
+        key = f"{place.place_name}|{self._limit_hits}|us"
+
+        # check cache, assuming cache is a structure {"model": json, "result": True|False}
+        if key in self._cache:
+            cached_value = self._cache[key]
+            place_geocoded = GeocodedPlace.model_validate(cached_value["model"])
+            return place_geocoded, cached_value["result"]
+
+        place_geocoded, result = self._geocode_place(place)
+
+        # add to cache
+        self._cache_doc(key, {"model": place_geocoded.model_dump(), "result": result})
+
+        return place_geocoded, result
+
+    def _get_geocode(self, place: GeocodedPlace) -> Optional[Any]:
+        res = self._service.geocode(
+            place.place_name,  # type: ignore
+            exactly_one=False,  # type: ignore
+            limit=self._limit_hits,  # type: ignore
+            country_codes="us",  # type: ignore
+        )
+
+        return res
 
 
 class Geocoder(Task):
