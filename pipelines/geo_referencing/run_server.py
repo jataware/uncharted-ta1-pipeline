@@ -143,7 +143,7 @@ def start_server():
 
     global georef_pipeline
     georef_pipeline = create_geo_referencing_pipeline(
-        p.model, [LARAModelOutput("georef_output")]
+        p.model, [LARAModelOutput("georef_output")], p.workdir
     )
 
     #### start flask server or startup up the message queue

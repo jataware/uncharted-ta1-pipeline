@@ -80,7 +80,9 @@ def create_input(
 
 def run_pipelines(parsed, input_data: ImageFileInputIterator):
     # get the pipelines
-    pipelines = create_geo_referencing_pipelines(parsed.extract_metadata, parsed.output)
+    pipelines = create_geo_referencing_pipelines(
+        parsed.extract_metadata, parsed.output, parsed.workdir
+    )
 
     # get file paths
     clue_dir = parsed.clue_dir
