@@ -26,6 +26,7 @@ fi
 
 docker network ls | grep -q 'lara' || docker network create lara
 docker run \
+    --pull always \
     --name georeferencing \
     --entrypoint python3 \
     --rm \

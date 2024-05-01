@@ -19,6 +19,7 @@ fi
 
 docker network ls | grep -q 'lara' || docker network create lara
 docker run \
+    --pull always \
     --rm \
     --name point_extraction \
     --entrypoint python3 \
