@@ -46,9 +46,8 @@ def main():
     parser.add_argument("--clue_dir", type=str, default="")
     parser.add_argument("--query_dir", type=str, default="")
     parser.add_argument("--points_dir", type=str, default="")
-    parser.add_argument("--verbose", type=bool, default=False)
-    parser.add_argument("--ta1_schema", type=bool, default=False)
     parser.add_argument("--extract_metadata", type=bool, default=False)
+    parser.add_argument("--model", type=str, required=True)
     p = parser.parse_args()
 
     # setup an input stream
@@ -81,7 +80,7 @@ def create_input(
 def run_pipelines(parsed, input_data: ImageFileInputIterator):
     # get the pipelines
     pipelines = create_geo_referencing_pipelines(
-        parsed.extract_metadata, parsed.output, parsed.workdir
+        parsed.extract_metadata, parsed.output, parsed.workdir, parsed.model
     )
 
     # get file paths

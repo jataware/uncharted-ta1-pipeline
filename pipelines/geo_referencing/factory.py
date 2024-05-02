@@ -47,7 +47,10 @@ def run_step(input: TaskInput) -> bool:
 
 
 def create_geo_referencing_pipelines(
-    extract_metadata: bool, output_dir: str, working_dir: str
+    extract_metadata: bool,
+    output_dir: str,
+    working_dir: str,
+    segmentation_model_path: str,
 ) -> List[Pipeline]:
     geocoding_cache = os.path.join(working_dir, "geocoding_cache.json")
     geocoder = NominatimGeocoder(10, geocoding_cache, 1)
@@ -136,7 +139,7 @@ def create_geo_referencing_pipelines(
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
+            segmentation_model_path,
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -229,7 +232,7 @@ def create_geo_referencing_pipelines(
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
+            segmentation_model_path,
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -319,7 +322,7 @@ def create_geo_referencing_pipelines(
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
+            segmentation_model_path,
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
