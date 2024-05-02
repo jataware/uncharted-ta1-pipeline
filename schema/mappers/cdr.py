@@ -145,11 +145,18 @@ class SegmentationMapper(CDRMapper):
                 )
                 area_type = AreaType.Map_Area
 
+            bbox = (
+                segment.bbox[0],
+                segment.bbox[1],
+                segment.bbox[0] + segment.bbox[2],
+                segment.bbox[1] + segment.bbox[3],
+            )
+
             area_extraction = Area_Extraction(
                 coordinates=[coordinates],
                 bbox=segment.bbox,
                 category=area_type,
-                confidence=segment.confidence,  # assume two points - ll, ur
+                confidence=segment.confidence,
                 model=MODEL_NAME,
                 model_version=MODEL_VERSION,
             )
