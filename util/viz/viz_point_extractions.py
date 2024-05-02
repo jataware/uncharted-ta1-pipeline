@@ -33,6 +33,7 @@ class2colour = {
     "overturned_bedding": "green",
     "vertical_bedding": "orange",
     "inclined_foliation": "darkmagenta",
+    "inclined_foliation_igneous": "limegreen",
     "vertical_foliation": "springgreen",
     "vertical_joint": "turquoise",
     "gravel_borrow_pit": "hotpink",
@@ -41,6 +42,7 @@ class2colour = {
     "mine_tunnel": "tomato",
     "mine_quarry": "limegreen",
     "sink_hole": "goldenrod",
+    "lineation": "violet",
 }
 
 
@@ -72,6 +74,16 @@ def run(input_path: Path, json_pred_path: Path):
     for img_path in input_files:
 
         img_filen = Path(img_path).stem
+        # --- TEMP code needed to run with contest dir-based data
+        if (
+            img_filen.endswith("_pt")
+            or img_filen.endswith("_poly")
+            or img_filen.endswith("_line")
+            or img_filen.endswith("_point")
+        ):
+            print(f"Skipping {img_filen}")
+            continue
+
         json_path = json_pred_path / f"{img_filen}_point_extraction.json"
         print(f"---- {img_filen}")
 
@@ -80,8 +92,8 @@ def run(input_path: Path, json_pred_path: Path):
 
         labels = data.get("labels", [])
         if not labels:
-            print("Oooops!! No predictions! Exiting")
-            return
+            print("Oooops!! No predictions! Skipping")
+            continue
         print(f"Visualizing {len(labels)} point predictions")
 
         # Create a drawing object to overlay bounding boxes

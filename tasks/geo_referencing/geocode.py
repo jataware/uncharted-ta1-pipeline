@@ -41,10 +41,28 @@ class Geocoder(CoordinatesExtractor):
         geocoded: DocGeocodedPlaces = input.input.parse_data(
             GEOCODED_PLACES_OUTPUT_KEY, DocGeocodedPlaces.model_validate
         )
+        geofence: DocGeoFence = input.input.parse_data(
+            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
+        )
         places = [p for p in geocoded.places if p.place_type == "point"]
 
+        # filter places to only consider those within the geofence
+        # TODO: may need to deep copy the object to not overwrite coordinates
+        if geofence is not None:
+            places_filtered = []
+            for p in places:
+                coords = []
+                for c in coords:
+                    if self._in_geofence(
+                        self._point_to_coordinate(c), geofence.geofence
+                    ):
+                        coords.append(c)
+                if len(coords) > 0:
+                    p.coordinates = coords
+                    places_filtered.append(p)
+
         # get the coordinates for the points that fall within range
-        coordinates = self._get_coordinates(places)
+        coordinates = self._get_coordinates(places_filtered)
 
         # create the required coordinate structures
         lon_pts: Dict[Tuple[float, float], Coordinate] = input.input.get_data("lons")
@@ -127,6 +145,21 @@ class Geocoder(CoordinatesExtractor):
                 )
             )
         return coordinates
+
+    def _in_geofence(self, coordinate: Tuple[float, float], geofence: GeoFence) -> bool:
+        # check x falls within geofence
+        if not geofence.lon_minmax[0] <= coordinate[0] <= geofence.lon_minmax[1]:
+            return False
+
+        # check y falls within geofence
+        if not geofence.lat_minmax[0] <= coordinate[1] <= geofence.lat_minmax[1]:
+            return False
+        return True
+
+    def _point_to_coordinate(
+        self, point: List[GeocodedCoordinate]
+    ) -> Tuple[float, float]:
+        return (point[0].geo_x, point[0].geo_y)
 
     def _get_point_geo(
         self, coordinate: List[GeocodedCoordinate]

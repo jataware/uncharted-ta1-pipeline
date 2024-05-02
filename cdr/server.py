@@ -2,6 +2,7 @@ import argparse
 import atexit
 import datetime
 from pathlib import Path
+import re
 import httpx
 import json
 import logging
@@ -16,6 +17,7 @@ import threading
 from flask import Flask, request, Response
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import spec
+from pika.exceptions import ChannelClosed, ChannelWrongStateError, ConnectionClosed
 from PIL import Image
 from pyproj import Transformer
 from rasterio.transform import Affine
@@ -121,7 +123,7 @@ def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
     # check working dir for the image
     filename = working_dir / f"{image_id}.tif"
 
-    if not filename.exists():
+    if not os.path.exists(filename):
         # download image
         image_data = download_file(image_url)
 
@@ -350,6 +352,7 @@ def push_georeferencing(result: RequestResult):
             data={"georef_result": json.dumps(cdr_result.model_dump())},
             files=files_,
             headers=headers,
+            timeout=None,
         )
         logger.info(
             f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
@@ -372,6 +375,7 @@ def push_features(result: RequestResult, model: FeatureResults):
         f"{settings.cdr_host}/v1/maps/publish/features",
         data=model.model_dump_json(),  #   type: ignore
         headers=headers,
+        timeout=None,
     )
     logger.info(
         f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
@@ -488,17 +492,30 @@ def process_lara_result(
 
 
 def start_lara_result_listener(result_queue: str, host="localhost"):
-    logger.info(f"starting the listener on the result queue ({host}:{result_queue})")
-    # setup the result queue
-    result_channel = create_channel(host)
-    result_channel.queue_declare(queue=result_queue)
+    while True:
+        try:
+            logger.info(
+                f"starting the listener on the result queue ({host}:{result_queue})"
+            )
+            # setup the result queue
+            result_channel = create_channel(host)
+            result_channel.queue_declare(queue=result_queue)
 
-    # start consuming the results
-    result_channel.basic_qos(prefetch_count=1)
-    result_channel.basic_consume(
-        queue=result_queue, on_message_callback=process_lara_result, auto_ack=True
-    )
-    result_channel.start_consuming()
+            # start consuming the results
+            result_channel.basic_qos(prefetch_count=1)
+            result_channel.basic_consume(
+                queue=result_queue,
+                on_message_callback=process_lara_result,
+                auto_ack=True,
+            )
+            result_channel.start_consuming()
+        except (ChannelClosed, ConnectionClosed, ChannelWrongStateError):
+            logger.warning(f"result channel closed")
+            # channel is closed - make sure the connection is closed to facilitate a
+            # clean reconnect
+            if result_channel and not result_channel.connection.is_closed:
+                logger.info("closing result connection")
+                result_channel.connection.close()
 
 
 def register_cdr_system():
@@ -603,6 +620,7 @@ def main():
     parser.add_argument("--cog_id", type=str, required=False)
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--cdr_event_log", type=str, default=CDR_EVENT_LOG)
+    parser.add_argument("--input", type=str, default=None)
     p = parser.parse_args()
 
     global settings
@@ -618,9 +636,10 @@ def main():
     settings.json_log = JSONLog(os.path.join(p.workdir, p.cdr_event_log))
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
-    if p.mode == "process" and (p.cog_id == "" or p.cog_id is None):
-        logger.info("process mode requires a cog id")
-        exit(1)
+    if p.mode == "process":
+        if (p.cog_id == "" or p.cog_id is None) and (p.input == "" or p.input is None):
+            logger.info("process mode requires a cog id or an input file")
+            exit(1)
     elif p.mode == "host" and (not p.cog_id == "" and p.cog_id is not None):
         logger.info("a cog id cannot be provided if host mode is selected")
         exit(1)
@@ -640,7 +659,14 @@ def main():
         start_app()
     elif p.mode == "process":
         cdr_startup("https://mock.example")
-        process_image(p.cog_id)
+        if p.input:
+            # open the cog csv file and process each line
+            with open(p.input, "r") as f:
+                for line in f:
+                    cog_id = line.strip()
+                    process_image(cog_id)
+        else:
+            process_image(p.cog_id)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import logging
 import re
+import statistics
 import utm
 import uuid
 
@@ -20,7 +21,7 @@ from tasks.metadata_extraction.entities import (
 )
 from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("utm_extractor")
 
@@ -68,7 +69,11 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             p for p in geocoded_places.places if p.place_type == "population"
         ]
 
-        utm_zone = self._determine_utm_zone(metadata, population_centres, geofence_raw)
+        clue_point = input.input.get_request_info("clue_point")
+
+        utm_zone = self._determine_utm_zone(
+            metadata, population_centres, geofence_raw, clue_point
+        )
         self._add_param(
             input.input,
             str(uuid.uuid4()),
@@ -148,10 +153,17 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         metadata: MetadataExtraction,
         geocoded_centres: List[GeocodedPlace],
         raw_geofence: DocGeoFence,
+        clue_point: Optional[Tuple[float, float]],
     ) -> Tuple[int, bool, str]:
         # determine the UTM zone number and direction
         zone_number = 1
         northern = False
+
+        # check clue point first
+        if clue_point is not None:
+            # determine zone from lat & lon
+            coord = utm.from_latlon(clue_point[1], clue_point[0])
+            return coord[2], clue_point[1] > 0, "clue point"
 
         # extract the zone number from the coordinate systems
         for crs in metadata.coordinate_systems:
@@ -170,10 +182,6 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                 geocoded_centres[0].coordinates[0][0].geo_y,
                 geocoded_centres[0].coordinates[0][0].geo_x,
             )
-            for gc in geocoded_centres:
-                print(
-                    f"GEOCODED CENTRE: {gc.place_name}\tCOORDINATES: {gc.coordinates}"
-                )
             northern = geocoded_centres[0].coordinates[0][0].geo_y > 0
             return zone_number, northern, "geocoding"
 
@@ -279,7 +287,9 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
 
         valid_parsings = self._are_valid_utm_extractions(parsed_directions)
 
-        # ---- Check Northing-Easting extractions...
+        # parse northing and easting points
+        northings = []
+        eastings = []
         for idx, groups, span in ne_matches:
             utm_dist = RE_NONNUMERIC.sub("", groups[0])
             utm_dist = float(utm_dist)
@@ -311,93 +321,102 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             )
 
             if is_northing[0]:
-                # latitude keypoint (y-axis)
-                # check that it falls within the geofence by checking the lat absolute values
-                # convert extracted northing value to latitude and save keypoint result
-                latlon_pt = utm.to_latlon(
-                    easting_clue, utm_dist, utm_zone[0], northern=utm_zone[1]
-                )
-                latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
-                if lat_minmax[0] <= latlon_pt[0] <= lat_minmax[1]:
-                    # valid latitude point
-                    x_ranges = (
-                        (0.0, 1.0)
-                        if span[2] == 0
-                        else (span[0] / float(span[2]), span[1] / float(span[2]))
-                    )
-                    coord = Coordinate(
-                        "lat keypoint",
-                        ocr_text_blocks.extractions[idx].text,
-                        latlon_pt[0],
-                        True,
-                        ocr_text_blocks.extractions[idx].bounds,
-                        x_ranges=x_ranges,
-                        confidence=0 if utm_zone[2] == UTM_ZONE_DEFAULT else 0.75,
-                    )
-                    x_pixel, y_pixel = coord.get_pixel_alignment()
-                    lat_results[(latlon_pt[0], y_pixel)] = coord
-                    self._add_param(
-                        input.input,
-                        str(uuid.uuid4()),
-                        f"coordinate-{coord.get_type()}",
-                        {
-                            "bounds": ocr_to_coordinates(coord.get_bounds()),
-                            "text": coord.get_text(),
-                            "parsed": coord.get_parsed_degree(),
-                            "type": "latitude" if coord.is_lat() else "longitude",
-                            "pixel_alignment": coord.get_pixel_alignment(),
-                            "confidence": coord.get_confidence(),
-                        },
-                        "extracted northing utm coordinate",
-                    )
-                else:
-                    logger.info(
-                        "Excluding candidate northing point: {}".format(utm_dist)
-                    )
+                northings.append((utm_dist, span, idx))
             else:
                 # longitude keypoint (x-axis)
                 # given limited range of easting values and false easting values, use an arbitrary upper limit for upper bound
                 if utm_dist < EASTING_UPPER_LIMIT:
-                    # valid longitude point
-                    x_ranges = (
-                        (0.0, 1.0)
-                        if span[2] == 0
-                        else (span[0] / float(span[2]), span[1] / float(span[2]))
-                    )
-                    # convert extracted easting value to longitude and save keypoint result
-                    latlon_pt = utm.to_latlon(
-                        utm_dist, northing_clue, utm_zone[0], northern=utm_zone[1]
-                    )
-                    latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
-                    coord = Coordinate(
-                        "lon keypoint",
-                        ocr_text_blocks.extractions[idx].text,
-                        latlon_pt[1],
-                        False,
-                        ocr_text_blocks.extractions[idx].bounds,
-                        x_ranges=x_ranges,
-                        confidence=0 if utm_zone[2] == UTM_ZONE_DEFAULT else 0.75,
-                    )
-                    x_pixel, y_pixel = coord.get_pixel_alignment()
-                    lon_results[(latlon_pt[1], x_pixel)] = coord
-                    self._add_param(
-                        input.input,
-                        str(uuid.uuid4()),
-                        f"coordinate-{coord.get_type()}",
-                        {
-                            "bounds": ocr_to_coordinates(coord.get_bounds()),
-                            "text": coord.get_text(),
-                            "parsed": coord.get_parsed_degree(),
-                            "type": "latitude" if coord.is_lat() else "longitude",
-                            "pixel_alignment": coord.get_pixel_alignment(),
-                            "confidence": coord.get_confidence(),
-                        },
-                        "extracted easting utm coordinate",
-                    )
+                    eastings.append((utm_dist, span, idx))
                 else:
                     logger.info(
                         "Excluding candidate easting point: {}".format(utm_dist)
                     )
+        # convert from utm to lat/lon, using average values of northing and easting for the mapping coordinate
+        # northing first as some may be excluded, then eastings
+        if len(eastings) > 0:
+            easting_clue = statistics.median(map(lambda x: x[0], eastings))
+        for n, span, idx in northings:
+            # latitude keypoint (y-axis)
+            # check that it falls within the geofence by checking the lat absolute values
+            # convert extracted northing value to latitude and save keypoint result
+            latlon_pt = utm.to_latlon(
+                easting_clue, n, utm_zone[0], northern=utm_zone[1]
+            )
+            latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
+            if lat_minmax[0] <= latlon_pt[0] <= lat_minmax[1]:
+                # valid latitude point
+                x_ranges = (
+                    (0.0, 1.0)
+                    if span[2] == 0
+                    else (span[0] / float(span[2]), span[1] / float(span[2]))
+                )
+                coord = Coordinate(
+                    "lat keypoint",
+                    ocr_text_blocks.extractions[idx].text,
+                    latlon_pt[0],
+                    True,
+                    ocr_text_blocks.extractions[idx].bounds,
+                    x_ranges=x_ranges,
+                    confidence=0 if utm_zone[2] == UTM_ZONE_DEFAULT else 0.75,
+                )
+                x_pixel, y_pixel = coord.get_pixel_alignment()
+                lat_results[(latlon_pt[0], y_pixel)] = coord
+                self._add_param(
+                    input.input,
+                    str(uuid.uuid4()),
+                    f"coordinate-{coord.get_type()}",
+                    {
+                        "bounds": ocr_to_coordinates(coord.get_bounds()),
+                        "text": coord.get_text(),
+                        "parsed": coord.get_parsed_degree(),
+                        "type": "latitude" if coord.is_lat() else "longitude",
+                        "pixel_alignment": coord.get_pixel_alignment(),
+                        "confidence": coord.get_confidence(),
+                    },
+                    "extracted northing utm coordinate",
+                )
+            else:
+                logger.info("Excluding candidate northing point: {}".format(n))
+
+        if len(northings) > 0:
+            northing_clue = statistics.median(map(lambda x: x[0], northings))
+        for e, span, idx in eastings:
+            x_ranges = (
+                (0.0, 1.0)
+                if span[2] == 0
+                else (span[0] / float(span[2]), span[1] / float(span[2]))
+            )
+            # convert extracted easting value to longitude and save keypoint result
+            latlon_pt = utm.to_latlon(
+                e, northing_clue, utm_zone[0], northern=utm_zone[1]
+            )
+            latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
+            coord = Coordinate(
+                "lon keypoint",
+                ocr_text_blocks.extractions[idx].text,
+                latlon_pt[1],
+                False,
+                ocr_text_blocks.extractions[idx].bounds,
+                x_ranges=x_ranges,
+                confidence=0 if utm_zone[2] == UTM_ZONE_DEFAULT else 0.75,
+            )
+            x_pixel, y_pixel = coord.get_pixel_alignment()
+            lon_results[(latlon_pt[1], x_pixel)] = coord
+            self._add_param(
+                input.input,
+                str(uuid.uuid4()),
+                f"coordinate-{coord.get_type()}",
+                {
+                    "bounds": ocr_to_coordinates(coord.get_bounds()),
+                    "text": coord.get_text(),
+                    "parsed": coord.get_parsed_degree(),
+                    "type": "latitude" if coord.is_lat() else "longitude",
+                    "pixel_alignment": coord.get_pixel_alignment(),
+                    "confidence": coord.get_confidence(),
+                },
+                "extracted easting utm coordinate",
+            )
+
         logger.info("done utm")
 
         return (lon_results, lat_results)

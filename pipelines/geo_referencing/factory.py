@@ -47,8 +47,13 @@ def run_step(input: TaskInput) -> bool:
 
 
 def create_geo_referencing_pipelines(
-    extract_metadata: bool, output_dir: str
+    extract_metadata: bool,
+    output_dir: str,
+    working_dir: str,
+    segmentation_model_path: str,
 ) -> List[Pipeline]:
+    geocoding_cache = os.path.join(working_dir, "geocoding_cache.json")
+    geocoder = NominatimGeocoder(10, geocoding_cache, 1)
     p = []
 
     tasks = []
@@ -105,7 +110,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-places",
-                NominatimGeocoder(10, 5),
+                geocoder,
                 run_bounds=False,
                 run_points=True,
             )
@@ -134,7 +139,7 @@ def create_geo_referencing_pipelines(
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
+            segmentation_model_path,
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -155,7 +160,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-bounds",
-                NominatimGeocoder(10, 1),
+                geocoder,
                 run_bounds=True,
                 run_points=False,
                 run_centres=False,
@@ -186,7 +191,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-places",
-                NominatimGeocoder(10, 5),
+                geocoder,
                 run_bounds=False,
                 run_points=True,
                 run_centres=False,
@@ -195,13 +200,14 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-centres",
-                NominatimGeocoder(10, 1),
+                geocoder,
                 run_bounds=False,
                 run_points=False,
                 run_centres=True,
             )
         )
         tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
@@ -226,7 +232,7 @@ def create_geo_referencing_pipelines(
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
+            segmentation_model_path,
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -247,7 +253,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-bounds",
-                NominatimGeocoder(10, 1),
+                geocoder,
                 run_bounds=True,
                 run_points=False,
             )
@@ -256,7 +262,6 @@ def create_geo_referencing_pipelines(
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
             TextFilter(
@@ -278,13 +283,23 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-places",
-                NominatimGeocoder(10, 5),
+                geocoder,
                 run_bounds=False,
                 run_points=True,
             )
         )
+        tasks.append(
+            Geocoder(
+                "geo-centres",
+                geocoder,
+                run_bounds=False,
+                run_points=False,
+                run_centres=True,
+            )
+        )
+        tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(rfGeocoder("geocoded-georeferencing"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     """p.append(
@@ -307,7 +322,7 @@ def create_geo_referencing_pipelines(
     tasks.append(
         DetectronSegmenter(
             "segmenter",
-            "https://s3.t1.uncharted.software/lara/models/segmentation/layoutlmv3_xsection_20231201",
+            segmentation_model_path,
             "temp/segmentation/cache",
             confidence_thres=0.25,
         )
@@ -328,7 +343,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-bounds",
-                NominatimGeocoder(10, 1),
+                geocoder,
                 run_bounds=True,
                 run_points=False,
             )
@@ -337,7 +352,6 @@ def create_geo_referencing_pipelines(
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
     if extract_metadata:
         tasks.append(
             TextFilter(
@@ -359,13 +373,23 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-places",
-                NominatimGeocoder(10, 5),
+                geocoder,
                 run_bounds=False,
                 run_points=True,
             )
         )
+        tasks.append(
+            Geocoder(
+                "geo-centres",
+                geocoder,
+                run_bounds=False,
+                run_points=False,
+                run_centres=True,
+            )
+        )
+        tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(rfGeocoder("geocoded-georeferencing"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     """p.append(
@@ -387,8 +411,11 @@ def create_geo_referencing_pipelines(
 
 
 def create_geo_referencing_pipeline(
-    segmentation_model_path: str, outputs: List[OutputCreator]
+    segmentation_model_path: str, outputs: List[OutputCreator], working_dir: str
 ) -> Pipeline:
+    geocoding_cache = os.path.join(working_dir, "geocoding_cache.json")
+    geocoder = NominatimGeocoder(10, geocoding_cache, 1)
+
     tasks = []
     tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
     tasks.append(
@@ -412,15 +439,16 @@ def create_geo_referencing_pipeline(
     tasks.append(
         Geocoder(
             "geo-bounds",
-            NominatimGeocoder(10, 1),
+            geocoder,
             run_bounds=True,
             run_points=False,
+            run_centres=False,
         )
     )
     tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
-    tasks.append(UTMCoordinatesExtractor("fifth"))
+    tasks.append(NaiveFilter("fun"))
     tasks.append(
         TextFilter(
             "map_area_filter",
@@ -441,12 +469,25 @@ def create_geo_referencing_pipeline(
     tasks.append(
         Geocoder(
             "geo-places",
-            NominatimGeocoder(10, 5),
+            geocoder,
             run_bounds=False,
             run_points=True,
+            run_centres=False,
         )
     )
+    tasks.append(
+        Geocoder(
+            "geo-centres",
+            geocoder,
+            run_bounds=False,
+            run_points=False,
+            run_centres=True,
+        )
+    )
+    tasks.append(UTMCoordinatesExtractor("fifth"))
+    tasks.append(OutlierFilter("utm-outliers"))
     tasks.append(rfGeocoder("geocoded-georeferencing"))
+    tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     return Pipeline("wally-finder", "wally-finder", outputs, tasks)

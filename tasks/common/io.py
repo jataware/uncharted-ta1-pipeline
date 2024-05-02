@@ -139,6 +139,8 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
         # list objects in bucket with prefix
         objects = client.list_objects(Bucket=bucket, Prefix=prefix)
         # add all objects to the list of image files
+        if "Contents" not in objects:
+            raise Exception("missing s3 content")
         for obj in objects["Contents"]:
             if "Key" in obj:
                 key = obj["Key"]

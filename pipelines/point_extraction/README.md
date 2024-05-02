@@ -70,7 +70,10 @@ python3 -m pipelines.point_extraction.run_pipeline \
     --output /model/output/dir \
     --workdir /model/working/dir \
     --model_point_extractor https://s3/compatible/endpoint/point_extractor_model_weights_dir \
-    --model_segmenter https://s3/compatible/endpoint/segmentation_model_weights_dir
+    --model_segmenter https://s3/compatible/endpoint/segmentation_model_weights_dir \
+    --cdr_schema=True \
+    --bitmasks=True \
+    --legend_hints_dir /legend/hints/dir
 ```
 
 Note that the `model_point_extractor` and `model_segmenter` parameters can point to a folder in the local file system, or to a resource on an S3-compatible endpoint.  The first file with a `.pt` extension will be loaded as the model weights.
@@ -80,6 +83,13 @@ In the S3 case, the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment 
 The `model_segmenter` param is optional. If present each image will be segmented and only the map area will be used for point symbol extraction.
 
 OCR text extraction is used to extract the "dip" magnitude labels for strike/dip point symbols. For this functionality, the `GOOGLE_APPLICATION_CREDENTIALS` environment variables must be set.
+
+If `cdr_schema` is set, the pipeline will also produce point extractions in the CDR JSON format.
+
+If `bitmasks` is set, the pipeline will produce points extractions in bitmask image format (AI4CMA Contest format)
+
+Legend hints JSON files (ie from the AI4CMA Contest) can be used to improve points extractions, using the `legend_hints_dir` parameter.
+
 
 ### REST Service ###
 `run_server.py` provides the pipeline as a REST service with the following endpoints:

@@ -46,9 +46,8 @@ def main():
     parser.add_argument("--clue_dir", type=str, default="")
     parser.add_argument("--query_dir", type=str, default="")
     parser.add_argument("--points_dir", type=str, default="")
-    parser.add_argument("--verbose", type=bool, default=False)
-    parser.add_argument("--ta1_schema", type=bool, default=False)
     parser.add_argument("--extract_metadata", type=bool, default=False)
+    parser.add_argument("--model", type=str, required=True)
     p = parser.parse_args()
 
     # setup an input stream
@@ -64,10 +63,11 @@ def create_input(
     input.image = image
     input.raster_id = raster_id
 
-    lon_minmax, lat_minmax, lon_sign_factor = get_params(clue_path)
+    lon_minmax, lat_minmax, lon_sign_factor, clue_point = get_params(clue_path)
     input.params["lon_minmax"] = lon_minmax
     input.params["lat_minmax"] = lat_minmax
     input.params["lon_sign_factor"] = lon_sign_factor
+    input.params["clue_point"] = clue_point
 
     query_pts = query_points_from_points(raster_id, points_path)
     if not query_pts:
@@ -79,7 +79,9 @@ def create_input(
 
 def run_pipelines(parsed, input_data: ImageFileInputIterator):
     # get the pipelines
-    pipelines = create_geo_referencing_pipelines(parsed.extract_metadata, parsed.output)
+    pipelines = create_geo_referencing_pipelines(
+        parsed.extract_metadata, parsed.output, parsed.workdir, parsed.model
+    )
 
     # get file paths
     clue_dir = parsed.clue_dir
@@ -171,9 +173,10 @@ def get_geofence(
     fov_range_km: float,
     lon_limits: List[float] = [-66.0, -180.0],
     lat_limits: List[float] = [24.0, 73.0],
-) -> Tuple[List[float], List[float], float]:
+) -> Tuple[List[float], List[float], float, Optional[Tuple[float, float]]]:
     # parse clue CSV file
     (clue_lon, clue_lat, clue_ok) = parse_clue_file(csv_clue_file)
+    clue_point = None
     if clue_ok:
         # if False:
         print("Using lon/lat clue: {}, {}".format(clue_lon, clue_lat))
@@ -190,6 +193,7 @@ def get_geofence(
         fov_degrange_lat = abs(fov_pt_north[0] - clue_lat)
         lon_minmax = [clue_lon - fov_degrange_lon, clue_lon + fov_degrange_lon]
         lat_minmax = [clue_lat - fov_degrange_lat, clue_lat + fov_degrange_lat]
+        clue_point = (clue_lon, clue_lat)
 
     else:
         # if no lat/lon clue, fall-back to full geo-fence of USA + Alaska
@@ -199,7 +203,12 @@ def get_geofence(
 
     lon_sign_factor = 1.0
 
-    return (absolute_minmax(lon_minmax), absolute_minmax(lat_minmax), lon_sign_factor)
+    return (
+        absolute_minmax(lon_minmax),
+        absolute_minmax(lat_minmax),
+        lon_sign_factor,
+        clue_point,
+    )
 
 
 def parse_query_file(
@@ -279,7 +288,9 @@ def query_points_from_points(
     return query_points
 
 
-def get_params(clue_path: str) -> Tuple[List[float], List[float], float]:
+def get_params(
+    clue_path: str,
+) -> Tuple[List[float], List[float], float, Optional[Tuple[float, float]]]:
     return get_geofence(
         clue_path,
         fov_range_km=FOV_RANGE_KM,

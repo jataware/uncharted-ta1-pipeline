@@ -45,11 +45,15 @@ class ROIExtractor(Task):
         roi = self._extract_roi(input)
 
         result = super()._create_result(input)
-        result.output["roi"] = roi
+        if roi is not None:
+            result.output["roi"] = roi[0]
+            result.output["roi_inner"] = roi[1]
         return result
 
-    def _extract_roi(self, input: TaskInput) -> Optional[List[tuple[float, float]]]:
-        return []
+    def _extract_roi(
+        self, input: TaskInput
+    ) -> Optional[Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]]:
+        return ([], [])
 
 
 class ModelROIExtractor(ROIExtractor):
@@ -59,7 +63,9 @@ class ModelROIExtractor(ROIExtractor):
         super().__init__(task_id)
         self._buffering_func = buffering_func
 
-    def _extract_roi(self, input: TaskInput) -> Optional[List[Tuple[float, float]]]:
+    def _extract_roi(
+        self, input: TaskInput
+    ) -> Optional[Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]]:
         # read segmentation output
         segmentation_output: MapSegmentation = input.parse_data(
             SEGMENTATION_OUTPUT_KEY, MapSegmentation.model_validate
@@ -82,7 +88,11 @@ class ModelROIExtractor(ROIExtractor):
         polygon = Polygon(poly_raw)
         buffered = polygon.buffer(buffer_size, join_style=2)  # type: ignore
 
-        return list(buffered.exterior.coords)
+        # shrink the polygon inward for the inner boundary
+        polygon = Polygon(poly_raw)
+        buffered_inner = polygon.buffer(-3 * buffer_size, join_style=2)  # type: ignore
+
+        return list(buffered.exterior.coords), list(buffered_inner.exterior.coords)
 
 
 class EntropyROIExtractor(ROIExtractor):
@@ -92,7 +102,9 @@ class EntropyROIExtractor(ROIExtractor):
         super().__init__(task_id)
         self._entropy_thres_buffer = _entropy_thres_buffer
 
-    def _extract_roi(self, input: TaskInput) -> List[Tuple[int, int]]:
+    def _extract_roi(
+        self, input: TaskInput
+    ) -> Optional[Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]]:
         # convert PIL image to opencv
         image = cv.cvtColor(np.array(input.image), cv.COLOR_RGB2BGR)
         # ocr_blocks = input.get_data("ocr_blocks")
@@ -165,12 +177,15 @@ class EntropyROIExtractor(ROIExtractor):
             roi_y[0] = int(roi_y[0] / im_resize_ratio)
             roi_y[1] = int(roi_y[1] / im_resize_ratio)
 
-        return [
-            (roi_x[0], roi_y[0]),
-            (roi_x[1], roi_y[0]),
-            (roi_x[1], roi_y[1]),
-            (roi_x[0], roi_y[1]),
-        ]
+        return (
+            [
+                (roi_x[0], roi_y[0]),
+                (roi_x[1], roi_y[0]),
+                (roi_x[1], roi_y[1]),
+                (roi_x[0], roi_y[1]),
+            ],
+            [],
+        )
 
     def _get_slice_avgs(
         self, img: np.ndarray, axis: int = 0, s_width: float = 0.05

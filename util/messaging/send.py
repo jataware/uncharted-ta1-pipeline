@@ -17,7 +17,7 @@ def main():
         id="000001",
         task="2",
         image_id="test_image",
-        image_url="https://ngmdb.usgs.gov/ngm-bin/pdp/download.pl?q=2867_21357_5",
+        image_url="https://s3.amazonaws.com/public.cdr.land/cogs/c0089400862e476e4f66863283bb934d974d9b4d9a060d164b1e0b3685a6a127.cog.tif",
         output_format="5",
     )
 
