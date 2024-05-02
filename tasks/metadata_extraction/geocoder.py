@@ -63,21 +63,16 @@ class NominatimGeocoder(GeocodingService):
 
         if res is None:
             return place_copy, False
-        if len(res) == 0:  # type: ignore
-            return place_copy, False
-
-        # assume the first hit is the one that matters for now
-        if "boundingbox" not in res[0].raw:  # type: ignore
+        if len(res) == 0:
             return place_copy, False
 
         # bounding box returned is a list of strings [x1, x2, y1, y2]
         # these should not be absolute but rather the actual bounding boxes.
         place_copy.coordinates = []
         for r in res:  # type: ignore
-            bb_coords_raw = list(map(lambda x: float(x), r.raw["boundingbox"]))  # type: ignore
             bb_coords = [
-                bb_coords_raw[:2],
-                bb_coords_raw[2:],
+                r[:2],
+                r[2:],
             ]
 
             # build the coordinate bounding box via 4 points
@@ -112,24 +107,20 @@ class NominatimGeocoder(GeocodingService):
         return place_copy, True
 
     def geocode(self, place: GeocodedPlace) -> Tuple[GeocodedPlace, bool]:
-        place_geocoded = None
-        # TODO: update key to use country codes once they no longer get fixed to us
-        key = f"{place.place_name}|{self._limit_hits}|us"
-
-        # check cache, assuming cache is a structure {"model": json, "result": True|False}
-        if key in self._cache:
-            cached_value = self._cache[key]
-            place_geocoded = GeocodedPlace.model_validate(cached_value["model"])
-            return place_geocoded, cached_value["result"]
-
         place_geocoded, result = self._geocode_place(place)
-
-        # add to cache
-        self._cache_doc(key, {"model": place_geocoded.model_dump(), "result": result})
 
         return place_geocoded, result
 
-    def _get_geocode(self, place: GeocodedPlace) -> Optional[Any]:
+    def _get_geocode(self, place: GeocodedPlace) -> Optional[List[List[float]]]:
+        # TODO: update key to use country codes once they no longer get fixed to us
+        key = f"{place.place_name}|{self._limit_hits}|us"
+
+        # check cache, assuming cache is a structure {"boundingbox": list[list[float]]}
+        if key in self._cache:
+            cached_value = self._cache[key]
+            results: List[List[float]] = cached_value["boundingbox"]
+            return results
+
         res = self._service.geocode(
             place.place_name,  # type: ignore
             exactly_one=False,  # type: ignore
@@ -137,7 +128,21 @@ class NominatimGeocoder(GeocodingService):
             country_codes="us",  # type: ignore
         )
 
-        return res
+        if res is None:
+            return None
+        if len(res) == 0:  # type: ignore
+            return None
+
+        # assume the first hit is the one that matters for now
+        if "boundingbox" not in res[0].raw:  # type: ignore
+            return None
+
+        results = [[float(c) for c in p.raw["boundingbox"]] for p in res]  # type: ignore
+
+        # add to cache
+        self._cache_doc(key, {"boundingbox": results})
+
+        return results
 
 
 class Geocoder(Task):
