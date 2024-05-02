@@ -111,13 +111,16 @@ class GeoFencer(Task):
     ) -> Tuple[DocGeoFence, List[str]]:
         # use default if nothing geocoded
         if geocoded is None or len(geocoded.places) == None:
+            logger.info("geofence built using defaults")
             return self._create_default_geofence(input), []
 
         # for now, geofence should be either the widest possible to accomodate all states or if none present the country
         geofence, places = self._get_state_geofence(input, geocoded)
         if geofence is not None:
+            logger.info("geofence built using states")
             return geofence, places
 
+        logger.info("geofence built using country")
         return self._get_country_geofence(input, geocoded)
 
     def _create_default_geofence(self, input: TaskInput) -> DocGeoFence:

@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 import numpy as np
@@ -28,6 +29,8 @@ from typing import Dict, List, Optional, Tuple
 
 COORDINATE_CONFIDENCE_GEOCODE = 0.8
 
+logger = logging.getLogger("geocode")
+
 
 class Geocoder(CoordinatesExtractor):
     def __init__(self, task_id: str):
@@ -41,25 +44,36 @@ class Geocoder(CoordinatesExtractor):
         geocoded: DocGeocodedPlaces = input.input.parse_data(
             GEOCODED_PLACES_OUTPUT_KEY, DocGeocodedPlaces.model_validate
         )
-        geofence: DocGeoFence = input.input.parse_data(
-            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
-        )
+        lat_minmax, lon_minmax, defaulted = self._get_input_geofence(input)
         places = [p for p in geocoded.places if p.place_type == "point"]
 
         # filter places to only consider those within the geofence
         # TODO: may need to deep copy the object to not overwrite coordinates
-        if geofence is not None:
-            places_filtered = []
+        logger.info(
+            f"extracting coordinates via geocoding with {len(places)} locations"
+        )
+        places_filtered = []
+        if defaulted:
+            places_filtered = places
+        else:
             for p in places:
+                pc = deepcopy(p)
                 coords = []
-                for c in coords:
+                for c in pc.coordinates:
                     if self._in_geofence(
-                        self._point_to_coordinate(c), geofence.geofence
+                        self._point_to_coordinate(c), lon_minmax, lat_minmax
                     ):
                         coords.append(c)
                 if len(coords) > 0:
-                    p.coordinates = coords
-                    places_filtered.append(p)
+                    pc.coordinates = coords
+                    places_filtered.append(pc)
+                else:
+                    logger.info(
+                        f"removing {pc.place_name} from location set since no coordinates fall within the geofence"
+                    )
+        logger.info(
+            f"extracting coordinates via geocoding with {len(places_filtered)} locations remaining after filtering"
+        )
 
         # get the coordinates for the points that fall within range
         coordinates = self._get_coordinates(places_filtered)
@@ -146,13 +160,18 @@ class Geocoder(CoordinatesExtractor):
             )
         return coordinates
 
-    def _in_geofence(self, coordinate: Tuple[float, float], geofence: GeoFence) -> bool:
+    def _in_geofence(
+        self,
+        coordinate: Tuple[float, float],
+        lon_minmax: List[float],
+        lat_minmax: List[float],
+    ) -> bool:
         # check x falls within geofence
-        if not geofence.lon_minmax[0] <= coordinate[0] <= geofence.lon_minmax[1]:
+        if not lon_minmax[0] <= abs(coordinate[0]) <= lon_minmax[1]:
             return False
 
         # check y falls within geofence
-        if not geofence.lat_minmax[0] <= coordinate[1] <= geofence.lat_minmax[1]:
+        if not lat_minmax[0] <= abs(coordinate[1]) <= lat_minmax[1]:
             return False
         return True
 
