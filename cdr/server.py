@@ -172,7 +172,7 @@ def cps_to_transform(
 ) -> Affine:
     cps = [
         {
-            "row": height - float(gcp.px_geom.rows_from_top),
+            "row": float(gcp.px_geom.rows_from_top),
             "col": float(gcp.px_geom.columns_from_left),
             "x": float(gcp.map_geom.longitude),  #   type: ignore
             "y": float(gcp.map_geom.latitude),  #   type: ignore
@@ -312,27 +312,21 @@ def push_georeferencing(result: RequestResult):
 
     # validate the result by building the model classes
     cdr_result: Optional[GeoreferenceResults] = None
+    files_ = []
     try:
         lara_result = LARAGeoreferenceResult.model_validate(georef_result_raw)
         mapper = get_mapper(lara_result, settings.system_name, settings.system_version)
         cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
-    except:
-        logger.error(
-            "bad georeferencing result received so unable to send results to cdr"
-        )
-        raise
+        assert cdr_result is not None
+        assert cdr_result.georeference_results is not None
+        assert cdr_result.georeference_results[0] is not None
+        assert cdr_result.georeference_results[0].projections is not None
+        projection = cdr_result.georeference_results[0].projections[0]
+        gcps = cdr_result.gcps
+        output_file_name = projection.file_name
+        output_file_name_full = os.path.join(settings.workdir, output_file_name)
+        assert gcps is not None
 
-    assert cdr_result is not None
-    assert cdr_result.georeference_results is not None
-    assert cdr_result.georeference_results[0] is not None
-    assert cdr_result.georeference_results[0].projections is not None
-    projection = cdr_result.georeference_results[0].projections[0]
-    gcps = cdr_result.gcps
-    output_file_name = projection.file_name
-    output_file_name_full = os.path.join(settings.workdir, output_file_name)
-
-    assert gcps is not None
-    try:
         logger.info(
             f"projecting image {result.image_path} to {output_file_name_full} using crs {projection.crs}"
         )
@@ -340,9 +334,23 @@ def push_georeferencing(result: RequestResult):
             result.image_path, output_file_name_full, projection.crs, gcps
         )
 
-        files_ = []
         files_.append(("files", (output_file_name, open(output_file_name_full, "rb"))))
+    except:
+        logger.error(
+            "bad georeferencing result received so creating an empty result to send to cdr"
+        )
 
+        # create an empty result to send to cdr
+        cdr_result = GeoreferenceResults(
+            cog_id=result.request.image_id,
+            georeference_results=[],
+            gcps=[],
+            system=settings.system_name,
+            system_version=settings.system_version,
+        )
+
+    assert cdr_result is not None
+    try:
         # push the result to CDR
         logger.info(f"pushing result for request {result.request.id} to CDR")
         headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
@@ -649,7 +657,7 @@ def main():
     threading.Thread(
         target=start_lara_result_listener,
         args=(
-            "lara_result_queue",
+            LARA_RESULT_QUEUE_NAME,
             p.host,
         ),
     ).start()
