@@ -155,7 +155,7 @@ class Untiler(Task):
 
                 # filter noisy predictions due to tile overlap
                 if self.check_overlap_predictions and self._is_prediction_redundant(
-                    (pred.x1, pred.y1, pred.x2, pred.y2),
+                    pred,
                     tile.map_bounds,
                     (tile.x_offset, tile.y_offset),
                     (tile.width, tile.height),
@@ -180,6 +180,10 @@ class Untiler(Task):
                 )
 
                 all_predictions.append(global_prediction)
+
+        logger.info(
+            f"Total point predictions after re-constructing map tiles: {len(all_predictions)}"
+        )
         map_image = MapImage(
             path=map_path, raster_id=input.raster_id, labels=all_predictions
         )
@@ -187,16 +191,20 @@ class Untiler(Task):
 
     def _is_prediction_redundant(
         self,
-        pred_bbox: tuple,
+        pred: MapPointLabel,
         map_bbox,
         tile_offset: tuple,
         tile_wh: tuple,
         shape_thres=2,
+        conf_thres=0.5,
     ) -> bool:
         """
         Check if a point symbol prediction is redundant, due to overlapping tiles
         """
-        (x1, y1, x2, y2) = pred_bbox
+        x1 = pred.x1
+        x2 = pred.x2
+        y1 = pred.y1
+        y2 = pred.y2
         (map_xmin, map_ymin, map_xmax, map_ymax) = map_bbox
         tile_w, tile_h = tile_wh
         x_offset, y_offset = tile_offset
@@ -213,7 +221,11 @@ class Untiler(Task):
                 and y1 + y_offset > map_ymin
                 and y2 + y_offset < map_ymax
             ):
-                # point bbox not at map edges, assume this is a redundant prediction (due to tile overlap) and skip
+                # non-square point bbox not at map edges, assume this is a redundant prediction (due to tile overlap) and skip
+                return True
+            elif pred.score < conf_thres:
+                # non-square point bbox at map edges, and low confidence,
+                # discard as a redundant or noisy prediction
                 return True
 
         return False
