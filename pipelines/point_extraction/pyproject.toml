@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lara-point-extraction"
-version = "0.1.0"
+version = "0.1.1"
 description = "LARA point extraction pipeline and server"
 readme = "README.md"
 dependencies = ["flask", "mypy-boto3-s3", "lara-tasks[point]"]
