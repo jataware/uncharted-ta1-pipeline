@@ -17,7 +17,12 @@ import threading
 from flask import Flask, request, Response
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import spec
-from pika.exceptions import ChannelClosed, ChannelWrongStateError, ConnectionClosed
+from pika.exceptions import (
+    ChannelClosed,
+    ChannelWrongStateError,
+    ConnectionClosed,
+    StreamLostError,
+)
 from PIL import Image
 from pyproj import Transformer
 from rasterio.transform import Affine
@@ -517,7 +522,12 @@ def start_lara_result_listener(result_queue: str, host="localhost"):
                 auto_ack=True,
             )
             result_channel.start_consuming()
-        except (ChannelClosed, ConnectionClosed, ChannelWrongStateError):
+        except (
+            ChannelClosed,
+            ConnectionClosed,
+            ChannelWrongStateError,
+            StreamLostError,
+        ):
             logger.warning(f"result channel closed")
             # channel is closed - make sure the connection is closed to facilitate a
             # clean reconnect
