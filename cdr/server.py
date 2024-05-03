@@ -308,7 +308,7 @@ def process_image(image_id: str):
 
     # push the request onto the queue
     for queue_name, request in lara_reqs.items():
-        publish_lara_request(request, queue_name)
+        publish_lara_request(request, queue_name, host=settings.rabbitmq_host)
 
 
 def push_georeferencing(result: RequestResult):
