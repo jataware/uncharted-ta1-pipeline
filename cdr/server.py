@@ -6,6 +6,7 @@ import re
 import httpx
 import json
 import logging
+
 import coloredlogs
 import ngrok
 import os
@@ -294,7 +295,7 @@ def process_image(image_id: str):
         image_url=image_url,
         output_format="cdr",
     )
-    lara_reqs[POINTS_REQUEST_QUEUE] = Request(
+    lara_reqs[SEGMENTATION_REQUEST_QUEUE] = Request(
         id="mock-segments",
         task="segments",
         image_id=image_id,
@@ -308,6 +309,7 @@ def process_image(image_id: str):
 
     # push the request onto the queue
     for queue_name, request in lara_reqs.items():
+        logger.info(f"publishing request for image {image_id} to {queue_name} task: {request.task}")
         publish_lara_request(request, queue_name, host=settings.rabbitmq_host)
 
 
