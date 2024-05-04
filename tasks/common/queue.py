@@ -1,8 +1,10 @@
+from concurrent.futures import thread
 from enum import Enum
 import json
 import logging
 import os
 from pathlib import Path
+from threading import Thread
 
 import pika
 from pika.exceptions import (
@@ -21,9 +23,9 @@ from tasks.common.pipeline import (
 )
 from tasks.common.io import ImageFileInputIterator, download_file
 from pika.adapters.blocking_connection import BlockingChannel as Channel
-from pika import spec
+from pika import BlockingConnection, spec
 from pydantic import BaseModel
-from typing import Tuple
+from typing import Optional, Tuple
 
 logger = logging.getLogger("process_queue")
 
@@ -119,25 +121,13 @@ class RequestQueue:
         self._blocked_connection_timeout = blocked_connection_timeout
         self._working_dir = workdir
         self._imagedir = imagedir
+        self._result_connection: Optional[BlockingConnection] = None
 
-        self.setup_queues()
-
-    def setup_queues(self) -> None:
-        """
-        Setup the input and output queues.
-        """
-
-        logger.info("wiring up request queue to input and output queues")
-
-        # setup input and output queue
-        self._connect_to_request()
-        self._connect_to_result()
-
-    def start_request_queue(self):
-        """Start the request queue."""
-        logger.info("starting request queue")
+    def _run_quest_queue(self):
         while True:
+            self._connect_to_request()
             try:
+                logger.info(f"servicing request queue {self._request_queue}")
                 self._input_channel.start_consuming()
             except (
                 ChannelClosed,
@@ -149,12 +139,16 @@ class RequestQueue:
                 if self._input_channel and not self._input_channel.connection.is_closed:
                     logger.info("closing request connection")
                     self._input_channel.connection.close()
-                self._connect_to_request()
+
+    def start_request_queue(self):
+        """Start the request queue."""
+        Thread(target=self._run_quest_queue).start()
 
     def _connect_to_result(self):
         """
         Setup the connection, channel and queue to service outgoing results.
         """
+        logger.info("connecting to result queue")
         self._result_connection = pika.BlockingConnection(
             pika.ConnectionParameters(
                 self._host,
@@ -169,6 +163,7 @@ class RequestQueue:
         """
         Setup the connection, channel and queue to service incoming requests.
         """
+        logger.info("connecting to request queue")
         self._request_connection = pika.BlockingConnection(
             pika.ConnectionParameters(
                 self._host,
@@ -195,7 +190,7 @@ class RequestQueue:
         """
 
         # Attempt to publish, reconnecting if the connection is closed
-        if self._result_connection.is_closed:
+        if self._result_connection is None or self._result_connection.is_closed:
             logger.warn("result queue connection closed, reconnecting")
             self._connect_to_result()
         try:
