@@ -81,6 +81,7 @@ class TemplateMatchPointExtractor(Task):
                 "No Legend item info available. Skipping Template-Match Point Extractor"
             )
             result = self._create_result(task_input)
+            result.add_output("map_image", input.data["map_image"])
             return result
 
         # get existing point predictions from YOLO point extractor
