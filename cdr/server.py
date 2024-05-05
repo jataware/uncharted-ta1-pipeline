@@ -3,6 +3,7 @@ import atexit
 import datetime
 from pathlib import Path
 import re
+from time import sleep
 import httpx
 import json
 import logging
@@ -23,6 +24,7 @@ from pika.exceptions import (
     ChannelWrongStateError,
     ConnectionClosed,
     StreamLostError,
+    IncompatibleProtocolError,
 )
 from PIL import Image
 from pyproj import Transformer
@@ -103,7 +105,13 @@ settings: Settings
 
 def create_channel(host: str) -> Channel:
     logger.info(f"creating channel on host {host}")
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host))
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(
+            host,
+            heartbeat=900,
+            blocked_connection_timeout=600,
+        )
+    )
     return connection.channel()
 
 
@@ -309,7 +317,9 @@ def process_image(image_id: str):
 
     # push the request onto the queue
     for queue_name, request in lara_reqs.items():
-        logger.info(f"publishing request for image {image_id} to {queue_name} task: {request.task}")
+        logger.info(
+            f"publishing request for image {image_id} to {queue_name} task: {request.task}"
+        )
         publish_lara_request(request, queue_name, host=settings.rabbitmq_host)
 
 
@@ -529,13 +539,15 @@ def start_lara_result_listener(result_queue: str, host="localhost"):
             ConnectionClosed,
             ChannelWrongStateError,
             StreamLostError,
+            IncompatibleProtocolError,
         ):
-            logger.warning(f"result channel closed")
+            logger.warning(f"result channel closed, reconnecting")
             # channel is closed - make sure the connection is closed to facilitate a
             # clean reconnect
             if result_channel and not result_channel.connection.is_closed:
                 logger.info("closing result connection")
                 result_channel.connection.close()
+            sleep(5)
 
 
 def register_cdr_system():
