@@ -18,7 +18,7 @@ import threading
 
 from flask import Flask, request, Response
 from pika.adapters.blocking_connection import BlockingChannel as Channel
-from pika import spec
+from pika import BlockingConnection, spec
 from pika.exceptions import (
     ChannelClosed,
     ChannelWrongStateError,
@@ -103,31 +103,109 @@ class Settings:
 settings: Settings
 
 
-def create_channel(host: str) -> Channel:
-    logger.info(f"creating channel on host {host}")
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host,
-            heartbeat=900,
-            blocked_connection_timeout=600,
+class LaraRequestPublisher:
+    def __init__(self, request_queues: List[str], host="localhost") -> None:
+        self._request_connection: Optional[BlockingConnection] = None
+        self._request_channel: Optional[Channel] = None
+        self._host = host
+        self._request_queues = request_queues
+
+    def _create_channel(self) -> Channel:
+        """
+        Creates a blocking connection and channel on the given host and declares the given queue.
+
+        Args:
+            host: The host to connect to.
+            queue: The queue to declare.
+
+        Returns:
+            The created channel.
+        """
+        logger.info(f"creating channel on host {self._host}")
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                self._host,
+                heartbeat=900,
+                blocked_connection_timeout=600,
+            )
         )
-    )
-    return connection.channel()
+        channel = connection.channel()
+        for queue in self._request_queues:
+            channel.queue_declare(queue=queue)
+        return channel
 
+    def publish_lara_request(self, req: Request, request_queue: str):
+        """
+        Publishes a LARA request to a specified queue.
 
-def publish_lara_request(req: Request, request_queue: str, host="localhost"):
-    request_channel = create_channel(host)
-    request_channel.queue_declare(queue=request_queue)
+        Args:
+            req (Request): The LARA request object to be published.
+            request_channel (Channel): The channel used for publishing the request.
+            request_queue (str): The name of the queue to publish the request to.
+        """
+        logger.info(f"sending request {req.id} for image {req.image_id} to lara queue")
+        if self._request_connection is not None and self._request_channel is not None:
+            self._request_connection.add_callback_threadsafe(
+                lambda: self._request_channel.basic_publish(  #   type: ignore
+                    exchange="",
+                    routing_key=request_queue,
+                    body=json.dumps(req.model_dump()),
+                )
+            )
+            logger.info(f"request {req.id} published to {request_queue}")
+        else:
+            logger.error("request connection / channel not initialized")
 
-    logger.info(f"sending request {req.id} for image {req.image_id} to lara queue")
-    # send request to queue
-    request_channel.basic_publish(
-        exchange="",
-        routing_key=request_queue,
-        body=json.dumps(req.model_dump()),
-    )
-    logger.info(f"request {req.id} published to lara queue")
-    request_channel.connection.close()
+    def _run_request_queue(self):
+        """
+        Main loop to service the request queue. process_data_events is set to block for a maximum
+        of 1 second before returning to ensure that heartbeats etc. are processed.
+        """
+        self._request_connection: Optional[BlockingConnection] = None
+        while True:
+            try:
+                if (
+                    self._request_connection is None
+                    or self._request_connection.is_closed
+                ):
+                    logger.info(
+                        f"connecting to request queue {','.join(self._request_queues)}"
+                    )
+                    self._request_channel = self._create_channel()
+                    self._request_connection = self._request_channel.connection
+
+                if self._request_connection is not None:
+                    self._request_connection.process_data_events(time_limit=1)
+                else:
+                    logger.error("request connection not initialized")
+            except (
+                ConnectionClosed,
+                ChannelClosed,
+                ChannelWrongStateError,
+                StreamLostError,
+                IncompatibleProtocolError,
+            ):
+                logger.warn("request connection closed, reconnecting")
+                if (
+                    self._request_connection is not None
+                    and self._request_connection.is_open
+                ):
+                    self._request_connection.close()
+                sleep(5)
+
+    def start_lara_request_queue(self):
+        """
+        Starts the LARA request queue by running the `run_request_queue` function in a separate thread.
+
+        Args:
+            host (str): The host address to pass to the `run_request_queue` function.
+
+        Returns:
+            None
+        """
+        threading.Thread(
+            target=self._run_request_queue,
+        ).start()
 
 
 def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
@@ -277,12 +355,12 @@ def process_cdr_event():
     # queue event in background since it may be blocking on the queue
     # assert request_channel is not None
     for queue_name, lara_req in lara_reqs.items():
-        publish_lara_request(lara_req, queue_name, settings.rabbitmq_host)
+        request_publisher.publish_lara_request(lara_req, queue_name)
 
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
 
-def process_image(image_id: str):
+def process_image(image_id: str, request_publisher: LaraRequestPublisher):
     logger.info(f"processing image with id {image_id}")
 
     image_url = f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif"
@@ -320,7 +398,7 @@ def process_image(image_id: str):
         logger.info(
             f"publishing request for image {image_id} to {queue_name} task: {request.task}"
         )
-        publish_lara_request(request, queue_name, host=settings.rabbitmq_host)
+        request_publisher.publish_lara_request(request, queue_name)
 
 
 def push_georeferencing(result: RequestResult):
@@ -516,15 +594,38 @@ def process_lara_result(
     logger.info("result processing finished")
 
 
-def start_lara_result_listener(result_queue: str, host="localhost"):
+def create_channel(host: str, queue: str) -> Channel:
+    """
+    Creates a blocking connection and channel on the given host and declares the given queue.
+
+    Args:
+        host: The host to connect to.
+        queue: The queue to declare.
+
+    Returns:
+        The created channel.
+    """
+    logger.info(f"creating channel on host {host}")
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(
+            host,
+            heartbeat=900,
+            blocked_connection_timeout=600,
+        )
+    )
+    channel = connection.channel()
+    channel.queue_declare(queue=queue)
+    return channel
+
+
+def _run_lara_result_queue(result_queue: str, host="localhost"):
     while True:
         try:
             logger.info(
                 f"starting the listener on the result queue ({host}:{result_queue})"
             )
             # setup the result queue
-            result_channel = create_channel(host)
-            result_channel.queue_declare(queue=result_queue)
+            result_channel = create_channel(host, result_queue)
 
             # start consuming the results
             result_channel.basic_qos(prefetch_count=1)
@@ -548,6 +649,13 @@ def start_lara_result_listener(result_queue: str, host="localhost"):
                 logger.info("closing result connection")
                 result_channel.connection.close()
             sleep(5)
+
+
+def start_lara_result_queue(result_queue: str, host="localhost"):
+    threading.Thread(
+        target=_run_lara_result_queue,
+        args=(result_queue, host),
+    ).start()
 
 
 def register_cdr_system():
@@ -678,13 +786,16 @@ def main():
     logger.info(f"starting cdr in {p.mode} mode")
 
     # start the listener for the results
-    threading.Thread(
-        target=start_lara_result_listener,
-        args=(
-            LARA_RESULT_QUEUE_NAME,
-            p.host,
-        ),
-    ).start()
+    start_lara_result_queue(LARA_RESULT_QUEUE_NAME, host=settings.rabbitmq_host)
+
+    # declare a global request publisher since we need to access it from the
+    # CDR event endpoint
+    global request_publisher
+    request_publisher = LaraRequestPublisher(
+        [SEGMENTATION_REQUEST_QUEUE, POINTS_REQUEST_QUEUE, GEO_REFERENCE_REQUEST_QUEUE],
+        host=settings.rabbitmq_host,
+    )
+    request_publisher.start_lara_request_queue()
 
     # either start the flask app if host mode selected or run the image specified if in process mode
     if p.mode == "host":
@@ -696,9 +807,9 @@ def main():
             with open(p.input, "r") as f:
                 for line in f:
                     cog_id = line.strip()
-                    process_image(cog_id)
+                    process_image(cog_id, request_publisher)
         else:
-            process_image(p.cog_id)
+            process_image(p.cog_id, request_publisher)
 
 
 if __name__ == "__main__":
