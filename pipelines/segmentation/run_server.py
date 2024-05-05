@@ -84,6 +84,7 @@ if __name__ == "__main__":
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     logger = logging.getLogger("segmenter app")
+
     logger.info("*** Starting Legend and Map Segmenter App ***")
 
     # parse command line args
@@ -127,3 +128,4 @@ if __name__ == "__main__":
             host=p.rabbit_host,
         )
         queue.start_request_queue()
+        queue.start_result_queue()
