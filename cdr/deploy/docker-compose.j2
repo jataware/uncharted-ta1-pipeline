@@ -1,4 +1,3 @@
-version: '3'
 services:
   rabbitmq:
     image: rabbitmq:3-management
@@ -32,9 +31,9 @@ services:
       - lara
     restart: on-failure
 
-  geo_referencing:
+  georef:
     image: uncharted/lara-georef:{{ tag }}
-    command: ["--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
+    command: ["--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", {{ segmentation_model_weights }}, "--result_queue", "lara_result_queue"]
     environment:
       - OPENAI_API_KEY={{ openai_api_key }}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
@@ -49,10 +48,10 @@ services:
       - lara
     restart: on-failure
 
-  point_extraction:
+  points:
     image: uncharted/lara-point-extract:{{ tag }}
     command: [
-      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq","--model_point_extractor", "pipelines/point_extraction_weights/lara_yolo_20240406_best.pt", "--model_segmenter", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
+      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq","--model_point_extractor", {{ point_model_weights }}, "--model_segmenter", {{ segmentation_model_weights }}, "--result_queue", "lara_result_queue"]
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
@@ -69,7 +68,7 @@ services:
   segmentation:
     image: uncharted/lara-segmentation:{{ tag }}
     command: [
-      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights/layoutlmv3_xsection_20231201", "--result_queue", "lara_result_queue"]
+      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", {{ segmentation_model_weights }}, "--result_queue", "lara_result_queue"]
     volumes:
       - {{ segmentation_workdir }}:/workdir
       - {{ image_dir }}:/imagedir
@@ -80,6 +79,22 @@ services:
       - lara
     restart:  on-failure
 
+  metadata:
+    image: uncharted/lara-metadata-extract:{{ tag }}
+    command: [
+      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", {{ segmentation_model_weights }}, "--result_queue", "lara_result_queue"]
+    environment:
+      - OPENAI_API_KEY={{ openai_api_key }}
+      - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
+    volumes:
+      - {{ metadata_workdir }}:/workdir
+      - {{ image_dir }}:/imagedir
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - lara
+    restart:  on-failure
 
 networks:
   lara:
