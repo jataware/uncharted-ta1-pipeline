@@ -87,6 +87,7 @@ services:
       - OPENAI_API_KEY={{ openai_api_key }}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
+      - {{ google_application_credentials }}:/credentials.json
       - {{ metadata_workdir }}:/workdir
       - {{ image_dir }}:/imagedir
     depends_on:

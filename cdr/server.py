@@ -375,14 +375,14 @@ def process_image(image_id: str, request_publisher: LaraRequestPublisher):
     # build the request
     lara_reqs: Dict[str, Request] = {}
     lara_reqs[GEO_REFERENCE_REQUEST_QUEUE] = Request(
-        id="mock",
+        id="mock-georeference",
         task="georeference",
         image_id=image_id,
         image_url=image_url,
         output_format="cdr",
     )
     lara_reqs[POINTS_REQUEST_QUEUE] = Request(
-        id="mock-pts",
+        id="mock-points",
         task="points",
         image_id=image_id,
         image_url=image_url,
@@ -396,7 +396,7 @@ def process_image(image_id: str, request_publisher: LaraRequestPublisher):
         output_format="cdr",
     )
     lara_reqs[METADATA_REQUEST_QUEUE] = Request(
-        id="mock-segments",
+        id="mock-metadata",
         task="metadata",
         image_id=image_id,
         image_url=image_url,
