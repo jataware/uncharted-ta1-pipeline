@@ -34,6 +34,7 @@ from rasterio.warp import Resampling, calculate_default_transform, reproject
 from tasks.common.io import ImageFileInputIterator, download_file
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
+    METADATA_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,
     SEGMENTATION_REQUEST_QUEUE,
     OutputType,
@@ -337,7 +338,13 @@ def process_cdr_event():
                     image_url=map_event.cog_url,
                     output_format="cdr",
                 )
-
+                lara_reqs[METADATA_REQUEST_QUEUE] = Request(
+                    id=evt["id"],
+                    task="metadata",
+                    image_id=map_event.cog_id,
+                    image_url=map_event.cog_url,
+                    output_format="cdr",
+                )
             case _:
                 logger.info(f"received unsupported {evt['event']} event")
 
@@ -384,6 +391,13 @@ def process_image(image_id: str, request_publisher: LaraRequestPublisher):
     lara_reqs[SEGMENTATION_REQUEST_QUEUE] = Request(
         id="mock-segments",
         task="segments",
+        image_id=image_id,
+        image_url=image_url,
+        output_format="cdr",
+    )
+    lara_reqs[METADATA_REQUEST_QUEUE] = Request(
+        id="mock-segments",
+        task="metadata",
         image_id=image_id,
         image_url=image_url,
         output_format="cdr",
@@ -792,7 +806,12 @@ def main():
     # CDR event endpoint
     global request_publisher
     request_publisher = LaraRequestPublisher(
-        [SEGMENTATION_REQUEST_QUEUE, POINTS_REQUEST_QUEUE, GEO_REFERENCE_REQUEST_QUEUE],
+        [
+            SEGMENTATION_REQUEST_QUEUE,
+            POINTS_REQUEST_QUEUE,
+            GEO_REFERENCE_REQUEST_QUEUE,
+            METADATA_REQUEST_QUEUE,
+        ],
         host=settings.rabbitmq_host,
     )
     request_publisher.start_lara_request_queue()
