@@ -261,8 +261,8 @@ class PointsMapper(CDRMapper):
         return FeatureResults(
             cog_id=model.raster_id,
             point_feature_results=point_features,
-            system=MODEL_NAME,
-            system_version=MODEL_VERSION,
+            system=self._system_name,
+            system_version=self._system_version,
         )
 
     def map_from_cdr(self, model: FeatureResults) -> LARAPoints:
