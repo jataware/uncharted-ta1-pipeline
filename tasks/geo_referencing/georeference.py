@@ -42,10 +42,10 @@ class QueryPoint:
         self.lonlat_gtruth = lonlat_gtruth
         self.properties = properties
 
-        self.error_km = None
-        self.error_scale = None
-        self.dist_xp_km = None
-        self.dist_yp_km = None
+        self.error_km: Optional[float] = None
+        self.error_scale: Optional[float] = None
+        self.dist_xp_km: Optional[float] = None
+        self.dist_yp_km: Optional[float] = None
 
         self.confidence = confidence
 
@@ -399,7 +399,7 @@ class GeoReference(Task):
                     latlon[1] - latlon_gtruth[1],
                     latlon[0] - latlon_gtruth[0],
                 )
-                if scale_value > 0:
+                if scale_value > 0 and qp.error_km is not None:
                     # calculate the error based on heuristic of scale / 1000 (in meters)
                     qp.error_scale = (qp.error_km * 1000.0) / (
                         float(scale_value) / 1000.0

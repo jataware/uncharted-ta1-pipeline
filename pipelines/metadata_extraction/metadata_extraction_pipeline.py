@@ -24,7 +24,6 @@ from tasks.common.pipeline import (
     ImageOutput,
 )
 
-from schema.cdr_schemas.metadata import MapMetaData, CogMetaData
 from schema.mappers.cdr import MetadataMapper
 
 import importlib.metadata

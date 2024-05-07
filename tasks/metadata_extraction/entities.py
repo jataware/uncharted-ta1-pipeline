@@ -1,3 +1,4 @@
+from enum import Enum
 from tasks.text_extraction.entities import TextExtraction
 
 from typing import List, Tuple
@@ -6,6 +7,19 @@ from pydantic import BaseModel, ConfigDict
 
 METADATA_EXTRACTION_OUTPUT_KEY = "metadata_extraction_output"
 GEOCODED_PLACES_OUTPUT_KEY = "geocoded_places_output"
+
+
+class MapShape(str, Enum):
+    RECTANGULAR = "rectangular"
+    IRREGULAR = "irregular"
+    UNKNOWN = "unknown"
+
+
+class MapChromaType(str, Enum):
+    MONO_CHROMA = "mono chroma"
+    LOW_CHROMA = "low chroma"
+    HIGH_CHROMA = "high chroma"
+    UNKNOWN = "unknown"
 
 
 class MetadataExtraction(BaseModel):
@@ -29,6 +43,9 @@ class MetadataExtraction(BaseModel):
     places: List[
         TextExtraction
     ]  # a list of places, each place having a name and coordinates
+    publisher: str
+    map_shape: MapShape
+    map_chroma: MapChromaType
 
 
 class GeocodedCoordinate(BaseModel):
