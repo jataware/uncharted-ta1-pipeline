@@ -1,6 +1,6 @@
 from tasks.text_extraction.entities import Point
 
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from pydantic import BaseModel, ConfigDict
 
 
@@ -52,7 +52,7 @@ class Coordinate:
         parsed_degree: float,
         is_lat: bool = False,
         bounds: List[Point] = [],
-        pixel_alignment=None,
+        pixel_alignment: Optional[Tuple[float, float]] = None,
         x_ranges: Tuple[float, float] = (0, 1),
         font_height: float = 0.0,
         confidence: float = 0,

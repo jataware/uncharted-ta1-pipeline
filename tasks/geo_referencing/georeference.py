@@ -6,6 +6,7 @@ from geopy.distance import geodesic
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.entities import Coordinate, DocGeoFence, GEOFENCE_OUTPUT_KEY
 from tasks.geo_referencing.geo_projection import GeoProjection
+from tasks.geo_referencing.util import get_input_geofence
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
@@ -13,6 +14,8 @@ from tasks.metadata_extraction.entities import (
 from tasks.metadata_extraction.scale import SCALE_VALUE_OUTPUT_KEY
 
 from typing import Any, Dict, List, Optional, Tuple
+
+FALLBACK_RANGE_ADJUSTMENT_FACTOR = 0.05  # used to calculate how far from the edge of the fallback range to anchor points
 
 logger = logging.getLogger("geo_referencing")
 
@@ -50,6 +53,15 @@ class QueryPoint:
         self.confidence = confidence
 
 
+class PixelMapping:
+    pixel_coord: float
+    geo_coord: float
+
+    def __init__(self, pixel_coord, geo_coord):
+        self.pixel_coord = pixel_coord
+        self.geo_coord = geo_coord
+
+
 class GeoReference(Task):
     _poly_order = 1
 
@@ -67,7 +79,20 @@ class GeoReference(Task):
         lat_pts = input.get_data("lats")
         scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
-        clue_point = input.get_request_info("clue_point")
+
+        geofence: DocGeoFence = input.parse_data(
+            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
+        )
+        roi_xy = input.get_data("roi")
+        roi_xy_minmax: Tuple[List[float], List[float]] = ([], [])
+        if roi_xy is not None:
+            roi_xy_minmax = (
+                [min(map(lambda x: x[0], roi_xy)), max(map(lambda x: x[0], roi_xy))],
+                [min(map(lambda x: x[1], roi_xy)), max(map(lambda x: x[1], roi_xy))],
+            )
+        else:
+            # since no roi, use whole image as minmax values
+            roi_xy_minmax = ([0, input.image.size[1]], [0, input.image.size[0]])
 
         if not scale_value:
             scale_value = 0
@@ -80,11 +105,74 @@ class GeoReference(Task):
             logger.info("reading query points from task input")
             query_pts = input.get_data("query_pts")
 
+        # if no clue point provided, build projections with fallbacks
+        clue_point = input.get_request_info("clue_point")
+        if clue_point is None:
+            lon_check = list(map(lambda x: x[0], lon_pts))
+            lat_check = list(map(lambda x: x[0], lat_pts))
+            num_keypoints = min(len(lon_pts), len(lat_pts))
+            # use the geofence if it has 2 values
+            lon_minmax_geofence = lon_minmax
+            lat_minmax_geofence = lat_minmax
+            if (
+                geofence is not None
+                and len(geofence.geofence.lat_minmax) == 2
+                and len(geofence.geofence.lon_minmax) == 2
+            ):
+                lon_minmax_geofence, lat_minmax_geofence = self._get_fallback_geofence(
+                    input
+                )
+                logger.info(f"adjusting lat geofence to {lat_minmax_geofence}")
+                logger.info(f"adjusting lon geofence to {lon_minmax_geofence}")
+
+            logger.info(f"{num_keypoints} key points available for project")
+            if len(lat_check) < 2 or (abs(max(lat_check) - min(lat_check)) > 40):
+                anchors = self._build_fallback(roi_xy_minmax[1], lat_minmax_geofence)
+                print(f"LAT ANCHORS: {anchors}")
+
+                # create the anchor coordinates using the x mid range for the pixel coordinate
+                lat_pts.clear()
+                for a in anchors:
+                    coord = Coordinate(
+                        "lat keypoint",
+                        f"fallback {a.geo_coord}",
+                        a.geo_coord,
+                        True,
+                        pixel_alignment=(
+                            (roi_xy_minmax[0][0] + roi_xy_minmax[0][1]) / 2,
+                            a.pixel_coord,
+                        ),
+                        confidence=0.0,
+                    )
+                    _, y_pixel = coord.get_pixel_alignment()
+                    lat_pts[(a.geo_coord, y_pixel)] = coord
+            print(f"FALLBACK LAT ANCHORS: {lat_pts}")
+            if len(lon_check) < 2 or (abs(max(lon_check) - min(lon_check)) > 40):
+                anchors = self._build_fallback(roi_xy_minmax[0], lon_minmax_geofence)
+                print(f"LON ANCHORS: {anchors}")
+
+                # create the anchor coordinates using the y mid range for the pixel coordinate
+                lon_pts.clear()
+                for a in anchors:
+                    coord = Coordinate(
+                        "lon keypoint",
+                        f"fallback {a.geo_coord}",
+                        a.geo_coord,
+                        True,
+                        pixel_alignment=(
+                            a.pixel_coord,
+                            (roi_xy_minmax[1][0] + roi_xy_minmax[1][1]) / 2,
+                        ),
+                        confidence=0.0,
+                    )
+                    x_pixel, _ = coord.get_pixel_alignment()
+                    lon_pts[(a.geo_coord, x_pixel)] = coord
+            print(f"FALLBACK LON ANCHORS: {lon_pts}")
+
+        confidence = 0
         lon_check = list(map(lambda x: x[0], lon_pts))
         lat_check = list(map(lambda x: x[0], lat_pts))
         num_keypoints = min(len(lon_pts), len(lat_pts))
-        logger.info(f"{num_keypoints} key points available for project")
-        confidence = 0
         if (
             num_keypoints < 2
             or (abs(max(lon_check) - min(lon_check)) > 40)
@@ -211,6 +299,27 @@ class GeoReference(Task):
 
         return results
 
+    def _max_range(self, minmax: List[float], max_range) -> List[float]:
+        if minmax[1] - minmax[0] <= max_range:
+            return minmax
+
+        mid_point = (minmax[1] + minmax[0]) / 2
+        adjustment = max_range / 2
+
+        return [mid_point - adjustment, mid_point + adjustment]
+
+    def _get_fallback_geofence(
+        self, input: TaskInput
+    ) -> Tuple[List[float], List[float]]:
+        lon_minmax, lat_minmax, _ = get_input_geofence(input)
+
+        # adjust based on maximum range derived from scale
+        # TODO: use scale to derive maximum range
+        max_range = 0.5
+        return self._max_range(lon_minmax, max_range), self._max_range(
+            lat_minmax, max_range
+        )
+
     def _clip_query_pts(
         self,
         query_pts: List[QueryPoint],
@@ -335,6 +444,40 @@ class GeoReference(Task):
 
         # return the datum and the projection
         return datum, metadata.projection
+
+    def _build_fallback(
+        self,
+        coord_minmax: List[float],
+        geo_minmax: List[float],
+    ) -> List[PixelMapping]:
+        logger.info(
+            f"building fallback anchors mapping {coord_minmax} and {geo_minmax}"
+        )
+        # calculate the adjustment amount to shift the anchors inside the range
+        pixel_adjustment = (
+            coord_minmax[1] - coord_minmax[0]
+        ) * FALLBACK_RANGE_ADJUSTMENT_FACTOR
+        geo_adjustment = (
+            geo_minmax[1] - geo_minmax[0]
+        ) * FALLBACK_RANGE_ADJUSTMENT_FACTOR
+
+        # assume the pixel range matches the geo range, anchor the match near the end of the range
+        coord_anchors = [
+            coord_minmax[0] + pixel_adjustment,
+            coord_minmax[1] - pixel_adjustment,
+        ]
+        geo_anchors = [geo_minmax[0] + geo_adjustment, geo_minmax[1] - geo_adjustment]
+
+        # build the mapping for min, mid, max
+        print(f"coord anchors: {coord_anchors}\t\tgeo anchors: {geo_anchors}")
+        return [
+            PixelMapping(pixel_coord=coord_anchors[0], geo_coord=geo_anchors[0]),
+            PixelMapping(
+                pixel_coord=(coord_anchors[0] + coord_anchors[1]) / 2,
+                geo_coord=(geo_anchors[0] + geo_anchors[1]) / 2,
+            ),
+            PixelMapping(pixel_coord=coord_anchors[1], geo_coord=geo_anchors[1]),
+        ]
 
     def _add_fallback(
         self,
