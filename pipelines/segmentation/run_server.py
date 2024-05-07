@@ -99,10 +99,13 @@ if __name__ == "__main__":
     parser.add_argument("--rabbit_host", type=str, default="localhost")
     parser.add_argument("--request_queue", type=str, default=SEGMENTATION_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=SEGMENTATION_RESULT_QUEUE)
+    parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
     # init segmenter
-    segmentation_pipeline = SegmentationPipeline(p.model, p.workdir, p.min_confidence)
+    segmentation_pipeline = SegmentationPipeline(
+        p.model, p.workdir, p.min_confidence, gpu=not p.no_gpu
+    )
 
     # get ta1 schema output or internal output format
     result_key = (

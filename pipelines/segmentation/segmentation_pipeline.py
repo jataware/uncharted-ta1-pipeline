@@ -31,6 +31,7 @@ class SegmentationPipeline(Pipeline):
         model_data_path: str,
         model_data_cache_path: str = "",
         confidence_thres=0.25,
+        gpu=True,
     ):
         """
         Initializes the pipeline.
@@ -47,6 +48,7 @@ class SegmentationPipeline(Pipeline):
                 model_data_path,
                 model_data_cache_path,
                 confidence_thres=confidence_thres,
+                gpu=gpu,
             )
         ]
 

@@ -19,13 +19,7 @@ import threading
 from flask import Flask, request, Response
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import BlockingConnection, spec
-from pika.exceptions import (
-    ChannelClosed,
-    ChannelWrongStateError,
-    ConnectionClosed,
-    StreamLostError,
-    IncompatibleProtocolError,
-)
+from pika.exceptions import AMQPChannelError, AMQPConnectionError
 from PIL import Image
 from pyproj import Transformer
 from rasterio.transform import Affine
@@ -179,13 +173,7 @@ class LaraRequestPublisher:
                     self._request_connection.process_data_events(time_limit=1)
                 else:
                     logger.error("request connection not initialized")
-            except (
-                ConnectionClosed,
-                ChannelClosed,
-                ChannelWrongStateError,
-                StreamLostError,
-                IncompatibleProtocolError,
-            ):
+            except (AMQPChannelError, AMQPConnectionError):
                 logger.warn("request connection closed, reconnecting")
                 if (
                     self._request_connection is not None
@@ -640,22 +628,21 @@ def _run_lara_result_queue(result_queue: str, host="localhost"):
             )
             # setup the result queue
             result_channel = create_channel(host, result_queue)
-
-            # start consuming the results
             result_channel.basic_qos(prefetch_count=1)
-            result_channel.basic_consume(
-                queue=result_queue,
-                on_message_callback=process_lara_result,
-                auto_ack=True,
-            )
-            result_channel.start_consuming()
-        except (
-            ChannelClosed,
-            ConnectionClosed,
-            ChannelWrongStateError,
-            StreamLostError,
-            IncompatibleProtocolError,
-        ):
+
+            # start consuming the results - will timeout after 5 seconds of inactivity
+            # allowing things like heartbeats to be processed
+            while True:
+                for method_frame, properties, body in result_channel.consume(
+                    result_queue,
+                    inactivity_timeout=5,
+                    auto_ack=True,
+                ):
+                    if method_frame:
+                        process_lara_result(
+                            result_channel, method_frame, properties, body
+                        )
+        except (AMQPConnectionError, AMQPChannelError):
             logger.warning(f"result channel closed, reconnecting")
             # channel is closed - make sure the connection is closed to facilitate a
             # clean reconnect
