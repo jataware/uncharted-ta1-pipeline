@@ -1,11 +1,21 @@
+from concurrent.futures import thread
 from enum import Enum
 import json
 import logging
 import os
 from pathlib import Path
+from threading import Thread
+from time import sleep
 
+from cv2 import log
 import pika
-from pika.exceptions import ChannelClosed, ChannelWrongStateError, ConnectionClosed
+from pika.exceptions import (
+    ChannelClosed,
+    ChannelWrongStateError,
+    ConnectionClosed,
+    StreamLostError,
+    IncompatibleProtocolError,
+)
 
 from PIL.Image import Image as PILImage
 
@@ -16,9 +26,9 @@ from tasks.common.pipeline import (
 )
 from tasks.common.io import ImageFileInputIterator, download_file
 from pika.adapters.blocking_connection import BlockingChannel as Channel
-from pika import spec
+from pika import BlockingConnection, spec
 from pydantic import BaseModel
-from typing import Tuple
+from typing import Optional, Tuple
 
 logger = logging.getLogger("process_queue")
 
@@ -114,51 +124,36 @@ class RequestQueue:
         self._blocked_connection_timeout = blocked_connection_timeout
         self._working_dir = workdir
         self._imagedir = imagedir
+        self._result_connection: Optional[BlockingConnection] = None
 
-        self.setup_queues()
-
-    def setup_queues(self) -> None:
-        """
-        Setup the input and output queues.
-        """
-
-        logger.info("wiring up request queue to input and output queues")
-
-        # setup input and output queue
-        self._connect_to_request()
-        self._connect_to_result()
-
-    def start_request_queue(self):
-        """Start the request queue."""
-        logger.info("starting request queue")
+    def _run_request_queue(self):
         while True:
             try:
+                self._connect_to_request()
+                logger.info(f"servicing request queue {self._request_queue}")
                 self._input_channel.start_consuming()
-            except (ChannelClosed, ConnectionClosed, ChannelWrongStateError):
-                logger.warn(f"request channel closed")
+            except (
+                ChannelClosed,
+                ConnectionClosed,
+                ChannelWrongStateError,
+                StreamLostError,
+                IncompatibleProtocolError,
+            ):
+                logger.warn("request connection closed, reconnecting")
                 if self._input_channel and not self._input_channel.connection.is_closed:
                     logger.info("closing request connection")
                     self._input_channel.connection.close()
-                self._connect_to_request()
+                sleep(5)
 
-    def _connect_to_result(self):
-        """
-        Setup the connection, channel and queue to service outgoing results.
-        """
-        self._result_connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                self._host,
-                heartbeat=self._heartbeat,
-                blocked_connection_timeout=self._blocked_connection_timeout,
-            )
-        )
-        self._output_channel = self._result_connection.channel()
-        self._output_channel.queue_declare(queue=self._result_queue)
+    def start_request_queue(self):
+        """Start the request queue."""
+        Thread(target=self._run_request_queue).start()
 
     def _connect_to_request(self):
         """
         Setup the connection, channel and queue to service incoming requests.
         """
+        logger.info("connecting to request queue")
         self._request_connection = pika.BlockingConnection(
             pika.ConnectionParameters(
                 self._host,
@@ -175,31 +170,72 @@ class RequestQueue:
             auto_ack=True,
         )
 
+    def _connect_to_result(self):
+        """
+        Setup the connection, channel and queue to service outgoing results.
+        """
+        logger.info("connecting to result queue")
+        self._result_connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                self._host,
+                heartbeat=self._heartbeat,
+                blocked_connection_timeout=self._blocked_connection_timeout,
+            )
+        )
+        self._output_channel = self._result_connection.channel()
+        self._output_channel.queue_declare(queue=self._result_queue)
+
+    def start_result_queue(self):
+        """Start the result publishing thread."""
+        Thread(target=self._run_result_queue).start()
+
+    def _run_result_queue(self):
+        """
+        Main loop to service the result queue. process_data_events is set to block for a maximum
+        of 1 second before returning to ensure that heartbeats etc. are processed.
+        """
+        while True:
+            try:
+                if self._result_connection is None or self._result_connection.is_closed:
+                    logger.info(f"connecting to result queue {self._result_queue}")
+                    self._connect_to_result()
+
+                if self._result_connection is not None:
+                    self._result_connection.process_data_events(time_limit=1)
+                else:
+                    logger.error("result connection not initialized")
+            except (
+                ConnectionClosed,
+                ChannelClosed,
+                ChannelWrongStateError,
+                StreamLostError,
+                IncompatibleProtocolError,
+            ) as e:
+                logger.warn("result connection closed, reconnecting")
+                if (
+                    self._result_connection is not None
+                    and self._result_connection.is_open
+                ):
+                    self._result_connection.close()
+                sleep(5)
+
     def _publish_result(self, result: RequestResult) -> None:
         """
-        Publish the result of a request to the output queue, reconnecting if the connection
-        is no longer open.
+        Publish the result of a request to the output queue.
 
         Args:
-            result: The result of the request.
+            result: The result to publish.
         """
-
-        # Attempt to publish, reconnecting if the connection is closed
-        if self._result_connection.is_closed:
-            logger.warn("result queue connection closed, reconnecting")
-            self._connect_to_result()
-        try:
-            self._output_channel.basic_publish(
-                exchange="",
-                routing_key=self._result_queue,
-                body=json.dumps(result.model_dump()),
+        if self._result_connection is not None:
+            self._result_connection.add_callback_threadsafe(
+                lambda: self._output_channel.basic_publish(
+                    exchange="",
+                    routing_key=self._result_queue,
+                    body=json.dumps(result.model_dump()),
+                )
             )
-        except ConnectionClosed:
-            logger.warn("connection closed, reconnecting")
-            self._connect_to_result()
-        except ChannelWrongStateError:
-            logger.warn("channel wrong state, reconnecting")
-            self._connect_to_result()
+        else:
+            logger.error("result connection not initialized")
 
     def _process_queue_input(
         self,
