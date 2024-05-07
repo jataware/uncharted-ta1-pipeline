@@ -9,13 +9,7 @@ from time import sleep
 
 from cv2 import log
 import pika
-from pika.exceptions import (
-    ChannelClosed,
-    ChannelWrongStateError,
-    ConnectionClosed,
-    StreamLostError,
-    IncompatibleProtocolError,
-)
+from pika.exceptions import AMQPConnectionError, AMQPChannelError
 
 from PIL.Image import Image as PILImage
 
@@ -132,13 +126,7 @@ class RequestQueue:
                 self._connect_to_request()
                 logger.info(f"servicing request queue {self._request_queue}")
                 self._input_channel.start_consuming()
-            except (
-                ChannelClosed,
-                ConnectionClosed,
-                ChannelWrongStateError,
-                StreamLostError,
-                IncompatibleProtocolError,
-            ):
+            except (AMQPChannelError, AMQPConnectionError):
                 logger.warn("request connection closed, reconnecting")
                 if self._input_channel and not self._input_channel.connection.is_closed:
                     logger.info("closing request connection")
@@ -204,13 +192,7 @@ class RequestQueue:
                     self._result_connection.process_data_events(time_limit=1)
                 else:
                     logger.error("result connection not initialized")
-            except (
-                ConnectionClosed,
-                ChannelClosed,
-                ChannelWrongStateError,
-                StreamLostError,
-                IncompatibleProtocolError,
-            ) as e:
+            except (AMQPChannelError, AMQPConnectionError):
                 logger.warn("result connection closed, reconnecting")
                 if (
                     self._result_connection is not None

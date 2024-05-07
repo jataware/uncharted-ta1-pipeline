@@ -19,13 +19,7 @@ import threading
 from flask import Flask, request, Response
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import BlockingConnection, spec
-from pika.exceptions import (
-    ChannelClosed,
-    ChannelWrongStateError,
-    ConnectionClosed,
-    StreamLostError,
-    IncompatibleProtocolError,
-)
+from pika.exceptions import AMQPChannelError, AMQPConnectionError
 from PIL import Image
 from pyproj import Transformer
 from rasterio.transform import Affine
@@ -179,13 +173,7 @@ class LaraRequestPublisher:
                     self._request_connection.process_data_events(time_limit=1)
                 else:
                     logger.error("request connection not initialized")
-            except (
-                ConnectionClosed,
-                ChannelClosed,
-                ChannelWrongStateError,
-                StreamLostError,
-                IncompatibleProtocolError,
-            ):
+            except (AMQPChannelError, AMQPConnectionError):
                 logger.warn("request connection closed, reconnecting")
                 if (
                     self._request_connection is not None
