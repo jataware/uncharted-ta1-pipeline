@@ -16,7 +16,11 @@ from tasks.text_extraction.entities import (
 )
 from tasks.geo_referencing.entities import Coordinate, DocGeoFence, GEOFENCE_OUTPUT_KEY
 from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
-from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
+from tasks.geo_referencing.util import (
+    ocr_to_coordinates,
+    get_bounds_bounding_box,
+    get_input_geofence,
+)
 from util.coordinate import absolute_minmax
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -112,23 +116,7 @@ class CoordinatesExtractor(Task):
     def _get_input_geofence(
         self, input: CoordinateInput
     ) -> Tuple[List[float], List[float], bool]:
-        geofence: DocGeoFence = input.input.parse_data(
-            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
-        )
-
-        if geofence is None:
-            return (
-                input.input.get_request_info("lon_minmax", [0, 180]),
-                input.input.get_request_info("lat_minmax", [0, 180]),
-                True,
-            )
-
-        # when parsing, only the absolute range matters as coordinates may or may not have the negative sign
-        return (
-            absolute_minmax(geofence.geofence.lon_minmax),
-            absolute_minmax(geofence.geofence.lat_minmax),
-            geofence.geofence.defaulted,
-        )
+        return get_input_geofence(input.input)
 
     def _create_coordinate_result(
         self,
