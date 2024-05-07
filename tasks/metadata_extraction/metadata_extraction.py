@@ -7,9 +7,11 @@ from openai import OpenAI
 import tiktoken
 from tasks.common.task import TaskInput, TaskResult
 from tasks.metadata_extraction.entities import (
+    MapShape,
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
+from tasks.segmentation.entities import SEGMENTATION_OUTPUT_KEY, MapSegmentation
 from tasks.text_extraction.entities import (
     DocTextExtraction,
     TextExtraction,
@@ -25,7 +27,7 @@ PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
 
 class LLM(str, Enum):
     GPT_3_5_TURBO = "gpt-3.5-turbo"
-    GPT_4_TURBO = "gpt-4-turbo-preview"
+    GPT_4_TURBO = "gpt-4-turbo"
     GPT_4 = "gpt-4"
 
     def __str__(self):
@@ -72,6 +74,7 @@ class MetadataExtractor(Task):
             "counties": ["<county>", "<county>", "<county>"],
             "states": ["<state>", "<state>", "<state>"],
             "country": "<country>",
+            "publisher": "<publisher>",
         },
         indent=4,
     )
@@ -93,6 +96,9 @@ class MetadataExtractor(Task):
         ],
         indent=4,
     )
+
+    # threshold for determining map shape - anything above is considered rectangular
+    RECTANGULARITY_THRESHOLD = 0.9
 
     def __init__(
         self,
@@ -142,6 +148,10 @@ class MetadataExtractor(Task):
             metadata.population_centres = self._process_map_area_extractions(
                 doc_text, prompt_str_areas, True
             )
+
+            segments = input.data[SEGMENTATION_OUTPUT_KEY]
+            metadata.map_shape = self._compute_shape(segments)
+
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
@@ -166,6 +176,11 @@ class MetadataExtractor(Task):
 
             # normalize quadrangle
             metadata.quadrangles = self._normalize_quadrangle(metadata.quadrangles)
+
+            # compute map shape from the segmentation output
+            segments = input.data[SEGMENTATION_OUTPUT_KEY]
+            metadata.map_shape = self._compute_shape(segments)
+
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
@@ -243,6 +258,7 @@ class MetadataExtractor(Task):
                     content_dict = {"map_id": doc_text_extraction.doc_id}
                 content_dict["places"] = []
                 content_dict["population_centres"] = []
+                content_dict["map_shape"] = MapShape.UNKNOWN
                 extraction = MetadataExtraction(**content_dict)
                 return extraction
 
@@ -359,7 +375,7 @@ class MetadataExtractor(Task):
             + text_str
             + "\n\n"
             + " Find the following:\n"
-            + " - map title\n"
+            + " - map title. \n"
             + " - scale\n"
             + " - projection\n"
             + " - geoditic datum\n"
@@ -372,6 +388,7 @@ class MetadataExtractor(Task):
             + " - counties\n"
             + " - states/provinces\n"
             + " - country\n"
+            + " - map publisher\n"
             + " Examples of vertical datums: mean sea level, vertical datum of 1901\n"
             + " Examples of datums: North American Datum of 1927, NAD83, WGS 84\n"
             + " Examples of projections: Polyconic, Lambert, Transverse Mercator\n"
@@ -383,12 +400,16 @@ class MetadataExtractor(Task):
             + self.EXAMPLE_JSON
             + "\n"
             + 'If any string value is not present the field should be set to "NULL"\n'
+            + "If the map title includes state names, county names or quadrangle still include them in full title"
             + "All author names should be in the format: <last name, first iniital, middle initial>.  Example of author name: Bailey, D. K.\n"
+            + "The year should be the most recent value and should be a single 4 digit number.\n"
+            + "A single author is allowed.  Authors, title and year are normally grouped together on the map.\n"
             + "References, citations and geology attribution should be ignored when extracting authors.\n"
             + "A single author is allowed.\n"
             + "Authors, title and year are normally grouped together.\n"
-            + "The year should be the most recent value and should be a single 4 digit number.\n"
             + "The term grid ticks should not be included in coordinate system output.\n"
+            + "Quadrangles can normally be ound in the map title, or in the base map description.\n"
+            + "States includes principal subvidisions of any country and should be formatted according to the ISO 3166-2 standard.\n"
         )
 
     def _to_point_prompt_str(self, text_str: str) -> str:
@@ -461,6 +482,23 @@ class MetadataExtractor(Task):
             for quad_str in quadrangles_str
         ]
 
+    def _compute_shape(self, segments):
+        """Computes the shape of the map from the segmentation output using a rectangularity metric"""
+        if segments:
+            map_segmentation = MapSegmentation.model_validate(segments)
+            for segment in map_segmentation.segments:
+                if segment.class_label == "map":
+                    box_area = (segment.bbox[2] - segment.bbox[0]) * (
+                        segment.bbox[3] - segment.bbox[1]
+                    )
+                    rectangularity = segment.area / box_area
+                    if rectangularity > self.RECTANGULARITY_THRESHOLD:
+                        map_shape = MapShape.RECTANGULAR
+                    else:
+                        map_shape = MapShape.IRREGULAR
+                    break
+        return map_shape
+
     @staticmethod
     def _create_empty_extraction(doc_id: str) -> MetadataExtraction:
         """Creates an empty metadata extraction object"""
@@ -481,4 +519,6 @@ class MetadataExtractor(Task):
             population_centres=[],
             country="",
             places=[],
+            publisher="",
+            map_shape=MapShape.UNKNOWN,
         )
