@@ -125,7 +125,20 @@ class RequestQueue:
             try:
                 self._connect_to_request()
                 logger.info(f"servicing request queue {self._request_queue}")
-                self._input_channel.start_consuming()
+
+                # consume messages from the request queue, blocking for a maximum number of
+                # seconds before returning to process heartbeats etc.
+                while True:
+                    for method_frame, properties, body in self._input_channel.consume(
+                        self._request_queue,
+                        inactivity_timeout=5,
+                        auto_ack=True,
+                    ):
+                        if method_frame:
+                            self._process_queue_input(
+                                self._input_channel, method_frame, properties, body
+                            )
+
             except (AMQPChannelError, AMQPConnectionError):
                 logger.warn("request connection closed, reconnecting")
                 if self._input_channel and not self._input_channel.connection.is_closed:
@@ -152,11 +165,6 @@ class RequestQueue:
         self._input_channel = self._request_connection.channel()
         self._input_channel.queue_declare(queue=self._request_queue)
         self._input_channel.basic_qos(prefetch_count=1)
-        self._input_channel.basic_consume(
-            queue=self._request_queue,
-            on_message_callback=self._process_queue_input,
-            auto_ack=True,
-        )
 
     def _connect_to_result(self):
         """
