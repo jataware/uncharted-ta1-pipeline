@@ -9,7 +9,13 @@ from schema.cdr_schemas.georeference import (
     ProjectionResult,
 )
 from schema.cdr_schemas.area_extraction import Area_Extraction, AreaType
-from schema.cdr_schemas.metadata import MapMetaData, CogMetaData
+from schema.cdr_schemas.map import Map
+from schema.cdr_schemas.metadata import (
+    MapColorSchemeTypes,
+    MapMetaData,
+    CogMetaData,
+    MapShapeTypes,
+)
 from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.features.point_features import (
     PointFeatureCollection,
@@ -20,7 +26,11 @@ from schema.cdr_schemas.features.point_features import (
 )
 
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoferenceResult
-from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
+from tasks.metadata_extraction.entities import (
+    MapChromaType,
+    MapShape,
+    MetadataExtraction as LARAMetadata,
+)
 from tasks.point_extraction.entities import MapImage as LARAPoints
 from tasks.point_extraction.label_map import YOLO_TO_CDR_LABEL
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
@@ -91,13 +101,53 @@ class GeoreferenceMapper(CDRMapper):
 
 
 class MetadataMapper(CDRMapper):
+    """
+    Mapper class for converting between LARAMetadata and CogMetaData objects.
+    """
 
     def map_to_cdr(self, model: LARAMetadata) -> CogMetaData:
+        """
+        Maps the given LARAMetadata object to a CogMetaData object.
+
+        Args:
+            model (LARAMetadata): The LARAMetadata object to be mapped.
+
+        Returns:
+            CogMetaData: The mapped CogMetaData object.
+        """
+
+        # extract the scale from the model
         scale_str = "0"
         if model.scale:
             scale_split = model.scale.split(":")
             if len(scale_split) > 1:
                 scale_str = scale_split[1]
+
+        # map the map shape to the CDR map shape
+        cdr_map_shape = None
+        match model.map_shape:
+            case MapShape.UNKNOWN:
+                cdr_map_shape = None
+            case MapShape.IRREGULAR:
+                cdr_map_shape = MapShapeTypes.non_rectangular
+            case MapShape.RECTANGULAR:
+                cdr_map_shape = MapShapeTypes.rectangular
+
+        # map the chrom to the CDR map color scheme - CDR has different
+        # values (monochrome, full color, grayscale) that I think are probably
+        # not what we want in there.  We'll just map to full color / monochrome
+        # for now
+        cdr_map_color_scheme = None
+        match model.map_chroma:
+            case MapChromaType.UNKNOWN:
+                cdr_map_color_scheme = None
+            case MapChromaType.LOW_CHROMA:
+                cdr_map_color_scheme = MapColorSchemeTypes.full_color
+            case MapChromaType.MONO_CHROMA:
+                cdr_map_color_scheme = MapColorSchemeTypes.monochrome
+            case MapChromaType.HIGH_CHROMA:
+                cdr_map_color_scheme = MapColorSchemeTypes.full_color
+
         return CogMetaData(
             cog_id=model.map_id,
             system=self._system_name,
@@ -110,8 +160,8 @@ class MetadataMapper(CDRMapper):
                     scale=int(scale_str),
                     authors=model.authors,
                     quadrangle_name=",".join(model.quadrangles),
-                    map_shape=None,
-                    map_color_scheme=None,
+                    map_shape=cdr_map_shape,
+                    map_color_scheme=cdr_map_color_scheme,
                     state=",".join(model.states),
                     model=MODEL_NAME,
                     model_version=MODEL_VERSION,
