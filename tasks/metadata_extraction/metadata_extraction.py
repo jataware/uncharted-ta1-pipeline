@@ -4,9 +4,14 @@ import re
 import json
 from enum import Enum
 from openai import OpenAI
+import cv2
+import numpy as np
+from PIL.Image import Image as PILImage
 import tiktoken
+from tasks.common.image_io import pil_to_cv_image
 from tasks.common.task import TaskInput, TaskResult
 from tasks.metadata_extraction.entities import (
+    MapChromaType,
     MapShape,
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
@@ -152,6 +157,8 @@ class MetadataExtractor(Task):
             segments = input.data[SEGMENTATION_OUTPUT_KEY]
             metadata.map_shape = self._compute_shape(segments)
 
+            metadata.map_chroma = self._compute_chroma(input.image)
+
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
@@ -180,6 +187,9 @@ class MetadataExtractor(Task):
             # compute map shape from the segmentation output
             segments = input.data[SEGMENTATION_OUTPUT_KEY]
             metadata.map_shape = self._compute_shape(segments)
+
+            # compute map chroma from the image
+            metadata.map_chroma = self._compute_chroma(input.image)
 
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
@@ -259,6 +269,7 @@ class MetadataExtractor(Task):
                 content_dict["places"] = []
                 content_dict["population_centres"] = []
                 content_dict["map_shape"] = MapShape.UNKNOWN
+                content_dict["map_chroma"] = MapChromaType.UNKNOWN
                 extraction = MetadataExtraction(**content_dict)
                 return extraction
 
@@ -482,8 +493,16 @@ class MetadataExtractor(Task):
             for quad_str in quadrangles_str
         ]
 
-    def _compute_shape(self, segments):
-        """Computes the shape of the map from the segmentation output using a rectangularity metric"""
+    def _compute_shape(self, segments) -> MapShape:
+        """
+        Computes the shape of the map from the segmentation output using a rectangularity metric
+
+        Args:
+            segments: The segmentation output
+
+        Returns:
+            MapShape: The shape of the map
+        """
         if segments:
             map_segmentation = MapSegmentation.model_validate(segments)
             for segment in map_segmentation.segments:
@@ -498,6 +517,48 @@ class MetadataExtractor(Task):
                         map_shape = MapShape.IRREGULAR
                     break
         return map_shape
+
+    def _compute_chroma(
+        self, input_image: PILImage, max_dim=500, mono_thresh=20, low_thresh=60
+    ) -> MapChromaType:
+        """
+        Computes the chroma of the map image using the LAB color space
+        and the centroid of the a and b channels
+
+        Args:
+            input_image (PILImage): The map image
+            max_dim (int): The maximum dimension for resizing the image
+
+        Returns:
+            MapChromaType: The chroma type of the map
+        """
+        if max_dim > 0:
+            # uniformly resize the image so that major axis is max_dim
+            image = pil_to_cv_image(input_image)
+            h, w, _ = image.shape
+            if h > w:
+                image = cv2.resize(image, (max_dim, int(h / w * max_dim)))
+            else:
+                image = cv2.resize(image, (int(w / h * max_dim), max_dim))
+
+        # exract the a and b channels and find the centroid
+        cs_image = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+        cs_image = cs_image[:, :, 1:].flatten().reshape(-1, 2)
+
+        # compute the error between the mean and each pixel
+        mean_vec = np.sum(cs_image, axis=0) / len(cs_image)
+        dist = np.linalg.norm(cs_image - mean_vec, axis=1)
+
+        # square the distance and take the mean
+        error = np.mean(dist**2)
+
+        # classify the chroma based on the error
+        if error < mono_thresh:
+            return MapChromaType.MONO_CHROMA
+        elif error < low_thresh:
+            return MapChromaType.LOW_CHROMA
+        else:
+            return MapChromaType.HIGH_CHROMA
 
     @staticmethod
     def _create_empty_extraction(doc_id: str) -> MetadataExtraction:
@@ -521,4 +582,5 @@ class MetadataExtractor(Task):
             places=[],
             publisher="",
             map_shape=MapShape.UNKNOWN,
+            map_chroma=MapChromaType.UNKNOWN,
         )

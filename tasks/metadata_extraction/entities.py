@@ -15,6 +15,13 @@ class MapShape(str, Enum):
     UNKNOWN = "unknown"
 
 
+class MapChromaType(str, Enum):
+    MONO_CHROMA = "mono chroma"
+    LOW_CHROMA = "low chroma"
+    HIGH_CHROMA = "high chroma"
+    UNKNOWN = "unknown"
+
+
 class MetadataExtraction(BaseModel):
     model_config = ConfigDict(coerce_numbers_to_str=True)
 
@@ -38,6 +45,7 @@ class MetadataExtraction(BaseModel):
     ]  # a list of places, each place having a name and coordinates
     publisher: str
     map_shape: MapShape
+    map_chroma: MapChromaType
 
 
 class GeocodedCoordinate(BaseModel):
