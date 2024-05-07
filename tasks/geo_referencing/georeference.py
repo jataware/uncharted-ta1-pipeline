@@ -128,7 +128,6 @@ class GeoReference(Task):
             logger.info(f"{num_keypoints} key points available for project")
             if len(lat_check) < 2 or (abs(max(lat_check) - min(lat_check)) > 40):
                 anchors = self._build_fallback(roi_xy_minmax[1], lat_minmax_geofence)
-                print(f"LAT ANCHORS: {anchors}")
 
                 # create the anchor coordinates using the x mid range for the pixel coordinate
                 lat_pts.clear()
@@ -146,10 +145,9 @@ class GeoReference(Task):
                     )
                     _, y_pixel = coord.get_pixel_alignment()
                     lat_pts[(a.geo_coord, y_pixel)] = coord
-            print(f"FALLBACK LAT ANCHORS: {lat_pts}")
+
             if len(lon_check) < 2 or (abs(max(lon_check) - min(lon_check)) > 40):
                 anchors = self._build_fallback(roi_xy_minmax[0], lon_minmax_geofence)
-                print(f"LON ANCHORS: {anchors}")
 
                 # create the anchor coordinates using the y mid range for the pixel coordinate
                 lon_pts.clear()
@@ -167,7 +165,6 @@ class GeoReference(Task):
                     )
                     x_pixel, _ = coord.get_pixel_alignment()
                     lon_pts[(a.geo_coord, x_pixel)] = coord
-            print(f"FALLBACK LON ANCHORS: {lon_pts}")
 
         confidence = 0
         lon_check = list(map(lambda x: x[0], lon_pts))
@@ -469,7 +466,6 @@ class GeoReference(Task):
         geo_anchors = [geo_minmax[0] + geo_adjustment, geo_minmax[1] - geo_adjustment]
 
         # build the mapping for min, mid, max
-        print(f"coord anchors: {coord_anchors}\t\tgeo anchors: {geo_anchors}")
         return [
             PixelMapping(pixel_coord=coord_anchors[0], geo_coord=geo_anchors[0]),
             PixelMapping(
