@@ -224,6 +224,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
 
         return True
 
+    def _is_scale(self, text: str) -> bool:
+        text = text.lower()
+        return any(t in text for t in ["scale", ":"])
+
     def _extract_utm(
         self,
         input: CoordinateInput,
@@ -265,24 +269,25 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         ne_matches: List[Tuple[int, Any, Tuple[int, int, int]]] = []
         parsed_directions: List[Tuple[float, bool]] = []
         for block in ocr_text_blocks.extractions:
-            matches_iter = RE_NORTHEAST.finditer(block.text.lower())
-            for m in matches_iter:
-                m_groups = m.groups()
-                if any(x for x in m_groups):
-                    # valid match
-                    m_span = (m.start(), m.end(), len(block.text))
+            if not self._is_scale(block.text):
+                matches_iter = RE_NORTHEAST.finditer(block.text.lower())
+                for m in matches_iter:
+                    m_groups = m.groups()
+                    if any(x for x in m_groups):
+                        # valid match
+                        m_span = (m.start(), m.end(), len(block.text))
 
-                    # if a non-default direction can be derived, store it for future use
-                    utm_dist = RE_NONNUMERIC.sub("", m_groups[0])
-                    utm_dist = float(utm_dist)
-                    if utm_dist > 0:
-                        is_northing = self._is_northing_point(
-                            utm_dist, m_groups[0], m_groups[1], []
-                        )
-                        if not is_northing[1] == NORTHING_DEFAULT:
-                            parsed_directions.append((utm_dist, is_northing[0]))
+                        # if a non-default direction can be derived, store it for future use
+                        utm_dist = RE_NONNUMERIC.sub("", m_groups[0])
+                        utm_dist = float(utm_dist)
+                        if utm_dist > 0:
+                            is_northing = self._is_northing_point(
+                                utm_dist, m_groups[0], m_groups[1], []
+                            )
+                            if not is_northing[1] == NORTHING_DEFAULT:
+                                parsed_directions.append((utm_dist, is_northing[0]))
 
-                    ne_matches.append((idx, m_groups, m_span))
+                        ne_matches.append((idx, m_groups, m_span))
             idx += 1
 
         valid_parsings = self._are_valid_utm_extractions(parsed_directions)
