@@ -123,6 +123,12 @@ class MetadataMapper(CDRMapper):
             if len(scale_split) > 1:
                 scale_str = scale_split[1]
 
+        # attempt to extract the year from the model
+        try:
+            year_int = int(model.year)
+        except ValueError:
+            year_int = None
+
         # map the map shape to the CDR map shape
         cdr_map_shape = None
         match model.map_shape:
@@ -156,7 +162,7 @@ class MetadataMapper(CDRMapper):
             map_metadata=[
                 MapMetaData(
                     title=model.title,
-                    year=int(model.year),
+                    year=year_int,
                     scale=int(scale_str),
                     authors=model.authors,
                     quadrangle_name=",".join(model.quadrangles),
