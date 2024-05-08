@@ -622,6 +622,7 @@ def create_channel(host: str, queue: str) -> Channel:
 
 def _run_lara_result_queue(result_queue: str, host="localhost"):
     while True:
+        result_channel: Optional[Channel] = None
         try:
             logger.info(
                 f"starting the listener on the result queue ({host}:{result_queue})"
