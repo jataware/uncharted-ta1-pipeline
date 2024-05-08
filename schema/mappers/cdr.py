@@ -171,6 +171,7 @@ class MetadataMapper(CDRMapper):
                     state=",".join(model.states),
                     model=MODEL_NAME,
                     model_version=MODEL_VERSION,
+                    publisher=model.publisher,
                 ),
             ],
         )
