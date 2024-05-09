@@ -56,12 +56,14 @@ def create_geo_referencing_pipelines(
     geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
     geocoder_bounds = NominatimGeocoder(10, geocoding_cache_bounds, 1)
     geocoder_points = NominatimGeocoder(10, geocoding_cache_points, 5)
+
+    segmentation_cache = os.path.join(working_dir, "segmentation")
+    text_cache = os.path.join(working_dir, "text")
+
     p = []
 
     tasks = []
-    tasks.append(
-        ResizeTextExtractor("first", Path("temp/text/cache"), False, True, 6000)
-    )
+    tasks.append(ResizeTextExtractor("first", Path(text_cache), False, True, 6000))
     tasks.append(EntropyROIExtractor("entropy roi"))
     if extract_metadata:
         tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
@@ -85,7 +87,7 @@ def create_geo_referencing_pipelines(
     )"""
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(EntropyROIExtractor("entropy roi"))
     if extract_metadata:
         tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
@@ -137,12 +139,12 @@ def create_geo_referencing_pipelines(
     )"""
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(
         DetectronSegmenter(
             "segmenter",
             segmentation_model_path,
-            "temp/segmentation/cache",
+            segmentation_cache,
             confidence_thres=0.25,
         )
     )
@@ -230,12 +232,12 @@ def create_geo_referencing_pipelines(
     )
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(
         DetectronSegmenter(
             "segmenter",
             segmentation_model_path,
-            "temp/segmentation/cache",
+            segmentation_cache,
             confidence_thres=0.25,
         )
     )
@@ -320,12 +322,12 @@ def create_geo_referencing_pipelines(
     )"""
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(
         DetectronSegmenter(
             "segmenter",
             segmentation_model_path,
-            "temp/segmentation/cache",
+            segmentation_cache,
             confidence_thres=0.25,
         )
     )
@@ -419,14 +421,16 @@ def create_geo_referencing_pipeline(
     geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
     geocoder_bounds = NominatimGeocoder(10, geocoding_cache_bounds, 1)
     geocoder_points = NominatimGeocoder(10, geocoding_cache_points, 5)
+    segmentation_cache = os.path.join(working_dir, "segmentation")
+    text_cache = os.path.join(working_dir, "text")
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(
         DetectronSegmenter(
             "segmenter",
             segmentation_model_path,
-            "temp/segmentation/cache",
+            segmentation_cache,
             confidence_thres=0.25,
         )
     )
