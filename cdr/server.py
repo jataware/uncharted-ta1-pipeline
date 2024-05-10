@@ -12,6 +12,7 @@ import coloredlogs
 import ngrok
 import os
 import pika
+from pydantic import BaseModel
 import rasterio as rio
 import rasterio.transform as riot
 import threading
@@ -86,6 +87,7 @@ class Settings:
     cdr_host: str
     workdir: str
     imagedir: str
+    output: str
     system_name: str
     system_version: str
     callback_secret: str
@@ -403,6 +405,33 @@ def process_image(image_id: str, request_publisher: LaraRequestPublisher):
         request_publisher.publish_lara_request(request, queue_name)
 
 
+def write_cdr_result(image_id: str, output_type: OutputType, result: BaseModel):
+    """
+    Write the CDR result to a JSON file.
+
+    Args:
+        image_id (str): The ID of the image.
+        output_type (OutputType): The type of output.
+        result (BaseModel): The result to be written.
+
+    Returns:
+        None
+    """
+    if settings.output:
+        output_file = os.path.join(
+            settings.output,
+            f"{image_id}_{output_type.name.lower()}.json",
+        )
+        os.makedirs(
+            settings.output, exist_ok=True
+        )  # Create the output directory if it doesn't exist
+        with open(output_file, "a") as f:
+            logger.info(f"writing result to {output_file}")
+            f.write(json.dumps(result.model_dump()))
+            f.write("\n")
+        return
+
+
 def push_georeferencing(result: RequestResult):
     # reproject image to file on disk for pushing to CDR
     georef_result_raw = json.loads(result.output)
@@ -448,6 +477,11 @@ def push_georeferencing(result: RequestResult):
 
     assert cdr_result is not None
     try:
+        # write the result to disk if output is set
+        if settings.output:
+            write_cdr_result(result.request.image_id, result.output_type, cdr_result)
+            return
+
         # push the result to CDR
         logger.info(f"pushing result for request {result.request.id} to CDR")
         headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
@@ -470,6 +504,10 @@ def push_features(result: RequestResult, model: FeatureResults):
     """
     Pushes the features result to the CDR
     """
+    if settings.output:
+        write_cdr_result(result.request.image_id, result.output_type, model)
+        return
+
     logger.info(f"pushing features result for request {result.request.id} to CDR")
     headers = {
         "Authorization": f"Bearer {settings.cdr_api_token}",
@@ -763,6 +801,7 @@ def main():
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--cdr_event_log", type=str, default=CDR_EVENT_LOG)
     parser.add_argument("--input", type=str, default=None)
+    parser.add_argument("--output", type=str, default=None)
     p = parser.parse_args()
 
     global settings
@@ -771,6 +810,7 @@ def main():
     settings.cdr_host = CDR_HOST
     settings.workdir = p.workdir
     settings.imagedir = p.imagedir
+    settings.output = p.output
     settings.system_name = p.system
     settings.system_version = CDR_SYSTEM_VERSION
     settings.callback_secret = CDR_CALLBACK_SECRET
