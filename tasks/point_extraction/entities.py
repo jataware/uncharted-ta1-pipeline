@@ -136,7 +136,7 @@ class MapTiles(BaseModel):
         """
         try:
             # re-format cached predictions with key as (x_offset, y_offset)
-            cached_dict = {}
+            cached_dict: Dict[Any, MapTile] = {}
             for p in cached_preds.tiles:
                 cached_dict[(p.x_offset, p.y_offset)] = p
             for t in self.tiles:
@@ -144,15 +144,18 @@ class MapTiles(BaseModel):
                 if key not in cached_dict:
                     # cached predictions not found for this tile!
                     return False
-                t_cached = cached_dict[key]
+                t_cached: MapTile = cached_dict[key]
                 t.predictions = t_cached.predictions
 
-                for pred in t.predictions:
-                    class_name = pred.class_name
-                    # map YOLO class name to legend item name, if available
-                    if pred.class_name in point_legend_mapping:
-                        pred.legend_name = point_legend_mapping[class_name].name
-                        pred.legend_bbox = point_legend_mapping[class_name].legend_bbox
+                if t.predictions is not None:
+                    for pred in t.predictions:
+                        class_name = pred.class_name
+                        # map YOLO class name to legend item name, if available
+                        if pred.class_name in point_legend_mapping:
+                            pred.legend_name = point_legend_mapping[class_name].name
+                            pred.legend_bbox = point_legend_mapping[
+                                class_name
+                            ].legend_bbox
 
             return True
         except Exception as e:
