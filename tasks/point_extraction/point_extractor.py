@@ -24,8 +24,8 @@ from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
 # YOLO inference hyperparameters, https://docs.ultralytics.com/modes/predict/#inference-arguments
-CONF_THRES = 0.20  # (0.25) minimum confidence threshold for detections
-IOU_THRES = 0.7  # IoU threshold for NMS
+# CONF_THRES = 0.20  # (0.25) minimum confidence threshold for detections
+# IOU_THRES = 0.7  # IoU threshold for NMS
 
 logger = logging.getLogger(__name__)
 
@@ -196,7 +196,9 @@ class YOLOPointDetector(Task):
         doc_key = f"{task_input.raster_id}_points-{self._model_id}"
         # check cache and re-use existing file if present
         json_data = self.fetch_cached_result(doc_key)
-        if json_data and map_tiles.join_with_cached_predictions(MapTiles(**json_data)):
+        if json_data and map_tiles.join_with_cached_predictions(
+            MapTiles(**json_data), point_legend_mapping
+        ):
             # cached point predictions loaded successfully
             logger.info(
                 f"Using cached point extractions for raster: {task_input.raster_id}"
@@ -218,8 +220,8 @@ class YOLOPointDetector(Task):
             batch_preds = self.model.predict(
                 images,
                 device=self.device,
-                conf=CONF_THRES,
-                iou=IOU_THRES,
+                # conf=CONF_THRES,
+                # iou=IOU_THRES,
             )
             for tile, preds in zip(batch, batch_preds):
                 tile.predictions = self.process_output(preds, point_legend_mapping)
