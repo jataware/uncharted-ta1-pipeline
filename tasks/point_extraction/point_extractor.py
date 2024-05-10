@@ -24,8 +24,8 @@ from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
 # YOLO inference hyperparameters, https://docs.ultralytics.com/modes/predict/#inference-arguments
-CONF_THRES = 0.20  # (0.25) minimum confidence threshold for detections
-IOU_THRES = 0.7  # IoU threshold for NMS
+# CONF_THRES = 0.20  # (0.25) minimum confidence threshold for detections
+# IOU_THRES = 0.7  # IoU threshold for NMS
 
 logger = logging.getLogger(__name__)
 
@@ -220,8 +220,8 @@ class YOLOPointDetector(Task):
             batch_preds = self.model.predict(
                 images,
                 device=self.device,
-                conf=CONF_THRES,
-                iou=IOU_THRES,
+                # conf=CONF_THRES,
+                # iou=IOU_THRES,
             )
             for tile, preds in zip(batch, batch_preds):
                 tile.predictions = self.process_output(preds, point_legend_mapping)
