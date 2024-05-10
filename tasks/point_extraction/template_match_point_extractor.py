@@ -361,6 +361,23 @@ class TemplateMatchPointExtractor(Task):
             return True
         return False
 
+    def _is_template_valid(self, legend_item: LegendPointItem) -> bool:
+        """
+        Check if a Legend Item contains a valid template swatch
+        """
+        if not legend_item.legend_contour:
+            # no legend contour
+            return False
+        bbox = legend_item.legend_bbox
+        if not bbox or len(bbox) < 4:
+            # invalid bbox
+            return False
+        if bbox[2] - bbox[0] == 0 or bbox[3] - bbox[1] == 0:
+            # legend bbox has 0 area
+            return False
+
+        return True
+
     def _process_output(
         self,
         matches: List,
@@ -427,6 +444,13 @@ class TemplateMatchPointExtractor(Task):
                 preds_per_class[pred.class_name] += 1
 
         for legend_item in legend_pt_items:
+
+            if not self._is_template_valid(legend_item):
+                logger.warning(
+                    f"No valid legend template is available for legend item {legend_item.name}"
+                )
+                continue
+
             if legend_item.name not in preds_per_class:
                 # no YOLO predictions for this point type; needs processing
                 legend_items_unprocessed.append(legend_item)

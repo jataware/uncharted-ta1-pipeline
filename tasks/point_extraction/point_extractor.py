@@ -196,7 +196,9 @@ class YOLOPointDetector(Task):
         doc_key = f"{task_input.raster_id}_points-{self._model_id}"
         # check cache and re-use existing file if present
         json_data = self.fetch_cached_result(doc_key)
-        if json_data and map_tiles.join_with_cached_predictions(MapTiles(**json_data)):
+        if json_data and map_tiles.join_with_cached_predictions(
+            MapTiles(**json_data), point_legend_mapping
+        ):
             # cached point predictions loaded successfully
             logger.info(
                 f"Using cached point extractions for raster: {task_input.raster_id}"
