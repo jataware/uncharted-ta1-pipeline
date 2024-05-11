@@ -204,8 +204,8 @@ def get_geofence(
     lon_sign_factor = 1.0
 
     return (
-        absolute_minmax(lon_minmax),
-        absolute_minmax(lat_minmax),
+        lon_minmax,
+        lat_minmax,
         lon_sign_factor,
         clue_point,
     )
