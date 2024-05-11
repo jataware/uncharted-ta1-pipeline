@@ -71,6 +71,7 @@ class MetadataExtractor(Task):
                 "<coordinate_system>",
                 "<coordinate_system>",
             ],
+            "utm_zone": "<utm zone>",
             "authors": ["<author name>", "<author name>", "<author name>"],
             "year": "<publication year>",
             "publisher": "<publisher>",
@@ -101,6 +102,7 @@ class MetadataExtractor(Task):
         ],
         indent=4,
     )
+    EXAMPLE_JSON_UTM = json.dumps({"utm_zone": "<utm zone>"})
 
     # threshold for determining map shape - anything above is considered rectangular
     RECTANGULARITY_THRESHOLD = 0.9
@@ -191,6 +193,10 @@ class MetadataExtractor(Task):
             # compute map chroma from the image
             metadata.map_chroma = self._compute_chroma(input.image)
 
+            # extract UTM zone if not present in metadata after initial extraction
+            if metadata.utm_zone == "NULL":
+                metadata.utm_zone = self._extract_utm_zone(metadata)
+
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
@@ -270,6 +276,7 @@ class MetadataExtractor(Task):
                 content_dict["population_centres"] = []
                 content_dict["map_shape"] = MapShape.UNKNOWN
                 content_dict["map_chroma"] = MapChromaType.UNKNOWN
+                content_dict["vertical_datum"] = "NULL"
                 extraction = MetadataExtraction(**content_dict)
                 return extraction
 
@@ -343,6 +350,63 @@ class MetadataExtractor(Task):
             places = []
         return places
 
+    def _extract_utm_zone(self, metadata: MetadataExtraction) -> str:
+        """Extracts the UTM zone from the metadata if it is not already present"""
+        prompt_str = self._to_utm_prompt_str(
+            metadata.counties,
+            metadata.quadrangles,
+            metadata.states,
+            metadata.places,
+            metadata.population_centres,
+        )
+        utm_zone_resp = self._process_basic_prompt(prompt_str)
+        if utm_zone_resp == "NULL":
+            return utm_zone_resp
+        utm_json = json.loads(utm_zone_resp)
+        return utm_json["utm_zone"]
+
+    def _process_basic_prompt(self, prompt_str: str) -> str:
+        message_content: str | None = ""
+        try:
+            messages: List[Any] = [
+                {
+                    "role": "system",
+                    "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
+                },
+                {"role": "user", "content": prompt_str},
+            ]
+            if self._model == LLM.GPT_4_TURBO:
+                completion = self._openai_client.chat.completions.create(
+                    messages=messages,
+                    model=self._model.value,
+                    response_format={"type": "json_object"},
+                    temperature=0.1,
+                )
+            else:
+                completion = self._openai_client.chat.completions.create(
+                    messages=messages,
+                    model=self._model.value,
+                    response_format={"type": "json_object"},
+                    temperature=0.1,
+                )
+
+            message_content = completion.choices[0].message.content
+            if message_content is not None:
+                try:
+                    result = message_content.strip()
+                except json.JSONDecodeError as e:
+                    logger.error(
+                        f"Skipping extraction - error parsing json response from api likely due to token limit",
+                        exc_info=True,
+                    )
+        except Exception as e:
+            # print exception stack trace
+            logger.error(
+                f"Skipping extraction - unexpected error during processing",
+                exc_info=True,
+            )
+        return "" if message_content is None else message_content
+
     def _extract_text_with_index(
         self, doc_text_extraction: DocTextExtraction
     ) -> List[Tuple[str, int]]:
@@ -389,19 +453,21 @@ class MetadataExtractor(Task):
             + " - map title. \n"
             + " - scale\n"
             + " - projection\n"
-            + " - geoditic datum\n"
-            + " - vertical datum\n"
+            + " - datum\n"
+            + " - vertical datum\n"  # explicitly look for this so we can ignore it - if we totally remove we start to see vertical datums show up as datums
             + " - coordinate systems\n"
+            + " - UTM zone\n"
             + " - authors\n"
             + " - year\n"
-            + " - base map info\n"
+            + " - base map description or base map quad, year pairs\n"
             + " - quadrangles\n"
             + " - counties\n"
             + " - states/provinces\n"
             + " - country\n"
             + " - map publisher\n"
-            + " Examples of vertical datums: mean sea level, vertical datum of 1901\n"
-            + " Examples of datums: North American Datum of 1927, NAD83, WGS 84\n"
+            + " Examples of datums: North American Datum of 1983, NAD83, WGS 84.\n"
+            + " Examples of vertical datums: 'Mean Sea Level' and 'national vertical geoditic datum of 1929'\n"  # explicitly look for this so we can ignore it
+            + " Examples of UTM zones: 12, 15.\n"
             + " Examples of projections: Polyconic, Lambert, Transverse Mercator\n"
             + " Examples of coordinate systems: Utah coordinate system central zone, UTM Zone 15, Universal Transverse Mercator zone 12, New Mexico coordinate system, north zone, Carter Coordinate System"
             + ' Examples of base maps: "U.S. Geological Survey 1954", "U.S. Geological Survey 1:62,500, Vidal (1949) Rice and Turtle Mountains (1954) Savahia Peak (1975)"\n'
@@ -410,17 +476,17 @@ class MetadataExtractor(Task):
             + " Here is an example of the structure to use: \n"
             + self.EXAMPLE_JSON
             + "\n"
-            + 'If any string value is not present the field should be set to "NULL"\n'
-            + "If the map title includes state names, county names or quadrangle still include them in full title"
+            + 'If any string value is not present the field should be set to "NULL".\n'
+            + "If the map title includes state names, county names or quadrangle, they should be included in the full title.\n"
             + "All author names should be in the format: <last name, first iniital, middle initial>.  Example of author name: Bailey, D. K.\n"
             + "The year should be the most recent value and should be a single 4 digit number.\n"
-            + "A single author is allowed.  Authors, title and year are normally grouped together on the map.\n"
+            + "A single author is allowed.  Note that authors, title and year are normally grouped together on the map so use that help disambiguate.\n"
+            + "Geoditic datums should be in their short form, for example, North American Datum of 1927 should be NAD27.\n"
             + "References, citations and geology attribution should be ignored when extracting authors.\n"
-            + "A single author is allowed.\n"
-            + "Authors, title and year are normally grouped together.\n"
             + "The term grid ticks should not be included in coordinate system output.\n"
-            + "Quadrangles can normally be ound in the map title, or in the base map description.\n"
-            + "States includes principal subvidisions of any country and should be formatted according to the ISO 3166-2 standard.\n"
+            + "Quadrangles can normally be found as part of the map title, or in the base map info that has been extracted.\n"
+            + "States includes principal subvidisions of any country and their full name should be extracted.\n"
+            + "UTM zones should not include an N or S after the number when extracted.\n"
         )
 
     def _to_point_prompt_str(self, text_str: str) -> str:
@@ -458,6 +524,27 @@ class MetadataExtractor(Task):
             + self.EXAMPLE_JSON_CITIES
             + "\n\n"
             + ' In the returned json, name the result "points".'
+        )
+
+    def _to_utm_prompt_str(
+        self,
+        counties: List[str],
+        quadrangles: List[str],
+        state: List[str],
+        places: List[TextExtraction],
+        population_centers: List[TextExtraction],
+    ) -> str:
+        return (
+            "The following information was extracted froma map using an OCR process:\n"
+            + f"quadrangles: {','.join(quadrangles)}\n"
+            + f"counties: {','.join(counties)}\n"
+            + f"places: {','.join([p.text for p in places])}\n"
+            + f"population centers: {','.join([p.text for p in population_centers])}\n"
+            + f"states: {','.join(state)}\n"
+            + " Infer the UTM zone and return it in a JSON structure. If it cannot be inferred, return 'NULL'.\n"
+            + " The inferred UTM zone should not include an N or S after the number.\n"
+            + " Here is an example of the structure to return: \n"
+            + self.EXAMPLE_JSON_UTM
         )
 
     def _extract_text(
@@ -571,9 +658,9 @@ class MetadataExtractor(Task):
             scale="",
             quadrangles=[],
             datum="",
-            vertical_datum="",
             projection="",
             coordinate_systems=[],
+            utm_zone="",
             base_map="",
             counties=[],
             states=[],
