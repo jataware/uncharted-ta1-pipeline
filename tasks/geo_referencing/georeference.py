@@ -120,13 +120,13 @@ class GeoReference(Task):
                 and len(geofence.geofence.lon_minmax) == 2
             ):
                 lon_minmax_geofence, lat_minmax_geofence = self._get_fallback_geofence(
-                    input
+                    geofence
                 )
                 logger.info(f"adjusting lat geofence to {lat_minmax_geofence}")
                 logger.info(f"adjusting lon geofence to {lon_minmax_geofence}")
 
             logger.info(f"{num_keypoints} key points available for project")
-            if len(lat_check) < 2 or (abs(max(lat_check) - min(lat_check)) > 40):
+            if len(lat_check) < 2 or (abs(max(lat_check) - min(lat_check)) > 20):
                 anchors = self._build_fallback(roi_xy_minmax[1], lat_minmax_geofence)
 
                 # create the anchor coordinates using the x mid range for the pixel coordinate
@@ -146,7 +146,7 @@ class GeoReference(Task):
                     _, y_pixel = coord.get_pixel_alignment()
                     lat_pts[(a.geo_coord, y_pixel)] = coord
 
-            if len(lon_check) < 2 or (abs(max(lon_check) - min(lon_check)) > 40):
+            if len(lon_check) < 2 or (abs(max(lon_check) - min(lon_check)) > 20):
                 anchors = self._build_fallback(roi_xy_minmax[0], lon_minmax_geofence)
 
                 # create the anchor coordinates using the y mid range for the pixel coordinate
@@ -172,8 +172,8 @@ class GeoReference(Task):
         num_keypoints = min(len(lon_pts), len(lat_pts))
         if (
             num_keypoints < 2
-            or (abs(max(lon_check) - min(lon_check)) > 40)
-            or (abs(max(lat_check) - min(lat_check)) > 40)
+            or (abs(max(lon_check) - min(lon_check)) > 20)
+            or (abs(max(lat_check) - min(lat_check)) > 20)
         ):
             # still not enough key-points, just use 'clue' lon/lat as fallback query response
             logger.info("not enough key points to generate a projection")
@@ -201,7 +201,10 @@ class GeoReference(Task):
             confidence,
         )
         lon_multiplier, lat_multiplier = self._determine_hemispheres(input, query_pts)
-        results = self._clip_query_pts(query_pts, lon_minmax, lat_minmax)
+        logger.info(
+            f"derived hemispheres for georeferencing: {lon_multiplier},{lat_multiplier}"
+        )
+        # results = self._clip_query_pts(query_pts, lon_minmax, lat_minmax)
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
         rmse, scale_error = self._score_query_points(query_pts, scale_value)
@@ -296,26 +299,28 @@ class GeoReference(Task):
 
         return results
 
-    def _max_range(self, minmax: List[float], max_range) -> List[float]:
-        if minmax[1] - minmax[0] <= max_range:
+    def _max_range(self, minmax: List[float], max_range, invert: bool) -> List[float]:
+        if abs(minmax[1] - minmax[0]) <= max_range:
             return minmax
 
         mid_point = (minmax[1] + minmax[0]) / 2
         adjustment = max_range / 2
 
+        if invert and mid_point > 0:
+            # return the inverse minmax
+            return [mid_point + adjustment, mid_point - adjustment]
+
         return [mid_point - adjustment, mid_point + adjustment]
 
     def _get_fallback_geofence(
-        self, input: TaskInput
+        self, geofence: DocGeoFence
     ) -> Tuple[List[float], List[float]]:
-        lon_minmax, lat_minmax, _ = get_input_geofence(input)
-
         # adjust based on maximum range derived from scale
         # TODO: use scale to derive maximum range
         max_range = 0.5
-        return self._max_range(lon_minmax, max_range), self._max_range(
-            lat_minmax, max_range
-        )
+        return self._max_range(
+            geofence.geofence.lon_minmax, max_range, False
+        ), self._max_range(geofence.geofence.lat_minmax, max_range, True)
 
     def _clip_query_pts(
         self,
@@ -381,22 +386,29 @@ class GeoReference(Task):
                 lat_determined = True
 
             if lat_determined and lon_determined:
+                logger.info(f"hemispheres derived entirely from geofence")
                 return lon_multiplier, lat_multiplier
 
         # function assumes that north is up and that the image is not skewed
         # set east - west hemisphere by seeing how longitude changes when x increases
         if not lon_determined:
             qps_sorted_x = sorted(query_pts, key=lambda x: x.xy[0])
-            if abs(qps_sorted_x[0].lonlat[0]) > abs(qps_sorted_x[-1].lonlat[0]):
-                # x increased but lon decreased so it is negative
+            if qps_sorted_x[0].lonlat[0] < 0:
                 lon_multiplier = -1
+            elif qps_sorted_x[0].lonlat[0] > qps_sorted_x[-1].lonlat[0]:
+                # x increased but lon decreased so it is in the negative hemisphere
+                lon_multiplier = -1  # if qps_sorted_x[0].lonlat[0] > 0 else 1
+            logger.info("longitude hemisphere in part determined by points")
 
         # set north - south hemisphere by seeing how latitude changes when y increases
         if not lat_determined:
             qps_sorted_y = sorted(query_pts, key=lambda x: x.xy[1])
-            if abs(qps_sorted_y[0].lonlat[1]) < abs(qps_sorted_y[-1].lonlat[1]):
-                # y increased and lat increased so it is negative
+            if qps_sorted_y[0].lonlat[1] < 0:
                 lat_multiplier = -1
+            elif abs(qps_sorted_y[0].lonlat[1]) < abs(qps_sorted_y[-1].lonlat[1]):
+                # y increased and lat increased so it is in the negative hemisphere
+                lat_multiplier = -1  # if qps_sorted_y[0].lonlat[1] > 0 else 1
+            logger.info("latitude hemisphere in part determined by points")
 
         return lon_multiplier, lat_multiplier
 

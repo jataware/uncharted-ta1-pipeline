@@ -1,3 +1,4 @@
+import copy
 import logging
 import re
 import statistics
@@ -19,7 +20,11 @@ from tasks.metadata_extraction.entities import (
     GEOCODED_PLACES_OUTPUT_KEY,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
-from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
+from tasks.geo_referencing.util import (
+    ocr_to_coordinates,
+    get_bounds_bounding_box,
+    is_in_range,
+)
 
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -88,10 +93,9 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
 
         # lon_minmax = input.input.get_request_info("lon_minmax", [0, 180])
         # lat_minmax = input.input.get_request_info("lat_minmax", [-80, 84])
-        lon_minmax, lat_minmax, defaulted = self._get_input_geofence(input)
-        if defaulted:
-            lon_minmax = [0.0, 180.0]
-            lat_minmax = [-80.0, 84.0]
+        # lon_minmax, lat_minmax, _ = self._get_input_geofence(input)
+        lat_minmax = copy.deepcopy(geofence_raw.geofence.lat_minmax)
+        lon_minmax = copy.deepcopy(geofence_raw.geofence.lon_minmax)
 
         lon_pts = input.input.get_data("lons")
         lat_pts = input.input.get_data("lats")
@@ -211,8 +215,17 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             if derived_direction:
                 return zone_number, northern, "geofence"
 
+        # use the centre of the geofence as default
+        centre_lat = (
+            raw_geofence.geofence.lat_minmax[0] + raw_geofence.geofence.lat_minmax[1]
+        ) / 2.0
+        centre_lon = (
+            raw_geofence.geofence.lon_minmax[0] + raw_geofence.geofence.lon_minmax[1]
+        ) / 2.0
+        centre_utm = utm.from_latlon(centre_lat, centre_lon)
+
         # default the zone to make sure coordinates can be parsed
-        return zone_number, northern, UTM_ZONE_DEFAULT
+        return centre_utm[2], centre_lat > 0, UTM_ZONE_DEFAULT
 
     def _are_valid_utm_extractions(
         self, parsed_direction: List[Tuple[float, bool]]
@@ -347,8 +360,9 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             latlon_pt = utm.to_latlon(
                 easting_clue, n, utm_zone[0], northern=utm_zone[1]
             )
-            latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
-            if lat_minmax[0] <= latlon_pt[0] <= lat_minmax[1]:
+            # latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
+            # if lat_minmax[0] <= latlon_pt[0] <= lat_minmax[1]:
+            if is_in_range(latlon_pt[0], lat_minmax):
                 # valid latitude point
                 x_ranges = (
                     (0.0, 1.0)
@@ -395,7 +409,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             latlon_pt = utm.to_latlon(
                 e, northing_clue, utm_zone[0], northern=utm_zone[1]
             )
-            latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
+            # latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
             coord = Coordinate(
                 "lon keypoint",
                 ocr_text_blocks.extractions[idx].text,
