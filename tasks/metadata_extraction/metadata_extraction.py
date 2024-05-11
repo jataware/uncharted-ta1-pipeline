@@ -76,7 +76,6 @@ class MetadataExtractor(Task):
             "year": "<publication year>",
             "publisher": "<publisher>",
             "base_map": "<base map>",
-            "quadrangles": ["<quadrangle>", "<quadrangle>", "<quadrangle>"],
             "counties": ["<county>", "<county>", "<county>"],
             "states": ["<state>", "<state>", "<state>"],
             "country": "<country>",
@@ -93,6 +92,7 @@ class MetadataExtractor(Task):
         ],
         indent=4,
     )
+
     EXAMPLE_JSON_CITIES = json.dumps(
         [
             {"name": "Denver", "index": 12},
@@ -102,7 +102,12 @@ class MetadataExtractor(Task):
         ],
         indent=4,
     )
+
     EXAMPLE_JSON_UTM = json.dumps({"utm_zone": "<utm zone>"})
+
+    EXAMPLE_JSON_QUADRANGLES = json.dumps(
+        {"quadrangles": ["<quadrangle>", "<quadrangle>"]}
+    )
 
     # threshold for determining map shape - anything above is considered rectangular
     RECTANGULARITY_THRESHOLD = 0.9
@@ -155,12 +160,6 @@ class MetadataExtractor(Task):
             metadata.population_centres = self._process_map_area_extractions(
                 doc_text, prompt_str_areas, True
             )
-
-            segments = input.data[SEGMENTATION_OUTPUT_KEY]
-            metadata.map_shape = self._compute_shape(segments)
-
-            metadata.map_chroma = self._compute_chroma(input.image)
-
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
@@ -173,6 +172,7 @@ class MetadataExtractor(Task):
         if not doc_text:
             return task_result
 
+        # post-processing and follow on prompts
         metadata = self._process_doc_text_extraction(doc_text)
         if metadata:
             # map state names as needed
@@ -186,16 +186,21 @@ class MetadataExtractor(Task):
             # normalize quadrangle
             metadata.quadrangles = self._normalize_quadrangle(metadata.quadrangles)
 
+            # extract quadrangles from the title and base map info
+            metadata.quadrangles = self._extract_quadrangles(
+                metadata.title, metadata.base_map
+            )
+
+            # extract UTM zone if not present in metadata after initial extraction
+            if metadata.utm_zone == "NULL":
+                metadata.utm_zone = self._extract_utm_zone(metadata)
+
             # compute map shape from the segmentation output
             segments = input.data[SEGMENTATION_OUTPUT_KEY]
             metadata.map_shape = self._compute_shape(segments)
 
             # compute map chroma from the image
             metadata.map_chroma = self._compute_chroma(input.image)
-
-            # extract UTM zone if not present in metadata after initial extraction
-            if metadata.utm_zone == "NULL":
-                metadata.utm_zone = self._extract_utm_zone(metadata)
 
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
@@ -272,11 +277,15 @@ class MetadataExtractor(Task):
                     content_dict["map_id"] = doc_text_extraction.doc_id
                 else:
                     content_dict = {"map_id": doc_text_extraction.doc_id}
+                # ensure all the dict values are populated so we can validate the model - those below
+                # are extracted by the first GPT pass
+                # TODO - is it possible to handle this in a better way?
                 content_dict["places"] = []
                 content_dict["population_centres"] = []
                 content_dict["map_shape"] = MapShape.UNKNOWN
                 content_dict["map_chroma"] = MapChromaType.UNKNOWN
                 content_dict["vertical_datum"] = "NULL"
+                content_dict["quadrangles"] = []
                 extraction = MetadataExtraction(**content_dict)
                 return extraction
 
@@ -364,6 +373,15 @@ class MetadataExtractor(Task):
             return utm_zone_resp
         utm_json = json.loads(utm_zone_resp)
         return utm_json["utm_zone"]
+
+    def _extract_quadrangles(self, title: str, base_map: str) -> List[str]:
+        """Extracts quadrangles from the title and base map info"""
+        prompt_str = self._to_quadrangle_prompt_str(title, base_map)
+        quadrangle_resp = self._process_basic_prompt(prompt_str)
+        if quadrangle_resp == "NULL":
+            return []
+        quadrangle_json = json.loads(quadrangle_resp)
+        return quadrangle_json["quadrangles"]
 
     def _process_basic_prompt(self, prompt_str: str) -> str:
         message_content: str | None = ""
@@ -459,14 +477,13 @@ class MetadataExtractor(Task):
             + " - UTM zone\n"
             + " - authors\n"
             + " - year\n"
-            + " - base map description or base map quad, year pairs\n"
-            + " - quadrangles\n"
+            + " - base map description or base map (quad, year pairs)\n"
             + " - counties\n"
             + " - states/provinces\n"
             + " - country\n"
             + " - map publisher\n"
-            + " Examples of datums: North American Datum of 1983, NAD83, WGS 84.\n"
-            + " Examples of vertical datums: 'Mean Sea Level' and 'national vertical geoditic datum of 1929'\n"  # explicitly look for this so we can ignore it
+            + " Examples of geoditic datums: North American Datum of 1983, NAD83, WGS 84.\n"
+            + " Examples of vertical datums: 'Mean Sea Level', 'Mean Low Water', and 'national vertical geoditic datum of 1929'\n"  # explicitly look for this so we can ignore it
             + " Examples of UTM zones: 12, 15.\n"
             + " Examples of projections: Polyconic, Lambert, Transverse Mercator\n"
             + " Examples of coordinate systems: Utah coordinate system central zone, UTM Zone 15, Universal Transverse Mercator zone 12, New Mexico coordinate system, north zone, Carter Coordinate System"
@@ -479,12 +496,13 @@ class MetadataExtractor(Task):
             + 'If any string value is not present the field should be set to "NULL".\n'
             + "If the map title includes state names, county names or quadrangle, they should be included in the full title.\n"
             + "All author names should be in the format: <last name, first iniital, middle initial>.  Example of author name: Bailey, D. K.\n"
-            + "The year should be the most recent value and should be a single 4 digit number.\n"
             + "A single author is allowed.  Note that authors, title and year are normally grouped together on the map so use that help disambiguate.\n"
-            + "Geoditic datums should be in their short form, for example, North American Datum of 1927 should be NAD27.\n"
             + "References, citations and geology attribution should be ignored when extracting authors.\n"
+            + "The year should be the most recent value and should be a single 4 digit number.\n"
+            + "Geoditic datums should be in their short form, for example, North American Datum of 1927 should be NAD27.\n"
+            + "Geoditic datums are exclusive of vertical datums; geoditic datums never contain terms associated with height or verticality.\n"
             + "The term grid ticks should not be included in coordinate system output.\n"
-            + "Quadrangles can normally be found as part of the map title, or in the base map info that has been extracted.\n"
+            + "The base map description can be a descriptive string, but also often contains (quadrangle, year) pairs.\n"
             + "States includes principal subvidisions of any country and their full name should be extracted.\n"
             + "UTM zones should not include an N or S after the number when extracted.\n"
         )
@@ -545,6 +563,17 @@ class MetadataExtractor(Task):
             + " The inferred UTM zone should not include an N or S after the number.\n"
             + " Here is an example of the structure to return: \n"
             + self.EXAMPLE_JSON_UTM
+        )
+
+    def _to_quadrangle_prompt_str(self, title: str, base_map_info: str) -> str:
+        return (
+            "The following information was extracted from a map using an OCR process:\n"
+            + f"title: {title}\n"
+            + f"base map: {base_map_info}\n"
+            + " Identify the quadrangles from the fields and store them in a JSON structure.\n"
+            + " Here is an example of the structure to use: \n"
+            + self.EXAMPLE_JSON_QUADRANGLES
+            + "\n"
         )
 
     def _extract_text(
