@@ -4,13 +4,20 @@ import json
 from typing import List, Dict
 from pathlib import Path
 from nltk.translate.meteor_score import single_meteor_score
-from tasks.metadata_extraction.entities import MetadataExtraction
+from tasks.metadata_extraction.entities import MapChromaType, MetadataExtraction
 
 MetadataScore = Dict[str, float]
 MetadataScores = Dict[str, MetadataScore]
 
 
-SKIP_FIELDS = []
+SKIP_FIELDS = {
+    "map_shape": MapChromaType.UNKNOWN,
+    "map_chroma": MapChromaType.HIGH_CHROMA,
+    "publisher": "NULL",
+    "population_centres": [],
+}
+
+LONG_FIELDS = ["title", "base_map", "coordinate_systems"]
 
 
 class Scorer:
@@ -79,6 +86,10 @@ class Scorer:
         with open(path, "r") as json_file:
             for line in json_file:
                 data = json.loads(line)
+                # store a null for each value in the skip list
+                for field, def_value in SKIP_FIELDS.items():
+                    if field not in data:
+                        data[field] = def_value
                 metadata = MetadataExtraction(**data)
                 json_data[metadata.map_id] = metadata
             return json_data
@@ -116,11 +127,16 @@ class Scorer:
 
                 score = 0.0
                 if isinstance(field_prediction, list) and isinstance(field_truth, list):
-                    score = self._score_list(
-                        field_key[0], field_prediction, field_truth
-                    )
+                    if field_key[0] in LONG_FIELDS and self._approximate_long:
+                        score = self._score_meteor(
+                            ",".join(field_prediction), ",".join(field_truth)
+                        )
+                    else:
+                        score = self._score_list(
+                            field_key[0], field_prediction, field_truth
+                        )
                 elif isinstance(field_prediction, str) and isinstance(field_truth, str):
-                    if field_key[0] == "title" and self._approximate_long:
+                    if field_key[0] in LONG_FIELDS and self._approximate_long:
                         score = self._score_meteor(field_prediction, field_truth)
                     else:
                         score = self._score_string(field_prediction, field_truth)

@@ -32,9 +32,9 @@ class MetadataExtraction(BaseModel):
     scale: str  # of the format 1:24000
     quadrangles: List[str]
     datum: str
-    vertical_datum: str
     projection: str
     coordinate_systems: List[str]
+    utm_zone: str
     base_map: str
     counties: List[str]
     population_centres: List[TextExtraction]  # a list of cities, towns, and villages
