@@ -24,8 +24,8 @@ from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
 # YOLO inference hyperparameters, https://docs.ultralytics.com/modes/predict/#inference-arguments
-# CONF_THRES = 0.20  # (0.25) minimum confidence threshold for detections
-# IOU_THRES = 0.7  # IoU threshold for NMS
+CONF_THRES = 0.20  # (0.25) minimum confidence threshold for detections
+IOU_THRES = 0.7  # IoU threshold for NMS
 
 logger = logging.getLogger(__name__)
 
