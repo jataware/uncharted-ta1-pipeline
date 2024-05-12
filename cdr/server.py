@@ -395,7 +395,7 @@ def process_image(image_id: str, request_publisher: LaraRequestPublisher):
 
     # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
     # imagedir arg that should be configured to point at this location.
-    prefetch_image(Path(settings.workdir), image_id, image_url)
+    prefetch_image(Path(settings.imagedir), image_id, image_url)
 
     # push the request onto the queue
     for queue_name, request in lara_reqs.items():
