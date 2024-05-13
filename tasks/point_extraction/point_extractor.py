@@ -220,8 +220,8 @@ class YOLOPointDetector(Task):
             batch_preds = self.model.predict(
                 images,
                 device=self.device,
-                # conf=CONF_THRES,
-                # iou=IOU_THRES,
+                conf=CONF_THRES,
+                iou=IOU_THRES,
             )
             for tile, preds in zip(batch, batch_preds):
                 tile.predictions = self.process_output(preds, point_legend_mapping)
