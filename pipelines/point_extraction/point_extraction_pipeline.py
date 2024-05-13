@@ -62,8 +62,7 @@ class PointExtractionPipeline(Pipeline):
         tasks = []
         tasks.append(
             TileTextExtractor(
-                "tile_text",
-                Path(work_dir).joinpath("text"),  # gamma_correction=0.5
+                "tile_text", Path(work_dir).joinpath("text"), gamma_correction=0.5
             )
         )
         if model_path_segmenter:
