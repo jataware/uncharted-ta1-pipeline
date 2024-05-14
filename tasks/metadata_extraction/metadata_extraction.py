@@ -27,7 +27,10 @@ from typing import Callable, List, Dict, Any, Optional, Tuple
 
 logger = logging.getLogger("metadata_extractor")
 
-PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
+PLACE_EXTENSION_MAP = {
+    "washington": "washington (state)",
+    "new york": "new york (state)",
+}
 
 
 class LLM(str, Enum):
