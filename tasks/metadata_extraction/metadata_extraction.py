@@ -27,10 +27,7 @@ from typing import Callable, List, Dict, Any, Optional, Tuple
 
 logger = logging.getLogger("metadata_extractor")
 
-PLACE_EXTENSION_MAP = {
-    "washington": "washington (state)",
-    "new york": "new york (state)",
-}
+PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
 
 
 class LLM(str, Enum):
@@ -118,7 +115,7 @@ class MetadataExtractor(Task):
     def __init__(
         self,
         id: str,
-        model=LLM.GPT_3_5_TURBO,
+        model=LLM.GPT_4_TURBO,
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
     ):
