@@ -60,6 +60,7 @@ class NominatimGeocoder(GeocodingService):
     def _geocode_place(self, place: GeocodedPlace) -> Tuple[GeocodedPlace, bool]:
         place_copy = deepcopy(place)
         res = self._get_geocode(place_copy)
+        print(place)
 
         if res is None:
             return place_copy, False
