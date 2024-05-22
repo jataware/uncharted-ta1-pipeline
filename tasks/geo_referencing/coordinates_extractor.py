@@ -101,7 +101,15 @@ class CoordinatesExtractor(Task):
             return self._create_result(input_coord.input)
 
         # extract the coordinates using the input
+        lats = input.get_data("lats", [])
+        lons = input.get_data("lons", [])
+        logger.info(
+            f"prior to run {len(lats)} latitude and {len(lons)} longitude coordinates have been extracted"
+        )
         lons, lats = self._extract_coordinates(input_coord)
+        logger.info(
+            f"after extractions run {len(lats)} latitude and {len(lons)} longitude coordinates have been extracted"
+        )
 
         # add the extracted coordinates to the result
         return self._create_coordinate_result(input_coord, lons, lats)

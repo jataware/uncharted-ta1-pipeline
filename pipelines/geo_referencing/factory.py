@@ -15,6 +15,7 @@ from tasks.common.task import TaskInput
 from tasks.geo_referencing.coordinates_extractor import (
     GeoCoordinatesExtractor,
 )
+from tasks.geo_referencing.state_plane_extractor import StatePlaneExtractor
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
 from tasks.geo_referencing.filter import NaiveFilter, OutlierFilter
 from tasks.geo_referencing.geo_fencing import GeoFencer
@@ -211,6 +212,12 @@ def create_geo_referencing_pipelines(
             )
         )
         tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(
+            StatePlaneExtractor(
+                "fifth",
+                "/Users/phorne/projects/criticalmaas/data/state_plane_reference.csv",
+            )
+        )
         tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(ScaleExtractor("scaler", ""))
