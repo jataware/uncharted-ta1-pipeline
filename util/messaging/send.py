@@ -1,3 +1,4 @@
+from enum import auto
 from time import sleep
 import pika
 
@@ -12,12 +13,16 @@ def main():
 
     connection = pika.BlockingConnection(pika.ConnectionParameters(host="localhost"))
     channel = connection.channel()
-    channel.queue_declare(queue=args.queue_name)
+    channel.queue_declare(
+        queue=args.queue_name,
+        durable=True,
+        arguments={"x-queue-type": "quorum", "x-delivery-limit": 1},
+    )
 
     for i in range(5):
         request = Request(
             id=str(i),
-            task="2",
+            task=str(i),
             image_id="c0089400862e476e4f66863283bb934d974d9b4d9a060d164b1e0b3685a6a127",
             image_url="https://s3.amazonaws.com/public.cdr.land/cogs/c0089400862e476e4f66863283bb934d974d9b4d9a060d164b1e0b3685a6a127.cog.tif",
             output_format="5",
