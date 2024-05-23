@@ -12,7 +12,12 @@ from tasks.geo_referencing.coordinates_extractor import (
     CoordinateInput,
 )
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
-from tasks.geo_referencing.entities import Coordinate, DocGeoFence, GEOFENCE_OUTPUT_KEY
+from tasks.geo_referencing.entities import (
+    Coordinate,
+    DocGeoFence,
+    GEOFENCE_OUTPUT_KEY,
+    SOURCE_UTM,
+)
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     DocGeocodedPlaces,
@@ -373,6 +378,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     "lat keypoint",
                     ocr_text_blocks.extractions[idx].text,
                     latlon_pt[0],
+                    SOURCE_UTM,
                     True,
                     ocr_text_blocks.extractions[idx].bounds,
                     x_ranges=x_ranges,
@@ -414,6 +420,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                 "lon keypoint",
                 ocr_text_blocks.extractions[idx].text,
                 latlon_pt[1],
+                SOURCE_UTM,
                 False,
                 ocr_text_blocks.extractions[idx].bounds,
                 x_ranges=x_ranges,

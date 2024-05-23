@@ -7,6 +7,8 @@ import statistics
 import uuid
 import numpy as np
 
+from shapely import Point as sPoint
+from shapely.geometry import shape
 from sklearn.cluster import DBSCAN
 from copy import deepcopy
 
@@ -19,7 +21,13 @@ from tasks.text_extraction.entities import (
     Point,
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
-from tasks.geo_referencing.entities import Coordinate, DocGeoFence, GEOFENCE_OUTPUT_KEY
+from tasks.geo_referencing.entities import (
+    Coordinate,
+    DocGeoFence,
+    GEOFENCE_OUTPUT_KEY,
+    SOURCE_STATE_PLANE,
+)
+from tasks.geo_referencing.util import is_nad_83
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
@@ -29,6 +37,8 @@ from tasks.geo_referencing.util import (
     get_bounds_bounding_box,
     is_in_range,
 )
+
+from util.json import read_json_file
 
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -55,12 +65,33 @@ FEET_FACTOR = 3.280839895
 class StatePlaneExtractor(CoordinatesExtractor):
     _code_lookup: Dict[Any, Any]
 
-    def __init__(self, task_id: str, state_plane_lookup_filename: str):
+    def __init__(
+        self,
+        task_id: str,
+        state_plane_lookup_filename: str,
+        state_plane_zone_filename: str,
+    ):
         super().__init__(task_id)
 
-        self._code_lookup = self._build_lookup(state_plane_lookup_filename)
+        lookup_zones, lookup_fips = self._build_lookups(state_plane_lookup_filename)
+        self._code_lookup = lookup_zones
+        self._fips_lookup = lookup_fips
 
-    def _build_lookup(self, state_plane_lookup_filename: str) -> Dict[Any, Any]:
+        self._zones = self._build_zone_lookup(state_plane_zone_filename)
+
+    def _build_zone_lookup(
+        self, state_plane_zone_filename: str
+    ) -> List[Dict[Any, Any]]:
+        data = read_json_file(state_plane_zone_filename)
+
+        shapes = []
+        for f in data["features"]:
+            shapes.append({"shape": shape(f["geometry"]), "info": f["properties"]})
+        return shapes
+
+    def _build_lookups(
+        self, state_plane_lookup_filename: str
+    ) -> Tuple[Dict[Any, Any], Dict[str, str]]:
         # read the lookup file
         data = []
         with open(state_plane_lookup_filename, newline="") as f:
@@ -69,21 +100,24 @@ class StatePlaneExtractor(CoordinatesExtractor):
 
         # reduce the file to projection -> state -> zones -> epsg codes
         # skip header
-        lookup = {"nad27": {}, "nad83": {}}
+        lookup_zones = {"nad27": {}, "nad83": {}}
+        lookup_fips = {}
         for r in data[1:]:
             state = r[1]
             zone27 = r[4]
             zone83 = r[7]
             epsg27 = r[5]
+            fips27 = r[6]
             epsg83 = r[8]
-            if state not in lookup["nad27"]:
-                lookup["nad27"][state] = {}
-                lookup["nad83"][state] = {}
-            if zone27 not in lookup["nad27"][state]:
-                lookup["nad27"][state][zone27] = epsg27
-            if zone83 not in lookup["nad83"][state]:
-                lookup["nad83"][state][zone83] = epsg83
-        return lookup
+            if state not in lookup_zones["nad27"]:
+                lookup_zones["nad27"][state] = {}
+                lookup_zones["nad83"][state] = {}
+            if zone27 not in lookup_zones["nad27"][state]:
+                lookup_zones["nad27"][state][zone27] = epsg27
+            if zone83 not in lookup_zones["nad83"][state]:
+                lookup_zones["nad83"][state][zone83] = epsg83
+            lookup_fips[fips27] = epsg27
+        return lookup_zones, lookup_fips
 
     def _extract_coordinates(
         self, input: CoordinateInput
@@ -129,6 +163,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
             input,
             state_plane_zone[0],
             ocr_blocks,
+            metadata,
             (lon_pts, lat_pts),
             lon_minmax,
             lat_minmax,
@@ -236,44 +271,59 @@ class StatePlaneExtractor(CoordinatesExtractor):
         # if still defaulted, then return default
         return [], [], DIRECTION_DEFAULT
 
+    def _determine_epsg_from_coord(self, lon: float, lat: float, year: float) -> str:
+        if year >= 1986:
+            # can use the library to determine the epsg code as it uses NAD83
+            return stateplane.identify(lon, lat)  #   type: ignore
+
+        # figure out which zone the coordinate falls within
+        zone = None
+        point = sPoint(lon, lat)
+        for z in self._zones:
+            if z["shape"].contains(point):
+                zone = z
+                break
+        assert zone is not None
+
+        # use the fips code to lookup the epsg
+        fips = zone["info"]["FIPSZONE"]
+        return self._fips_lookup[fips]
+
     def _determine_epsg(
         self,
         metadata: MetadataExtraction,
         raw_geofence: DocGeoFence,
         clue_point: Optional[Tuple[float, float]],
     ) -> Tuple[str, str]:
+        print(metadata)
+        year = 1900
+        if metadata.year.isdigit():
+            year = int(metadata.year)
+
         # use clue point if available
         if clue_point is not None:
             return (
-                stateplane.identify(clue_point[0], clue_point[1]),  #   type: ignore
+                self._determine_epsg_from_coord(clue_point[0], clue_point[1], year),
                 "clue point",
-            )
-
-        # if no state specified, cant determine the zone
-        if len(metadata.states) == 0:
-            return (
-                "",
-                "",
             )
 
         # determine nad27 vs nad83 by assuming nad27 unless nad83 specifically specified
         # TODO: MAKE THIS WAYYYYY BETTER
-        projection = "nad83"
-        if "27" in metadata.projection:
-            projection = "nad27"
+        projection = "nad83" if is_nad_83(metadata) else "nad27"
 
         # use the state from the metadata
         # TODO: FIGURE OUT WHICH OF THE POSSIBLE STATES TO USE
-        state = metadata.states[0]
-        possible = self._code_lookup[projection][state]
-        if len(possible) == 1:
-            # only one zone exists in the state
-            return possible.items()[0][1], "only option"
+        if len(metadata.states) > 0:
+            state = metadata.states[0]
+            possible = self._code_lookup[projection][state]
+            if len(possible) == 1:
+                # only one zone exists in the state
+                return possible.items()[0][1], "only option"
 
-        # use the projection info to try and narrow it down to one zone
-        for n, c in possible.items():
-            if n in metadata.coordinate_systems:
-                return c, "crs"
+            # use the projection info to try and narrow it down to one zone
+            for n, c in possible.items():
+                if n in metadata.coordinate_systems:
+                    return c, "crs"
 
         # use the centre of the geofence to pick the code
         centre_lon = (
@@ -282,21 +332,26 @@ class StatePlaneExtractor(CoordinatesExtractor):
         centre_lat = (
             raw_geofence.geofence.lat_minmax[0] + raw_geofence.geofence.lat_minmax[1]
         ) / 2
-        return stateplane.identify(centre_lon, centre_lat), "default"  #   type: ignore
+        return (
+            self._determine_epsg_from_coord(centre_lon, centre_lat, year),
+            "default",
+        )  #   type: ignore
 
     def _is_scale(self, text: str) -> bool:
         text = text.lower()
         return any(t in text for t in ["scale", ":"])
 
-    def _is_feet(self) -> bool:
+    def _requires_meters(self, metadata: MetadataExtraction) -> bool:
         # TODO: FIGURE OUT HOW THIS COULD BE DERIVED AND IF NECESSARY
-        return True
+        # nad27 maps require feet for projections, nad83 maps do not
+        return is_nad_83(metadata)
 
     def _extract_state_plane(
         self,
         input: CoordinateInput,
         state_plane_zone: str,
         ocr_text_blocks_raw: DocTextExtraction,
+        metadata: MetadataExtraction,
         lonlat_results: Tuple[
             Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
         ],
@@ -352,7 +407,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                         utm_dist = float(utm_dist)
 
                         # need to work with meters
-                        if self._is_feet():
+                        if self._requires_meters(metadata):
                             utm_dist = utm_dist / FEET_FACTOR
 
                         if utm_dist > 0:
@@ -395,7 +450,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 continue
 
             # need to work with meters
-            if self._is_feet():
+            if self._requires_meters(metadata):
                 utm_dist = utm_dist / FEET_FACTOR
 
             is_northing = self._is_northing_point(
@@ -430,6 +485,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                     "lat keypoint",
                     ocr_text_blocks.extractions[idx].text,
                     latlon_pt[0],
+                    SOURCE_STATE_PLANE,
                     True,
                     ocr_text_blocks.extractions[idx].bounds,
                     x_ranges=x_ranges,
@@ -469,6 +525,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 "lon keypoint",
                 ocr_text_blocks.extractions[idx].text,
                 latlon_pt[1],
+                SOURCE_STATE_PLANE,
                 False,
                 ocr_text_blocks.extractions[idx].bounds,
                 x_ranges=x_ranges,

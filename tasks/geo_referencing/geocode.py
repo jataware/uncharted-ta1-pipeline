@@ -17,6 +17,7 @@ from tasks.geo_referencing.entities import (
     DocGeoFence,
     GeoFence,
     GEOFENCE_OUTPUT_KEY,
+    SOURCE_GEOCODE,
 )
 from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
@@ -141,6 +142,7 @@ class Geocoder(CoordinatesExtractor):
                     "point derived lat",
                     c[1][0].place_name,
                     abs(c[0][1]),
+                    SOURCE_GEOCODE,
                     True,
                     pixel_alignment=(c[1][1], c[1][2]),
                     confidence=COORDINATE_CONFIDENCE_GEOCODE,
@@ -152,6 +154,7 @@ class Geocoder(CoordinatesExtractor):
                     "point derived lon",
                     c[1][0].place_name,
                     abs(c[0][0]),
+                    SOURCE_GEOCODE,
                     False,
                     pixel_alignment=(c[1][1], c[1][2]),
                     confidence=COORDINATE_CONFIDENCE_GEOCODE,

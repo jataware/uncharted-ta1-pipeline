@@ -136,6 +136,7 @@ class GeoReference(Task):
                         "lat keypoint",
                         f"fallback {a.geo_coord}",
                         a.geo_coord,
+                        "anchor",
                         True,
                         pixel_alignment=(
                             (roi_xy_minmax[0][0] + roi_xy_minmax[0][1]) / 2,
@@ -156,6 +157,7 @@ class GeoReference(Task):
                         "lon keypoint",
                         f"fallback {a.geo_coord}",
                         a.geo_coord,
+                        "anchor",
                         True,
                         pixel_alignment=(
                             a.pixel_coord,
