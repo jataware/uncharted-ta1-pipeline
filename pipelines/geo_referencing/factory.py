@@ -52,6 +52,8 @@ def create_geo_referencing_pipelines(
     output_dir: str,
     working_dir: str,
     segmentation_model_path: str,
+    state_plane_lookup_filename: str,
+    state_plane_zone_filename: str,
 ) -> List[Pipeline]:
     geocoding_cache_bounds = os.path.join(working_dir, "geocoding_cache_bounds.json")
     geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
@@ -215,8 +217,8 @@ def create_geo_referencing_pipelines(
         tasks.append(
             StatePlaneExtractor(
                 "fifth",
-                "/Users/phorne/projects/criticalmaas/data/state_plane_reference.csv",
-                "/Users/phorne/projects/criticalmaas/data/USA_State_Plane_Zones_NAD27.geojson",
+                "data/state_plane_reference.csv",
+                "data/USA_State_Plane_Zones_NAD27.geojson",
             )
         )
         tasks.append(OutlierFilter("utm-outliers"))
