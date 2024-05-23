@@ -2,7 +2,6 @@ import argparse
 import atexit
 import datetime
 from pathlib import Path
-import re
 from time import sleep
 import httpx
 import json
@@ -31,6 +30,7 @@ from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
     METADATA_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,
+    REQUEUE_LIMIT,
     SEGMENTATION_REQUEST_QUEUE,
     OutputType,
     Request,
@@ -65,6 +65,11 @@ APP_PORT = 5001
 CDR_EVENT_LOG = "events.log"
 
 LARA_RESULT_QUEUE_NAME = "lara_result_queue"
+
+REQUEUE_LIMIT = 3
+INACTIVITY_TIMEOUT = 5
+HEARTBEAT_INTERVAL = 900
+BLOCKED_CONNECTION_TIMEOUT = 600
 
 
 class JSONLog:
@@ -122,13 +127,17 @@ class LaraRequestPublisher:
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
                 self._host,
-                heartbeat=900,
-                blocked_connection_timeout=600,
+                heartbeat=HEARTBEAT_INTERVAL,
+                blocked_connection_timeout=BLOCKED_CONNECTION_TIMEOUT,
             )
         )
         channel = connection.channel()
         for queue in self._request_queues:
-            channel.queue_declare(queue=queue)
+            channel.queue_declare(
+                queue=queue,
+                durable=True,
+                arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
+            )
         return channel
 
     def publish_lara_request(self, req: Request, request_queue: str):
@@ -628,6 +637,8 @@ def process_lara_result(
             "result", {"type": result.output_type, "cog_id": result.request.image_id}
         )
 
+        # remove the message from the process set
+
     except Exception as e:
         logger.exception(f"Error processing result: {str(e)}")
 
@@ -649,12 +660,16 @@ def create_channel(host: str, queue: str) -> Channel:
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
             host,
-            heartbeat=900,
-            blocked_connection_timeout=600,
+            heartbeat=HEARTBEAT_INTERVAL,
+            blocked_connection_timeout=BLOCKED_CONNECTION_TIMEOUT,
         )
     )
     channel = connection.channel()
-    channel.queue_declare(queue=queue)
+    channel.queue_declare(
+        queue=queue,
+        durable=True,
+        arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
+    )
     return channel
 
 
@@ -673,14 +688,18 @@ def _run_lara_result_queue(result_queue: str, host="localhost"):
             # allowing things like heartbeats to be processed
             while True:
                 for method_frame, properties, body in result_channel.consume(
-                    result_queue,
-                    inactivity_timeout=5,
-                    auto_ack=True,
+                    result_queue, inactivity_timeout=INACTIVITY_TIMEOUT
                 ):
                     if method_frame:
-                        process_lara_result(
-                            result_channel, method_frame, properties, body
-                        )
+                        try:
+                            process_lara_result(
+                                result_channel, method_frame, properties, body
+                            )
+                            result_channel.basic_ack(method_frame.delivery_tag)
+                        except Exception as e:
+                            logger.exception(e)
+                            result_channel.basic_nack(method_frame.delivery_tag)
+
         except (AMQPConnectionError, AMQPChannelError):
             logger.warning(f"result channel closed, reconnecting")
             # channel is closed - make sure the connection is closed to facilitate a
