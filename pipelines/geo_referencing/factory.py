@@ -15,8 +15,9 @@ from tasks.common.task import TaskInput
 from tasks.geo_referencing.coordinates_extractor import (
     GeoCoordinatesExtractor,
 )
+from tasks.geo_referencing.state_plane_extractor import StatePlaneExtractor
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
-from tasks.geo_referencing.filter import NaiveFilter, OutlierFilter
+from tasks.geo_referencing.filter import NaiveFilter, OutlierFilter, UTMStatePlaneFilter
 from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.geocode import Geocoder as rfGeocoder
@@ -51,6 +52,8 @@ def create_geo_referencing_pipelines(
     output_dir: str,
     working_dir: str,
     segmentation_model_path: str,
+    state_plane_lookup_filename: str,
+    state_plane_zone_filename: str,
 ) -> List[Pipeline]:
     geocoding_cache_bounds = os.path.join(working_dir, "geocoding_cache_bounds.json")
     geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
@@ -211,7 +214,15 @@ def create_geo_referencing_pipelines(
             )
         )
         tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(
+            StatePlaneExtractor(
+                "great-plains",
+                state_plane_lookup_filename,
+                state_plane_zone_filename,
+            )
+        )
         tasks.append(OutlierFilter("utm-outliers"))
+        tasks.append(UTMStatePlaneFilter("utm-state-plane"))
         tasks.append(rfGeocoder("geocoded-georeferencing"))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))

@@ -14,7 +14,12 @@ from tasks.text_extraction.entities import (
     Point as TPoint,
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
-from tasks.geo_referencing.entities import Coordinate, DocGeoFence, GEOFENCE_OUTPUT_KEY
+from tasks.geo_referencing.entities import (
+    Coordinate,
+    DocGeoFence,
+    GEOFENCE_OUTPUT_KEY,
+    SOURCE_LAT_LON,
+)
 from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
 from tasks.geo_referencing.util import (
     ocr_to_coordinates,
@@ -101,7 +106,15 @@ class CoordinatesExtractor(Task):
             return self._create_result(input_coord.input)
 
         # extract the coordinates using the input
+        lats = input.get_data("lats", [])
+        lons = input.get_data("lons", [])
+        logger.info(
+            f"prior to run {len(lats)} latitude and {len(lons)} longitude coordinates have been extracted"
+        )
         lons, lats = self._extract_coordinates(input_coord)
+        logger.info(
+            f"after extractions run {len(lats)} latitude and {len(lons)} longitude coordinates have been extracted"
+        )
 
         # add the extracted coordinates to the result
         return self._create_coordinate_result(input_coord, lons, lats)
@@ -398,6 +411,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lat keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         True,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -439,6 +453,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lon keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         False,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -511,6 +526,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lat keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         True,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -550,6 +566,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lon keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         False,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -661,6 +678,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lat keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         True,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -700,6 +718,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lon keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         False,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -872,6 +891,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     "lat keypoint",
                     "",
                     new_lat,
+                    SOURCE_LAT_LON,
                     True,
                     pixel_alignment=(lat_pt[1].to_deg_result()[1], new_y),
                     confidence=0.6,
@@ -899,6 +919,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     "lon keypoint",
                     "",
                     new_lon,
+                    SOURCE_LAT_LON,
                     False,
                     pixel_alignment=(new_x, lon_pt[1].to_deg_result()[1]),
                     confidence=0.6,

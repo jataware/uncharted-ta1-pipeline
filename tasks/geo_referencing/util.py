@@ -1,6 +1,7 @@
 from tasks.text_extraction.entities import Point
 from tasks.common.task import TaskInput
 from tasks.geo_referencing.entities import DocGeoFence, GEOFENCE_OUTPUT_KEY
+from tasks.metadata_extraction.entities import MetadataExtraction
 from util.coordinate import absolute_minmax
 
 from typing import List, Tuple
@@ -69,3 +70,12 @@ def is_in_range(value: float, range_minmax: List[float]) -> bool:
     return range_minmax_updated[0] <= value <= range_minmax_updated[
         1
     ] or 0 <= value <= abs(range_minmax_updated[1])
+
+
+def is_nad_83(metadata: MetadataExtraction) -> bool:
+    # assume nad27 unless evidence for nad83
+    year = 1900
+    if metadata.year.isdigit():
+        year = int(metadata.year)
+
+    return "83" in metadata.projection or year >= 1986

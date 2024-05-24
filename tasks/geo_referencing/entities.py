@@ -5,6 +5,10 @@ from pydantic import BaseModel, ConfigDict
 
 
 GEOFENCE_OUTPUT_KEY = "geofence_output"
+SOURCE_LAT_LON = "lat-lon parser"
+SOURCE_STATE_PLANE = "state plane parser"
+SOURCE_UTM = "utm parser"
+SOURCE_GEOCODE = "geocoder"
 
 
 class GeoFence(BaseModel):
@@ -38,6 +42,7 @@ class GeoreferenceResult(BaseModel):
 class Coordinate:
     _type: str = ""
     _text: str = ""
+    _source: str = ""
     _parsed_degree: float = -1
     _is_lat: bool = False
     _bounds: List[Point] = []
@@ -50,6 +55,7 @@ class Coordinate:
         type: str,
         text: str,
         parsed_degree: float,
+        source: str,
         is_lat: bool = False,
         bounds: List[Point] = [],
         pixel_alignment: Optional[Tuple[float, float]] = None,
@@ -60,6 +66,7 @@ class Coordinate:
     ):
         self._type = type
         self._text = text
+        self._source = source
         self._bounds = [] if bounds == [] else bounds
         self._parsed_degree = parsed_degree
         self._is_lat = is_lat
@@ -93,6 +100,9 @@ class Coordinate:
 
     def is_lat(self) -> bool:
         return self._is_lat
+
+    def get_source(self) -> str:
+        return self._source
 
     def get_constant_dimension(self) -> float:
         # lat coordinates should be aligned on y axis
