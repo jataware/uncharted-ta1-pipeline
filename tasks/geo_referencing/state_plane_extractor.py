@@ -199,7 +199,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
                     min_direction = pd[1]
                     min_distance = d
                     min_value = pd[0]
-            # print(f"VALUE: {value}\tMIN VALUE: {min_value}\tMIN DIRECTION: {min_direction}")
             if value / min_value > 0.1 and value / min_value < 10:
                 return min_direction, "proximity"
 
@@ -295,7 +294,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
         raw_geofence: DocGeoFence,
         clue_point: Optional[Tuple[float, float]],
     ) -> Tuple[str, str]:
-        print(metadata)
         year = 1900
         if metadata.year.isdigit():
             year = int(metadata.year)
@@ -401,9 +399,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
 
                         # if a non-default direction can be derived, store it for future use
                         utm_dist = RE_NONNUMERIC.sub("", m_groups[0])
-                        print(
-                            f"PARSED STATE PLANE VALUE: {utm_dist}\tSOURCE: {m_groups[0]}\tTEXT: {block.text.lower()}"
-                        )
                         utm_dist = float(utm_dist)
 
                         # need to work with meters
@@ -424,8 +419,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
 
                         ne_matches.append((idx, m_groups, m_span))
             idx += 1
-        # print(f"PARSED DIRECTIONS: {parsed_directions}")
-        # print(f"UNPARSED DIRECTIONS: {unparsed_directions}")
         if len(parsed_directions) == 0:
             # determine direction based on unparsed directions
             easting_set, northing_set, reason = self._split_directions(
@@ -433,12 +426,10 @@ class StatePlaneExtractor(CoordinatesExtractor):
             )
             if not reason == DIRECTION_DEFAULT:
                 logger.info(f"split easting and northing by using {reason}")
-                # print(f"EASTING: {easting_set}\nNORTHING: {northing_set}")
                 for e in easting_set:
                     parsed_directions.append((e[0], False))
                 for n in northing_set:
                     parsed_directions.append((n[0], True))
-        # print(f"PARSED DIRECTIONS: {parsed_directions}")
 
         # parse northing and easting points
         northings = []
@@ -456,7 +447,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
             is_northing = self._is_northing_point(
                 utm_dist, groups[0], groups[1], parsed_directions
             )
-            # print(f"DEG: {utm_dist}\t{is_northing}")
 
             if is_northing[0]:
                 northings.append((utm_dist, span, idx))
@@ -465,8 +455,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
 
         # convert from utm to lat/lon, using average values of northing and easting for the mapping coordinate
         # northing first as some may be excluded, then eastings
-        print(f"EASTINGS: {eastings}")
-        print(f"NORTHINGS: {northings}")
         if len(eastings) > 0:
             easting_clue = statistics.median(map(lambda x: x[0], eastings))
         for n, span, idx in northings:
@@ -549,7 +537,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
             )
 
         logger.info("done state plane coordinate extraction")
-        # print(f"LONS: {lon_results}\nLATS: {lat_results}")
 
         return (lon_results, lat_results)
 
