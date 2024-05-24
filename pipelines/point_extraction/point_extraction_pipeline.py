@@ -68,7 +68,7 @@ class PointExtractionPipeline(Pipeline):
         if model_path_segmenter:
             tasks.append(
                 DetectronSegmenter(
-                    "detectron_segmenter",
+                    "segmenter",
                     model_path_segmenter,
                     str(Path(work_dir).joinpath("segmentation")),
                 )

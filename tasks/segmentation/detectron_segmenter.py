@@ -71,8 +71,6 @@ class DetectronSegmenter(Task):
         self.config_file = str(model_paths.model_config_path)
         self.model_weights = str(model_paths.model_weights_path)
         self.class_labels = class_labels
-        self.predictor: Optional[DefaultPredictor] = None
-        self._model_id: str = ""
         self.gpu = gpu
 
         # instantiate config
@@ -105,6 +103,12 @@ class DetectronSegmenter(Task):
         self.cfg.MODEL.DEVICE = device
         logger.info(f"torch device: {device}")
 
+        # load the segmentation model...
+        logger.info(f"Loading segmentation model {self.model_name}")
+        self.predictor = DefaultPredictor(self.cfg)
+        self._model_id = self._get_model_id(self.predictor.model)
+        logger.info(f"Model ID: {self._model_id }")
+
     def run(self, input: TaskInput) -> TaskResult:
         """
         Run legend and map segmentation inference on a single input image
@@ -120,13 +124,6 @@ class DetectronSegmenter(Task):
         # using Detectron2 DefaultPredictor class for model inference
         # TODO -- switch to using detectron2 model API directly for inference on batches of images
         # https://detectron2.readthedocs.io/en/latest/tutorials/models.html
-
-        if not self.predictor:
-            # load model...
-            logger.info(f"Loading segmentation model {self.model_name}")
-            self.predictor = DefaultPredictor(self.cfg)
-            self._model_id = self._get_model_id(self.predictor.model)
-            logger.info(f"Model ID: {self._model_id }")
 
         doc_key = f"{input.raster_id}_segmentation-{self._model_id}"
 

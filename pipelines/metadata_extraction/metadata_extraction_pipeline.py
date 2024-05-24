@@ -48,7 +48,7 @@ class MetadataExtractorPipeline(Pipeline):
                 "resize_text", Path(work_dir).joinpath("text"), False, True, 6000
             ),
             DetectronSegmenter(
-                "detectron_segmenter",
+                "segmenter",
                 model_data_path,
                 str(Path(work_dir).joinpath("segmentation")),
                 gpu=gpu,
