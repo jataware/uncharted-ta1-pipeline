@@ -48,8 +48,16 @@ def main():
     parser.add_argument("--points_dir", type=str, default="")
     parser.add_argument("--extract_metadata", type=bool, default=False)
     parser.add_argument("--model", type=str, required=True)
-    parser.add_argument("--state_plane_lookup_filename", type=str, required=True)
-    parser.add_argument("--state_plane_zone_filename", type=str, required=True)
+    parser.add_argument(
+        "--state_plane_lookup_filename",
+        type=str,
+        default="./data/state_plane_reference.csv",
+    )
+    parser.add_argument(
+        "--state_plane_zone_filename",
+        type=str,
+        default="./data/USA_State_Plane_Zones_NAD27.geojson",
+    )
     p = parser.parse_args()
 
     # setup an input stream

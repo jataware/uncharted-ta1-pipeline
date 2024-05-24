@@ -216,9 +216,9 @@ def create_geo_referencing_pipelines(
         tasks.append(UTMCoordinatesExtractor("fifth"))
         tasks.append(
             StatePlaneExtractor(
-                "fifth",
-                "data/state_plane_reference.csv",
-                "data/USA_State_Plane_Zones_NAD27.geojson",
+                "great-plains",
+                state_plane_lookup_filename,
+                state_plane_zone_filename,
             )
         )
         tasks.append(OutlierFilter("utm-outliers"))
