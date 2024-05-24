@@ -284,8 +284,9 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 break
         assert zone is not None
 
-        # use the fips code to lookup the epsg
-        fips = zone["info"]["FIPSZONE"]
+        # use the fips code to lookup the epsg with the fips code being at least 4 characters
+        fips: str = zone["info"]["FIPSZONE"]
+        fips = fips.rjust(4, "0")
         return self._fips_lookup[fips]
 
     def _determine_epsg(
