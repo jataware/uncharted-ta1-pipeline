@@ -276,18 +276,16 @@ class StatePlaneExtractor(CoordinatesExtractor):
             return stateplane.identify(lon, lat)  #   type: ignore
 
         # figure out which zone the coordinate falls within
-        zone = None
         point = sPoint(lon, lat)
         for z in self._zones:
             if z["shape"].contains(point):
-                zone = z
-                break
-        assert zone is not None
+                # use the fips code to lookup the epsg with the fips code being at least 4 characters
+                fips: str = z["info"]["FIPSZONE"]
+                fips = fips.rjust(4, "0")
+                return self._fips_lookup[fips]
 
-        # use the fips code to lookup the epsg with the fips code being at least 4 characters
-        fips: str = zone["info"]["FIPSZONE"]
-        fips = fips.rjust(4, "0")
-        return self._fips_lookup[fips]
+        # no zone info available, possibly a territory or different country
+        return ""
 
     def _determine_epsg(
         self,
@@ -312,8 +310,9 @@ class StatePlaneExtractor(CoordinatesExtractor):
 
         # use the state from the metadata
         # TODO: FIGURE OUT WHICH OF THE POSSIBLE STATES TO USE
-        if len(metadata.states) > 0:
-            state = metadata.states[0]
+        states = [s for s in metadata.states if not s == "NULL"]
+        if len(states) > 0:
+            state = states[0]
             possible = self._code_lookup[projection][state]
             if len(possible) == 1:
                 # only one zone exists in the state
