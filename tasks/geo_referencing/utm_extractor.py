@@ -80,7 +80,6 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         ]
 
         clue_point = input.input.get_request_info("clue_point")
-        print(metadata)
 
         utm_zone = self._determine_utm_zone(
             metadata, population_centres, geofence_raw, clue_point
