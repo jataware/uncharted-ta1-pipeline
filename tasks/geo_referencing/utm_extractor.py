@@ -165,6 +165,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         clue_point: Optional[Tuple[float, float]],
     ) -> Tuple[int, bool, str]:
         # determine the UTM zone number and direction
+        zone_number_determined = False
         zone_number = 1
         northern = False
 
@@ -174,23 +175,34 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             coord = utm.from_latlon(clue_point[1], clue_point[0])
             return coord[2], clue_point[1] > 0, "clue point"
 
+        # check the utm zone for the number
+        if (
+            metadata.utm_zone is not None
+            and len(metadata.utm_zone) > 0
+            and metadata.utm_zone.isdigit()
+        ):
+            zone_number = int(metadata.utm_zone)
+            zone_number_determined = True
+
         # extract the zone number from the coordinate systems
         for crs in metadata.coordinate_systems:
             # check for utm zone  DD[ns]
             lowered = crs.lower()
             for z in RE_UTM_ZONE.finditer(lowered):
                 g = z.groups()
-                zone_number = int(g[0])
+                if not zone_number_determined:
+                    zone_number = int(g[0])
                 northern = g[1] == "n"
                 return zone_number, northern, "metadata crs"
 
         # if zone not specified in metadata, look to geocoded centres
         # TODO: MAYBE CHECK THAT THE GEOCODING IS WITHIN REASONABLE DISTANCE
         if len(geocoded_centres) > 0:
-            zone_number = utm.latlon_to_zone_number(
-                geocoded_centres[0].coordinates[0][0].geo_y,
-                geocoded_centres[0].coordinates[0][0].geo_x,
-            )
+            if not zone_number_determined:
+                zone_number = utm.latlon_to_zone_number(
+                    geocoded_centres[0].coordinates[0][0].geo_y,
+                    geocoded_centres[0].coordinates[0][0].geo_x,
+                )
             northern = geocoded_centres[0].coordinates[0][0].geo_y > 0
             return zone_number, northern, "geocoding"
 
@@ -208,17 +220,21 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             northern = hemi > 0
             derived_direction = True
 
+        if zone_number_determined and derived_direction:
+            return zone_number, northern, "geofence"
+
         # use the lon min & max to get the zone, and if only 1 is possible then it is resolved
-        utm_min = utm.from_latlon(
-            raw_geofence.geofence.lat_minmax[0], raw_geofence.geofence.lon_minmax[0]
-        )
-        utm_max = utm.from_latlon(
-            raw_geofence.geofence.lat_minmax[1], raw_geofence.geofence.lon_minmax[1]
-        )
-        if utm_min[2] == utm_max[2]:
-            zone_number = utm_min[2]
-            if derived_direction:
-                return zone_number, northern, "geofence"
+        if not zone_number_determined:
+            utm_min = utm.from_latlon(
+                raw_geofence.geofence.lat_minmax[0], raw_geofence.geofence.lon_minmax[0]
+            )
+            utm_max = utm.from_latlon(
+                raw_geofence.geofence.lat_minmax[1], raw_geofence.geofence.lon_minmax[1]
+            )
+            if utm_min[2] == utm_max[2]:
+                zone_number = utm_min[2]
+                if derived_direction:
+                    return zone_number, northern, "geofence"
 
         # use the centre of the geofence as default
         centre_lat = (
@@ -230,7 +246,12 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         centre_utm = utm.from_latlon(centre_lat, centre_lon)
 
         # default the zone to make sure coordinates can be parsed
-        return centre_utm[2], centre_lat > 0, UTM_ZONE_DEFAULT
+        if not zone_number_determined:
+            zone_number = centre_utm[2]
+        if not derived_direction:
+            northern = centre_lat > 0
+
+        return zone_number, northern, UTM_ZONE_DEFAULT
 
     def _are_valid_utm_extractions(
         self, parsed_direction: List[Tuple[float, bool]]
