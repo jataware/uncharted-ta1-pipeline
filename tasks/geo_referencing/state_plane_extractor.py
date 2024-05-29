@@ -141,6 +141,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
 
         state_plane_zone = self._determine_epsg(metadata, geofence_raw, clue_point)
         if state_plane_zone[0] == "":
+            logger.info("no state plane zone determined so stopping parsing attempt")
             # unable to determine state plane coordinates without a zone
             return lon_pts, lat_pts
 

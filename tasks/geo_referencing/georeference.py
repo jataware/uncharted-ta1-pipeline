@@ -172,6 +172,7 @@ class GeoReference(Task):
         lon_check = list(map(lambda x: x[0], lon_pts))
         lat_check = list(map(lambda x: x[0], lat_pts))
         num_keypoints = min(len(lon_pts), len(lat_pts))
+        keypoint_stats = {}
         if (
             num_keypoints < 2
             or (abs(max(lon_check) - min(lon_check)) > 20)
@@ -191,6 +192,8 @@ class GeoReference(Task):
                 list(map(lambda x: x[1], lat_pts.items())),
                 input.image.size,
             )
+            keypoint_stats["lats"] = self._count_keypoints(lat_pts)
+            keypoint_stats["lons"] = self._count_keypoints(lon_pts)
 
         # ----- Get lon/lat results for query points for this image
         results = self._process_query_points(
@@ -219,7 +222,19 @@ class GeoReference(Task):
         result.output["error_scale"] = scale_error
         result.output["datum"] = datum
         result.output["projection"] = projection
+        result.output["keypoints"] = keypoint_stats
         return result
+
+    def _count_keypoints(
+        self, points: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[str, int]:
+        counts = {}
+        for _, c in points.items():
+            source = c.get_source()
+            if source not in counts:
+                counts[source] = 0
+            counts[source] = counts[source] + 1
+        return counts
 
     def _calculate_confidence(
         self,
