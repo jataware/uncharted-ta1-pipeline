@@ -13,6 +13,10 @@ from tasks.common.pipeline import (
 from tasks.geo_referencing.entities import (
     GeoreferenceResult,
     GroundControlPoint as LARAGroundControlPoint,
+    SOURCE_GEOCODE,
+    SOURCE_LAT_LON,
+    SOURCE_STATE_PLANE,
+    SOURCE_UTM,
 )
 
 from typing import Any, Dict, List
@@ -97,27 +101,54 @@ class SummaryOutput(OutputCreator):
         res = TabularOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
         res.fields = [
             "raster_id",
-            "keypoints",
-            "lat_initial",
-            "lon_initial",
-            "lat",
-            "lon",
-            "extraction",
+            "lat - lat/lon",
+            "lat - utm",
+            "lat - state plane",
+            "lat - geocode",
+            "lat - anchor",
+            "lon - lat/lon",
+            "lon - utm",
+            "lon - state plane",
+            "lon - geocode",
+            "lon - anchor",
             "rmse",
             "error_scale",
             "confidence",
         ]
 
+        # reduce the keypoint counts to the correct numbers
+        stats = [0] * 10
+        if "keypoints" in pipeline_result.data:
+            keypoints = pipeline_result.data["keypoints"]
+            if "lats" in keypoints:
+                lats = keypoints["lats"]
+                stats[0] = lats[SOURCE_LAT_LON] if SOURCE_LAT_LON in lats else 0
+                stats[1] = lats[SOURCE_UTM] if SOURCE_UTM in lats else 0
+                stats[2] = lats[SOURCE_STATE_PLANE] if SOURCE_STATE_PLANE in lats else 0
+                stats[3] = lats[SOURCE_GEOCODE] if SOURCE_GEOCODE in lats else 0
+                stats[4] = lats["anchor"] if "anchor" in lats else 0
+            if "lons" in keypoints:
+                lons = keypoints["lons"]
+                stats[5] = lons[SOURCE_LAT_LON] if SOURCE_LAT_LON in lons else 0
+                stats[6] = lons[SOURCE_UTM] if SOURCE_UTM in lons else 0
+                stats[7] = lons[SOURCE_STATE_PLANE] if SOURCE_STATE_PLANE in lons else 0
+                stats[8] = lons[SOURCE_GEOCODE] if SOURCE_GEOCODE in lons else 0
+                stats[9] = lons["anchor"] if "anchor" in lons else 0
+
         # obtain the rmse and other summary output
         res.data = [
             {
                 "raster_id": pipeline_result.raster_id,
-                "keypoints": "",
-                "lat_initial": "",
-                "lon_initial": "",
-                "lat": "",
-                "lon": "",
-                "extraction": "",
+                "lat - lat/lon": stats[0],
+                "lat - utm": stats[1],
+                "lat - state plane": stats[2],
+                "lat - geocode": stats[3],
+                "lat - anchor": stats[4],
+                "lon - lat/lon": stats[5],
+                "lon - utm": stats[6],
+                "lon - state plane": stats[7],
+                "lon - geocode": stats[8],
+                "lon - anchor": stats[9],
                 "rmse": pipeline_result.data["rmse"],
                 "error_scale": pipeline_result.data["error_scale"],
                 "confidence": pipeline_result.data["query_pts"][0].confidence,
