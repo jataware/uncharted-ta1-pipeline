@@ -200,10 +200,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         if len(geocoded_centres) > 0:
             if not zone_number_determined:
                 zone_number = utm.latlon_to_zone_number(
-                    geocoded_centres[0].coordinates[0][0].geo_y,
-                    geocoded_centres[0].coordinates[0][0].geo_x,
+                    geocoded_centres[0].results[0].coordinates[0].geo_y,
+                    geocoded_centres[0].results[0].coordinates[0].geo_x,
                 )
-            northern = geocoded_centres[0].coordinates[0][0].geo_y > 0
+            northern = geocoded_centres[0].results[0].coordinates[0].geo_y > 0
             return zone_number, northern, "geocoding"
 
         # use geofence to determine the zone

@@ -34,8 +34,9 @@ logger = logging.getLogger("geocode")
 
 
 class Geocoder(CoordinatesExtractor):
-    def __init__(self, task_id: str):
+    def __init__(self, task_id: str, place_types: List[str]):
         super().__init__(task_id)
+        self._place_types = place_types
 
     def _extract_coordinates(
         self, input: CoordinateInput
@@ -45,8 +46,11 @@ class Geocoder(CoordinatesExtractor):
         geocoded: DocGeocodedPlaces = input.input.parse_data(
             GEOCODED_PLACES_OUTPUT_KEY, DocGeocodedPlaces.model_validate
         )
-        lat_minmax, lon_minmax, defaulted = self._get_input_geofence(input)
-        places = [p for p in geocoded.places if p.place_type == "point"]
+        geofence_raw: DocGeoFence = input.input.parse_data(
+            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
+        )
+        # lat_minmax, lon_minmax, defaulted = self._get_input_geofence(input)
+        places = [p for p in geocoded.places if p.place_type in self._place_types]
 
         # filter places to only consider those within the geofence
         # TODO: may need to deep copy the object to not overwrite coordinates
@@ -54,19 +58,21 @@ class Geocoder(CoordinatesExtractor):
             f"extracting coordinates via geocoding with {len(places)} locations"
         )
         places_filtered = []
-        if defaulted:
+        if geofence_raw.geofence.defaulted:
             places_filtered = places
         else:
+            lon_minmax = geofence_raw.geofence.lon_minmax
+            lat_minmax = geofence_raw.geofence.lat_minmax
             for p in places:
                 pc = deepcopy(p)
                 coords = []
-                for c in pc.coordinates:
+                for c in pc.results:
                     if self._in_geofence(
-                        self._point_to_coordinate(c), lon_minmax, lat_minmax
+                        self._point_to_coordinate(c.coordinates), lon_minmax, lat_minmax
                     ):
                         coords.append(c)
                 if len(coords) > 0:
-                    pc.coordinates = coords
+                    pc.results = coords
                     places_filtered.append(pc)
                 else:
                     logger.info(
@@ -110,8 +116,11 @@ class Geocoder(CoordinatesExtractor):
         coords = []
         for p in places:
             coords = coords + [
-                ((c[0].geo_x, c[0].geo_y), (p, c[0].pixel_x, c[0].pixel_y))
-                for c in p.coordinates
+                (
+                    (c.coordinates[0].geo_x, c.coordinates[0].geo_y),
+                    (p, c.coordinates[0].pixel_x, c.coordinates[0].pixel_y),
+                )
+                for c in p.results
             ]
         data = np.array([c[0] for c in coords])  # .reshape(-1, 1)
 
@@ -170,11 +179,15 @@ class Geocoder(CoordinatesExtractor):
         lat_minmax: List[float],
     ) -> bool:
         # check x falls within geofence
-        if not lon_minmax[0] <= abs(coordinate[0]) <= lon_minmax[1]:
+        lons = [abs(x) for x in lon_minmax]
+        lons = [min(lons), max(lons)]
+        if not lons[0] <= abs(coordinate[0]) <= lons[1]:
             return False
 
         # check y falls within geofence
-        if not lat_minmax[0] <= abs(coordinate[1]) <= lat_minmax[1]:
+        lats = [abs(x) for x in lat_minmax]
+        lats = [min(lats), max(lats)]
+        if not lats[0] <= abs(coordinate[1]) <= lats[1]:
             return False
         return True
 

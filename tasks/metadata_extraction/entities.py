@@ -55,14 +55,21 @@ class GeocodedCoordinate(BaseModel):
     geo_y: float
 
 
+class GeocodedResult(BaseModel):
+    place_region: str  # second administrative division (ex: state)
+    coordinates: List[
+        GeocodedCoordinate
+    ]  # bounds will not have the pixel coordinates defined, with each geocoding option a separate list of coordinates
+
+
 class GeocodedPlace(BaseModel):
     model_config = ConfigDict(coerce_numbers_to_str=True)
 
     place_name: str
     place_location_restriction: str  # restrict the search space when geocoding to the country or the state to reduce noise
     place_type: str  # either bound for places that are not on the map but restrict the coordinate space, or point / line / polygon
-    coordinates: List[
-        List[GeocodedCoordinate]
+    results: List[
+        GeocodedResult
     ]  # bounds will not have the pixel coordinates defined, with each geocoding option a separate list of coordinates
 
 
