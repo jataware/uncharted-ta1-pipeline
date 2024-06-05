@@ -49,7 +49,6 @@ class Geocoder(CoordinatesExtractor):
         geofence_raw: DocGeoFence = input.input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
-        # lat_minmax, lon_minmax, defaulted = self._get_input_geofence(input)
         places = [p for p in geocoded.places if p.place_type in self._place_types]
 
         # filter places to only consider those within the geofence
