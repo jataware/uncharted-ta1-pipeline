@@ -71,13 +71,14 @@ class ModelROIExtractor(ROIExtractor):
             SEGMENTATION_OUTPUT_KEY, MapSegmentation.model_validate
         )
 
-        # extract the polygon
+        # extract the polygon (use the first valid map segment)
         poly_raw = None
         conf = 0
         for sr in segmentation_output.segments:
             if sr.class_label == "map" and sr.confidence > conf:
                 poly_raw = sr.poly_bounds
                 conf = sr.confidence
+                break
         if poly_raw is None:
             return None
 

@@ -16,6 +16,7 @@ from tasks.segmentation.entities import (
     MapSegmentation,
     SEGMENTATION_OUTPUT_KEY,
 )
+from tasks.segmentation.segmenter_utils import segmenter_postprocess
 from detectron2.config import get_cfg
 from detectron2.layers import mask_ops
 from detectron2.engine import DefaultPredictor
@@ -134,9 +135,14 @@ class DetectronSegmenter(Task):
                 f"Using cached segmentation results for raster: {input.raster_id}"
             )
             result = self._create_result(input)
+
+            # load and post-process the cached segmentation result
+            map_segmentation = MapSegmentation(**json_data)
+            segmenter_postprocess(map_segmentation, self.class_labels)
+
             result.add_output(
                 SEGMENTATION_OUTPUT_KEY,
-                MapSegmentation(**json_data).model_dump(),
+                map_segmentation.model_dump(),
             )
             return result
 
@@ -184,6 +190,10 @@ class DetectronSegmenter(Task):
                     )
                     seg_results.append(seg_result)
         map_segmentation = MapSegmentation(doc_id=input.raster_id, segments=seg_results)
+
+        # post-process the segmentation result
+        segmenter_postprocess(map_segmentation, self.class_labels)
+
         json_data = map_segmentation.model_dump()
 
         # write to cache

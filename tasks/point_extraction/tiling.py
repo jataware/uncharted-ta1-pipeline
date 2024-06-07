@@ -56,11 +56,11 @@ class Tiler(Task):
                 ),
                 SEGMENT_MAP_CLASS,
             )
-            p_map = p_map[:1]
-            if p_map:
+            if len(p_map) > 0:
                 # restrict tiling to use *only* the bounding rectangle of map area
                 # TODO: ideally should use map polygon area as a binary mask
-                (x_min, y_min, x_max, y_max) = [int(b) for b in p_map[0].bounds]
+                p_map = p_map[0]  # use 1st (highest ranked) map segment
+                (x_min, y_min, x_max, y_max) = [int(b) for b in p_map.bounds]
 
         step_x = int(self.tile_size[0] - self.overlap[0])
         step_y = int(self.tile_size[1] - self.overlap[1])

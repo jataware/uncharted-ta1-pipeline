@@ -137,10 +137,11 @@ class TemplateMatchPointExtractor(Task):
                 ),
                 SEGMENT_MAP_CLASS,
             )
-            if p_map:
+            if len(p_map) > 0:
                 # restrict to use *only* the bounding rectangle of map area
                 # TODO: ideally should use map polygon area as a binary mask
-                map_roi = [int(b) for b in p_map[0].bounds]
+                p_map = p_map[0]  # use 1st (highest ranked) map segment
+                map_roi = [int(b) for b in p_map.bounds]
                 # crop image to the map ROI
                 im_in = im_in[map_roi[1] : map_roi[3], map_roi[0] : map_roi[2], :]
 
