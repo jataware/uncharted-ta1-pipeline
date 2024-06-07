@@ -14,6 +14,7 @@ from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
     GeocodedCoordinate,
     GeocodedPlace,
+    GeocodedResult,
     MetadataExtraction,
     GEOCODED_PLACES_OUTPUT_KEY,
     METADATA_EXTRACTION_OUTPUT_KEY,
@@ -27,7 +28,11 @@ logger = logging.getLogger("geocoder")
 
 class GeocodingService(ABC):
     @abstractmethod
-    def geocode(self, place: GeocodedPlace) -> Tuple[GeocodedPlace, bool]:
+    def geocode(
+        self,
+        place: GeocodedPlace,
+        geofence: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None,
+    ) -> Tuple[GeocodedPlace, bool]:
         pass
 
 
@@ -57,68 +62,84 @@ class NominatimGeocoder(GeocodingService):
         with open(self._cache_location, "w") as f:
             json.dump(self._cache, f)
 
-    def _geocode_place(self, place: GeocodedPlace) -> Tuple[GeocodedPlace, bool]:
+    def _geocode_place(
+        self,
+        place: GeocodedPlace,
+        geofence: Optional[Tuple[Tuple[float, float], Tuple[float, float]]],
+    ) -> Tuple[GeocodedPlace, bool]:
         place_copy = deepcopy(place)
-        res = self._get_geocode(place_copy)
+        res_raw = self._get_geocode(place_copy, geofence)
 
-        if res is None:
+        if res_raw is None:
             return place_copy, False
-        if len(res) == 0:
+        if len(res_raw) == 0:
             return place_copy, False
 
         # bounding box returned is a list of strings [x1, x2, y1, y2]
         # these should not be absolute but rather the actual bounding boxes.
-        place_copy.coordinates = []
-        for r in res:  # type: ignore
+        place_copy.results = []
+        for res in res_raw:  # type: ignore
+            r = res[0]
             bb_coords = [
                 r[:2],
                 r[2:],
             ]
 
             # build the coordinate bounding box via 4 points
-            place_copy.coordinates.append(
-                [
-                    GeocodedCoordinate(
-                        pixel_x=place.coordinates[0][0].pixel_x,
-                        pixel_y=place.coordinates[0][0].pixel_y,
-                        geo_x=bb_coords[1][0],
-                        geo_y=bb_coords[0][0],
-                    ),
-                    GeocodedCoordinate(
-                        pixel_x=place.coordinates[0][0].pixel_x,
-                        pixel_y=place.coordinates[0][0].pixel_y,
-                        geo_x=bb_coords[1][1],
-                        geo_y=bb_coords[0][0],
-                    ),
-                    GeocodedCoordinate(
-                        pixel_x=place.coordinates[0][0].pixel_x,
-                        pixel_y=place.coordinates[0][0].pixel_y,
-                        geo_x=bb_coords[1][1],
-                        geo_y=bb_coords[0][1],
-                    ),
-                    GeocodedCoordinate(
-                        pixel_x=place.coordinates[0][0].pixel_x,
-                        pixel_y=place.coordinates[0][0].pixel_y,
-                        geo_x=bb_coords[1][0],
-                        geo_y=bb_coords[0][1],
-                    ),
-                ]
+            place_copy.results.append(
+                GeocodedResult(
+                    place_region=res[1],
+                    coordinates=[
+                        GeocodedCoordinate(
+                            pixel_x=place.results[0].coordinates[0].pixel_x,
+                            pixel_y=place.results[0].coordinates[0].pixel_y,
+                            geo_x=bb_coords[1][0],
+                            geo_y=bb_coords[0][0],
+                        ),
+                        GeocodedCoordinate(
+                            pixel_x=place.results[0].coordinates[0].pixel_x,
+                            pixel_y=place.results[0].coordinates[0].pixel_y,
+                            geo_x=bb_coords[1][1],
+                            geo_y=bb_coords[0][0],
+                        ),
+                        GeocodedCoordinate(
+                            pixel_x=place.results[0].coordinates[0].pixel_x,
+                            pixel_y=place.results[0].coordinates[0].pixel_y,
+                            geo_x=bb_coords[1][1],
+                            geo_y=bb_coords[0][1],
+                        ),
+                        GeocodedCoordinate(
+                            pixel_x=place.results[0].coordinates[0].pixel_x,
+                            pixel_y=place.results[0].coordinates[0].pixel_y,
+                            geo_x=bb_coords[1][0],
+                            geo_y=bb_coords[0][1],
+                        ),
+                    ],
+                )
             )
         return place_copy, True
 
-    def geocode(self, place: GeocodedPlace) -> Tuple[GeocodedPlace, bool]:
-        place_geocoded, result = self._geocode_place(place)
+    def geocode(
+        self,
+        place: GeocodedPlace,
+        geofence: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None,
+    ) -> Tuple[GeocodedPlace, bool]:
+        place_geocoded, result = self._geocode_place(place, geofence)
 
         return place_geocoded, result
 
-    def _get_geocode(self, place: GeocodedPlace) -> Optional[List[List[float]]]:
+    def _get_geocode(
+        self,
+        place: GeocodedPlace,
+        geofence: Optional[Tuple[Tuple[float, float], Tuple[float, float]]],
+    ) -> Optional[List[Tuple[List[float], str]]]:
         # TODO: update key to use country codes once they no longer get fixed to us
-        key = f"{place.place_name}|{self._limit_hits}|us"
+        key = f"{place.place_name}|{self._limit_hits}|us|{geofence}"
 
         # check cache, assuming cache is a structure {"boundingbox": list[list[float]]}
         if key in self._cache:
             cached_value = self._cache[key]
-            results: List[List[float]] = cached_value["boundingbox"]
+            results: List[Tuple[List[float], str]] = cached_value["boundingbox"]
             return results
 
         res = self._service.geocode(
@@ -126,6 +147,7 @@ class NominatimGeocoder(GeocodingService):
             exactly_one=False,  # type: ignore
             limit=self._limit_hits,  # type: ignore
             country_codes="us",  # type: ignore
+            viewbox=geofence,
         )
 
         if res is None:
@@ -137,12 +159,19 @@ class NominatimGeocoder(GeocodingService):
         if "boundingbox" not in res[0].raw:  # type: ignore
             return None
 
-        results = [[float(c) for c in p.raw["boundingbox"]] for p in res]  # type: ignore
+        results = [([float(c) for c in p.raw["boundingbox"]], self._get_state(p.raw["display_name"])) for p in res]  # type: ignore
 
         # add to cache
         self._cache_doc(key, {"boundingbox": results})
 
         return results
+
+    def _get_state(self, display_name: str) -> str:
+        # state is second last part of display name unless that is a zip code, in which case state is the one before
+        state = display_name.split(",")[-2].strip()
+        if state.isdigit():
+            state = display_name.split(",")[-3].strip()
+        return state
 
 
 class Geocoder(Task):
@@ -172,18 +201,82 @@ class Geocoder(Task):
         if geocoded_output is None:
             geocoded_output = DocGeocodedPlaces(map_id=input.raster_id, places=[])
 
-        geocoded_output.places = geocoded_output.places + self._geocode_bounds(
-            input, to_geocode
-        )
-        geocoded_output.places = geocoded_output.places + self._geocode_points(
-            input, to_geocode
-        )
-        geocoded_output.places = geocoded_output.places + self._geocode_centres(
-            input, to_geocode
-        )
+        new_places = self._geocode_list(input, to_geocode)
+        logger.info(f"geocoded {len(new_places)} places")
+        narrow_geofence = self._narrow_geofence(input, new_places)
+        logger.info(f"narrowed geofence determined to be '{narrow_geofence}'")
+        if narrow_geofence is not None and len(narrow_geofence) > 0:
+            logger.info("rerunning geocoding using narrowed geofence")
+            new_places = self._geocode_list(input, to_geocode, geofence=narrow_geofence)
+            logger.info(f"narrowing geofence geocoded {len(new_places)} places")
+
+        geocoded_output.places = geocoded_output.places + new_places
 
         # update the coordinates list
         return self._create_result(input, geocoded_output)
+
+    def _geocode_list(
+        self, input: TaskInput, to_geocode: List[GeocodedPlace], geofence: str = ""
+    ) -> List[GeocodedPlace]:
+
+        geobounds = None
+        if geofence is not None and len(geofence) > 0:
+            # geocode the geofence to get the bounds
+            geobounds_raw = self._geocode_bounds(
+                input,
+                [
+                    GeocodedPlace(
+                        place_name=geofence,
+                        place_location_restriction=to_geocode[
+                            0
+                        ].place_location_restriction,
+                        place_type="bound",
+                        results=[
+                            GeocodedResult(
+                                place_region="",
+                                coordinates=[
+                                    GeocodedCoordinate(
+                                        geo_x=0, geo_y=0, pixel_x=0, pixel_y=0
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            )
+            if len(geobounds_raw) > 0:
+                geobounds_raw = geobounds_raw[0]
+                lons = list(
+                    map(lambda x: x.geo_x, geobounds_raw.results[0].coordinates)
+                )
+                lats = list(
+                    map(lambda x: x.geo_y, geobounds_raw.results[0].coordinates)
+                )
+                geobounds = ((min(lats), min(lons)), (max(lats), max(lons)))
+
+        new_places = []
+        new_places = new_places + self._geocode_bounds(input, to_geocode)
+        new_places = new_places + self._geocode_points(input, to_geocode, geobounds)
+        new_places = new_places + self._geocode_centres(input, to_geocode, geobounds)
+
+        return new_places
+
+    def _narrow_geofence(
+        self, input: TaskInput, places: List[GeocodedPlace]
+    ) -> Optional[str]:
+        # check if any geocoded place is restricted to a single state
+        state = ""
+        for p in places:
+            state = ""
+            for r in p.results:
+                if state == "":
+                    # initialize the state
+                    state = r.place_region
+                elif not state == r.place_region:
+                    # a new non empty state value means the geofence cannot be narrowed
+                    state = ""
+                    break
+        return state
 
     def _create_result(
         self,
@@ -213,8 +306,15 @@ class Geocoder(Task):
                         place_name=metadata.country,
                         place_location_restriction="",
                         place_type="bound",
-                        coordinates=[
-                            [GeocodedCoordinate(geo_x=0, geo_y=0, pixel_x=0, pixel_y=0)]
+                        results=[
+                            GeocodedResult(
+                                place_region="",
+                                coordinates=[
+                                    GeocodedCoordinate(
+                                        geo_x=0, geo_y=0, pixel_x=0, pixel_y=0
+                                    )
+                                ],
+                            )
                         ],
                     )
                 )
@@ -226,12 +326,15 @@ class Geocoder(Task):
                             place_name=s,
                             place_location_restriction=metadata.country,
                             place_type="bound",
-                            coordinates=[
-                                [
-                                    GeocodedCoordinate(
-                                        geo_x=0, geo_y=0, pixel_x=0, pixel_y=0
-                                    )
-                                ]
+                            results=[
+                                GeocodedResult(
+                                    place_region="",
+                                    coordinates=[
+                                        GeocodedCoordinate(
+                                            geo_x=0, geo_y=0, pixel_x=0, pixel_y=0
+                                        )
+                                    ],
+                                )
                             ],
                         )
                     )
@@ -243,7 +346,12 @@ class Geocoder(Task):
                         place_name=p.text,
                         place_location_restriction=country,
                         place_type="point",
-                        coordinates=[[self._map_coordinates(p)]],
+                        results=[
+                            GeocodedResult(
+                                place_region="",
+                                coordinates=[self._map_coordinates(p)],
+                            )
+                        ],
                     )
                 )
 
@@ -254,8 +362,11 @@ class Geocoder(Task):
                         place_name=p.text,
                         place_location_restriction=country,
                         place_type="population",
-                        coordinates=[
-                            [GeocodedCoordinate(geo_x=0, geo_y=0, pixel_x=0, pixel_y=0)]
+                        results=[
+                            GeocodedResult(
+                                place_region="",
+                                coordinates=[self._map_coordinates(p)],
+                            )
                         ],
                     )
                 )
@@ -280,26 +391,32 @@ class Geocoder(Task):
         return geocoded_places
 
     def _geocode_centres(
-        self, input: TaskInput, places: List[GeocodedPlace]
+        self,
+        input: TaskInput,
+        places: List[GeocodedPlace],
+        geofence: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None,
     ) -> List[GeocodedPlace]:
         geocoded_places = []
         for p in places:
             if p.place_type == "population":
-                g, s = self._geocoding_service.geocode(p)
+                g, s = self._geocoding_service.geocode(p, geofence=geofence)
                 if s:
                     geocoded_places.append(g)
         return geocoded_places
 
     def _geocode_points(
-        self, input: TaskInput, places: List[GeocodedPlace]
+        self,
+        input: TaskInput,
+        places: List[GeocodedPlace],
+        geofence: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None,
     ) -> List[GeocodedPlace]:
         geocoded_places = []
 
         points_only = list(filter(lambda x: x.place_type == "point", places))
-        limit = min(10, len(points_only))
+        limit = min(200, len(points_only))
         places_to_geocode = random.sample(points_only, limit)
         for p in places_to_geocode:
-            g, s = self._geocoding_service.geocode(p)
+            g, s = self._geocoding_service.geocode(p, geofence=geofence)
             if s:
                 geocoded_places.append(g)
         return geocoded_places

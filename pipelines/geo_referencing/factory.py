@@ -126,7 +126,7 @@ def create_geo_referencing_pipelines(
                 run_points=True,
             )
         )
-        tasks.append(rfGeocoder("geocoded-georeferencing"))
+        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
     tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
@@ -228,7 +228,7 @@ def create_geo_referencing_pipelines(
         )
         tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(UTMStatePlaneFilter("utm-state-plane"))
-        tasks.append(rfGeocoder("geocoded-georeferencing"))
+        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
@@ -318,8 +318,16 @@ def create_geo_referencing_pipelines(
             )
         )
         tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(
+            StatePlaneExtractor(
+                "great-plains",
+                state_plane_lookup_filename,
+                state_plane_zone_filename,
+            )
+        )
         tasks.append(OutlierFilter("utm-outliers"))
-        tasks.append(rfGeocoder("geocoded-georeferencing"))
+        tasks.append(UTMStatePlaneFilter("utm-state-plane"))
+        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     """p.append(
@@ -408,8 +416,16 @@ def create_geo_referencing_pipelines(
             )
         )
         tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(
+            StatePlaneExtractor(
+                "great-plains",
+                state_plane_lookup_filename,
+                state_plane_zone_filename,
+            )
+        )
         tasks.append(OutlierFilter("utm-outliers"))
-        tasks.append(rfGeocoder("geocoded-georeferencing"))
+        tasks.append(UTMStatePlaneFilter("utm-state-plane"))
+        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     """p.append(
@@ -510,7 +526,7 @@ def create_geo_referencing_pipeline(
     )
     tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(OutlierFilter("utm-outliers"))
-    tasks.append(rfGeocoder("geocoded-georeferencing"))
+    tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))

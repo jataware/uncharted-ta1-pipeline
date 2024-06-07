@@ -20,6 +20,10 @@ from tasks.geo_referencing.entities import (
     GEOFENCE_OUTPUT_KEY,
     SOURCE_LAT_LON,
 )
+from tasks.metadata_extraction.entities import (
+    MetadataExtraction,
+    METADATA_EXTRACTION_OUTPUT_KEY,
+)
 from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
 from tasks.geo_referencing.util import (
     ocr_to_coordinates,
