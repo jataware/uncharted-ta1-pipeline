@@ -1,5 +1,6 @@
 import csv
 import logging
+import os
 
 from pydoc import doc
 from tasks.common.task import Task, TaskInput, TaskResult
@@ -23,6 +24,10 @@ class ScaleExtractor(Task):
         logger.info(
             f"running scale extractor with id {self._task_id} on image {input.raster_id}"
         )
+
+        if not os.path.isfile(self._file_name):
+            logger.info(f"scale file {self._file_name} not found")
+            return self._create_result(input)
 
         # read the scale file
         map_scales = self._read_map_scales(self._file_name)
