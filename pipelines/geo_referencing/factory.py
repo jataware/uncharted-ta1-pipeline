@@ -1,4 +1,5 @@
 import os
+import logging
 
 from pathlib import Path
 
@@ -38,12 +39,14 @@ from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextEx
 
 from typing import List
 
+logger = logging.getLogger("factory")
+
 
 def run_step(input: TaskInput) -> bool:
     lats = input.get_data("lats", [])
     lons = input.get_data("lons", [])
     num_keypoints = min(len(lons), len(lats))
-    print(f"running step due to insufficient key points: {num_keypoints < 2}")
+    logger.info(f"running step due to insufficient key points: {num_keypoints < 2}")
     return num_keypoints < 2
 
 
@@ -54,6 +57,7 @@ def create_geo_referencing_pipelines(
     segmentation_model_path: str,
     state_plane_lookup_filename: str,
     state_plane_zone_filename: str,
+    state_code_filename: str,
 ) -> List[Pipeline]:
     geocoding_cache_bounds = os.path.join(working_dir, "geocoding_cache_bounds.json")
     geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
@@ -219,6 +223,7 @@ def create_geo_referencing_pipelines(
                 "great-plains",
                 state_plane_lookup_filename,
                 state_plane_zone_filename,
+                state_code_filename,
             )
         )
         tasks.append(OutlierFilter("utm-outliers"))

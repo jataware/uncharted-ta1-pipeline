@@ -29,6 +29,8 @@ CLUE_FILEN_SUFFIX = "_clue"
 Image.MAX_IMAGE_PIXELS = 400000000
 GEOCODE_CACHE = "temp/geocode/"
 
+logger: Optional[logging.Logger] = None
+
 
 def main():
     logging.basicConfig(
@@ -36,6 +38,7 @@ def main():
         format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    global logger
     logger = logging.getLogger("georeferencing_pipeline")
 
     # parse command line args
@@ -57,6 +60,11 @@ def main():
         "--state_plane_zone_filename",
         type=str,
         default="./data/USA_State_Plane_Zones_NAD27.geojson",
+    )
+    parser.add_argument(
+        "--state_code_filename",
+        type=str,
+        default="./data/state_codes.csv",
     )
     p = parser.parse_args()
 
@@ -88,6 +96,8 @@ def create_input(
 
 
 def run_pipelines(parsed, input_data: ImageFileInputIterator):
+    assert logger is not None
+
     # get the pipelines
     pipelines = create_geo_referencing_pipelines(
         parsed.extract_metadata,
@@ -96,6 +106,7 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
         parsed.model,
         parsed.state_plane_lookup_filename,
         parsed.state_plane_zone_filename,
+        parsed.state_code_filename,
     )
 
     # get file paths
@@ -118,7 +129,7 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
         results_integration[p.id] = []
 
     for raster_id, image in input_data:
-        print(f"processing {raster_id}")
+        logger.info(f"processing {raster_id}")
 
         clue_path = os.path.join(clue_dir, raster_id + CLUE_FILEN_SUFFIX + ".csv")
         query_path = os.path.join(query_dir, raster_id + ".csv")
@@ -127,7 +138,7 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
         input = create_input(raster_id, image, points_path, query_path, clue_path)
 
         for pipeline in pipelines:
-            print(f"running pipeline {pipeline.id}")
+            logger.info(f"running pipeline {pipeline.id}")
             output = pipeline.run(input)
             results[pipeline.id].append(output["geo"])
             results_summary[pipeline.id].append(output["summary"])
@@ -138,7 +149,7 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
                 parsed.output, "maps", f"{pipeline.id}", f"{raster_id}.json"
             )
             writer_json.output([output["schema"]], {"path": schema_output_path})  # type: ignore
-            print(f"done pipeline {pipeline.id}\n\n")
+            logger.info(f"done pipeline {pipeline.id}\n\n")
 
         for p in pipelines:
             writer_csv.output(
@@ -190,11 +201,12 @@ def get_geofence(
     lat_limits: List[float] = [24.0, 73.0],
 ) -> Tuple[List[float], List[float], float, Optional[Tuple[float, float]]]:
     # parse clue CSV file
+    assert logger is not None
     (clue_lon, clue_lat, clue_ok) = parse_clue_file(csv_clue_file)
     clue_point = None
     if clue_ok:
         # if False:
-        print("Using lon/lat clue: {}, {}".format(clue_lon, clue_lat))
+        logger.info("using lon/lat clue {}, {}".format(clue_lon, clue_lat))
         dist_km = (
             fov_range_km / 2.0
         )  # distance from clue pt in all directions (N,E,S,W)
@@ -212,7 +224,7 @@ def get_geofence(
 
     else:
         # if no lat/lon clue, fall-back to full geo-fence of USA + Alaska
-        print("WARNING! No lon/lat clue found. Using full geo-fence for USA + Alaska")
+        logger.info("no lon/lat clue found so using full geo-fence for USA + Alaska")
         lon_minmax = lon_limits
         lat_minmax = lat_limits
 
@@ -329,6 +341,11 @@ def parse_clue_file(csv_clue_file: str) -> Tuple[float, float, bool]:
     got_clue = False
     lon = 0.0
     lat = 0.0
+    if not os.path.isfile(csv_clue_file):
+        assert logger is not None
+        logger.info(f"clue file not found when looking for {csv_clue_file}")
+        return (lon, lat, got_clue)
+
     try:
         with open(csv_clue_file) as f_in:
             for line in f_in:

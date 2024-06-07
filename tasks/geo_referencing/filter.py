@@ -33,8 +33,13 @@ class FilterCoordinates(Task):
         )
 
         # filter the coordinates to retain only those that are deemed valid
-        lon_pts_filtered = self._filter(input, lon_pts)
-        lat_pts_filtered = self._filter(input, lat_pts)
+        lon_pts_filtered = lon_pts
+        if len(lon_pts) > 0:
+            lon_pts_filtered = self._filter(input, lon_pts)
+        lat_pts_filtered = lat_pts
+        if len(lat_pts) > 0:
+            lat_pts_filtered = self._filter(input, lat_pts)
+
         logger.info(
             f"after filtering run {len(lat_pts_filtered)} latitude and {len(lon_pts_filtered)} longitude coordinates have been retained"
         )
@@ -68,6 +73,12 @@ class OutlierFilter(FilterCoordinates):
     def _filter(
         self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
     ) -> Dict[Tuple[float, float], Coordinate]:
+        if len(coords) < 3:
+            logger.info(
+                "skipping outlier filtering since there are fewer than 3 coordinates"
+            )
+            return coords
+
         logger.info(f"outlier filter running against {coords}")
         updated_coords = coords
         test_length = 0

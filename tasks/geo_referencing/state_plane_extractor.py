@@ -70,6 +70,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
         task_id: str,
         state_plane_lookup_filename: str,
         state_plane_zone_filename: str,
+        state_code_filename: str,
     ):
         super().__init__(task_id)
 
@@ -78,6 +79,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
         self._fips_lookup = lookup_fips
 
         self._zones = self._build_zone_lookup(state_plane_zone_filename)
+        self._state_codes = self._build_state_code_lookup(state_code_filename)
 
     def _build_zone_lookup(
         self, state_plane_zone_filename: str
@@ -88,6 +90,18 @@ class StatePlaneExtractor(CoordinatesExtractor):
         for f in data["features"]:
             shapes.append({"shape": shape(f["geometry"]), "info": f["properties"]})
         return shapes
+
+    def _build_state_code_lookup(self, state_code_filename: str) -> Dict[str, str]:
+        # read the lookup file
+        data = []
+        with open(state_code_filename, newline="") as f:
+            reader = csv.reader(f)
+            data = list(reader)
+
+        codes = {}
+        for r in data[1:]:
+            codes[r[0].lower()] = r[1].lower()
+        return codes
 
     def _build_lookups(
         self, state_plane_lookup_filename: str
@@ -103,7 +117,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
         lookup_zones = {"nad27": {}, "nad83": {}}
         lookup_fips = {}
         for r in data[1:]:
-            state = r[1]
+            state = r[1].lower()
             zone27 = r[4]
             zone83 = r[7]
             epsg27 = r[5]
@@ -245,6 +259,9 @@ class StatePlaneExtractor(CoordinatesExtractor):
     def _split_directions(
         self, unparsed_values: List[Tuple[float, float, float]]
     ) -> Tuple[List[Tuple[float, float, float]], List[Tuple[float, float, float]], str]:
+        if len(unparsed_values) == 0:
+            return [], [], DIRECTION_DEFAULT
+
         # find the two biggest clusters, assuming they are easting and northing
         c1, c2 = self._cluster_values(unparsed_values)
         if c1 is None or c2 is None:
@@ -294,6 +311,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
         raw_geofence: DocGeoFence,
         clue_point: Optional[Tuple[float, float]],
     ) -> Tuple[str, str]:
+        logger.info("attempting to determine state plane zone")
         year = 1900
         if metadata.year.isdigit():
             year = int(metadata.year)
@@ -313,16 +331,20 @@ class StatePlaneExtractor(CoordinatesExtractor):
         # TODO: FIGURE OUT WHICH OF THE POSSIBLE STATES TO USE
         states = [s for s in metadata.states if not s == "NULL"]
         if len(states) > 0:
-            state = states[0]
-            possible = self._code_lookup[projection][state]
-            if len(possible) == 1:
-                # only one zone exists in the state
-                return possible.items()[0][1], "only option"
+            state = states[0].lower()
+            logger.info(f"narrowing state plane zone to state {state}")
+            state_code = self._state_codes[state]
+            logger.info(f"narrowing state plane zone to state code {state_code}")
+            if state_code in self._code_lookup[projection]:
+                possible = self._code_lookup[projection][state_code]
+                if len(possible) == 1:
+                    # only one zone exists in the state
+                    return possible.items()[0][1], "only option"
 
-            # use the projection info to try and narrow it down to one zone
-            for n, c in possible.items():
-                if n in metadata.coordinate_systems:
-                    return c, "crs"
+                # use the projection info to try and narrow it down to one zone
+                for n, c in possible.items():
+                    if n in metadata.coordinate_systems:
+                        return c, "crs"
 
         # use the centre of the geofence to pick the code
         centre_lon = (
