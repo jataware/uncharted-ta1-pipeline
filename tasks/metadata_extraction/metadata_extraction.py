@@ -1,12 +1,20 @@
 import copy
 import logging
+import os
 import re
 import json
 from enum import Enum
-from openai import OpenAI
+from langchain_openai import ChatOpenAI
 import cv2
 import numpy as np
 from PIL.Image import Image as PILImage
+from pydantic import BaseModel, Field
+from langchain.schema import SystemMessage, PromptValue
+from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
+from langchain.output_parsers import PydanticOutputParser
+from langchain.chains import LLMChain
+from langchain_openai import ChatOpenAI
+from pydantic.v1 import BaseModel
 import tiktoken
 from tasks.common.image_io import pil_to_cv_image
 from tasks.common.task import TaskInput, TaskResult
@@ -25,6 +33,7 @@ from tasks.text_extraction.entities import (
 from tasks.common.pipeline import Task
 from typing import Callable, List, Dict, Any, Optional, Tuple
 
+
 logger = logging.getLogger("metadata_extractor")
 
 PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
@@ -34,9 +43,67 @@ class LLM(str, Enum):
     GPT_3_5_TURBO = "gpt-3.5-turbo"
     GPT_4_TURBO = "gpt-4-turbo"
     GPT_4 = "gpt-4"
+    GPT_4_O = "gpt-4o"
 
     def __str__(self):
         return self.value
+
+
+class MetdataLLM(BaseModel):
+    title: str = Field(
+        description="The title of the map. If this includes state names, "
+        + "county names or quadrangles, still include them in full title. "
+        + " Example: 'Geologic map of the Grand Canyon Quadrangle, Arizona'"
+    )
+    authors: List[str] = Field(
+        description="The authors of the map. "
+        + "Should be a list of strings in the format <last name, first iniital, middle initial>"
+        + "Example of author name: 'Bailey, D. K.'"
+        + "References, citations and geology attribution should be ignored when extracting authors."
+        + "A single author is allowed. Authors, title and year are normally grouped together."
+    )
+    year: str = Field(
+        description="The year the map was published"
+        + "Should be a single 4 digit number and the most recent year if multiple are present"
+    )
+    scale: str = Field(description="The scale of the map.  Example: '1:24000'")
+    datum: str = Field(
+        description="The datum of the map."
+        + "Examples: 'North American Datum of 1927', 'NAD83', 'WGS 84'"
+    )
+    vertical_datum: str = Field(
+        description="The vertical datum of the map."
+        + "Examples: 'mean sea level', 'vertical datum of 1901', 'national vertical geoditic datum of 1929'"
+    )
+    projection: str = Field(
+        description="The map projection."
+        + "Examples: 'Polyconic', 'Lambert', 'Transverse Mercator'"
+    )
+    coordinate_systems: List[str] = Field(
+        description="The coordinate systems present on the map."
+        + "Examples: 'Utah coordinate system central zone', 'UTM Zone 15', "
+        + "'Universal Transverse Mercator zone 12', "
+        + "'New Mexico coordinate system, north zone', 'Carter Coordinate System'."
+        + "The term `grid ticks` should not be included in coordinate system output."
+    )
+    base_map: str = Field(
+        "The base map information description.  The base map description can be a "
+        + "descriptive string, but also often contains (quadrangle, year) pairs."
+        + "Examples: 'U.S. Geological Survey 1954', "
+        + "'U.S. Geological Survey 1:62,500', "
+        + "'Vidal (1949) Rice and Turtle Mountains (1954) Savahia Peak (1975)'"
+    )
+    counties: List[str] = Field(description="Counties covered by the map.")
+    states: List[str] = Field(
+        description="States or provinces covered by the map.  States "
+        + "includes principal subvidisions of any country and their full "
+        + "name should be extracted. Examples: 'Arizona', 'New York',"
+        + " 'South Dakota', 'Ontario'"
+    )
+    country: str = Field(
+        description="Country covered by the map." + "Examples: 'USA', 'Canada'"
+    )
+    publisher: str = Field(description="The publisher of the map.")
 
 
 class MetadataExtractor(Task):
@@ -58,31 +125,16 @@ class MetadataExtractor(Task):
     MIN_TEXT_FILTER_LENGTH = 100
     TEXT_FILTER_DECREMENT = 100
 
-    # json structure for prompt
-    EXAMPLE_JSON = json.dumps(
-        {
-            "title": "<title>",
-            "projection": "<projection>",
-            "scale": "<scale>",
-            "datum": "<datum>",
-            "vertical_datum": "<vertical datum>",
-            "coordinate_systems": [
-                "<coordinate system>",
-                "<coordinate_system>",
-                "<coordinate_system>",
-            ],
-            "utm_zone": "<utm zone>",
-            "authors": ["<author name>", "<author name>", "<author name>"],
-            "year": "<publication year>",
-            "publisher": "<publisher>",
-            "base_map": "<base map>",
-            "counties": ["<county>", "<county>", "<county>"],
-            "states": ["<state>", "<state>", "<state>"],
-            "country": "<country>",
-            "publisher": "<publisher>",
-        },
-        indent=4,
+    PROMPT_TEMPLATE = (
+        "The following blocks of text were extracted from a map using an OCR process:\n"
+        + "{text_str}"
+        + "\n\n"
+        + "Extract metadata defined in the output structure from the text.\n"
+        + "{format}"
+        + "\n"
+        + 'If any string value is not present the field should be set to "NULL"\n'
     )
+
     EXAMPLE_JSON_POINTS = json.dumps(
         [
             {"name": "Ducky Hill", "index": 12},
@@ -120,9 +172,12 @@ class MetadataExtractor(Task):
         should_run: Optional[Callable] = None,
     ):
         super().__init__(id)
-        self._openai_client = (
-            OpenAI()
-        )  # will read key from "OPENAI_API_KEY" env variable
+
+        self._chat_model = ChatOpenAI(
+            model=model, api_key=os.getenv("OPENAI_API_KEY"), temperature=0.1
+        )
+        logger.info(f"Using model: {model.value}")
+
         self._model = model
         self._text_key = text_key
         self._should_run = should_run
@@ -145,21 +200,21 @@ class MetadataExtractor(Task):
                 TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
             )
 
-            text_indices = self._extract_text_with_index(doc_text)
+            # text_indices = self._extract_text_with_index(doc_text)
 
             # convert text to prompt string and compute token count
-            prompt_str_places = self._to_point_prompt_str(
-                self._text_extractions_to_str(text_indices)
-            )
-            metadata.places = self._process_map_area_extractions(
-                doc_text, prompt_str_places
-            )
-            prompt_str_areas = self._to_place_prompt_str(
-                self._text_extractions_to_str(text_indices)
-            )
-            metadata.population_centres = self._process_map_area_extractions(
-                doc_text, prompt_str_areas, True
-            )
+            # prompt_str_places = self._to_point_prompt_str(
+            #     self._text_extractions_to_str(text_indices)
+            # )
+            # metadata.places = self._process_map_area_extractions(
+            #     doc_text, prompt_str_places
+            # )
+            # prompt_str_areas = self._to_place_prompt_str(
+            #     self._text_extractions_to_str(text_indices)
+            # )
+            # metadata.population_centres = self._process_map_area_extractions(
+            #     doc_text, prompt_str_areas, True
+            # )
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
@@ -186,14 +241,14 @@ class MetadataExtractor(Task):
             # normalize quadrangle
             metadata.quadrangles = self._normalize_quadrangle(metadata.quadrangles)
 
-            # extract quadrangles from the title and base map info
-            metadata.quadrangles = self._extract_quadrangles(
-                metadata.title, metadata.base_map
-            )
+            # # extract quadrangles from the title and base map info
+            # metadata.quadrangles = self._extract_quadrangles(
+            #     metadata.title, metadata.base_map
+            # )
 
-            # extract UTM zone if not present in metadata after initial extraction
-            if metadata.utm_zone == "NULL":
-                metadata.utm_zone = self._extract_utm_zone(metadata)
+            # # extract UTM zone if not present in metadata after initial extraction
+            # if metadata.utm_zone == "NULL":
+            #     metadata.utm_zone = self._extract_utm_zone(metadata)
 
             # compute map shape from the segmentation output
             segments = input.data[SEGMENTATION_OUTPUT_KEY]
@@ -219,20 +274,33 @@ class MetadataExtractor(Task):
             num_tokens = 0
             prompt_str = ""
             text = []
+
+            input_prompt: Optional[PromptValue] = None
+            prompt_str = ""
+
+            # setup the output structure
+            parser = PydanticOutputParser(pydantic_object=MetdataLLM)
+
+            # setup the prompt template
+            prompt_template = self._generate_prompt_template(parser)
+
             while max_text_length > self.MIN_TEXT_FILTER_LENGTH:
                 # extract text from OCR output using rule-based filtering
                 text = self._extract_text(doc_text_extraction, max_text_length)
-
-                # convert text to prompt string and compute token count
-                prompt_str = self._to_prompt_str("\n".join(text))
-                num_tokens = self._count_tokens(prompt_str, "cl100k_base")
+                input_prompt = prompt_template.format_prompt(text_str="\n".join(text))
+                if input_prompt is None:
+                    logger.warn(
+                        f"Skipping extraction '{doc_text_extraction.doc_id}' - prompt generation failed"
+                    )
+                    return self._create_empty_extraction(doc_text_extraction.doc_id)
 
                 # if the token count is greater than the limit, reduce the max text length
                 # and try again
+                num_tokens = self._count_tokens(input_prompt.to_string(), "cl100k_base")
                 if num_tokens <= self.TOKEN_LIMIT:
                     break
                 max_text_length = max_text_length - self.TEXT_FILTER_DECREMENT
-                logger.info(
+                logger.debug(
                     f"Token count after filtering exceeds limit - reducing max text length to {max_text_length}"
                 )
 
@@ -241,53 +309,13 @@ class MetadataExtractor(Task):
             logger.debug("Prompt string:\n")
             logger.debug(prompt_str)
 
-            if num_tokens < self.TOKEN_LIMIT:
-                messages: List[Any] = [
-                    {
-                        "role": "system",
-                        "content": "You are using text extracted from maps by an OCR process to identify map metadata",
-                    },
-                    {"role": "user", "content": prompt_str},
-                ]
-                # GPT-4-turbo allows for an explicit response format setting for JSON output
-                if self._model == LLM.GPT_4_TURBO:
-                    completion = self._openai_client.chat.completions.create(
-                        messages=messages,
-                        model=self._model.value,
-                        response_format={"type": "json_object"},
-                        temperature=0.1,
-                    )
-                else:
-                    completion = self._openai_client.chat.completions.create(
-                        messages=messages,
-                        model=self._model.value,
-                        temperature=0.1,
-                    )
-
-                message_content = completion.choices[0].message.content
-                if message_content is not None:
-                    try:
-                        content_dict: Dict[str, Any] = json.loads(message_content)
-                    except json.JSONDecodeError as e:
-                        logger.error(
-                            f"Skipping extraction '{doc_text_extraction.doc_id}' - error parsing json response from openai api likely due to token limit",
-                            exc_info=True,
-                        )
-                        return self._create_empty_extraction(doc_text_extraction.doc_id)
-                    content_dict["map_id"] = doc_text_extraction.doc_id
-                else:
-                    content_dict = {"map_id": doc_text_extraction.doc_id}
-                # ensure all the dict values are populated so we can validate the model - those below
-                # are extracted by the first GPT pass
-                # TODO - is it possible to handle this in a better way?
-                content_dict["places"] = []
-                content_dict["population_centres"] = []
-                content_dict["map_shape"] = MapShape.UNKNOWN
-                content_dict["map_chroma"] = MapChromaType.UNKNOWN
-                content_dict["vertical_datum"] = "NULL"
-                content_dict["quadrangles"] = []
-                extraction = MetadataExtraction(**content_dict)
-                return extraction
+            # generate the response
+            if input_prompt is not None:
+                chain = prompt_template | self._chat_model | parser
+                response = chain.invoke({"text_str": "\n".join(text)})
+                return MetadataExtraction(
+                    map_id=doc_text_extraction.doc_id, **response.dict()
+                )
 
             logger.warn(
                 f"Skipping extraction '{doc_text_extraction.doc_id}' - input token count {num_tokens} is greater than limit {self.TOKEN_LIMIT}"
@@ -302,128 +330,128 @@ class MetadataExtractor(Task):
             )
             return self._create_empty_extraction(doc_text_extraction.doc_id)
 
-    def _process_map_area_extractions(
-        self,
-        doc_text_extraction: DocTextExtraction,
-        prompt_str: str,
-        replace_text: bool = False,
-    ) -> List[TextExtraction]:
-        logger.info(
-            f"extracting point places from the map area of '{doc_text_extraction.doc_id}'"
-        )
-        places = []
-        try:
-            messages: List[Any] = [
-                {
-                    "role": "system",
-                    "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
-                },
-                {"role": "user", "content": prompt_str},
-            ]
-            if self._model == LLM.GPT_4_TURBO:
-                completion = self._openai_client.chat.completions.create(
-                    messages=messages,
-                    model=self._model.value,
-                    response_format={"type": "json_object"},
-                    temperature=0.1,
-                )
-            else:
-                completion = self._openai_client.chat.completions.create(
-                    messages=messages,
-                    model=self._model.value,
-                    response_format={"type": "json_object"},
-                    temperature=0.1,
-                )
+    # def _process_map_area_extractions(
+    #     self,
+    #     doc_text_extraction: DocTextExtraction,
+    #     prompt_str: str,
+    #     replace_text: bool = False,
+    # ) -> List[TextExtraction]:
+    #     logger.info(
+    #         f"extracting point places from the map area of '{doc_text_extraction.doc_id}'"
+    #     )
+    #     places = []
+    #     try:
+    #         messages: List[Any] = [
+    #             {
+    #                 "role": "system",
+    #                 "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
+    #             },
+    #             {"role": "user", "content": prompt_str},
+    #         ]
+    #         if self._model == LLM.GPT_4_TURBO:
+    #             completion = self._openai_client.chat.completions.create(
+    #                 messages=messages,
+    #                 model=self._model.value,
+    #                 response_format={"type": "json_object"},
+    #                 temperature=0.1,
+    #             )
+    #         else:
+    #             completion = self._openai_client.chat.completions.create(
+    #                 messages=messages,
+    #                 model=self._model.value,
+    #                 response_format={"type": "json_object"},
+    #                 temperature=0.1,
+    #             )
 
-            message_content = completion.choices[0].message.content
-            if message_content is not None:
-                try:
-                    places_raw: List[Dict[str, Any]] = json.loads(message_content)[
-                        "points"
-                    ]
-                    places = self._map_text_coordinates(
-                        places_raw, doc_text_extraction, replace_text
-                    )
-                except json.JSONDecodeError as e:
-                    logger.error(
-                        f"Skipping extraction '{doc_text_extraction.doc_id}' - error parsing json response from api likely due to token limit",
-                        exc_info=True,
-                    )
-                    places = []
-        except Exception as e:
-            # print exception stack trace
-            logger.error(
-                f"Skipping extraction '{doc_text_extraction.doc_id}' - unexpected error during processing",
-                exc_info=True,
-            )
-            places = []
-        return places
+    #         message_content = completion.choices[0].message.content
+    #         if message_content is not None:
+    #             try:
+    #                 places_raw: List[Dict[str, Any]] = json.loads(message_content)[
+    #                     "points"
+    #                 ]
+    #                 places = self._map_text_coordinates(
+    #                     places_raw, doc_text_extraction, replace_text
+    #                 )
+    #             except json.JSONDecodeError as e:
+    #                 logger.error(
+    #                     f"Skipping extraction '{doc_text_extraction.doc_id}' - error parsing json response from api likely due to token limit",
+    #                     exc_info=True,
+    #                 )
+    #                 places = []
+    #     except Exception as e:
+    #         # print exception stack trace
+    #         logger.error(
+    #             f"Skipping extraction '{doc_text_extraction.doc_id}' - unexpected error during processing",
+    #             exc_info=True,
+    #         )
+    #         places = []
+    #     return places
 
-    def _extract_utm_zone(self, metadata: MetadataExtraction) -> str:
-        """Extracts the UTM zone from the metadata if it is not already present"""
-        prompt_str = self._to_utm_prompt_str(
-            metadata.counties,
-            metadata.quadrangles,
-            metadata.states,
-            metadata.places,
-            metadata.population_centres,
-        )
-        utm_zone_resp = self._process_basic_prompt(prompt_str)
-        if utm_zone_resp == "NULL":
-            return utm_zone_resp
-        utm_json = json.loads(utm_zone_resp)
-        return utm_json["utm_zone"]
+    # def _extract_utm_zone(self, metadata: MetadataExtraction) -> str:
+    #     """Extracts the UTM zone from the metadata if it is not already present"""
+    #     prompt_str = self._to_utm_prompt_str(
+    #         metadata.counties,
+    #         metadata.quadrangles,
+    #         metadata.states,
+    #         metadata.places,
+    #         metadata.population_centres,
+    #     )
+    #     utm_zone_resp = self._process_basic_prompt(prompt_str)
+    #     if utm_zone_resp == "NULL":
+    #         return utm_zone_resp
+    #     utm_json = json.loads(utm_zone_resp)
+    #     return utm_json["utm_zone"]
 
-    def _extract_quadrangles(self, title: str, base_map: str) -> List[str]:
-        """Extracts quadrangles from the title and base map info"""
-        prompt_str = self._to_quadrangle_prompt_str(title, base_map)
-        quadrangle_resp = self._process_basic_prompt(prompt_str)
-        if quadrangle_resp == "NULL":
-            return []
-        quadrangle_json = json.loads(quadrangle_resp)
-        return quadrangle_json["quadrangles"]
+    # def _extract_quadrangles(self, title: str, base_map: str) -> List[str]:
+    #     """Extracts quadrangles from the title and base map info"""
+    #     prompt_str = self._to_quadrangle_prompt_str(title, base_map)
+    #     quadrangle_resp = self._process_basic_prompt(prompt_str)
+    #     if quadrangle_resp == "NULL":
+    #         return []
+    #     quadrangle_json = json.loads(quadrangle_resp)
+    #     return quadrangle_json["quadrangles"]
 
-    def _process_basic_prompt(self, prompt_str: str) -> str:
-        message_content: str | None = ""
-        try:
-            messages: List[Any] = [
-                {
-                    "role": "system",
-                    "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
-                },
-                {"role": "user", "content": prompt_str},
-            ]
-            if self._model == LLM.GPT_4_TURBO:
-                completion = self._openai_client.chat.completions.create(
-                    messages=messages,
-                    model=self._model.value,
-                    response_format={"type": "json_object"},
-                    temperature=0.1,
-                )
-            else:
-                completion = self._openai_client.chat.completions.create(
-                    messages=messages,
-                    model=self._model.value,
-                    response_format={"type": "json_object"},
-                    temperature=0.1,
-                )
+    # def _process_basic_prompt(self, prompt_str: str) -> str:
+    #     message_content: str | None = ""
+    #     try:
+    #         messages: List[Any] = [
+    #             {
+    #                 "role": "system",
+    #                 "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
+    #             },
+    #             {"role": "user", "content": prompt_str},
+    #         ]
+    #         if self._model == LLM.GPT_4_TURBO:
+    #             completion = self._openai_client.chat.completions.create(
+    #                 messages=messages,
+    #                 model=self._model.value,
+    #                 response_format={"type": "json_object"},
+    #                 temperature=0.1,
+    #             )
+    #         else:
+    #             completion = self._openai_client.chat.completions.create(
+    #                 messages=messages,
+    #                 model=self._model.value,
+    #                 response_format={"type": "json_object"},
+    #                 temperature=0.1,
+    #             )
 
-            message_content = completion.choices[0].message.content
-            if message_content is not None:
-                try:
-                    result = message_content.strip()
-                except json.JSONDecodeError as e:
-                    logger.error(
-                        f"Skipping extraction - error parsing json response from api likely due to token limit",
-                        exc_info=True,
-                    )
-        except Exception as e:
-            # print exception stack trace
-            logger.error(
-                f"Skipping extraction - unexpected error during processing",
-                exc_info=True,
-            )
-        return "" if message_content is None else message_content
+    #         message_content = completion.choices[0].message.content
+    #         if message_content is not None:
+    #             try:
+    #                 result = message_content.strip()
+    #             except json.JSONDecodeError as e:
+    #                 logger.error(
+    #                     f"Skipping extraction - error parsing json response from api likely due to token limit",
+    #                     exc_info=True,
+    #                 )
+    #     except Exception as e:
+    #         # print exception stack trace
+    #         logger.error(
+    #             f"Skipping extraction - unexpected error during processing",
+    #             exc_info=True,
+    #         )
+    #     return "" if message_content is None else message_content
 
     def _extract_text_with_index(
         self, doc_text_extraction: DocTextExtraction
@@ -461,51 +489,20 @@ class MetadataExtractor(Task):
         num_tokens = len(encoding.encode(input_str))
         return num_tokens
 
-    def _to_prompt_str(self, text_str: str) -> str:
-        """Converts a string of text to a prompt string for GPT-3.5-turbo"""
-        return (
-            "The following blocks of text were extracted from a map using an OCR process:\n"
-            + text_str
-            + "\n\n"
-            + " Find the following:\n"
-            + " - map title. \n"
-            + " - scale\n"
-            + " - projection\n"
-            + " - datum\n"
-            + " - vertical datum\n"  # explicitly look for this so we can ignore it - if we totally remove we start to see vertical datums show up as datums
-            + " - coordinate systems\n"
-            + " - UTM zone\n"
-            + " - authors\n"
-            + " - year\n"
-            + " - base map description or base map (quad, year pairs)\n"
-            + " - counties\n"
-            + " - states/provinces\n"
-            + " - country\n"
-            + " - map publisher\n"
-            + " Examples of geoditic datums: North American Datum of 1983, NAD83, WGS 84.\n"
-            + " Examples of vertical datums: 'Mean Sea Level', 'Mean Low Water', and 'national vertical geoditic datum of 1929'\n"  # explicitly look for this so we can ignore it
-            + " Examples of UTM zones: 12, 15.\n"
-            + " Examples of projections: Polyconic, Lambert, Transverse Mercator\n"
-            + " Examples of coordinate systems: Utah coordinate system central zone, UTM Zone 15, Universal Transverse Mercator zone 12, New Mexico coordinate system, north zone, Carter Coordinate System"
-            + ' Examples of base maps: "U.S. Geological Survey 1954", "U.S. Geological Survey 1:62,500, Vidal (1949) Rice and Turtle Mountains (1954) Savahia Peak (1975)"\n'
-            + ' Examples of states/provinces: "Arizona", "New York", "South Dakota", "Ontario"\n'
-            + " Return the data as a JSON structure.\n"
-            + " Here is an example of the structure to use: \n"
-            + self.EXAMPLE_JSON
-            + "\n"
-            + 'If any string value is not present the field should be set to "NULL".\n'
-            + "If the map title includes state names, county names or quadrangle, they should be included in the full title.\n"
-            + "All author names should be in the format: <last name, first iniital, middle initial>.  Example of author name: Bailey, D. K.\n"
-            + "A single author is allowed.  Note that authors, title and year are normally grouped together on the map so use that help disambiguate.\n"
-            + "References, citations and geology attribution should be ignored when extracting authors.\n"
-            + "The year should be the most recent value and should be a single 4 digit number.\n"
-            + "Geoditic datums should be in their short form, for example, North American Datum of 1927 should be NAD27.\n"
-            + "Geoditic datums are exclusive of vertical datums; geoditic datums never contain terms associated with height or verticality.\n"
-            + "The term grid ticks should not be included in coordinate system output.\n"
-            + "The base map description can be a descriptive string, but also often contains (quadrangle, year) pairs.\n"
-            + "States includes principal subvidisions of any country and their full name should be extracted.\n"
-            + "UTM zones should not include an N or S after the number when extracted.\n"
+    def _generate_prompt_template(self, parser) -> ChatPromptTemplate:
+        system_message = "You are using text extracted from geological maps by an OCR process to identify map metadata"
+        human_message_template = HumanMessagePromptTemplate.from_template(
+            self.PROMPT_TEMPLATE
         )
+        prompt = ChatPromptTemplate(
+            messages=[
+                SystemMessage(content=system_message),
+                human_message_template,
+            ],
+            input_variables=["text_str"],
+            partial_variables={"format": parser.get_format_instructions()},
+        )
+        return prompt
 
     def _to_point_prompt_str(self, text_str: str) -> str:
         return (
