@@ -28,7 +28,11 @@ dependencies = [
     "utm",
     "parmap",
     "scipy",
-    "pika"
+    "pika",
+    "langchain",
+    "langchain-community",
+    "langchain-core",
+    "langchain-openai"
 ]
 
 [project.optional-dependencies]
