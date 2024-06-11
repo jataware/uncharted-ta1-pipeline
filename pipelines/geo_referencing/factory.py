@@ -422,7 +422,7 @@ def create_geo_referencing_pipelines(
                 "great-plains",
                 state_plane_lookup_filename,
                 state_plane_zone_filename,
-                state_code_filename
+                state_code_filename,
             )
         )
         tasks.append(OutlierFilter("utm-outliers"))
