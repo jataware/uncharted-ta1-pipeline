@@ -1,3 +1,4 @@
+import pprint
 import cv2
 import logging
 import math
@@ -81,6 +82,7 @@ class TemplateMatchPointExtractor(Task):
                 "No Legend item info available. Skipping Template-Match Point Extractor"
             )
             result = self._create_result(task_input)
+            result.add_output("map_image", task_input.data["map_image"])
             return result
 
         # get existing point predictions from YOLO point extractor
@@ -135,10 +137,11 @@ class TemplateMatchPointExtractor(Task):
                 ),
                 SEGMENT_MAP_CLASS,
             )
-            if p_map:
+            if len(p_map) > 0:
                 # restrict to use *only* the bounding rectangle of map area
                 # TODO: ideally should use map polygon area as a binary mask
-                map_roi = [int(b) for b in p_map[0].bounds]
+                p_map = p_map[0]  # use 1st (highest ranked) map segment
+                map_roi = [int(b) for b in p_map.bounds]
                 # crop image to the map ROI
                 im_in = im_in[map_roi[1] : map_roi[3], map_roi[0] : map_roi[2], :]
 
@@ -359,6 +362,23 @@ class TemplateMatchPointExtractor(Task):
             return True
         return False
 
+    def _is_template_valid(self, legend_item: LegendPointItem) -> bool:
+        """
+        Check if a Legend Item contains a valid template swatch
+        """
+        if not legend_item.legend_contour:
+            # no legend contour
+            return False
+        bbox = legend_item.legend_bbox
+        if not bbox or len(bbox) < 4:
+            # invalid bbox
+            return False
+        if bbox[2] - bbox[0] == 0 or bbox[3] - bbox[1] == 0:
+            # legend bbox has 0 area
+            return False
+
+        return True
+
     def _process_output(
         self,
         matches: List,
@@ -425,6 +445,13 @@ class TemplateMatchPointExtractor(Task):
                 preds_per_class[pred.class_name] += 1
 
         for legend_item in legend_pt_items:
+
+            if not self._is_template_valid(legend_item):
+                logger.warning(
+                    f"No valid legend template is available for legend item {legend_item.name}"
+                )
+                continue
+
             if legend_item.name not in preds_per_class:
                 # no YOLO predictions for this point type; needs processing
                 legend_items_unprocessed.append(legend_item)

@@ -99,11 +99,12 @@ if __name__ == "__main__":
     parser.add_argument("--rabbit_host", type=str, default="localhost")
     parser.add_argument("--request_queue", type=str, default=METADATA_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=METADATA_RESULT_QUEUE)
+    parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
     # init segmenter
     metadata_extraction = MetadataExtractorPipeline(
-        p.workdir, p.model, cdr_schema=p.cdr_schema
+        p.workdir, p.model, cdr_schema=p.cdr_schema, gpu=not p.no_gpu
     )
 
     metadata_result_key = (
@@ -129,3 +130,4 @@ if __name__ == "__main__":
             host=p.rabbit_host,
         )
         queue.start_request_queue()
+        queue.start_result_queue()

@@ -23,6 +23,9 @@ from tqdm import tqdm
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
+# YOLO inference hyperparameters, https://docs.ultralytics.com/modes/predict/#inference-arguments
+CONF_THRES = 0.20  # (0.25) minimum confidence threshold for detections
+IOU_THRES = 0.7  # IoU threshold for NMS
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +35,8 @@ class POINT_CLASS(str, Enum):
     HORIZONTAL_BEDDING = "horizontal_bedding"
     OVERTURNED_BEDDING = "overturned_bedding"
     VERTICAL_BEDDING = "vertical_bedding"
-    INCLINED_FOLIATION = "inclined_foliation"
-    INCLINED_FOLIATION_IGNEOUS = "inclined_foliation_igneous"
+    INCLINED_FOLIATION = "inclined_foliation"  # line with solid triangle
+    INCLINED_FOLIATION_IGNEOUS = "inclined_foliation_igneous"  # with hollow triangle
     VERTICAL_FOLIATION = "vertical_foliation"
     VERTICAL_JOINT = "vertical_joint"
     SINK_HOLE = "sink_hole"
@@ -193,7 +196,9 @@ class YOLOPointDetector(Task):
         doc_key = f"{task_input.raster_id}_points-{self._model_id}"
         # check cache and re-use existing file if present
         json_data = self.fetch_cached_result(doc_key)
-        if json_data and map_tiles.join_with_cached_predictions(MapTiles(**json_data)):
+        if json_data and map_tiles.join_with_cached_predictions(
+            MapTiles(**json_data), point_legend_mapping
+        ):
             # cached point predictions loaded successfully
             logger.info(
                 f"Using cached point extractions for raster: {task_input.raster_id}"
@@ -212,7 +217,12 @@ class YOLOPointDetector(Task):
             # note: ideally tile sizes used should be the same size as used during model training
             # tiles can be resized during inference pre-processing, if needed using 'imgsz' param
             # (e.g., predict(... imgsz=[1024,1024]))
-            batch_preds = self.model.predict(images, device=self.device)
+            batch_preds = self.model.predict(
+                images,
+                device=self.device,
+                conf=CONF_THRES,
+                iou=IOU_THRES,
+            )
             for tile, preds in zip(batch, batch_preds):
                 tile.predictions = self.process_output(preds, point_legend_mapping)
                 output.append(tile)

@@ -84,6 +84,7 @@ if __name__ == "__main__":
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     logger = logging.getLogger("segmenter app")
+
     logger.info("*** Starting Legend and Map Segmenter App ***")
 
     # parse command line args
@@ -98,10 +99,13 @@ if __name__ == "__main__":
     parser.add_argument("--rabbit_host", type=str, default="localhost")
     parser.add_argument("--request_queue", type=str, default=SEGMENTATION_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=SEGMENTATION_RESULT_QUEUE)
+    parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
     # init segmenter
-    segmentation_pipeline = SegmentationPipeline(p.model, p.workdir, p.min_confidence)
+    segmentation_pipeline = SegmentationPipeline(
+        p.model, p.workdir, p.min_confidence, gpu=not p.no_gpu
+    )
 
     # get ta1 schema output or internal output format
     result_key = (
@@ -127,3 +131,4 @@ if __name__ == "__main__":
             host=p.rabbit_host,
         )
         queue.start_request_queue()
+        queue.start_result_queue()

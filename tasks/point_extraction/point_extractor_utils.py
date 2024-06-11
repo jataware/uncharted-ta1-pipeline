@@ -330,16 +330,22 @@ def parse_legend_point_hints(legend_hints: dict) -> LegendPointItems:
             continue  # not a point symbol, skip
 
         # contour coords for the legend item's thumbnail swatch
-        xy_pts = shape["points"]
-        x_min = xy_pts[0][0]
-        x_max = xy_pts[0][0]
-        y_min = xy_pts[0][1]
-        y_max = xy_pts[0][1]
-        for x, y in xy_pts:
-            x_min = int(min(x, x_min))
-            x_max = int(max(x, x_max))
-            y_min = int(min(y, y_min))
-            y_max = int(max(y, y_max))
+        xy_pts = shape.get("points", [])
+        if xy_pts:
+            x_min = xy_pts[0][0]
+            x_max = xy_pts[0][0]
+            y_min = xy_pts[0][1]
+            y_max = xy_pts[0][1]
+            for x, y in xy_pts:
+                x_min = int(min(x, x_min))
+                x_max = int(max(x, x_max))
+                y_min = int(min(y, y_min))
+                y_max = int(max(y, y_max))
+        else:
+            x_min = 0
+            x_max = 0
+            y_min = 0
+            y_max = 0
         legend_point_items.append(
             LegendPointItem(
                 name=label,

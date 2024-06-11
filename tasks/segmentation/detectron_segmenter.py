@@ -16,6 +16,7 @@ from tasks.segmentation.entities import (
     MapSegmentation,
     SEGMENTATION_OUTPUT_KEY,
 )
+from tasks.segmentation.segmenter_utils import segmenter_postprocess
 from detectron2.config import get_cfg
 from detectron2.layers import mask_ops
 from detectron2.engine import DefaultPredictor
@@ -71,8 +72,6 @@ class DetectronSegmenter(Task):
         self.config_file = str(model_paths.model_config_path)
         self.model_weights = str(model_paths.model_weights_path)
         self.class_labels = class_labels
-        self.predictor: Optional[DefaultPredictor] = None
-        self._model_id: str = ""
         self.gpu = gpu
 
         # instantiate config
@@ -105,6 +104,12 @@ class DetectronSegmenter(Task):
         self.cfg.MODEL.DEVICE = device
         logger.info(f"torch device: {device}")
 
+        # load the segmentation model...
+        logger.info(f"Loading segmentation model {self.model_name}")
+        self.predictor = DefaultPredictor(self.cfg)
+        self._model_id = self._get_model_id(self.predictor.model)
+        logger.info(f"Model ID: {self._model_id }")
+
     def run(self, input: TaskInput) -> TaskResult:
         """
         Run legend and map segmentation inference on a single input image
@@ -121,13 +126,6 @@ class DetectronSegmenter(Task):
         # TODO -- switch to using detectron2 model API directly for inference on batches of images
         # https://detectron2.readthedocs.io/en/latest/tutorials/models.html
 
-        if not self.predictor:
-            # load model...
-            logger.info(f"Loading segmentation model {self.model_name}")
-            self.predictor = DefaultPredictor(self.cfg)
-            self._model_id = self._get_model_id(self.predictor.model)
-            logger.info(f"Model ID: {self._model_id }")
-
         doc_key = f"{input.raster_id}_segmentation-{self._model_id}"
 
         # check cache and re-use existing file if present
@@ -137,9 +135,14 @@ class DetectronSegmenter(Task):
                 f"Using cached segmentation results for raster: {input.raster_id}"
             )
             result = self._create_result(input)
+
+            # load and post-process the cached segmentation result
+            map_segmentation = MapSegmentation(**json_data)
+            segmenter_postprocess(map_segmentation, self.class_labels)
+
             result.add_output(
                 SEGMENTATION_OUTPUT_KEY,
-                MapSegmentation(**json_data).model_dump(),
+                map_segmentation.model_dump(),
             )
             return result
 
@@ -187,6 +190,10 @@ class DetectronSegmenter(Task):
                     )
                     seg_results.append(seg_result)
         map_segmentation = MapSegmentation(doc_id=input.raster_id, segments=seg_results)
+
+        # post-process the segmentation result
+        segmenter_postprocess(map_segmentation, self.class_labels)
+
         json_data = map_segmentation.model_dump()
 
         # write to cache

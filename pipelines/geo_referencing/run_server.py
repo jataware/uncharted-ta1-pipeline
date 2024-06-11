@@ -164,6 +164,7 @@ def start_server():
             host=p.rabbit_host,
         )
         queue.start_request_queue()
+        queue.start_result_queue()
 
 
 if __name__ == "__main__":

@@ -14,9 +14,22 @@ from tasks.text_extraction.entities import (
     Point as TPoint,
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
-from tasks.geo_referencing.entities import Coordinate, DocGeoFence, GEOFENCE_OUTPUT_KEY
+from tasks.geo_referencing.entities import (
+    Coordinate,
+    DocGeoFence,
+    GEOFENCE_OUTPUT_KEY,
+    SOURCE_LAT_LON,
+)
+from tasks.metadata_extraction.entities import (
+    MetadataExtraction,
+    METADATA_EXTRACTION_OUTPUT_KEY,
+)
 from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
-from tasks.geo_referencing.util import ocr_to_coordinates, get_bounds_bounding_box
+from tasks.geo_referencing.util import (
+    ocr_to_coordinates,
+    get_bounds_bounding_box,
+    get_input_geofence,
+)
 from util.coordinate import absolute_minmax
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -97,7 +110,15 @@ class CoordinatesExtractor(Task):
             return self._create_result(input_coord.input)
 
         # extract the coordinates using the input
+        lats = input.get_data("lats", [])
+        lons = input.get_data("lons", [])
+        logger.info(
+            f"prior to run {len(lats)} latitude and {len(lons)} longitude coordinates have been extracted"
+        )
         lons, lats = self._extract_coordinates(input_coord)
+        logger.info(
+            f"after extractions run {len(lats)} latitude and {len(lons)} longitude coordinates have been extracted"
+        )
 
         # add the extracted coordinates to the result
         return self._create_coordinate_result(input_coord, lons, lats)
@@ -112,23 +133,7 @@ class CoordinatesExtractor(Task):
     def _get_input_geofence(
         self, input: CoordinateInput
     ) -> Tuple[List[float], List[float], bool]:
-        geofence: DocGeoFence = input.input.parse_data(
-            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
-        )
-
-        if geofence is None:
-            return (
-                input.input.get_request_info("lon_minmax", [0, 180]),
-                input.input.get_request_info("lat_minmax", [0, 180]),
-                True,
-            )
-
-        # when parsing, only the absolute range matters as coordinates may or may not have the negative sign
-        return (
-            absolute_minmax(geofence.geofence.lon_minmax),
-            absolute_minmax(geofence.geofence.lat_minmax),
-            geofence.geofence.defaulted,
-        )
+        return get_input_geofence(input.input)
 
     def _create_coordinate_result(
         self,
@@ -410,6 +415,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lat keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         True,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -451,6 +457,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lon keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         False,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -523,6 +530,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lat keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         True,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -562,6 +570,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lon keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         False,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -673,6 +682,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lat keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         True,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -712,6 +722,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         "lon keypoint",
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
+                        SOURCE_LAT_LON,
                         False,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -884,6 +895,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     "lat keypoint",
                     "",
                     new_lat,
+                    SOURCE_LAT_LON,
                     True,
                     pixel_alignment=(lat_pt[1].to_deg_result()[1], new_y),
                     confidence=0.6,
@@ -911,6 +923,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                     "lon keypoint",
                     "",
                     new_lon,
+                    SOURCE_LAT_LON,
                     False,
                     pixel_alignment=(new_x, lon_pt[1].to_deg_result()[1]),
                     confidence=0.6,

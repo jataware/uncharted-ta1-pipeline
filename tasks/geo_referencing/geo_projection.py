@@ -10,6 +10,11 @@ from typing import Dict, List, Tuple
 
 logger = logging.getLogger("geo_projection")
 
+X_MAX: float = 180
+X_MIN: float = -180
+Y_MAX: float = 90
+Y_MIN: float = -90
+
 
 class PolyRegression:
     def __init__(self, order: int):
@@ -94,6 +99,18 @@ class GeoProjection:
         x_warped = self.regression_X.predict_pts(xy_pts)
         y_warped = self.regression_Y.predict_pts(xy_pts)
 
+        # limit to geo coordinate range
+        if min(x_warped) < X_MIN or max(x_warped) > X_MAX:
+            logger.info(
+                "adjusting longitude predictions due to values exceeding geographic range"
+            )
+            x_warped = [min(X_MAX, max(X_MIN, x)) for x in x_warped]
+        if min(y_warped) < Y_MIN or max(y_warped) > Y_MAX:
+            logger.info(
+                "adjusting latitude predictions due to values exceeding geographic range"
+            )
+            y_warped = [min(Y_MAX, max(Y_MIN, x)) for x in y_warped]
+
         xy_warped = [(x_w, y_w) for x_w, y_w in zip(x_warped, y_warped)]
 
         return xy_warped
@@ -151,7 +168,7 @@ class GeoProjection:
                 i_offset = 1  # jitter by 1 pixel (at least)
             new_i = max(min(pxl_i + i_offset, i_max - 1), 0)
             deg_results[(deg, new_i)] = new_j
-            print(
+            logger.info(
                 "Adding an anchor keypoint (minimal skew): deg: {}, i,j: {},{}".format(
                     deg, new_i, new_j
                 )

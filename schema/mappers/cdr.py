@@ -9,7 +9,13 @@ from schema.cdr_schemas.georeference import (
     ProjectionResult,
 )
 from schema.cdr_schemas.area_extraction import Area_Extraction, AreaType
-from schema.cdr_schemas.metadata import MapMetaData, CogMetaData
+from schema.cdr_schemas.map import Map
+from schema.cdr_schemas.metadata import (
+    MapColorSchemeTypes,
+    MapMetaData,
+    CogMetaData,
+    MapShapeTypes,
+)
 from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.features.point_features import (
     PointFeatureCollection,
@@ -20,7 +26,11 @@ from schema.cdr_schemas.features.point_features import (
 )
 
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoferenceResult
-from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
+from tasks.metadata_extraction.entities import (
+    MapChromaType,
+    MapShape,
+    MetadataExtraction as LARAMetadata,
+)
 from tasks.point_extraction.entities import MapImage as LARAPoints
 from tasks.point_extraction.label_map import YOLO_TO_CDR_LABEL
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
@@ -32,7 +42,7 @@ from typing import Dict, List
 logger = logging.getLogger("mapper")
 
 MODEL_NAME = "uncharted-lara"
-MODEL_VERSION = "0.0.1"
+MODEL_VERSION = "0.0.3"
 
 
 class CDRMapper:
@@ -91,13 +101,59 @@ class GeoreferenceMapper(CDRMapper):
 
 
 class MetadataMapper(CDRMapper):
+    """
+    Mapper class for converting between LARAMetadata and CogMetaData objects.
+    """
 
     def map_to_cdr(self, model: LARAMetadata) -> CogMetaData:
+        """
+        Maps the given LARAMetadata object to a CogMetaData object.
+
+        Args:
+            model (LARAMetadata): The LARAMetadata object to be mapped.
+
+        Returns:
+            CogMetaData: The mapped CogMetaData object.
+        """
+
+        # extract the scale from the model
         scale_str = "0"
         if model.scale:
             scale_split = model.scale.split(":")
             if len(scale_split) > 1:
                 scale_str = scale_split[1]
+
+        # attempt to extract the year from the model
+        try:
+            year_int = int(model.year)
+        except ValueError:
+            year_int = None
+
+        # map the map shape to the CDR map shape
+        cdr_map_shape = None
+        match model.map_shape:
+            case MapShape.UNKNOWN:
+                cdr_map_shape = None
+            case MapShape.IRREGULAR:
+                cdr_map_shape = MapShapeTypes.non_rectangular
+            case MapShape.RECTANGULAR:
+                cdr_map_shape = MapShapeTypes.rectangular
+
+        # map the chrom to the CDR map color scheme - CDR has different
+        # values (monochrome, full color, grayscale) that I think are probably
+        # not what we want in there.  We'll just map to full color / monochrome
+        # for now
+        cdr_map_color_scheme = None
+        match model.map_chroma:
+            case MapChromaType.UNKNOWN:
+                cdr_map_color_scheme = None
+            case MapChromaType.LOW_CHROMA:
+                cdr_map_color_scheme = MapColorSchemeTypes.full_color
+            case MapChromaType.MONO_CHROMA:
+                cdr_map_color_scheme = MapColorSchemeTypes.monochrome
+            case MapChromaType.HIGH_CHROMA:
+                cdr_map_color_scheme = MapColorSchemeTypes.full_color
+
         return CogMetaData(
             cog_id=model.map_id,
             system=self._system_name,
@@ -106,15 +162,16 @@ class MetadataMapper(CDRMapper):
             map_metadata=[
                 MapMetaData(
                     title=model.title,
-                    year=int(model.year),
+                    year=year_int,
                     scale=int(scale_str),
                     authors=model.authors,
                     quadrangle_name=",".join(model.quadrangles),
-                    map_shape=None,
-                    map_color_scheme=None,
+                    map_shape=cdr_map_shape,
+                    map_color_scheme=cdr_map_color_scheme,
                     state=",".join(model.states),
                     model=MODEL_NAME,
                     model_version=MODEL_VERSION,
+                    publisher=model.publisher,
                 ),
             ],
         )
@@ -145,11 +202,18 @@ class SegmentationMapper(CDRMapper):
                 )
                 area_type = AreaType.Map_Area
 
+            bbox = [
+                segment.bbox[0],
+                segment.bbox[1],
+                segment.bbox[0] + segment.bbox[2],
+                segment.bbox[1] + segment.bbox[3],
+            ]
+
             area_extraction = Area_Extraction(
                 coordinates=[coordinates],
-                bbox=segment.bbox,
+                bbox=bbox,
                 category=area_type,
-                confidence=segment.confidence,  # assume two points - ll, ur
+                confidence=segment.confidence,
                 model=MODEL_NAME,
                 model_version=MODEL_VERSION,
             )
@@ -254,8 +318,8 @@ class PointsMapper(CDRMapper):
         return FeatureResults(
             cog_id=model.raster_id,
             point_feature_results=point_features,
-            system=MODEL_NAME,
-            system_version=MODEL_VERSION,
+            system=self._system_name,
+            system_version=self._system_version,
         )
 
     def map_from_cdr(self, model: FeatureResults) -> LARAPoints:

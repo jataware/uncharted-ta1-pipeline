@@ -1,4 +1,5 @@
 import os
+import logging
 
 from pathlib import Path
 
@@ -15,8 +16,9 @@ from tasks.common.task import TaskInput
 from tasks.geo_referencing.coordinates_extractor import (
     GeoCoordinatesExtractor,
 )
+from tasks.geo_referencing.state_plane_extractor import StatePlaneExtractor
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
-from tasks.geo_referencing.filter import NaiveFilter, OutlierFilter
+from tasks.geo_referencing.filter import NaiveFilter, OutlierFilter, UTMStatePlaneFilter
 from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.geocode import Geocoder as rfGeocoder
@@ -37,12 +39,14 @@ from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextEx
 
 from typing import List
 
+logger = logging.getLogger("factory")
+
 
 def run_step(input: TaskInput) -> bool:
     lats = input.get_data("lats", [])
     lons = input.get_data("lons", [])
     num_keypoints = min(len(lons), len(lats))
-    print(f"running step due to insufficient key points: {num_keypoints < 2}")
+    logger.info(f"running step due to insufficient key points: {num_keypoints < 2}")
     return num_keypoints < 2
 
 
@@ -51,15 +55,22 @@ def create_geo_referencing_pipelines(
     output_dir: str,
     working_dir: str,
     segmentation_model_path: str,
+    state_plane_lookup_filename: str,
+    state_plane_zone_filename: str,
+    state_code_filename: str,
 ) -> List[Pipeline]:
-    geocoding_cache = os.path.join(working_dir, "geocoding_cache.json")
-    geocoder = NominatimGeocoder(10, geocoding_cache, 1)
+    geocoding_cache_bounds = os.path.join(working_dir, "geocoding_cache_bounds.json")
+    geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
+    geocoder_bounds = NominatimGeocoder(10, geocoding_cache_bounds, 1)
+    geocoder_points = NominatimGeocoder(10, geocoding_cache_points, 5)
+
+    segmentation_cache = os.path.join(working_dir, "segmentation")
+    text_cache = os.path.join(working_dir, "text")
+
     p = []
 
     tasks = []
-    tasks.append(
-        ResizeTextExtractor("first", Path("temp/text/cache"), False, True, 6000)
-    )
+    tasks.append(ResizeTextExtractor("first", Path(text_cache), False, True, 6000))
     tasks.append(EntropyROIExtractor("entropy roi"))
     if extract_metadata:
         tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
@@ -83,7 +94,7 @@ def create_geo_referencing_pipelines(
     )"""
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(EntropyROIExtractor("entropy roi"))
     if extract_metadata:
         tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
@@ -110,12 +121,12 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-places",
-                geocoder,
+                geocoder_points,
                 run_bounds=False,
                 run_points=True,
             )
         )
-        tasks.append(rfGeocoder("geocoded-georeferencing"))
+        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
     tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
@@ -135,12 +146,12 @@ def create_geo_referencing_pipelines(
     )"""
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(
         DetectronSegmenter(
             "segmenter",
             segmentation_model_path,
-            "temp/segmentation/cache",
+            segmentation_cache,
             confidence_thres=0.25,
         )
     )
@@ -160,7 +171,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-bounds",
-                geocoder,
+                geocoder_bounds,
                 run_bounds=True,
                 run_points=False,
                 run_centres=False,
@@ -191,7 +202,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-places",
-                geocoder,
+                geocoder_points,
                 run_bounds=False,
                 run_points=True,
                 run_centres=False,
@@ -200,15 +211,24 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-centres",
-                geocoder,
+                geocoder_bounds,
                 run_bounds=False,
                 run_points=False,
                 run_centres=True,
             )
         )
         tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(
+            StatePlaneExtractor(
+                "great-plains",
+                state_plane_lookup_filename,
+                state_plane_zone_filename,
+                state_code_filename,
+            )
+        )
         tasks.append(OutlierFilter("utm-outliers"))
-        tasks.append(rfGeocoder("geocoded-georeferencing"))
+        tasks.append(UTMStatePlaneFilter("utm-state-plane"))
+        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
@@ -228,12 +248,12 @@ def create_geo_referencing_pipelines(
     )
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(
         DetectronSegmenter(
             "segmenter",
             segmentation_model_path,
-            "temp/segmentation/cache",
+            segmentation_cache,
             confidence_thres=0.25,
         )
     )
@@ -253,7 +273,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-bounds",
-                geocoder,
+                geocoder_bounds,
                 run_bounds=True,
                 run_points=False,
             )
@@ -283,7 +303,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-places",
-                geocoder,
+                geocoder_points,
                 run_bounds=False,
                 run_points=True,
             )
@@ -291,15 +311,23 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-centres",
-                geocoder,
+                geocoder_bounds,
                 run_bounds=False,
                 run_points=False,
                 run_centres=True,
             )
         )
         tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(
+            StatePlaneExtractor(
+                "great-plains",
+                state_plane_lookup_filename,
+                state_plane_zone_filename,
+            )
+        )
         tasks.append(OutlierFilter("utm-outliers"))
-        tasks.append(rfGeocoder("geocoded-georeferencing"))
+        tasks.append(UTMStatePlaneFilter("utm-state-plane"))
+        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     """p.append(
@@ -318,12 +346,12 @@ def create_geo_referencing_pipelines(
     )"""
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(
         DetectronSegmenter(
             "segmenter",
             segmentation_model_path,
-            "temp/segmentation/cache",
+            segmentation_cache,
             confidence_thres=0.25,
         )
     )
@@ -343,7 +371,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-bounds",
-                geocoder,
+                geocoder_bounds,
                 run_bounds=True,
                 run_points=False,
             )
@@ -373,7 +401,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-places",
-                geocoder,
+                geocoder_points,
                 run_bounds=False,
                 run_points=True,
             )
@@ -381,15 +409,23 @@ def create_geo_referencing_pipelines(
         tasks.append(
             Geocoder(
                 "geo-centres",
-                geocoder,
+                geocoder_bounds,
                 run_bounds=False,
                 run_points=False,
                 run_centres=True,
             )
         )
         tasks.append(UTMCoordinatesExtractor("fifth"))
+        tasks.append(
+            StatePlaneExtractor(
+                "great-plains",
+                state_plane_lookup_filename,
+                state_plane_zone_filename,
+            )
+        )
         tasks.append(OutlierFilter("utm-outliers"))
-        tasks.append(rfGeocoder("geocoded-georeferencing"))
+        tasks.append(UTMStatePlaneFilter("utm-state-plane"))
+        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     """p.append(
@@ -413,16 +449,20 @@ def create_geo_referencing_pipelines(
 def create_geo_referencing_pipeline(
     segmentation_model_path: str, outputs: List[OutputCreator], working_dir: str
 ) -> Pipeline:
-    geocoding_cache = os.path.join(working_dir, "geocoding_cache.json")
-    geocoder = NominatimGeocoder(10, geocoding_cache, 1)
+    geocoding_cache_bounds = os.path.join(working_dir, "geocoding_cache_bounds.json")
+    geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
+    geocoder_bounds = NominatimGeocoder(10, geocoding_cache_bounds, 1)
+    geocoder_points = NominatimGeocoder(10, geocoding_cache_points, 5)
+    segmentation_cache = os.path.join(working_dir, "segmentation")
+    text_cache = os.path.join(working_dir, "text")
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path("temp/text/cache"), 6000))
+    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(
         DetectronSegmenter(
             "segmenter",
             segmentation_model_path,
-            "temp/segmentation/cache",
+            segmentation_cache,
             confidence_thres=0.25,
         )
     )
@@ -439,7 +479,7 @@ def create_geo_referencing_pipeline(
     tasks.append(
         Geocoder(
             "geo-bounds",
-            geocoder,
+            geocoder_bounds,
             run_bounds=True,
             run_points=False,
             run_centres=False,
@@ -469,7 +509,7 @@ def create_geo_referencing_pipeline(
     tasks.append(
         Geocoder(
             "geo-places",
-            geocoder,
+            geocoder_points,
             run_bounds=False,
             run_points=True,
             run_centres=False,
@@ -478,7 +518,7 @@ def create_geo_referencing_pipeline(
     tasks.append(
         Geocoder(
             "geo-centres",
-            geocoder,
+            geocoder_bounds,
             run_bounds=False,
             run_points=False,
             run_centres=True,
@@ -486,7 +526,7 @@ def create_geo_referencing_pipeline(
     )
     tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(OutlierFilter("utm-outliers"))
-    tasks.append(rfGeocoder("geocoded-georeferencing"))
+    tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))

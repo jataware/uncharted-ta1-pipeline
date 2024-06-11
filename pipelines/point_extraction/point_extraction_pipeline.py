@@ -62,14 +62,13 @@ class PointExtractionPipeline(Pipeline):
         tasks = []
         tasks.append(
             TileTextExtractor(
-                "tile_text",
-                Path(work_dir).joinpath("text"),
+                "tile_text", Path(work_dir).joinpath("text"), gamma_correction=0.5
             )
         )
         if model_path_segmenter:
             tasks.append(
                 DetectronSegmenter(
-                    "detectron_segmenter",
+                    "segmenter",
                     model_path_segmenter,
                     str(Path(work_dir).joinpath("segmentation")),
                 )

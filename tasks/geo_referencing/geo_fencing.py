@@ -111,13 +111,16 @@ class GeoFencer(Task):
     ) -> Tuple[DocGeoFence, List[str]]:
         # use default if nothing geocoded
         if geocoded is None or len(geocoded.places) == None:
+            logger.info("geofence built using defaults")
             return self._create_default_geofence(input), []
 
         # for now, geofence should be either the widest possible to accomodate all states or if none present the country
         geofence, places = self._get_state_geofence(input, geocoded)
         if geofence is not None:
+            logger.info("geofence built using states")
             return geofence, places
 
+        logger.info("geofence built using country")
         return self._get_country_geofence(input, geocoded)
 
     def _create_default_geofence(self, input: TaskInput) -> DocGeoFence:
@@ -145,12 +148,12 @@ class GeoFencer(Task):
                     map_id=geocoded.map_id,
                     geofence=GeoFence(
                         lat_minmax=[
-                            p.coordinates[0][0].geo_y,
-                            p.coordinates[0][2].geo_y,
+                            p.results[0].coordinates[0].geo_y,
+                            p.results[0].coordinates[2].geo_y,
                         ],
                         lon_minmax=[
-                            p.coordinates[0][0].geo_x,
-                            p.coordinates[0][2].geo_x,
+                            p.results[0].coordinates[0].geo_x,
+                            p.results[0].coordinates[2].geo_x,
                         ],
                         defaulted=False,
                     ),
@@ -171,8 +174,14 @@ class GeoFencer(Task):
                 and p.place_location_restriction != ""
             ) and p.place_type == "bound":
                 # extract all lat and lon
-                lats = lats + [p.coordinates[0][0].geo_y, p.coordinates[0][2].geo_y]
-                lons = lons + [p.coordinates[0][0].geo_x, p.coordinates[0][2].geo_x]
+                lats = lats + [
+                    p.results[0].coordinates[0].geo_y,
+                    p.results[0].coordinates[2].geo_y,
+                ]
+                lons = lons + [
+                    p.results[0].coordinates[0].geo_x,
+                    p.results[0].coordinates[2].geo_x,
+                ]
                 places.append(p.place_name)
         if len(lats) == 0:
             return None, []

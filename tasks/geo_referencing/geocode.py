@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 import numpy as np
@@ -16,6 +17,7 @@ from tasks.geo_referencing.entities import (
     DocGeoFence,
     GeoFence,
     GEOFENCE_OUTPUT_KEY,
+    SOURCE_GEOCODE,
 )
 from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
@@ -28,10 +30,13 @@ from typing import Dict, List, Optional, Tuple
 
 COORDINATE_CONFIDENCE_GEOCODE = 0.8
 
+logger = logging.getLogger("geocode")
+
 
 class Geocoder(CoordinatesExtractor):
-    def __init__(self, task_id: str):
+    def __init__(self, task_id: str, place_types: List[str]):
         super().__init__(task_id)
+        self._place_types = place_types
 
     def _extract_coordinates(
         self, input: CoordinateInput
@@ -41,25 +46,40 @@ class Geocoder(CoordinatesExtractor):
         geocoded: DocGeocodedPlaces = input.input.parse_data(
             GEOCODED_PLACES_OUTPUT_KEY, DocGeocodedPlaces.model_validate
         )
-        geofence: DocGeoFence = input.input.parse_data(
+        geofence_raw: DocGeoFence = input.input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
-        places = [p for p in geocoded.places if p.place_type == "point"]
+        places = [p for p in geocoded.places if p.place_type in self._place_types]
 
         # filter places to only consider those within the geofence
         # TODO: may need to deep copy the object to not overwrite coordinates
-        if geofence is not None:
-            places_filtered = []
+        logger.info(
+            f"extracting coordinates via geocoding with {len(places)} locations"
+        )
+        places_filtered = []
+        if geofence_raw.geofence.defaulted:
+            places_filtered = places
+        else:
+            lon_minmax = geofence_raw.geofence.lon_minmax
+            lat_minmax = geofence_raw.geofence.lat_minmax
             for p in places:
+                pc = deepcopy(p)
                 coords = []
-                for c in coords:
+                for c in pc.results:
                     if self._in_geofence(
-                        self._point_to_coordinate(c), geofence.geofence
+                        self._point_to_coordinate(c.coordinates), lon_minmax, lat_minmax
                     ):
                         coords.append(c)
                 if len(coords) > 0:
-                    p.coordinates = coords
-                    places_filtered.append(p)
+                    pc.results = coords
+                    places_filtered.append(pc)
+                else:
+                    logger.info(
+                        f"removing {pc.place_name} from location set since no coordinates fall within the geofence"
+                    )
+        logger.info(
+            f"extracting coordinates via geocoding with {len(places_filtered)} locations remaining after filtering"
+        )
 
         # get the coordinates for the points that fall within range
         coordinates = self._get_coordinates(places_filtered)
@@ -95,8 +115,11 @@ class Geocoder(CoordinatesExtractor):
         coords = []
         for p in places:
             coords = coords + [
-                ((c[0].geo_x, c[0].geo_y), (p, c[0].pixel_x, c[0].pixel_y))
-                for c in p.coordinates
+                (
+                    (c.coordinates[0].geo_x, c.coordinates[0].geo_y),
+                    (p, c.coordinates[0].pixel_x, c.coordinates[0].pixel_y),
+                )
+                for c in p.results
             ]
         data = np.array([c[0] for c in coords])  # .reshape(-1, 1)
 
@@ -127,6 +150,7 @@ class Geocoder(CoordinatesExtractor):
                     "point derived lat",
                     c[1][0].place_name,
                     abs(c[0][1]),
+                    SOURCE_GEOCODE,
                     True,
                     pixel_alignment=(c[1][1], c[1][2]),
                     confidence=COORDINATE_CONFIDENCE_GEOCODE,
@@ -138,6 +162,7 @@ class Geocoder(CoordinatesExtractor):
                     "point derived lon",
                     c[1][0].place_name,
                     abs(c[0][0]),
+                    SOURCE_GEOCODE,
                     False,
                     pixel_alignment=(c[1][1], c[1][2]),
                     confidence=COORDINATE_CONFIDENCE_GEOCODE,
@@ -146,13 +171,22 @@ class Geocoder(CoordinatesExtractor):
             )
         return coordinates
 
-    def _in_geofence(self, coordinate: Tuple[float, float], geofence: GeoFence) -> bool:
+    def _in_geofence(
+        self,
+        coordinate: Tuple[float, float],
+        lon_minmax: List[float],
+        lat_minmax: List[float],
+    ) -> bool:
         # check x falls within geofence
-        if not geofence.lon_minmax[0] <= coordinate[0] <= geofence.lon_minmax[1]:
+        lons = [abs(x) for x in lon_minmax]
+        lons = [min(lons), max(lons)]
+        if not lons[0] <= abs(coordinate[0]) <= lons[1]:
             return False
 
         # check y falls within geofence
-        if not geofence.lat_minmax[0] <= coordinate[1] <= geofence.lat_minmax[1]:
+        lats = [abs(x) for x in lat_minmax]
+        lats = [min(lats), max(lats)]
+        if not lats[0] <= abs(coordinate[1]) <= lats[1]:
             return False
         return True
 

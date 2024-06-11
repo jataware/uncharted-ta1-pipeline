@@ -23,6 +23,7 @@ def main():
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--min_confidence", type=float, default=0.25)
     parser.add_argument("--cdr_schema", action="store_true")
+    parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
     # setup an input stream
@@ -36,6 +37,7 @@ def main():
         p.model,
         p.workdir,
         p.min_confidence,
+        not p.no_gpu,
     )
 
     # run the extraction pipeline

@@ -4,12 +4,19 @@ import re
 import json
 from enum import Enum
 from openai import OpenAI
+import cv2
+import numpy as np
+from PIL.Image import Image as PILImage
 import tiktoken
+from tasks.common.image_io import pil_to_cv_image
 from tasks.common.task import TaskInput, TaskResult
 from tasks.metadata_extraction.entities import (
+    MapChromaType,
+    MapShape,
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
+from tasks.segmentation.entities import SEGMENTATION_OUTPUT_KEY, MapSegmentation
 from tasks.text_extraction.entities import (
     DocTextExtraction,
     TextExtraction,
@@ -25,7 +32,7 @@ PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
 
 class LLM(str, Enum):
     GPT_3_5_TURBO = "gpt-3.5-turbo"
-    GPT_4_TURBO = "gpt-4-turbo-preview"
+    GPT_4_TURBO = "gpt-4-turbo"
     GPT_4 = "gpt-4"
 
     def __str__(self):
@@ -64,14 +71,15 @@ class MetadataExtractor(Task):
                 "<coordinate_system>",
                 "<coordinate_system>",
             ],
+            "utm_zone": "<utm zone>",
             "authors": ["<author name>", "<author name>", "<author name>"],
             "year": "<publication year>",
             "publisher": "<publisher>",
             "base_map": "<base map>",
-            "quadrangles": ["<quadrangle>", "<quadrangle>", "<quadrangle>"],
             "counties": ["<county>", "<county>", "<county>"],
             "states": ["<state>", "<state>", "<state>"],
             "country": "<country>",
+            "publisher": "<publisher>",
         },
         indent=4,
     )
@@ -84,6 +92,7 @@ class MetadataExtractor(Task):
         ],
         indent=4,
     )
+
     EXAMPLE_JSON_CITIES = json.dumps(
         [
             {"name": "Denver", "index": 12},
@@ -94,10 +103,19 @@ class MetadataExtractor(Task):
         indent=4,
     )
 
+    EXAMPLE_JSON_UTM = json.dumps({"utm_zone": "<utm zone>"})
+
+    EXAMPLE_JSON_QUADRANGLES = json.dumps(
+        {"quadrangles": ["<quadrangle>", "<quadrangle>"]}
+    )
+
+    # threshold for determining map shape - anything above is considered rectangular
+    RECTANGULARITY_THRESHOLD = 0.9
+
     def __init__(
         self,
         id: str,
-        model=LLM.GPT_3_5_TURBO,
+        model=LLM.GPT_4_TURBO,
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
     ):
@@ -154,6 +172,7 @@ class MetadataExtractor(Task):
         if not doc_text:
             return task_result
 
+        # post-processing and follow on prompts
         metadata = self._process_doc_text_extraction(doc_text)
         if metadata:
             # map state names as needed
@@ -166,6 +185,23 @@ class MetadataExtractor(Task):
 
             # normalize quadrangle
             metadata.quadrangles = self._normalize_quadrangle(metadata.quadrangles)
+
+            # extract quadrangles from the title and base map info
+            metadata.quadrangles = self._extract_quadrangles(
+                metadata.title, metadata.base_map
+            )
+
+            # extract UTM zone if not present in metadata after initial extraction
+            if metadata.utm_zone == "NULL":
+                metadata.utm_zone = self._extract_utm_zone(metadata)
+
+            # compute map shape from the segmentation output
+            segments = input.data[SEGMENTATION_OUTPUT_KEY]
+            metadata.map_shape = self._compute_shape(segments)
+
+            # compute map chroma from the image
+            metadata.map_chroma = self._compute_chroma(input.image)
+
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
@@ -241,8 +277,15 @@ class MetadataExtractor(Task):
                     content_dict["map_id"] = doc_text_extraction.doc_id
                 else:
                     content_dict = {"map_id": doc_text_extraction.doc_id}
+                # ensure all the dict values are populated so we can validate the model - those below
+                # are extracted by the first GPT pass
+                # TODO - is it possible to handle this in a better way?
                 content_dict["places"] = []
                 content_dict["population_centres"] = []
+                content_dict["map_shape"] = MapShape.UNKNOWN
+                content_dict["map_chroma"] = MapChromaType.UNKNOWN
+                content_dict["vertical_datum"] = "NULL"
+                content_dict["quadrangles"] = []
                 extraction = MetadataExtraction(**content_dict)
                 return extraction
 
@@ -316,6 +359,72 @@ class MetadataExtractor(Task):
             places = []
         return places
 
+    def _extract_utm_zone(self, metadata: MetadataExtraction) -> str:
+        """Extracts the UTM zone from the metadata if it is not already present"""
+        prompt_str = self._to_utm_prompt_str(
+            metadata.counties,
+            metadata.quadrangles,
+            metadata.states,
+            metadata.places,
+            metadata.population_centres,
+        )
+        utm_zone_resp = self._process_basic_prompt(prompt_str)
+        if utm_zone_resp == "NULL":
+            return utm_zone_resp
+        utm_json = json.loads(utm_zone_resp)
+        return utm_json["utm_zone"]
+
+    def _extract_quadrangles(self, title: str, base_map: str) -> List[str]:
+        """Extracts quadrangles from the title and base map info"""
+        prompt_str = self._to_quadrangle_prompt_str(title, base_map)
+        quadrangle_resp = self._process_basic_prompt(prompt_str)
+        if quadrangle_resp == "NULL":
+            return []
+        quadrangle_json = json.loads(quadrangle_resp)
+        return quadrangle_json["quadrangles"]
+
+    def _process_basic_prompt(self, prompt_str: str) -> str:
+        message_content: str | None = ""
+        try:
+            messages: List[Any] = [
+                {
+                    "role": "system",
+                    "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
+                },
+                {"role": "user", "content": prompt_str},
+            ]
+            if self._model == LLM.GPT_4_TURBO:
+                completion = self._openai_client.chat.completions.create(
+                    messages=messages,
+                    model=self._model.value,
+                    response_format={"type": "json_object"},
+                    temperature=0.1,
+                )
+            else:
+                completion = self._openai_client.chat.completions.create(
+                    messages=messages,
+                    model=self._model.value,
+                    response_format={"type": "json_object"},
+                    temperature=0.1,
+                )
+
+            message_content = completion.choices[0].message.content
+            if message_content is not None:
+                try:
+                    result = message_content.strip()
+                except json.JSONDecodeError as e:
+                    logger.error(
+                        f"Skipping extraction - error parsing json response from api likely due to token limit",
+                        exc_info=True,
+                    )
+        except Exception as e:
+            # print exception stack trace
+            logger.error(
+                f"Skipping extraction - unexpected error during processing",
+                exc_info=True,
+            )
+        return "" if message_content is None else message_content
+
     def _extract_text_with_index(
         self, doc_text_extraction: DocTextExtraction
     ) -> List[Tuple[str, int]]:
@@ -359,21 +468,23 @@ class MetadataExtractor(Task):
             + text_str
             + "\n\n"
             + " Find the following:\n"
-            + " - map title\n"
+            + " - map title. \n"
             + " - scale\n"
             + " - projection\n"
-            + " - geoditic datum\n"
-            + " - vertical datum\n"
+            + " - datum\n"
+            + " - vertical datum\n"  # explicitly look for this so we can ignore it - if we totally remove we start to see vertical datums show up as datums
             + " - coordinate systems\n"
+            + " - UTM zone\n"
             + " - authors\n"
             + " - year\n"
-            + " - base map info\n"
-            + " - quadrangles\n"
+            + " - base map description or base map (quad, year pairs)\n"
             + " - counties\n"
             + " - states/provinces\n"
             + " - country\n"
-            + " Examples of vertical datums: mean sea level, vertical datum of 1901\n"
-            + " Examples of datums: North American Datum of 1927, NAD83, WGS 84\n"
+            + " - map publisher\n"
+            + " Examples of geoditic datums: North American Datum of 1983, NAD83, WGS 84.\n"
+            + " Examples of vertical datums: 'Mean Sea Level', 'Mean Low Water', and 'national vertical geoditic datum of 1929'\n"  # explicitly look for this so we can ignore it
+            + " Examples of UTM zones: 12, 15.\n"
             + " Examples of projections: Polyconic, Lambert, Transverse Mercator\n"
             + " Examples of coordinate systems: Utah coordinate system central zone, UTM Zone 15, Universal Transverse Mercator zone 12, New Mexico coordinate system, north zone, Carter Coordinate System"
             + ' Examples of base maps: "U.S. Geological Survey 1954", "U.S. Geological Survey 1:62,500, Vidal (1949) Rice and Turtle Mountains (1954) Savahia Peak (1975)"\n'
@@ -382,13 +493,18 @@ class MetadataExtractor(Task):
             + " Here is an example of the structure to use: \n"
             + self.EXAMPLE_JSON
             + "\n"
-            + 'If any string value is not present the field should be set to "NULL"\n'
+            + 'If any string value is not present the field should be set to "NULL".\n'
+            + "If the map title includes state names, county names or quadrangle, they should be included in the full title.\n"
             + "All author names should be in the format: <last name, first iniital, middle initial>.  Example of author name: Bailey, D. K.\n"
+            + "A single author is allowed.  Note that authors, title and year are normally grouped together on the map so use that help disambiguate.\n"
             + "References, citations and geology attribution should be ignored when extracting authors.\n"
-            + "A single author is allowed.\n"
-            + "Authors, title and year are normally grouped together.\n"
             + "The year should be the most recent value and should be a single 4 digit number.\n"
+            + "Geoditic datums should be in their short form, for example, North American Datum of 1927 should be NAD27.\n"
+            + "Geoditic datums are exclusive of vertical datums; geoditic datums never contain terms associated with height or verticality.\n"
             + "The term grid ticks should not be included in coordinate system output.\n"
+            + "The base map description can be a descriptive string, but also often contains (quadrangle, year) pairs.\n"
+            + "States includes principal subvidisions of any country and their full name should be extracted.\n"
+            + "UTM zones should not include an N or S after the number when extracted.\n"
         )
 
     def _to_point_prompt_str(self, text_str: str) -> str:
@@ -428,6 +544,38 @@ class MetadataExtractor(Task):
             + ' In the returned json, name the result "points".'
         )
 
+    def _to_utm_prompt_str(
+        self,
+        counties: List[str],
+        quadrangles: List[str],
+        state: List[str],
+        places: List[TextExtraction],
+        population_centers: List[TextExtraction],
+    ) -> str:
+        return (
+            "The following information was extracted froma map using an OCR process:\n"
+            + f"quadrangles: {','.join(quadrangles)}\n"
+            + f"counties: {','.join(counties)}\n"
+            + f"places: {','.join([p.text for p in places])}\n"
+            + f"population centers: {','.join([p.text for p in population_centers])}\n"
+            + f"states: {','.join(state)}\n"
+            + " Infer the UTM zone and return it in a JSON structure. If it cannot be inferred, return 'NULL'.\n"
+            + " The inferred UTM zone should not include an N or S after the number.\n"
+            + " Here is an example of the structure to return: \n"
+            + self.EXAMPLE_JSON_UTM
+        )
+
+    def _to_quadrangle_prompt_str(self, title: str, base_map_info: str) -> str:
+        return (
+            "The following information was extracted from a map using an OCR process:\n"
+            + f"title: {title}\n"
+            + f"base map: {base_map_info}\n"
+            + " Identify the quadrangles from the fields and store them in a JSON structure.\n"
+            + " Here is an example of the structure to use: \n"
+            + self.EXAMPLE_JSON_QUADRANGLES
+            + "\n"
+        )
+
     def _extract_text(
         self, doc_text_extraction: DocTextExtraction, max_text_length=800
     ) -> List[str]:
@@ -461,6 +609,73 @@ class MetadataExtractor(Task):
             for quad_str in quadrangles_str
         ]
 
+    def _compute_shape(self, segments) -> MapShape:
+        """
+        Computes the shape of the map from the segmentation output using a rectangularity metric
+
+        Args:
+            segments: The segmentation output
+
+        Returns:
+            MapShape: The shape of the map
+        """
+        if segments:
+            map_segmentation = MapSegmentation.model_validate(segments)
+            for segment in map_segmentation.segments:
+                if segment.class_label == "map":
+                    box_area = (segment.bbox[2] - segment.bbox[0]) * (
+                        segment.bbox[3] - segment.bbox[1]
+                    )
+                    rectangularity = segment.area / box_area
+                    if rectangularity > self.RECTANGULARITY_THRESHOLD:
+                        map_shape = MapShape.RECTANGULAR
+                    else:
+                        map_shape = MapShape.IRREGULAR
+                    break
+        return map_shape
+
+    def _compute_chroma(
+        self, input_image: PILImage, max_dim=500, mono_thresh=20, low_thresh=60
+    ) -> MapChromaType:
+        """
+        Computes the chroma of the map image using the LAB color space
+        and the centroid of the a and b channels
+
+        Args:
+            input_image (PILImage): The map image
+            max_dim (int): The maximum dimension for resizing the image
+
+        Returns:
+            MapChromaType: The chroma type of the map
+        """
+        if max_dim > 0:
+            # uniformly resize the image so that major axis is max_dim
+            image = pil_to_cv_image(input_image)
+            h, w, _ = image.shape
+            if h > w:
+                image = cv2.resize(image, (max_dim, int(h / w * max_dim)))
+            else:
+                image = cv2.resize(image, (int(w / h * max_dim), max_dim))
+
+        # exract the a and b channels and find the centroid
+        cs_image = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+        cs_image = cs_image[:, :, 1:].flatten().reshape(-1, 2)
+
+        # compute the error between the mean and each pixel
+        mean_vec = np.sum(cs_image, axis=0) / len(cs_image)
+        dist = np.linalg.norm(cs_image - mean_vec, axis=1)
+
+        # square the distance and take the mean
+        error = np.mean(dist**2)
+
+        # classify the chroma based on the error
+        if error < mono_thresh:
+            return MapChromaType.MONO_CHROMA
+        elif error < low_thresh:
+            return MapChromaType.LOW_CHROMA
+        else:
+            return MapChromaType.HIGH_CHROMA
+
     @staticmethod
     def _create_empty_extraction(doc_id: str) -> MetadataExtraction:
         """Creates an empty metadata extraction object"""
@@ -472,13 +687,16 @@ class MetadataExtractor(Task):
             scale="",
             quadrangles=[],
             datum="",
-            vertical_datum="",
             projection="",
             coordinate_systems=[],
+            utm_zone="",
             base_map="",
             counties=[],
             states=[],
             population_centres=[],
             country="",
             places=[],
+            publisher="",
+            map_shape=MapShape.UNKNOWN,
+            map_chroma=MapChromaType.UNKNOWN,
         )

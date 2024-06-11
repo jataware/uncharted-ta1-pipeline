@@ -71,13 +71,14 @@ class ModelROIExtractor(ROIExtractor):
             SEGMENTATION_OUTPUT_KEY, MapSegmentation.model_validate
         )
 
-        # extract the polygon
+        # extract the polygon (use the first valid map segment)
         poly_raw = None
         conf = 0
         for sr in segmentation_output.segments:
             if sr.class_label == "map" and sr.confidence > conf:
                 poly_raw = sr.poly_bounds
                 conf = sr.confidence
+                break
         if poly_raw is None:
             return None
 
@@ -92,7 +93,33 @@ class ModelROIExtractor(ROIExtractor):
         polygon = Polygon(poly_raw)
         buffered_inner = polygon.buffer(-3 * buffer_size, join_style=2)  # type: ignore
 
-        return list(buffered.exterior.coords), list(buffered_inner.exterior.coords)
+        w = input.image.width
+        h = input.image.height
+        bufferred_coords = list(
+            map(
+                lambda x: self._limit_polygon(x, (0, 0), (w, h)),
+                buffered.exterior.coords,
+            )
+        )
+        buffered_inner_coords = list(
+            map(
+                lambda x: self._limit_polygon(x, (0, 0), (w, h)),
+                buffered_inner.exterior.coords,
+            )
+        )
+
+        return bufferred_coords, buffered_inner_coords
+
+    def _limit_polygon(
+        self,
+        coord: Tuple[float, float],
+        lower_limit: Tuple[float, float],
+        upper_limit: Tuple[float, float],
+    ) -> Tuple[float, float]:
+        return (
+            min(max(lower_limit[0], coord[0]), upper_limit[0]),
+            min(max(lower_limit[1], coord[1]), upper_limit[1]),
+        )
 
 
 class EntropyROIExtractor(ROIExtractor):

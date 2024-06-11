@@ -5,7 +5,7 @@ import numpy as np
 
 from sklearn.cluster import DBSCAN
 
-from tasks.geo_referencing.entities import Coordinate
+from tasks.geo_referencing.entities import Coordinate, SOURCE_STATE_PLANE, SOURCE_UTM
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.geo_projection import PolyRegression
 from tasks.geo_referencing.util import ocr_to_coordinates
@@ -28,10 +28,21 @@ class FilterCoordinates(Task):
         # get coordinates so far
         lon_pts = input.get_data("lons")
         lat_pts = input.get_data("lats")
+        logger.info(
+            f"prior to filtering {len(lat_pts)} latitude and {len(lon_pts)} longitude coordinates have been extracted"
+        )
 
         # filter the coordinates to retain only those that are deemed valid
-        lon_pts_filtered = self._filter(input, lon_pts)
-        lat_pts_filtered = self._filter(input, lat_pts)
+        lon_pts_filtered = lon_pts
+        if len(lon_pts) > 0:
+            lon_pts_filtered = self._filter(input, lon_pts)
+        lat_pts_filtered = lat_pts
+        if len(lat_pts) > 0:
+            lat_pts_filtered = self._filter(input, lat_pts)
+
+        logger.info(
+            f"after filtering run {len(lat_pts_filtered)} latitude and {len(lon_pts_filtered)} longitude coordinates have been retained"
+        )
 
         # update the coordinates list
         return self._create_result(input, lon_pts_filtered, lat_pts_filtered)
@@ -62,6 +73,12 @@ class OutlierFilter(FilterCoordinates):
     def _filter(
         self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
     ) -> Dict[Tuple[float, float], Coordinate]:
+        if len(coords) < 3:
+            logger.info(
+                "skipping outlier filtering since there are fewer than 3 coordinates"
+            )
+            return coords
+
         logger.info(f"outlier filter running against {coords}")
         updated_coords = coords
         test_length = 0
@@ -139,6 +156,54 @@ class OutlierFilter(FilterCoordinates):
         # calculate error
         # TODO: FOR NOW DO SIMPLE SUM
         return sum([abs(degrees[i] - predictions[i]) for i in range(len(predictions))])
+
+
+class UTMStatePlaneFilter(FilterCoordinates):
+    def __init__(self, task_id: str):
+        super().__init__(task_id)
+
+    def _filter(
+        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[Tuple[float, float], Coordinate]:
+        logger.info(f"utm - state plane filter running against {coords}")
+
+        # figure out which of utm and state plane have the higher confidence
+        conf_sp = -1
+        conf_utm = -1
+        count_sp = 0
+        for _, c in coords.items():
+            src = c.get_source()
+            if src == SOURCE_STATE_PLANE:
+                count_sp = count_sp + 1
+                if conf_sp < c.get_confidence():
+                    conf_sp = c.get_confidence()
+            if src == SOURCE_UTM:
+                count_sp = count_sp - 1
+                if conf_utm < c.get_confidence():
+                    conf_utm = c.get_confidence()
+
+        # retain the one with higher confidence
+        source_filter = ""
+        if conf_utm >= 0 and conf_sp >= 0:
+            source_filter = SOURCE_UTM
+            if conf_utm > conf_sp:
+                source_filter = SOURCE_STATE_PLANE
+            elif conf_utm == conf_sp:
+                # use the count to determine which to filter
+                if count_sp < 0:
+                    source_filter = SOURCE_STATE_PLANE
+            logger.info(f"removing coordinates with source {source_filter}")
+
+        return self._filter_source(source_filter, coords)
+
+    def _filter_source(
+        self, source: str, coords: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[Tuple[float, float], Coordinate]:
+        coords_filtered = {}
+        for k, c in coords.items():
+            if not c.get_source() == source:
+                coords_filtered[k] = c
+        return coords_filtered
 
 
 class NaiveFilter(FilterCoordinates):

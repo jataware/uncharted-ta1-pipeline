@@ -15,6 +15,7 @@ TILE_OVERLAP_DEFAULT = (  # default tliing overlap = point bbox + 10%
     int(1.1 * 90),
     int(1.1 * 90),
 )
+DEDUP_DECIMATION_FACTOR = 0.5  # de-dup predictions (in tile overlap regions) if bbox centers are within 2 pixels
 
 logger = logging.getLogger(__name__)
 
@@ -56,11 +57,11 @@ class Tiler(Task):
                 ),
                 SEGMENT_MAP_CLASS,
             )
-            p_map = p_map[:1]
-            if p_map:
+            if len(p_map) > 0:
                 # restrict tiling to use *only* the bounding rectangle of map area
                 # TODO: ideally should use map polygon area as a binary mask
-                (x_min, y_min, x_max, y_max) = [int(b) for b in p_map[0].bounds]
+                p_map = p_map[0]  # use 1st (highest ranked) map segment
+                (x_min, y_min, x_max, y_max) = [int(b) for b in p_map.bounds]
 
         step_x = int(self.tile_size[0] - self.overlap[0])
         step_y = int(self.tile_size[1] - self.overlap[1])
@@ -113,7 +114,7 @@ class Tiler(Task):
 class Untiler(Task):
     def __init__(self, task_id="", overlap: tuple = TILE_OVERLAP_DEFAULT):
         # NOTE: Untiler recommended to use the same tile overlap as corresponding Tiler class instance
-        self.check_overlap_predictions: bool = overlap[0] > 0 or overlap[1] > 0
+        self.overlap = overlap
         super().__init__(task_id)
 
     """
@@ -135,6 +136,8 @@ class Untiler(Task):
             i.predictions is not None for i in tiles
         ), "Tiles must have predictions attached to them."
         all_predictions = []
+        overlap_predictions = {}
+        num_dedup = 0
         map_path = tiles[0].map_path
         for tile in tiles:
 
@@ -154,12 +157,17 @@ class Untiler(Task):
                 label_name = pred.class_name
 
                 # filter noisy predictions due to tile overlap
-                if self.check_overlap_predictions and self._is_prediction_redundant(
-                    (pred.x1, pred.y1, pred.x2, pred.y2),
-                    tile.map_bounds,
-                    (tile.x_offset, tile.y_offset),
-                    (tile.width, tile.height),
-                ):
+                pred_redundant = False
+                pred_in_overlap = False
+                if self.overlap[0] > 0 or self.overlap[1] > 0:
+                    pred_redundant, pred_in_overlap = self._is_prediction_redundant(
+                        pred,
+                        tile.map_bounds,
+                        (tile.x_offset, tile.y_offset),
+                        (tile.width, tile.height),
+                    )
+
+                if pred_redundant:
                     continue
 
                 global_prediction = MapPointLabel(
@@ -179,7 +187,28 @@ class Untiler(Task):
                     legend_bbox=pred.legend_bbox,  # bbox coords assumed to be in global pixel coords
                 )
 
-                all_predictions.append(global_prediction)
+                if pred_in_overlap:
+                    # store predictions in overlapped tile regions in a dict, to de-duplicate as needed
+                    xc_idx = ((x1 + x2) / 2) + x_offset
+                    yc_idx = ((y1 + y2) / 2) + y_offset
+                    pred_key = (
+                        label_name,
+                        int(xc_idx * DEDUP_DECIMATION_FACTOR),
+                        int(yc_idx * DEDUP_DECIMATION_FACTOR),
+                    )
+                    if pred_key in overlap_predictions:
+                        # duplicate prediction will be overwritten here
+                        num_dedup += 1
+                    overlap_predictions[pred_key] = global_prediction
+                else:
+                    all_predictions.append(global_prediction)
+
+        # merge de-dup'd predictions into final list for whole map
+        all_predictions.extend(list(overlap_predictions.values()))
+
+        logger.info(
+            f"Total point predictions after re-constructing map tiles: {len(all_predictions)}, with {num_dedup} discarded as duplicates"
+        )
         map_image = MapImage(
             path=map_path, raster_id=input.raster_id, labels=all_predictions
         )
@@ -187,19 +216,37 @@ class Untiler(Task):
 
     def _is_prediction_redundant(
         self,
-        pred_bbox: tuple,
+        pred: MapPointLabel,
         map_bbox,
         tile_offset: tuple,
         tile_wh: tuple,
         shape_thres=2,
-    ) -> bool:
+        conf_thres=0.5,
+    ) -> tuple:
         """
-        Check if a point symbol prediction is redundant, due to overlapping tiles
+        Check if a point symbol prediction is redundant
+        (based on heuristic of bbox shape and location at tile edge)
         """
-        (x1, y1, x2, y2) = pred_bbox
+        x1 = pred.x1
+        x2 = pred.x2
+        y1 = pred.y1
+        y2 = pred.y2
         (map_xmin, map_ymin, map_xmax, map_ymax) = map_bbox
         tile_w, tile_h = tile_wh
         x_offset, y_offset = tile_offset
+
+        pred_redundant = False
+        pred_in_overlap = False
+        xc = (x1 + x2) / 2
+        yc = (y1 + y2) / 2
+        # check if the prediction is in a region where multiple tiles overlap
+        if (
+            xc < self.overlap[0]
+            or xc > tile_wh[0] - self.overlap[0]
+            or yc < self.overlap[1]
+            or yc > tile_wh[1] - self.overlap[1]
+        ):
+            pred_in_overlap = True
 
         # TODO - instead of checking at tile edge could check if bbox edge is in overlap region
         if (abs((x2 - x1) - (y2 - y1)) > shape_thres) and (
@@ -213,10 +260,14 @@ class Untiler(Task):
                 and y1 + y_offset > map_ymin
                 and y2 + y_offset < map_ymax
             ):
-                # point bbox not at map edges, assume this is a redundant prediction (due to tile overlap) and skip
-                return True
+                # non-square point bbox not at map edges, assume this is a noisy prediction (due to tile overlap) and skip
+                pred_redundant = True
+            elif pred.score < conf_thres:
+                # non-square point bbox at map edges, and low confidence,
+                # discard as a redundant or noisy prediction
+                pred_redundant = True
 
-        return False
+        return (pred_redundant, pred_in_overlap)
 
     @property
     def input_type(self):

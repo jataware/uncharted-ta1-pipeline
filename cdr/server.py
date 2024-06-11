@@ -3,21 +3,24 @@ import atexit
 import datetime
 from pathlib import Path
 import re
+from time import sleep
 import httpx
 import json
 import logging
+
 import coloredlogs
 import ngrok
 import os
 import pika
+from pydantic import BaseModel
 import rasterio as rio
 import rasterio.transform as riot
 import threading
 
 from flask import Flask, request, Response
 from pika.adapters.blocking_connection import BlockingChannel as Channel
-from pika import spec
-from pika.exceptions import ChannelClosed, ChannelWrongStateError, ConnectionClosed
+from pika import BlockingConnection, spec
+from pika.exceptions import AMQPChannelError, AMQPConnectionError
 from PIL import Image
 from pyproj import Transformer
 from rasterio.transform import Affine
@@ -26,6 +29,7 @@ from rasterio.warp import Resampling, calculate_default_transform, reproject
 from tasks.common.io import ImageFileInputIterator, download_file
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
+    METADATA_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,
     SEGMENTATION_REQUEST_QUEUE,
     OutputType,
@@ -55,7 +59,7 @@ request_channel: Optional[Channel] = None
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 CDR_HOST = "https://api.cdr.land"
 CDR_SYSTEM_NAME = "uncharted"
-CDR_SYSTEM_VERSION = "0.0.1"
+CDR_SYSTEM_VERSION = "0.0.3"
 CDR_CALLBACK_SECRET = "maps rock"
 APP_PORT = 5001
 CDR_EVENT_LOG = "events.log"
@@ -83,6 +87,7 @@ class Settings:
     cdr_host: str
     workdir: str
     imagedir: str
+    output: str
     system_name: str
     system_version: str
     callback_secret: str
@@ -95,25 +100,103 @@ class Settings:
 settings: Settings
 
 
-def create_channel(host: str) -> Channel:
-    logger.info(f"creating channel on host {host}")
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host))
-    return connection.channel()
+class LaraRequestPublisher:
+    def __init__(self, request_queues: List[str], host="localhost") -> None:
+        self._request_connection: Optional[BlockingConnection] = None
+        self._request_channel: Optional[Channel] = None
+        self._host = host
+        self._request_queues = request_queues
 
+    def _create_channel(self) -> Channel:
+        """
+        Creates a blocking connection and channel on the given host and declares the given queue.
 
-def publish_lara_request(req: Request, request_queue: str, host="localhost"):
-    request_channel = create_channel(host)
-    request_channel.queue_declare(queue=request_queue)
+        Args:
+            host: The host to connect to.
+            queue: The queue to declare.
 
-    logger.info(f"sending request {req.id} for image {req.image_id} to lara queue")
-    # send request to queue
-    request_channel.basic_publish(
-        exchange="",
-        routing_key=request_queue,
-        body=json.dumps(req.model_dump()),
-    )
-    logger.info(f"request {req.id} published to lara queue")
-    request_channel.connection.close()
+        Returns:
+            The created channel.
+        """
+        logger.info(f"creating channel on host {self._host}")
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                self._host,
+                heartbeat=900,
+                blocked_connection_timeout=600,
+            )
+        )
+        channel = connection.channel()
+        for queue in self._request_queues:
+            channel.queue_declare(queue=queue)
+        return channel
+
+    def publish_lara_request(self, req: Request, request_queue: str):
+        """
+        Publishes a LARA request to a specified queue.
+
+        Args:
+            req (Request): The LARA request object to be published.
+            request_channel (Channel): The channel used for publishing the request.
+            request_queue (str): The name of the queue to publish the request to.
+        """
+        logger.info(f"sending request {req.id} for image {req.image_id} to lara queue")
+        if self._request_connection is not None and self._request_channel is not None:
+            self._request_connection.add_callback_threadsafe(
+                lambda: self._request_channel.basic_publish(  #   type: ignore
+                    exchange="",
+                    routing_key=request_queue,
+                    body=json.dumps(req.model_dump()),
+                )
+            )
+            logger.info(f"request {req.id} published to {request_queue}")
+        else:
+            logger.error("request connection / channel not initialized")
+
+    def _run_request_queue(self):
+        """
+        Main loop to service the request queue. process_data_events is set to block for a maximum
+        of 1 second before returning to ensure that heartbeats etc. are processed.
+        """
+        self._request_connection: Optional[BlockingConnection] = None
+        while True:
+            try:
+                if (
+                    self._request_connection is None
+                    or self._request_connection.is_closed
+                ):
+                    logger.info(
+                        f"connecting to request queue {','.join(self._request_queues)}"
+                    )
+                    self._request_channel = self._create_channel()
+                    self._request_connection = self._request_channel.connection
+
+                if self._request_connection is not None:
+                    self._request_connection.process_data_events(time_limit=1)
+                else:
+                    logger.error("request connection not initialized")
+            except (AMQPChannelError, AMQPConnectionError):
+                logger.warn("request connection closed, reconnecting")
+                if (
+                    self._request_connection is not None
+                    and self._request_connection.is_open
+                ):
+                    self._request_connection.close()
+                sleep(5)
+
+    def start_lara_request_queue(self):
+        """
+        Starts the LARA request queue by running the `run_request_queue` function in a separate thread.
+
+        Args:
+            host (str): The host address to pass to the `run_request_queue` function.
+
+        Returns:
+            None
+        """
+        threading.Thread(
+            target=self._run_request_queue,
+        ).start()
 
 
 def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
@@ -172,7 +255,7 @@ def cps_to_transform(
 ) -> Affine:
     cps = [
         {
-            "row": height - float(gcp.px_geom.rows_from_top),
+            "row": float(gcp.px_geom.rows_from_top),
             "col": float(gcp.px_geom.columns_from_left),
             "x": float(gcp.map_geom.longitude),  #   type: ignore
             "y": float(gcp.map_geom.latitude),  #   type: ignore
@@ -245,7 +328,13 @@ def process_cdr_event():
                     image_url=map_event.cog_url,
                     output_format="cdr",
                 )
-
+                lara_reqs[METADATA_REQUEST_QUEUE] = Request(
+                    id=evt["id"],
+                    task="metadata",
+                    image_id=map_event.cog_id,
+                    image_url=map_event.cog_url,
+                    output_format="cdr",
+                )
             case _:
                 logger.info(f"received unsupported {evt['event']} event")
 
@@ -263,12 +352,12 @@ def process_cdr_event():
     # queue event in background since it may be blocking on the queue
     # assert request_channel is not None
     for queue_name, lara_req in lara_reqs.items():
-        publish_lara_request(lara_req, queue_name, settings.rabbitmq_host)
+        request_publisher.publish_lara_request(lara_req, queue_name)
 
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
 
-def process_image(image_id: str):
+def process_image(image_id: str, request_publisher: LaraRequestPublisher):
     logger.info(f"processing image with id {image_id}")
 
     image_url = f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif"
@@ -276,22 +365,29 @@ def process_image(image_id: str):
     # build the request
     lara_reqs: Dict[str, Request] = {}
     lara_reqs[GEO_REFERENCE_REQUEST_QUEUE] = Request(
-        id="mock",
+        id="mock-georeference",
         task="georeference",
         image_id=image_id,
         image_url=image_url,
         output_format="cdr",
     )
     lara_reqs[POINTS_REQUEST_QUEUE] = Request(
-        id="mock-pts",
+        id="mock-points",
         task="points",
         image_id=image_id,
         image_url=image_url,
         output_format="cdr",
     )
-    lara_reqs[POINTS_REQUEST_QUEUE] = Request(
+    lara_reqs[SEGMENTATION_REQUEST_QUEUE] = Request(
         id="mock-segments",
         task="segments",
+        image_id=image_id,
+        image_url=image_url,
+        output_format="cdr",
+    )
+    lara_reqs[METADATA_REQUEST_QUEUE] = Request(
+        id="mock-metadata",
+        task="metadata",
         image_id=image_id,
         image_url=image_url,
         output_format="cdr",
@@ -299,11 +395,41 @@ def process_image(image_id: str):
 
     # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
     # imagedir arg that should be configured to point at this location.
-    prefetch_image(Path(settings.workdir), image_id, image_url)
+    prefetch_image(Path(settings.imagedir), image_id, image_url)
 
     # push the request onto the queue
     for queue_name, request in lara_reqs.items():
-        publish_lara_request(request, queue_name)
+        logger.info(
+            f"publishing request for image {image_id} to {queue_name} task: {request.task}"
+        )
+        request_publisher.publish_lara_request(request, queue_name)
+
+
+def write_cdr_result(image_id: str, output_type: OutputType, result: BaseModel):
+    """
+    Write the CDR result to a JSON file.
+
+    Args:
+        image_id (str): The ID of the image.
+        output_type (OutputType): The type of output.
+        result (BaseModel): The result to be written.
+
+    Returns:
+        None
+    """
+    if settings.output:
+        output_file = os.path.join(
+            settings.output,
+            f"{image_id}_{output_type.name.lower()}.json",
+        )
+        os.makedirs(
+            settings.output, exist_ok=True
+        )  # Create the output directory if it doesn't exist
+        with open(output_file, "a") as f:
+            logger.info(f"writing result to {output_file}")
+            f.write(json.dumps(result.model_dump()))
+            f.write("\n")
+        return
 
 
 def push_georeferencing(result: RequestResult):
@@ -312,27 +438,21 @@ def push_georeferencing(result: RequestResult):
 
     # validate the result by building the model classes
     cdr_result: Optional[GeoreferenceResults] = None
+    files_ = []
     try:
         lara_result = LARAGeoreferenceResult.model_validate(georef_result_raw)
         mapper = get_mapper(lara_result, settings.system_name, settings.system_version)
         cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
-    except:
-        logger.error(
-            "bad georeferencing result received so unable to send results to cdr"
-        )
-        raise
+        assert cdr_result is not None
+        assert cdr_result.georeference_results is not None
+        assert cdr_result.georeference_results[0] is not None
+        assert cdr_result.georeference_results[0].projections is not None
+        projection = cdr_result.georeference_results[0].projections[0]
+        gcps = cdr_result.gcps
+        output_file_name = projection.file_name
+        output_file_name_full = os.path.join(settings.workdir, output_file_name)
+        assert gcps is not None
 
-    assert cdr_result is not None
-    assert cdr_result.georeference_results is not None
-    assert cdr_result.georeference_results[0] is not None
-    assert cdr_result.georeference_results[0].projections is not None
-    projection = cdr_result.georeference_results[0].projections[0]
-    gcps = cdr_result.gcps
-    output_file_name = projection.file_name
-    output_file_name_full = os.path.join(settings.workdir, output_file_name)
-
-    assert gcps is not None
-    try:
         logger.info(
             f"projecting image {result.image_path} to {output_file_name_full} using crs {projection.crs}"
         )
@@ -340,8 +460,27 @@ def push_georeferencing(result: RequestResult):
             result.image_path, output_file_name_full, projection.crs, gcps
         )
 
-        files_ = []
         files_.append(("files", (output_file_name, open(output_file_name_full, "rb"))))
+    except:
+        logger.error(
+            "bad georeferencing result received so creating an empty result to send to cdr"
+        )
+
+        # create an empty result to send to cdr
+        cdr_result = GeoreferenceResults(
+            cog_id=result.request.image_id,
+            georeference_results=[],
+            gcps=[],
+            system=settings.system_name,
+            system_version=settings.system_version,
+        )
+
+    assert cdr_result is not None
+    try:
+        # write the result to disk if output is set
+        if settings.output:
+            write_cdr_result(result.request.image_id, result.output_type, cdr_result)
+            return
 
         # push the result to CDR
         logger.info(f"pushing result for request {result.request.id} to CDR")
@@ -365,6 +504,10 @@ def push_features(result: RequestResult, model: FeatureResults):
     """
     Pushes the features result to the CDR
     """
+    if settings.output:
+        write_cdr_result(result.request.image_id, result.output_type, model)
+        return
+
     logger.info(f"pushing features result for request {result.request.id} to CDR")
     headers = {
         "Authorization": f"Bearer {settings.cdr_api_token}",
@@ -491,31 +634,68 @@ def process_lara_result(
     logger.info("result processing finished")
 
 
-def start_lara_result_listener(result_queue: str, host="localhost"):
+def create_channel(host: str, queue: str) -> Channel:
+    """
+    Creates a blocking connection and channel on the given host and declares the given queue.
+
+    Args:
+        host: The host to connect to.
+        queue: The queue to declare.
+
+    Returns:
+        The created channel.
+    """
+    logger.info(f"creating channel on host {host}")
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(
+            host,
+            heartbeat=900,
+            blocked_connection_timeout=600,
+        )
+    )
+    channel = connection.channel()
+    channel.queue_declare(queue=queue)
+    return channel
+
+
+def _run_lara_result_queue(result_queue: str, host="localhost"):
     while True:
+        result_channel: Optional[Channel] = None
         try:
             logger.info(
                 f"starting the listener on the result queue ({host}:{result_queue})"
             )
             # setup the result queue
-            result_channel = create_channel(host)
-            result_channel.queue_declare(queue=result_queue)
-
-            # start consuming the results
+            result_channel = create_channel(host, result_queue)
             result_channel.basic_qos(prefetch_count=1)
-            result_channel.basic_consume(
-                queue=result_queue,
-                on_message_callback=process_lara_result,
-                auto_ack=True,
-            )
-            result_channel.start_consuming()
-        except (ChannelClosed, ConnectionClosed, ChannelWrongStateError):
-            logger.warning(f"result channel closed")
+
+            # start consuming the results - will timeout after 5 seconds of inactivity
+            # allowing things like heartbeats to be processed
+            while True:
+                for method_frame, properties, body in result_channel.consume(
+                    result_queue,
+                    inactivity_timeout=5,
+                    auto_ack=True,
+                ):
+                    if method_frame:
+                        process_lara_result(
+                            result_channel, method_frame, properties, body
+                        )
+        except (AMQPConnectionError, AMQPChannelError):
+            logger.warning(f"result channel closed, reconnecting")
             # channel is closed - make sure the connection is closed to facilitate a
             # clean reconnect
             if result_channel and not result_channel.connection.is_closed:
                 logger.info("closing result connection")
                 result_channel.connection.close()
+            sleep(5)
+
+
+def start_lara_result_queue(result_queue: str, host="localhost"):
+    threading.Thread(
+        target=_run_lara_result_queue,
+        args=(result_queue, host),
+    ).start()
 
 
 def register_cdr_system():
@@ -621,6 +801,7 @@ def main():
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--cdr_event_log", type=str, default=CDR_EVENT_LOG)
     parser.add_argument("--input", type=str, default=None)
+    parser.add_argument("--output", type=str, default=None)
     p = parser.parse_args()
 
     global settings
@@ -629,6 +810,7 @@ def main():
     settings.cdr_host = CDR_HOST
     settings.workdir = p.workdir
     settings.imagedir = p.imagedir
+    settings.output = p.output
     settings.system_name = p.system
     settings.system_version = CDR_SYSTEM_VERSION
     settings.callback_secret = CDR_CALLBACK_SECRET
@@ -646,13 +828,21 @@ def main():
     logger.info(f"starting cdr in {p.mode} mode")
 
     # start the listener for the results
-    threading.Thread(
-        target=start_lara_result_listener,
-        args=(
-            "lara_result_queue",
-            p.host,
-        ),
-    ).start()
+    start_lara_result_queue(LARA_RESULT_QUEUE_NAME, host=settings.rabbitmq_host)
+
+    # declare a global request publisher since we need to access it from the
+    # CDR event endpoint
+    global request_publisher
+    request_publisher = LaraRequestPublisher(
+        [
+            SEGMENTATION_REQUEST_QUEUE,
+            POINTS_REQUEST_QUEUE,
+            GEO_REFERENCE_REQUEST_QUEUE,
+            METADATA_REQUEST_QUEUE,
+        ],
+        host=settings.rabbitmq_host,
+    )
+    request_publisher.start_lara_request_queue()
 
     # either start the flask app if host mode selected or run the image specified if in process mode
     if p.mode == "host":
@@ -664,9 +854,9 @@ def main():
             with open(p.input, "r") as f:
                 for line in f:
                     cog_id = line.strip()
-                    process_image(cog_id)
+                    process_image(cog_id, request_publisher)
         else:
-            process_image(p.cog_id)
+            process_image(p.cog_id, request_publisher)
 
 
 if __name__ == "__main__":
