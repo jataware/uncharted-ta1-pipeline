@@ -4,17 +4,16 @@ import os
 import re
 import json
 from enum import Enum
+from unittest.mock import Base
 from langchain_openai import ChatOpenAI
 import cv2
 import numpy as np
 from PIL.Image import Image as PILImage
-from pydantic import BaseModel, Field
 from langchain.schema import SystemMessage, PromptValue
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.output_parsers import PydanticOutputParser
-from langchain.chains import LLMChain
 from langchain_openai import ChatOpenAI
-from pydantic.v1 import BaseModel
+from pydantic.v1 import BaseModel, Field
 import tiktoken
 from tasks.common.image_io import pil_to_cv_image
 from tasks.common.task import TaskInput, TaskResult
@@ -93,7 +92,10 @@ class MetdataLLM(BaseModel):
         + "'U.S. Geological Survey 1:62,500', "
         + "'Vidal (1949) Rice and Turtle Mountains (1954) Savahia Peak (1975)'"
     )
-    counties: List[str] = Field(description="Counties covered by the map.")
+    counties: List[str] = Field(
+        description="Counties covered by the map.  These are often listed in the title; "
+        + "if they are not, they should be extracted from the map."
+    )
     states: List[str] = Field(
         description="States or provinces covered by the map.  States "
         + "includes principal subvidisions of any country and their full "
@@ -104,6 +106,34 @@ class MetdataLLM(BaseModel):
         description="Country covered by the map." + "Examples: 'USA', 'Canada'"
     )
     publisher: str = Field(description="The publisher of the map.")
+
+
+class Location(BaseModel):
+    name: str = Field(
+        description="The name of the location extracted from the map area. "
+        + "The name should be the name of the point and the index of the point in the extracted text."
+    )
+    index: int = Field(description="The index of the point in the extracted text.")
+
+
+class PointsLLM(BaseModel):
+    points: List[Location] = Field(
+        description="The list of point places extracted from the map area. "
+        + "The 'name' key should contain the name of the point and the 'index' key should contain the index of "
+        + "the point in the extracted text."
+        + "Examples of places that are points: mountains, peaks, trailheads, hills, summits.\n"
+        + "Examples of places that are not points: pond, brook, lake, river.\n"
+    )
+
+
+class PopulationCenterLLM(BaseModel):
+    population_centers: List[Location] = Field(
+        description="The list of recognizeable population centers extracted from the map area. "
+        + "The 'name' key should contain the name of the population center and the 'index' key should contain the "
+        + "index of the population center in the extracted text."
+        + "Examples of population centers: cities, towns, villages, hamlets.\n"
+        + "Examples of places that are not population centers: roads, streets, avenues, or other similar features.\n"
+    )
 
 
 class MetadataExtractor(Task):
@@ -125,7 +155,7 @@ class MetadataExtractor(Task):
     MIN_TEXT_FILTER_LENGTH = 100
     TEXT_FILTER_DECREMENT = 100
 
-    PROMPT_TEMPLATE = (
+    TEXT_EXTRACT_TEMPLATE = (
         "The following blocks of text were extracted from a map using an OCR process:\n"
         + "{text_str}"
         + "\n\n"
@@ -135,24 +165,22 @@ class MetadataExtractor(Task):
         + 'If any string value is not present the field should be set to "NULL"\n'
     )
 
-    EXAMPLE_JSON_POINTS = json.dumps(
-        [
-            {"name": "Ducky Hill", "index": 12},
-            {"name": "Bear Mtn", "index": 34},
-            {"name": "Bedford Hill", "index": 20},
-            {"name": "Spear Peak", "index": 6},
-        ],
-        indent=4,
+    POINT_PLACE_TEMPLATE = (
+        "The following blocks of text were extracted from a map using an OCR process, specified "
+        + "as a list with (text, index):\n"
+        + "{text_str}"
+        + "\n\n"
+        + "Extract places that are points from the text.\n"
+        + "{format}"
     )
 
-    EXAMPLE_JSON_CITIES = json.dumps(
-        [
-            {"name": "Denver", "index": 12},
-            {"name": "Los Angeles", "index": 34},
-            {"name": "Seattle", "index": 20},
-            {"name": "Calgary", "index": 6},
-        ],
-        indent=4,
+    POPULATION_CENTER_TEMPLATE = (
+        "The following blocks of text were extracted from a map using an OCR process, "
+        + "specified as a list with (text, index):\n"
+        + "{text_str}"
+        + "\n\n"
+        + " Extract the places that are recognizable metropolitan areas, cities, towns, or villages.\n"
+        + "{format}"
     )
 
     EXAMPLE_JSON_UTM = json.dumps({"utm_zone": "<utm zone>"})
@@ -176,11 +204,10 @@ class MetadataExtractor(Task):
         self._chat_model = ChatOpenAI(
             model=model, api_key=os.getenv("OPENAI_API_KEY"), temperature=0.1
         )
-        logger.info(f"Using model: {model.value}")
-
         self._model = model
         self._text_key = text_key
         self._should_run = should_run
+
         logger.info(f"Using model: {self._model.value}")
 
     def run(self, input: TaskInput) -> TaskResult:
@@ -190,39 +217,8 @@ class MetadataExtractor(Task):
 
         task_result = TaskResult(self._task_id)
 
-        # check if metadata already exists
-        metadata_raw = input.get_data(METADATA_EXTRACTION_OUTPUT_KEY)
-        if metadata_raw:
-            metadata = MetadataExtraction.model_validate(metadata_raw)
-            # add the place extraction
-            # TODO: THIS IS A TEMPORARY HACK UNTIL REFACTORED TO WORK WITH LANGCHAIN
-            doc_text: DocTextExtraction = input.parse_data(
-                TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
-            )
-
-            # text_indices = self._extract_text_with_index(doc_text)
-
-            # convert text to prompt string and compute token count
-            # prompt_str_places = self._to_point_prompt_str(
-            #     self._text_extractions_to_str(text_indices)
-            # )
-            # metadata.places = self._process_map_area_extractions(
-            #     doc_text, prompt_str_places
-            # )
-            # prompt_str_areas = self._to_place_prompt_str(
-            #     self._text_extractions_to_str(text_indices)
-            # )
-            # metadata.population_centres = self._process_map_area_extractions(
-            #     doc_text, prompt_str_areas, True
-            # )
-            task_result.add_output(
-                METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
-            )
-            return task_result
-
-        # extract metadata from ocr output
         doc_text: DocTextExtraction = input.parse_data(
-            self._text_key, DocTextExtraction.model_validate
+            TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
         )
         if not doc_text:
             return task_result
@@ -240,6 +236,15 @@ class MetadataExtractor(Task):
 
             # normalize quadrangle
             metadata.quadrangles = self._normalize_quadrangle(metadata.quadrangles)
+
+            # # extract places
+            metadata.places = self._extract_locations(
+                doc_text, self.POINT_PLACE_TEMPLATE
+            )
+
+            metadata.population_centres = self._extract_locations(
+                doc_text, self.POPULATION_CENTER_TEMPLATE
+            )
 
             # # extract quadrangles from the title and base map info
             # metadata.quadrangles = self._extract_quadrangles(
@@ -272,17 +277,18 @@ class MetadataExtractor(Task):
 
             max_text_length = self.MAX_TEXT_FILTER_LENGTH
             num_tokens = 0
-            prompt_str = ""
-            text = []
 
-            input_prompt: Optional[PromptValue] = None
             prompt_str = ""
+            input_prompt: Optional[PromptValue] = None
+            text = []
 
             # setup the output structure
             parser = PydanticOutputParser(pydantic_object=MetdataLLM)
 
             # setup the prompt template
-            prompt_template = self._generate_prompt_template(parser)
+            prompt_template = self._generate_prompt_template(
+                parser, self.TEXT_EXTRACT_TEMPLATE
+            )
 
             while max_text_length > self.MIN_TEXT_FILTER_LENGTH:
                 # extract text from OCR output using rule-based filtering
@@ -313,8 +319,16 @@ class MetadataExtractor(Task):
             if input_prompt is not None:
                 chain = prompt_template | self._chat_model | parser
                 response = chain.invoke({"text_str": "\n".join(text)})
+                # add placeholders for fields we don't extract
+                response_dict = response.dict()
+                response_dict["quadrangles"] = []
+                response_dict["population_centres"] = []
+                response_dict["places"] = []
+                response_dict["map_shape"] = "unknown"
+                response_dict["map_chroma"] = "unknown"
+                response_dict["utm_zone"] = "NULL"
                 return MetadataExtraction(
-                    map_id=doc_text_extraction.doc_id, **response.dict()
+                    map_id=doc_text_extraction.doc_id, **response_dict
                 )
 
             logger.warn(
@@ -330,62 +344,17 @@ class MetadataExtractor(Task):
             )
             return self._create_empty_extraction(doc_text_extraction.doc_id)
 
-    # def _process_map_area_extractions(
-    #     self,
-    #     doc_text_extraction: DocTextExtraction,
-    #     prompt_str: str,
-    #     replace_text: bool = False,
-    # ) -> List[TextExtraction]:
-    #     logger.info(
-    #         f"extracting point places from the map area of '{doc_text_extraction.doc_id}'"
-    #     )
-    #     places = []
-    #     try:
-    #         messages: List[Any] = [
-    #             {
-    #                 "role": "system",
-    #                 "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
-    #             },
-    #             {"role": "user", "content": prompt_str},
-    #         ]
-    #         if self._model == LLM.GPT_4_TURBO:
-    #             completion = self._openai_client.chat.completions.create(
-    #                 messages=messages,
-    #                 model=self._model.value,
-    #                 response_format={"type": "json_object"},
-    #                 temperature=0.1,
-    #             )
-    #         else:
-    #             completion = self._openai_client.chat.completions.create(
-    #                 messages=messages,
-    #                 model=self._model.value,
-    #                 response_format={"type": "json_object"},
-    #                 temperature=0.1,
-    #             )
+    def _extract_locations(
+        self, doc_text: DocTextExtraction, template: str
+    ) -> List[TextExtraction]:
+        text_indices = self._extract_text_with_index(doc_text)
 
-    #         message_content = completion.choices[0].message.content
-    #         if message_content is not None:
-    #             try:
-    #                 places_raw: List[Dict[str, Any]] = json.loads(message_content)[
-    #                     "points"
-    #                 ]
-    #                 places = self._map_text_coordinates(
-    #                     places_raw, doc_text_extraction, replace_text
-    #                 )
-    #             except json.JSONDecodeError as e:
-    #                 logger.error(
-    #                     f"Skipping extraction '{doc_text_extraction.doc_id}' - error parsing json response from api likely due to token limit",
-    #                     exc_info=True,
-    #                 )
-    #                 places = []
-    #     except Exception as e:
-    #         # print exception stack trace
-    #         logger.error(
-    #             f"Skipping extraction '{doc_text_extraction.doc_id}' - unexpected error during processing",
-    #             exc_info=True,
-    #         )
-    #         places = []
-    #     return places
+        parser = PydanticOutputParser(pydantic_object=PointsLLM)
+        prompt_template = self._generate_prompt_template(parser, template)
+        chain = prompt_template | self._chat_model | parser
+        response = chain.invoke({"text_str": text_indices})
+
+        return self._map_text_coordinates(response.points, doc_text, False)
 
     # def _extract_utm_zone(self, metadata: MetadataExtraction) -> str:
     #     """Extracts the UTM zone from the metadata if it is not already present"""
@@ -411,48 +380,6 @@ class MetadataExtractor(Task):
     #     quadrangle_json = json.loads(quadrangle_resp)
     #     return quadrangle_json["quadrangles"]
 
-    # def _process_basic_prompt(self, prompt_str: str) -> str:
-    #     message_content: str | None = ""
-    #     try:
-    #         messages: List[Any] = [
-    #             {
-    #                 "role": "system",
-    #                 "content": "You are using text extracted from US geological maps by an OCR process to identify map metadata",
-    #             },
-    #             {"role": "user", "content": prompt_str},
-    #         ]
-    #         if self._model == LLM.GPT_4_TURBO:
-    #             completion = self._openai_client.chat.completions.create(
-    #                 messages=messages,
-    #                 model=self._model.value,
-    #                 response_format={"type": "json_object"},
-    #                 temperature=0.1,
-    #             )
-    #         else:
-    #             completion = self._openai_client.chat.completions.create(
-    #                 messages=messages,
-    #                 model=self._model.value,
-    #                 response_format={"type": "json_object"},
-    #                 temperature=0.1,
-    #             )
-
-    #         message_content = completion.choices[0].message.content
-    #         if message_content is not None:
-    #             try:
-    #                 result = message_content.strip()
-    #             except json.JSONDecodeError as e:
-    #                 logger.error(
-    #                     f"Skipping extraction - error parsing json response from api likely due to token limit",
-    #                     exc_info=True,
-    #                 )
-    #     except Exception as e:
-    #         # print exception stack trace
-    #         logger.error(
-    #             f"Skipping extraction - unexpected error during processing",
-    #             exc_info=True,
-    #         )
-    #     return "" if message_content is None else message_content
-
     def _extract_text_with_index(
         self, doc_text_extraction: DocTextExtraction
     ) -> List[Tuple[str, int]]:
@@ -462,12 +389,11 @@ class MetadataExtractor(Task):
     def _text_extractions_to_str(self, extractions: List[Tuple[str, int]]) -> str:
         # want to end up with a list of (text, coordinate) having each entry be a new line
         items = [f"({r[0]}, {i})" for i, r in enumerate(extractions)]
-
         return "\n".join(items)
 
     def _map_text_coordinates(
         self,
-        places: List[Dict[str, Any]],
+        places: List[Location],
         extractions: DocTextExtraction,
         replace_text: bool,
     ) -> List[TextExtraction]:
@@ -475,11 +401,9 @@ class MetadataExtractor(Task):
         # TODO: MAY WANT TO CHECK THE TEXT LINES UP JUST IN CASE THE LLM HAD A BIT OF FUN
         filtered = []
         for p in places:
-            e = copy.deepcopy(extractions.extractions[p["index"]])
+            e = copy.deepcopy(extractions.extractions[p.index])
             if replace_text:
-                e.text = p["name"]
-            if "state" in p:
-                e.text = f"{e.text}, {p['state']}"
+                e.text = p.name
             filtered.append(e)
         return filtered  # type: ignore
 
@@ -489,11 +413,9 @@ class MetadataExtractor(Task):
         num_tokens = len(encoding.encode(input_str))
         return num_tokens
 
-    def _generate_prompt_template(self, parser) -> ChatPromptTemplate:
+    def _generate_prompt_template(self, parser, template: str) -> ChatPromptTemplate:
         system_message = "You are using text extracted from geological maps by an OCR process to identify map metadata"
-        human_message_template = HumanMessagePromptTemplate.from_template(
-            self.PROMPT_TEMPLATE
-        )
+        human_message_template = HumanMessagePromptTemplate.from_template(template)
         prompt = ChatPromptTemplate(
             messages=[
                 SystemMessage(content=system_message),
@@ -503,43 +425,6 @@ class MetadataExtractor(Task):
             partial_variables={"format": parser.get_format_instructions()},
         )
         return prompt
-
-    def _to_point_prompt_str(self, text_str: str) -> str:
-        return (
-            "The following blocks of text were extracted from a map using an OCR process, specified as a list with (text, index):\n"
-            + text_str
-            + "\n\n"
-            + " Return the places that are points. The following types of places are points: \n"
-            + " - mountains\n"
-            + " - peaks\n"
-            + " - trailheads\n"
-            + " - hills\n"
-            + " - summits\n\n"
-            + " Ignore places that are not points. The following types of places are not points: \n"
-            + " - pond\n"
-            + " - brook\n"
-            + " - lake\n"
-            + " - river\n\n"
-            + " In the response, include the index and the name as part of a tuple in a json formatted list with each item being {name: 'name', index: 'index'}.\n"
-            + " Here is an example of the structure to use: \n"
-            + self.EXAMPLE_JSON_POINTS
-            + "\n"
-        )
-
-    def _to_place_prompt_str(self, text_str: str) -> str:
-        return (
-            "The following blocks of text were extracted from a map using an OCR process, specified as a list with (text, index):\n"
-            + text_str
-            + "\n\n"
-            + " Return the places that are recognizable metropolitan areas, cities, towns, or villages.\n"
-            + " Ignore places that are roads, streets, avenues, or other similar features.\n"
-            + " Using the above list of places, determine which state or province is most likely being explored.\n"
-            + " In the response, include the index, the name and the state or province as part of a tuple in a json formatted list with each item being {name: 'name', index: 'index', state: 'state'}.\n"
-            + " Here is an example of the structure to use: \n"
-            + self.EXAMPLE_JSON_CITIES
-            + "\n\n"
-            + ' In the returned json, name the result "points".'
-        )
 
     def _to_utm_prompt_str(
         self,
