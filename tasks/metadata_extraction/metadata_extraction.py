@@ -1,10 +1,12 @@
 import copy
+from importlib import metadata
 import logging
 import os
 import re
 import json
 from enum import Enum
 from unittest.mock import Base
+from urllib import response
 from langchain_openai import ChatOpenAI
 import cv2
 import numpy as np
@@ -86,12 +88,16 @@ class MetdataLLM(BaseModel):
         + "The term `grid ticks` should not be included in coordinate system output."
     )
     base_map: str = Field(
-        "The base map information description.  The base map description can be a "
+        description="The base map information description.  The base map description can be a "
         + "descriptive string, but also often contains (quadrangle, year) pairs."
         + "Examples: 'U.S. Geological Survey 1954', "
         + "'U.S. Geological Survey 1:62,500', "
         + "'Vidal (1949) Rice and Turtle Mountains (1954) Savahia Peak (1975)'"
     )
+    utm_zone: int = Field(
+        description="The UTM zone of the map.  If the UTM zone cannot be inferred, return 0."
+    )
+
     counties: List[str] = Field(
         description="Counties covered by the map.  These are often listed in the title; "
         + "if they are not, they should be extracted from the map."
@@ -133,6 +139,16 @@ class PopulationCenterLLM(BaseModel):
         + "index of the population center in the extracted text."
         + "Examples of population centers: cities, towns, villages, hamlets.\n"
         + "Examples of places that are not population centers: roads, streets, avenues, or other similar features.\n"
+    )
+
+
+class UTMZoneLLM(BaseModel):
+    utm_zone: int = Field(description="The UTM zone of the map")
+
+
+class QuadranglesLLM(BaseModel):
+    quadrangles: List[str] = Field(
+        description="The list of quadrangles extracted from the map area."
     )
 
 
@@ -183,10 +199,23 @@ class MetadataExtractor(Task):
         + "{format}"
     )
 
-    EXAMPLE_JSON_UTM = json.dumps({"utm_zone": "<utm zone>"})
+    UTM_ZONE_TEMPLATE = (
+        "The following information was extracted froma map using an OCR process:\n"
+        + "quadrangles: {quadrangles}\n"
+        + "counties: {counties}\n"
+        + "places: {places}\n"
+        + "population centers: {population_centers}\n"
+        + "states: {states}\n"
+        + "Infer the UTM zone. If it cannot be inferred, return 0.\n"
+        + "{format}"
+    )
 
-    EXAMPLE_JSON_QUADRANGLES = json.dumps(
-        {"quadrangles": ["<quadrangle>", "<quadrangle>"]}
+    QUADRANGLES_TEMPLATE = (
+        "The following information was extracted from a map using an OCR process:\n"
+        + "title: {title}\n"
+        + "base map: {base_map}\n"
+        + "Identify the quadrangles from the fields above.\n"
+        + "{format}"
     )
 
     # threshold for determining map shape - anything above is considered rectangular
@@ -211,7 +240,15 @@ class MetadataExtractor(Task):
         logger.info(f"Using model: {self._model.value}")
 
     def run(self, input: TaskInput) -> TaskResult:
-        """Processes a directory of OCR files and writes the metadata to a json file"""
+        """
+        Runs the metadata extraction task.
+
+        Args:
+            input (TaskInput): The input data for the task.
+
+        Returns:
+            TaskResult: The result of the task.
+        """
         if self._should_run and not self._should_run(input):
             return self._create_result(input)
 
@@ -234,9 +271,6 @@ class MetadataExtractor(Task):
             # normalize scale
             metadata.scale = self._normalize_scale(metadata.scale)
 
-            # normalize quadrangle
-            metadata.quadrangles = self._normalize_quadrangle(metadata.quadrangles)
-
             # # extract places
             metadata.places = self._extract_locations(
                 doc_text, self.POINT_PLACE_TEMPLATE
@@ -246,14 +280,12 @@ class MetadataExtractor(Task):
                 doc_text, self.POPULATION_CENTER_TEMPLATE
             )
 
-            # # extract quadrangles from the title and base map info
-            # metadata.quadrangles = self._extract_quadrangles(
-            #     metadata.title, metadata.base_map
-            # )
+            # extract quadrangles
+            metadata.quadrangles = self._extract_quadrangles(metadata)
 
-            # # extract UTM zone if not present in metadata after initial extraction
-            # if metadata.utm_zone == "NULL":
-            #     metadata.utm_zone = self._extract_utm_zone(metadata)
+            # extract UTM zone if not present in metadata after initial extraction
+            if metadata.utm_zone == "NULL":
+                metadata.utm_zone = str(self._extract_utm_zone(metadata))
 
             # compute map shape from the segmentation output
             segments = input.data[SEGMENTATION_OUTPUT_KEY]
@@ -271,7 +303,16 @@ class MetadataExtractor(Task):
     def _process_doc_text_extraction(
         self, doc_text_extraction: DocTextExtraction
     ) -> Optional[MetadataExtraction]:
-        """Extracts metadata from a single OCR file"""
+        """
+        Processes the text extraction from the OCR output and extracts metadata from it using an LLM .
+
+        Args:
+            doc_text_extraction (DocTextExtraction): The text extraction from the OCR output
+
+        Returns:
+            Optional[MetadataExtraction]: The extracted metadata
+        """
+
         try:
             logger.info(f"Processing '{doc_text_extraction.doc_id}'")
 
@@ -347,6 +388,16 @@ class MetadataExtractor(Task):
     def _extract_locations(
         self, doc_text: DocTextExtraction, template: str
     ) -> List[TextExtraction]:
+        """
+        Uses an LLM to extract locations from input texts.
+
+        Args:
+            doc_text (DocTextExtraction): The document text to extract locations from.
+            template (str): The prompt template to use for extraction.
+
+        Returns:
+            List[TextExtraction]: A list of extracted locations as TextExtraction objects.
+        """
         text_indices = self._extract_text_with_index(doc_text)
 
         parser = PydanticOutputParser(pydantic_object=PointsLLM)
@@ -354,40 +405,82 @@ class MetadataExtractor(Task):
         chain = prompt_template | self._chat_model | parser
         response = chain.invoke({"text_str": text_indices})
 
-        return self._map_text_coordinates(response.points, doc_text, False)
+        return self._map_text_coordinates(response.points, doc_text, True)
 
-    # def _extract_utm_zone(self, metadata: MetadataExtraction) -> str:
-    #     """Extracts the UTM zone from the metadata if it is not already present"""
-    #     prompt_str = self._to_utm_prompt_str(
-    #         metadata.counties,
-    #         metadata.quadrangles,
-    #         metadata.states,
-    #         metadata.places,
-    #         metadata.population_centres,
-    #     )
-    #     utm_zone_resp = self._process_basic_prompt(prompt_str)
-    #     if utm_zone_resp == "NULL":
-    #         return utm_zone_resp
-    #     utm_json = json.loads(utm_zone_resp)
-    #     return utm_json["utm_zone"]
+    def _extract_utm_zone(self, metadata: MetadataExtraction) -> int:
+        """
+        Infers the UTM zone from the given metadata using an LLM.
 
-    # def _extract_quadrangles(self, title: str, base_map: str) -> List[str]:
-    #     """Extracts quadrangles from the title and base map info"""
-    #     prompt_str = self._to_quadrangle_prompt_str(title, base_map)
-    #     quadrangle_resp = self._process_basic_prompt(prompt_str)
-    #     if quadrangle_resp == "NULL":
-    #         return []
-    #     quadrangle_json = json.loads(quadrangle_resp)
-    #     return quadrangle_json["quadrangles"]
+        Args:
+            metadata (MetadataExtraction): The metadata containing information about counties, quadrangles, states,
+                places, and population centers.
+
+        Returns:
+            int: The UTM zone extracted from the metadata. 0 indicates that the UTM zone could not be inferred.
+        """
+        args = {
+            "counties": " ".join(metadata.counties),
+            "quadrangles": " ".join(metadata.quadrangles),
+            "states": " ".join(metadata.states),
+            "places": " ".join([s.text for s in metadata.places]),
+            "population_centers": " ".join(
+                [s.text for s in metadata.population_centres]
+            ),
+        }
+        parser = PydanticOutputParser(pydantic_object=UTMZoneLLM)
+        prompt_template = self._generate_prompt_template(parser, self.UTM_ZONE_TEMPLATE)
+        chain = prompt_template | self._chat_model | parser
+        response = chain.invoke(args)
+
+        return response.utm_zone
+
+    def _extract_quadrangles(self, metadata: MetadataExtraction) -> List[str]:
+        """
+        Infers quadrangles from the given metadata using an LLM.
+
+        Args:
+            metadata (MetadataExtraction): The metadata object containing the necessary information.
+
+        Returns:
+            List[str]: A list of extracted quadrangles.
+        """
+
+        args = {"title": metadata.title, "base_map": metadata.base_map}
+
+        parser = PydanticOutputParser(pydantic_object=QuadranglesLLM)
+        prompt_template = self._generate_prompt_template(
+            parser, self.QUADRANGLES_TEMPLATE
+        )
+        chain = prompt_template | self._chat_model | parser
+        response = chain.invoke(args)
+
+        return self._normalize_quadrangles(response.quadrangles)
 
     def _extract_text_with_index(
         self, doc_text_extraction: DocTextExtraction
     ) -> List[Tuple[str, int]]:
+        """
+        Extracts the text from the given `doc_text_extraction` object along with their respective indices.
+
+        Args:
+            doc_text_extraction (DocTextExtraction): The `DocTextExtraction` object containing the text extractions.
+
+        Returns:
+            List[Tuple[str, int]]: A list of tuples where each tuple contains the extracted text and its index.
+        """
         # map all text with index
         return [(d.text, i) for i, d in enumerate(doc_text_extraction.extractions)]
 
     def _text_extractions_to_str(self, extractions: List[Tuple[str, int]]) -> str:
-        # want to end up with a list of (text, coordinate) having each entry be a new line
+        """
+        Converts a list of text extractions to a string representation.
+
+        Args:
+            extractions (List[Tuple[str, int]]): A list of tuples containing the extracted text and its coordinate.
+
+        Returns:
+            str: A string representation of the text extractions, with each entry on a new line.
+        """
         items = [f"({r[0]}, {i})" for i, r in enumerate(extractions)]
         return "\n".join(items)
 
@@ -397,6 +490,18 @@ class MetadataExtractor(Task):
         extractions: DocTextExtraction,
         replace_text: bool,
     ) -> List[TextExtraction]:
+        """
+        Maps the text coordinates of the given places to the corresponding extractions.
+
+        Args:
+            places (List[Location]): The list of locations to map.
+            extractions (DocTextExtraction): The document text extractions.
+            replace_text (bool): Flag indicating whether to replace the text in the extractions with the name of the place.
+
+        Returns:
+            List[TextExtraction]: The filtered list of text extractions.
+
+        """
         # want to use the index to filter the extractions
         # TODO: MAY WANT TO CHECK THE TEXT LINES UP JUST IN CASE THE LLM HAD A BIT OF FUN
         filtered = []
@@ -408,12 +513,32 @@ class MetadataExtractor(Task):
         return filtered  # type: ignore
 
     def _count_tokens(self, input_str: str, encoding_name: str) -> int:
-        """Counts the number of tokens in a input string using a given encoding"""
+        """
+        Counts the number of tokens in the input string using the specified encoding.
+
+        Args:
+            input_str (str): The input string to count tokens from.
+            encoding_name (str): The name of the encoding to use.
+
+        Returns:
+            int: The number of tokens in the input string.
+
+        """
         encoding = tiktoken.get_encoding(encoding_name)
         num_tokens = len(encoding.encode(input_str))
         return num_tokens
 
     def _generate_prompt_template(self, parser, template: str) -> ChatPromptTemplate:
+        """
+        Generates a chat prompt template from an input string.
+
+        Args:
+            parser (Parser): The parser object used for extracting metadata.
+            template (str): The template string for the human message.
+
+        Returns:
+            ChatPromptTemplate: The generated chat prompt template.
+        """
         system_message = "You are using text extracted from geological maps by an OCR process to identify map metadata"
         human_message_template = HumanMessagePromptTemplate.from_template(template)
         prompt = ChatPromptTemplate(
@@ -426,43 +551,20 @@ class MetadataExtractor(Task):
         )
         return prompt
 
-    def _to_utm_prompt_str(
-        self,
-        counties: List[str],
-        quadrangles: List[str],
-        state: List[str],
-        places: List[TextExtraction],
-        population_centers: List[TextExtraction],
-    ) -> str:
-        return (
-            "The following information was extracted froma map using an OCR process:\n"
-            + f"quadrangles: {','.join(quadrangles)}\n"
-            + f"counties: {','.join(counties)}\n"
-            + f"places: {','.join([p.text for p in places])}\n"
-            + f"population centers: {','.join([p.text for p in population_centers])}\n"
-            + f"states: {','.join(state)}\n"
-            + " Infer the UTM zone and return it in a JSON structure. If it cannot be inferred, return 'NULL'.\n"
-            + " The inferred UTM zone should not include an N or S after the number.\n"
-            + " Here is an example of the structure to return: \n"
-            + self.EXAMPLE_JSON_UTM
-        )
-
-    def _to_quadrangle_prompt_str(self, title: str, base_map_info: str) -> str:
-        return (
-            "The following information was extracted from a map using an OCR process:\n"
-            + f"title: {title}\n"
-            + f"base map: {base_map_info}\n"
-            + " Identify the quadrangles from the fields and store them in a JSON structure.\n"
-            + " Here is an example of the structure to use: \n"
-            + self.EXAMPLE_JSON_QUADRANGLES
-            + "\n"
-        )
-
     def _extract_text(
         self, doc_text_extraction: DocTextExtraction, max_text_length=800
     ) -> List[str]:
-        """Extracts text from OCR output - filters to alphanumeric strings between 4 and 400 characters long
-        that contain at least one space"""
+        """
+        Extracts text from OCR output - filters to alphanumeric strings between 4 and 400 characters long
+        that contain at least one space
+
+        Args:
+            doc_text_extraction (DocTextExtraction): The text extraction from the OCR output
+            max_text_length (int): The maximum length of the text to extract
+
+        Returns:
+            List[str]: The extracted text
+        """
         text_dims = []
         for text_entry in doc_text_extraction.extractions:
             text = text_entry.text
@@ -476,7 +578,15 @@ class MetadataExtractor(Task):
         return text_dims
 
     def _normalize_scale(self, scale_str: str) -> str:
-        """Normalizes the scale string to the format 1:xxxxx"""
+        """
+        Normalizes the scale string to the format 1:xxxxx
+
+        Args:
+            scale_str (str): The scale string to normalize
+
+        Returns:
+            str: The normalized scale string
+        """
         if scale_str != "NULL":
             normalized_scale = re.sub(self.SCALE_PATTERN, "", scale_str)
             if not re.match(self.SCALE_PREPEND, normalized_scale):
@@ -484,8 +594,16 @@ class MetadataExtractor(Task):
             return normalized_scale
         return scale_str
 
-    def _normalize_quadrangle(self, quadrangles_str: List[str]) -> List[str]:
-        """Normalizes the quadrangle string by removing the word quadrangle"""
+    def _normalize_quadrangles(self, quadrangles_str: List[str]) -> List[str]:
+        """
+        Normalizes the quadrangle string by removing the word quadrangle
+
+        Args:
+            quadrangles_str (List[str]): The quadrangle strings to normalize
+
+        Returns:
+            List[str]: The normalized quadrangle strings
+        """
         return [
             re.sub(self.QUADRANGLE_PATTERN, "", quad_str).strip()
             for quad_str in quadrangles_str
