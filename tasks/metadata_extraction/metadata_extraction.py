@@ -231,8 +231,8 @@ class MetadataExtractor(Task):
         super().__init__(id)
 
         self._chat_model = ChatOpenAI(
-            model=model, api_key=os.getenv("OPENAI_API_KEY"), temperature=0.1
-        )
+            model=model, temperature=0.1
+        )  # reads OPEN_AI_API_KEY from environment
         self._model = model
         self._text_key = text_key
         self._should_run = should_run

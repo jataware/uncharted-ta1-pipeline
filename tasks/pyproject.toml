@@ -12,7 +12,6 @@ dependencies = [
     "tqdm",
     "pydantic",
     "tiktoken",
-    "openai",
     "google-cloud-vision",
     "grpcio",
     "boto3",
@@ -30,8 +29,6 @@ dependencies = [
     "scipy",
     "pika",
     "langchain",
-    "langchain-community",
-    "langchain-core",
     "langchain-openai"
 ]
 
