@@ -46,6 +46,8 @@ class MetadataExtraction(BaseModel):
     publisher: str
     map_shape: MapShape
     map_chroma: MapChromaType
+    language: str
+    language_country: str
 
 
 class GeocodedCoordinate(BaseModel):

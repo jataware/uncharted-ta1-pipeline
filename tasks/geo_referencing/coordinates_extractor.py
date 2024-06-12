@@ -174,6 +174,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
+        metadata = input.input.parse_data(
+            METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
+        )
+        print(f"META: {metadata}")
         ocr_blocks: DocTextExtraction = input.input.parse_data(
             TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
         )

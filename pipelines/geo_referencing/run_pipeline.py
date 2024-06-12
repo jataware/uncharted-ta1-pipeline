@@ -66,6 +66,11 @@ def main():
         type=str,
         default="./data/state_codes.csv",
     )
+    parser.add_argument(
+        "--country_code_filename",
+        type=str,
+        default="./data/country_codes.csv",
+    )
     p = parser.parse_args()
 
     # setup an input stream
@@ -107,6 +112,7 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
         parsed.state_plane_lookup_filename,
         parsed.state_plane_zone_filename,
         parsed.state_code_filename,
+        parsed.country_code_filename,
     )
 
     # get file paths

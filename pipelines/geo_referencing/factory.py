@@ -58,11 +58,16 @@ def create_geo_referencing_pipelines(
     state_plane_lookup_filename: str,
     state_plane_zone_filename: str,
     state_code_filename: str,
+    country_code_filename: str,
 ) -> List[Pipeline]:
     geocoding_cache_bounds = os.path.join(working_dir, "geocoding_cache_bounds.json")
     geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
-    geocoder_bounds = NominatimGeocoder(10, geocoding_cache_bounds, 1)
-    geocoder_points = NominatimGeocoder(10, geocoding_cache_points, 5)
+    geocoder_bounds = NominatimGeocoder(
+        10, geocoding_cache_bounds, 1, country_code_filename=country_code_filename
+    )
+    geocoder_points = NominatimGeocoder(
+        10, geocoding_cache_points, 5, country_code_filename=country_code_filename
+    )
 
     segmentation_cache = os.path.join(working_dir, "segmentation")
     text_cache = os.path.join(working_dir, "text")
@@ -162,7 +167,17 @@ def create_geo_referencing_pipelines(
         )
     )
     if extract_metadata:
-        tasks.append(TextFilter("text_filter", output_key="filtered_ocr_text"))
+        tasks.append(
+            TextFilter(
+                "text_filter",
+                output_key="filtered_ocr_text",
+                classes=[
+                    "cross_section",
+                    "legend_points_lines",
+                    "legend_polygons",
+                ],
+            )
+        )
         tasks.append(
             MetadataExtractor(
                 "metadata_extractor", LLM.GPT_3_5_TURBO, "filtered_ocr_text"
@@ -276,6 +291,7 @@ def create_geo_referencing_pipelines(
                 geocoder_bounds,
                 run_bounds=True,
                 run_points=False,
+                run_centres=False,
             )
         )
         tasks.append(GeoFencer("geofence"))
@@ -306,6 +322,7 @@ def create_geo_referencing_pipelines(
                 geocoder_points,
                 run_bounds=False,
                 run_points=True,
+                run_centres=False,
             )
         )
         tasks.append(
@@ -375,6 +392,7 @@ def create_geo_referencing_pipelines(
                 geocoder_bounds,
                 run_bounds=True,
                 run_points=False,
+                run_centres=False,
             )
         )
         tasks.append(GeoFencer("geofence"))
@@ -405,6 +423,7 @@ def create_geo_referencing_pipelines(
                 geocoder_points,
                 run_bounds=False,
                 run_points=True,
+                run_centres=False,
             )
         )
         tasks.append(
@@ -449,12 +468,19 @@ def create_geo_referencing_pipelines(
 
 
 def create_geo_referencing_pipeline(
-    segmentation_model_path: str, outputs: List[OutputCreator], working_dir: str
+    segmentation_model_path: str,
+    outputs: List[OutputCreator],
+    working_dir: str,
+    country_code_filename: str,
 ) -> Pipeline:
     geocoding_cache_bounds = os.path.join(working_dir, "geocoding_cache_bounds.json")
     geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
-    geocoder_bounds = NominatimGeocoder(10, geocoding_cache_bounds, 1)
-    geocoder_points = NominatimGeocoder(10, geocoding_cache_points, 5)
+    geocoder_bounds = NominatimGeocoder(
+        10, geocoding_cache_bounds, 1, country_code_filename=country_code_filename
+    )
+    geocoder_points = NominatimGeocoder(
+        10, geocoding_cache_points, 5, country_code_filename=country_code_filename
+    )
     segmentation_cache = os.path.join(working_dir, "segmentation")
     text_cache = os.path.join(working_dir, "text")
 

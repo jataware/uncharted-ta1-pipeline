@@ -80,6 +80,8 @@ class MetadataExtractor(Task):
             "states": ["<state>", "<state>", "<state>"],
             "country": "<country>",
             "publisher": "<publisher>",
+            "language": "<language>",
+            "language_country": "<language country>",
         },
         indent=4,
     )
@@ -268,6 +270,9 @@ class MetadataExtractor(Task):
                 if message_content is not None:
                     try:
                         content_dict: Dict[str, Any] = json.loads(message_content)
+                        country = content_dict["country"]
+                        if country is None or len(country) == 0 or country == "NULL":
+                            content_dict["country"] = self._get_country("\n".join(text))
                     except json.JSONDecodeError as e:
                         logger.error(
                             f"Skipping extraction '{doc_text_extraction.doc_id}' - error parsing json response from openai api likely due to token limit",
@@ -295,12 +300,37 @@ class MetadataExtractor(Task):
             return self._create_empty_extraction(doc_text_extraction.doc_id)
 
         except Exception as e:
-            # print exception stack trace
             logger.error(
                 f"Skipping extraction '{doc_text_extraction.doc_id}' - unexpected error during processing",
                 exc_info=True,
             )
             return self._create_empty_extraction(doc_text_extraction.doc_id)
+
+    def _get_country(self, text_str: str) -> Optional[str]:
+        country_prompt = self._to_country_prompt_str(text_str)
+        messages: List[Any] = [
+            {
+                "role": "system",
+                "content": "You are using text extracted from maps by an OCR process to identify map metadata",
+            },
+            {"role": "user", "content": country_prompt},
+        ]
+        # GPT-4-turbo allows for an explicit response format setting for JSON output
+        if self._model == LLM.GPT_4_TURBO:
+            completion = self._openai_client.chat.completions.create(
+                messages=messages,
+                model=self._model.value,
+                response_format={"type": "json_object"},
+                temperature=0.1,
+            )
+        else:
+            completion = self._openai_client.chat.completions.create(
+                messages=messages,
+                model=self._model.value,
+                temperature=0.1,
+            )
+        message_content = completion.choices[0].message.content
+        return message_content
 
     def _process_map_area_extractions(
         self,
@@ -351,7 +381,6 @@ class MetadataExtractor(Task):
                     )
                     places = []
         except Exception as e:
-            # print exception stack trace
             logger.error(
                 f"Skipping extraction '{doc_text_extraction.doc_id}' - unexpected error during processing",
                 exc_info=True,
@@ -418,7 +447,6 @@ class MetadataExtractor(Task):
                         exc_info=True,
                     )
         except Exception as e:
-            # print exception stack trace
             logger.error(
                 f"Skipping extraction - unexpected error during processing",
                 exc_info=True,
@@ -482,6 +510,8 @@ class MetadataExtractor(Task):
             + " - states/provinces\n"
             + " - country\n"
             + " - map publisher\n"
+            + " - language\n"
+            + " - language country\n"
             + " Examples of geoditic datums: North American Datum of 1983, NAD83, WGS 84.\n"
             + " Examples of vertical datums: 'Mean Sea Level', 'Mean Low Water', and 'national vertical geoditic datum of 1929'\n"  # explicitly look for this so we can ignore it
             + " Examples of UTM zones: 12, 15.\n"
@@ -505,6 +535,8 @@ class MetadataExtractor(Task):
             + "The base map description can be a descriptive string, but also often contains (quadrangle, year) pairs.\n"
             + "States includes principal subvidisions of any country and their full name should be extracted.\n"
             + "UTM zones should not include an N or S after the number when extracted.\n"
+            + "Language should capture the best guess of the language used in the blocks of text.\n"
+            + "Language country should be the name of the country derived from Language.\n"
         )
 
     def _to_point_prompt_str(self, text_str: str) -> str:
@@ -542,6 +574,15 @@ class MetadataExtractor(Task):
             + self.EXAMPLE_JSON_CITIES
             + "\n\n"
             + ' In the returned json, name the result "points".'
+        )
+
+    def _to_country_prompt_str(self, text_str: str) -> str:
+        return (
+            "The following blocks of text were extracted from a map using an OCR process:\n"
+            + text_str
+            + "\n\n"
+            + " Return the most likely country of the map. It could be derived from place names, states, or the language of the map.\n"
+            + " Return the result as a simple string."
         )
 
     def _to_utm_prompt_str(
@@ -699,4 +740,6 @@ class MetadataExtractor(Task):
             publisher="",
             map_shape=MapShape.UNKNOWN,
             map_chroma=MapChromaType.UNKNOWN,
+            language="",
+            language_country="",
         )
