@@ -341,6 +341,9 @@ class Geocoder(Task):
 
         if self._run_points:
             for p in metadata.places:
+                if not isinstance(p, TextExtraction):
+                    logger.error("place is not a text extraction")
+                    continue
                 places.append(
                     GeocodedPlace(
                         place_name=p.text,
@@ -357,6 +360,9 @@ class Geocoder(Task):
 
         if self._run_centres:
             for p in metadata.population_centres:
+                if not isinstance(p, TextExtraction):
+                    logger.error("population centre is not a text extraction")
+                    continue
                 places.append(
                     GeocodedPlace(
                         place_name=p.text,
