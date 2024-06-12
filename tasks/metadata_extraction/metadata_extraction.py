@@ -66,7 +66,9 @@ class MetdataLLM(BaseModel):
         + "Should be a single 4 digit number and the most recent year if multiple are present",
         default="NULL",
     )
-    scale: str = Field(description="The scale of the map.  Example: '1:24000'")
+    scale: str = Field(
+        description="The scale of the map.  Example: '1:24000'", default="NULL"
+    )
     datum: str = Field(
         description="The datum of the map."
         + "Examples: 'North American Datum of 1927', 'NAD83', 'WGS 84'",
@@ -173,7 +175,7 @@ class StateCountryLLM(BaseModel):
     country: str = Field(
         description="Country covered by the map expressed using ISO 3166-1 codes."
         + "Examples: 'US', 'CA', 'GB'",
-        default="",
+        default="NULL",
     )
 
 
@@ -259,7 +261,7 @@ class MetadataExtractor(Task):
     def __init__(
         self,
         id: str,
-        model=LLM.GPT_4_TURBO,
+        model=LLM.GPT_4_O,
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
     ):
