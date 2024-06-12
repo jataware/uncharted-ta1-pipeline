@@ -61,7 +61,7 @@ class MetadataExtractorPipeline(Pipeline):
                     "legend_polygons",
                 ],
             ),
-            MetadataExtractor("metadata_extractor", model=model),
+            MetadataExtractor("metadata_extractor", model=model, cache_dir=work_dir),
         ]
 
         outputs: List[OutputCreator] = [

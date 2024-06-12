@@ -29,6 +29,7 @@ from tasks.text_extraction.entities import (
 )
 from tasks.common.pipeline import Task
 from typing import Callable, List, Dict, Any, Optional, Tuple
+import hashlib
 
 
 logger = logging.getLogger("metadata_extractor")
@@ -264,8 +265,9 @@ class MetadataExtractor(Task):
         model=LLM.GPT_4_O,
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
+        cache_dir: str = "",
     ):
-        super().__init__(id)
+        super().__init__(id, cache_dir=cache_dir)
 
         self._chat_model = ChatOpenAI(
             model=model, temperature=0.1
@@ -290,7 +292,14 @@ class MetadataExtractor(Task):
         if self._should_run and not self._should_run(input):
             return self._create_result(input)
 
+        # use the cached result if available
         task_result = TaskResult(self._task_id)
+        doc_id = self._generate_doc_key(input)
+        result = self.fetch_cached_result(doc_id)
+        if result:
+            logger.info("Using cached metadata extraction result")
+            task_result.add_output(METADATA_EXTRACTION_OUTPUT_KEY, result)
+            return task_result
 
         doc_text: DocTextExtraction = input.parse_data(
             TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
@@ -340,11 +349,36 @@ class MetadataExtractor(Task):
             # compute map chroma from the image
             metadata.map_chroma = self._compute_chroma(input.image)
 
+            # update the cache
+            self.write_result_to_cache(metadata.model_dump(), doc_id)
+
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
 
         return task_result
+
+    def _generate_doc_key(self, task_input: TaskInput) -> str:
+        """
+        Generates a unique document key based on the given task input and configuration.
+
+        Args:
+            task_input (TaskInput): The input for the task.
+
+        Returns:
+            str: The generated document key.
+        """
+        attributes = "_".join(
+            [
+                "metadata",
+                task_input.raster_id,
+                self._model,
+                self._text_key,
+                str(self._include_place_bounds),
+            ]
+        )
+        doc_key = hashlib.sha256(attributes.encode()).hexdigest()
+        return doc_key
 
     def _process_doc_text_extraction(
         self, doc_text_extraction: DocTextExtraction
