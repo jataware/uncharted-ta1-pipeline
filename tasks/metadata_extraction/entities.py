@@ -37,12 +37,14 @@ class MetadataExtraction(BaseModel):
     utm_zone: str
     base_map: str
     counties: List[str]
-    population_centres: List[TextExtraction]  # a list of cities, towns, and villages
+    population_centres: (
+        List[TextExtraction] | List[str]
+    )  # a list of cities, towns, and villages
     states: List[str]
     country: str
-    places: List[
-        TextExtraction
-    ]  # a list of places, each place having a name and coordinates
+    places: (
+        List[TextExtraction] | List[str]
+    )  # a list of places, each place having a name and coordinates
     publisher: str
     map_shape: MapShape
     map_chroma: MapChromaType

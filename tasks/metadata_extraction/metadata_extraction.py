@@ -235,6 +235,7 @@ class MetadataExtractor(Task):
         )  # reads OPEN_AI_API_KEY from environment
         self._model = model
         self._text_key = text_key
+        self._include_place_bounds = False
         self._should_run = should_run
 
         logger.info(f"Using model: {self._model.value}")
@@ -272,13 +273,15 @@ class MetadataExtractor(Task):
             metadata.scale = self._normalize_scale(metadata.scale)
 
             # # extract places
-            metadata.places = self._extract_locations(
-                doc_text, self.POINT_PLACE_TEMPLATE
-            )
+            metadata.places = self._extract_point_places(doc_text)
+            if not self._include_place_bounds:
+                metadata.places = [p.text for p in metadata.places]
 
-            metadata.population_centres = self._extract_locations(
-                doc_text, self.POPULATION_CENTER_TEMPLATE
-            )
+            metadata.population_centres = self._extract_population_centers(doc_text)
+            if not self._include_place_bounds:
+                metadata.population_centres = [
+                    p.text for p in metadata.population_centres
+                ]
 
             # extract quadrangles
             metadata.quadrangles = self._extract_quadrangles(metadata)
@@ -385,15 +388,15 @@ class MetadataExtractor(Task):
             )
             return self._create_empty_extraction(doc_text_extraction.doc_id)
 
-    def _extract_locations(
-        self, doc_text: DocTextExtraction, template: str
+    def _extract_point_places(
+        self,
+        doc_text: DocTextExtraction,
     ) -> List[TextExtraction]:
         """
-        Uses an LLM to extract locations from input texts.
+        Uses an LLM to extract point locations from input texts.
 
         Args:
             doc_text (DocTextExtraction): The document text to extract locations from.
-            template (str): The prompt template to use for extraction.
 
         Returns:
             List[TextExtraction]: A list of extracted locations as TextExtraction objects.
@@ -401,11 +404,37 @@ class MetadataExtractor(Task):
         text_indices = self._extract_text_with_index(doc_text)
 
         parser = PydanticOutputParser(pydantic_object=PointsLLM)
-        prompt_template = self._generate_prompt_template(parser, template)
+        prompt_template = self._generate_prompt_template(
+            parser, self.POINT_PLACE_TEMPLATE
+        )
         chain = prompt_template | self._chat_model | parser
         response = chain.invoke({"text_str": text_indices})
 
         return self._map_text_coordinates(response.points, doc_text, True)
+
+    def _extract_population_centers(
+        self,
+        doc_text: DocTextExtraction,
+    ) -> List[TextExtraction]:
+        """
+        Uses an LLM to extract population centers from input texts.
+
+        Args:
+            doc_text (DocTextExtraction): The document text to extract locations from.
+
+        Returns:
+            List[TextExtraction]: A list of extracted locations as TextExtraction objects.
+        """
+        text_indices = self._extract_text_with_index(doc_text)
+
+        parser = PydanticOutputParser(pydantic_object=PopulationCenterLLM)
+        prompt_template = self._generate_prompt_template(
+            parser, self.POPULATION_CENTER_TEMPLATE
+        )
+        chain = prompt_template | self._chat_model | parser
+        response: PopulationCenterLLM = chain.invoke({"text_str": text_indices})
+
+        return self._map_text_coordinates(response.population_centers, doc_text, True)
 
     def _extract_utm_zone(self, metadata: MetadataExtraction) -> int:
         """
@@ -422,9 +451,15 @@ class MetadataExtractor(Task):
             "counties": " ".join(metadata.counties),
             "quadrangles": " ".join(metadata.quadrangles),
             "states": " ".join(metadata.states),
-            "places": " ".join([s.text for s in metadata.places]),
+            "places": " ".join(
+                [
+                    s.text if isinstance(s, TextExtraction) else s
+                    for s in metadata.places
+                ]
+            ),
             "population_centers": " ".join(
-                [s.text for s in metadata.population_centres]
+                s.text if isinstance(s, TextExtraction) else s
+                for s in metadata.population_centres
             ),
         }
         parser = PydanticOutputParser(pydantic_object=UTMZoneLLM)
