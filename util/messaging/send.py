@@ -16,7 +16,7 @@ def main():
     channel.queue_declare(
         queue=args.queue_name,
         durable=True,
-        arguments={"x-queue-type": "quorum", "x-delivery-limit": 1},
+        arguments={"x-queue-type": "quorum", "x-delivery-limit": 3},
     )
 
     for i in range(5):
