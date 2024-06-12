@@ -1,12 +1,8 @@
+from ast import parse
 import copy
-from importlib import metadata
 import logging
-import os
 import re
-import json
 from enum import Enum
-from unittest.mock import Base
-from urllib import response
 from langchain_openai import ChatOpenAI
 import cv2
 import numpy as np
@@ -151,6 +147,17 @@ class QuadranglesLLM(BaseModel):
     )
 
 
+class StateCountryLLM(BaseModel):
+    states: List[str] = Field(
+        description="Principal subdivisions (eg. states, provinces) covered by the map, expressed using ISO 3166-2 codes."
+        + " Examples: 'US-AZ', 'US-NY', 'CA-ON"
+    )
+    country: str = Field(
+        description="Country covered by the map expressed using ISO 3166-1 codes."
+        + "Examples: 'US', 'CA', 'GB'"
+    )
+
+
 class MetadataExtractor(Task):
     # matcher for alphanumeric strings
     ALPHANUMERIC_PATTERN = re.compile(r".*[a-zA-Z].*\d.*|.*\d.*[a-zA-Z].*|.*[a-zA-Z].*")
@@ -205,7 +212,8 @@ class MetadataExtractor(Task):
         + "places: {places}\n"
         + "population centers: {population_centers}\n"
         + "states: {states}\n"
-        + "Infer the UTM zone. If it cannot be inferred, return 0.\n"
+        + "country {country}\n"
+        + "Infer the UTM zone from the above information. If it cannot be inferred, return 0.\n"
         + "{format}"
     )
 
@@ -214,6 +222,15 @@ class MetadataExtractor(Task):
         + "title: {title}\n"
         + "base map: {base_map}\n"
         + "Identify the quadrangles from the fields above.\n"
+        + "{format}"
+    )
+
+    STATE_COUNTRY_TEMPLATE = (
+        "The following information was extracted from a map using an OCR process:\n"
+        + "population centers: {population_centers}\n"
+        + "places: {places}\n"
+        + "counties: {counties}\n"
+        + "Infer the states and country from the fields above.\n"
         + "{format}"
     )
 
@@ -281,6 +298,12 @@ class MetadataExtractor(Task):
                 metadata.population_centres = [
                     p.text for p in metadata.population_centres
                 ]
+
+            # extract state and country if not present in metadata after initial extraction
+            if not metadata.states or metadata.country == "NULL":
+                metadata.states, metadata.country = self._extract_state_country(
+                    metadata
+                )
 
             # extract quadrangles
             metadata.quadrangles = self._extract_quadrangles(metadata)
@@ -435,6 +458,40 @@ class MetadataExtractor(Task):
 
         return self._map_text_coordinates(response.population_centers, doc_text, True)
 
+    def _extract_state_country(
+        self, metadata: MetadataExtraction
+    ) -> Tuple[List[str], str]:
+        """
+        Extracts the state and country from the given metadata.
+
+        Args:
+            metadata (MetadataExtraction): The metadata containing information about states and countries.
+
+        Returns:
+            Tuple[str, str]: A tuple containing the extracted state and country.
+        """
+        parser = PydanticOutputParser(pydantic_object=StateCountryLLM)
+        prompt_template = self._generate_prompt_template(
+            parser, self.STATE_COUNTRY_TEMPLATE
+        )
+        chain = prompt_template | self._chat_model | parser
+        response: StateCountryLLM = chain.invoke(
+            {
+                "places": " ".join(
+                    [
+                        s.text if isinstance(s, TextExtraction) else s
+                        for s in metadata.places
+                    ]
+                ),
+                "population_centers": " ".join(
+                    s.text if isinstance(s, TextExtraction) else s
+                    for s in metadata.population_centres
+                ),
+                "counties": metadata.counties,
+            }
+        )
+        return (response.states, response.country)
+
     def _extract_utm_zone(self, metadata: MetadataExtraction) -> int:
         """
         Infers the UTM zone from the given metadata using an LLM.
@@ -450,6 +507,7 @@ class MetadataExtractor(Task):
             "counties": " ".join(metadata.counties),
             "quadrangles": " ".join(metadata.quadrangles),
             "states": " ".join(metadata.states),
+            "country": metadata.country,
             "places": " ".join(
                 [
                     s.text if isinstance(s, TextExtraction) else s
