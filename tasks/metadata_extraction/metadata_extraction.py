@@ -107,6 +107,14 @@ class MetdataLLM(BaseModel):
         + "Examples: 'US', 'CA', 'GB'"
     )
     publisher: str = Field(description="The publisher of the map.")
+    language: str = Field(
+        description="The best guess of the language used in the blocks of text.",
+        default="NULL",
+    )
+    language_country: str = Field(
+        description="The name of the country derived from the extracted Language.",
+        default="NULL",
+    )
 
 
 class Location(BaseModel):
