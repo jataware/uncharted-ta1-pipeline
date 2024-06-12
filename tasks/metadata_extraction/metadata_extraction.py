@@ -103,13 +103,12 @@ class MetdataLLM(BaseModel):
         + "if they are not, they should be extracted from the map."
     )
     states: List[str] = Field(
-        description="States or provinces covered by the map.  States "
-        + "includes principal subvidisions of any country and their full "
-        + "name should be extracted. Examples: 'Arizona', 'New York',"
-        + " 'South Dakota', 'Ontario'"
+        description="Principal subdivisions (eg. states, provinces) covered by the map, expressed using ISO 3166-2 codes."
+        + " Examples: 'US-AZ', 'US-NY', 'CA-ON'"
     )
     country: str = Field(
-        description="Country covered by the map." + "Examples: 'USA', 'Canada'"
+        description="Country covered by the map expressed using ISO 3166-1 codes."
+        + "Examples: 'US', 'CA', 'GB'"
     )
     publisher: str = Field(description="The publisher of the map.")
 
