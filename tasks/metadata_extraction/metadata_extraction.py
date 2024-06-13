@@ -50,63 +50,77 @@ class MetdataLLM(BaseModel):
     title: str = Field(
         description="The title of the map. If this includes state names, "
         + "county names or quadrangles, still include them in full title. "
-        + " Example: 'Geologic map of the Grand Canyon Quadrangle, Arizona'"
+        + " Example: 'Geologic map of the Grand Canyon Quadrangle, Arizona'",
+        default="NULL",
     )
     authors: List[str] = Field(
         description="The authors of the map. "
         + "Should be a list of strings in the format <last name, first iniital, middle initial>"
         + "Example of author name: 'Bailey, D. K.'"
         + "References, citations and geology attribution should be ignored when extracting authors."
-        + "A single author is allowed. Authors, title and year are normally grouped together."
+        + "A single author is allowed. Authors, title and year are normally grouped together.",
+        default=[],
     )
     year: str = Field(
         description="The year the map was published"
-        + "Should be a single 4 digit number and the most recent year if multiple are present"
+        + "Should be a single 4 digit number and the most recent year if multiple are present",
+        default="NULL",
     )
-    scale: str = Field(description="The scale of the map.  Example: '1:24000'")
+    scale: str = Field(
+        description="The scale of the map.  Example: '1:24000'", default="NULL"
+    )
     datum: str = Field(
         description="The datum of the map."
-        + "Examples: 'North American Datum of 1927', 'NAD83', 'WGS 84'"
+        + "Examples: 'North American Datum of 1927', 'NAD83', 'WGS 84'",
+        default="NULL",
     )
     vertical_datum: str = Field(
         description="The vertical datum of the map."
-        + "Examples: 'mean sea level', 'vertical datum of 1901', 'national vertical geoditic datum of 1929'"
+        + "Examples: 'mean sea level', 'vertical datum of 1901', 'national vertical geoditic datum of 1929'",
+        default="NULL",
     )
     projection: str = Field(
         description="The map projection."
-        + "Examples: 'Polyconic', 'Lambert', 'Transverse Mercator'"
+        + "Examples: 'Polyconic', 'Lambert', 'Transverse Mercator'",
+        default="NULL",
     )
     coordinate_systems: List[str] = Field(
         description="The coordinate systems present on the map."
         + "Examples: 'Utah coordinate system central zone', 'UTM Zone 15', "
         + "'Universal Transverse Mercator zone 12', "
         + "'New Mexico coordinate system, north zone', 'Carter Coordinate System'."
-        + "The term `grid ticks` should not be included in coordinate system output."
+        + "The term `grid ticks` should not be included in coordinate system output.",
+        default=[],
     )
     base_map: str = Field(
         description="The base map information description.  The base map description can be a "
         + "descriptive string, but also often contains (quadrangle, year) pairs."
         + "Examples: 'U.S. Geological Survey 1954', "
         + "'U.S. Geological Survey 1:62,500', "
-        + "'Vidal (1949) Rice and Turtle Mountains (1954) Savahia Peak (1975)'"
+        + "'Vidal (1949) Rice and Turtle Mountains (1954) Savahia Peak (1975)'",
+        default="NULL",
     )
     utm_zone: int = Field(
-        description="The UTM zone of the map.  If the UTM zone cannot be inferred, return 0."
+        description="The UTM zone of the map.  If the UTM zone cannot be inferred, return 0.",
+        default=0,
     )
 
     counties: List[str] = Field(
         description="Counties covered by the map.  These are often listed in the title; "
-        + "if they are not, they should be extracted from the map."
+        + "if they are not, they should be extracted from the map.",
+        default=[],
     )
     states: List[str] = Field(
         description="Principal subdivisions (eg. states, provinces) covered by the map, expressed using ISO 3166-2 codes."
-        + " Examples: 'US-AZ', 'US-NY', 'CA-ON'"
+        + " Examples: 'US-AZ', 'US-NY', 'CA-ON'",
+        default=[],
     )
     country: str = Field(
         description="Country covered by the map expressed using ISO 3166-1 codes."
-        + "Examples: 'US', 'CA', 'GB'"
+        + "Examples: 'US', 'CA', 'GB'",
+        default="NULL",
     )
-    publisher: str = Field(description="The publisher of the map.")
+    publisher: str = Field(description="The publisher of the map.", default="NULL")
     language: str = Field(
         description="The best guess of the language used in the blocks of text.",
         default="NULL",
@@ -120,9 +134,12 @@ class MetdataLLM(BaseModel):
 class Location(BaseModel):
     name: str = Field(
         description="The name of the location extracted from the map area. "
-        + "The name should be the name of the point and the index of the point in the extracted text."
+        + "The name should be the name of the point and the index of the point in the extracted text.",
+        default="NULL",
     )
-    index: int = Field(description="The index of the point in the extracted text.")
+    index: int = Field(
+        description="The index of the point in the extracted text.", default=-1
+    )
 
 
 class PointsLLM(BaseModel):
@@ -131,7 +148,8 @@ class PointsLLM(BaseModel):
         + "The 'name' key should contain the name of the point and the 'index' key should contain the index of "
         + "the point in the extracted text."
         + "Examples of places that are points: mountains, peaks, trailheads, hills, summits.\n"
-        + "Examples of places that are not points: pond, brook, lake, river.\n"
+        + "Examples of places that are not points: pond, brook, lake, river.\n",
+        default=[],
     )
 
 
@@ -141,28 +159,31 @@ class PopulationCenterLLM(BaseModel):
         + "The 'name' key should contain the name of the population center and the 'index' key should contain the "
         + "index of the population center in the extracted text."
         + "Examples of population centers: cities, towns, villages, hamlets.\n"
-        + "Examples of places that are not population centers: roads, streets, avenues, or other similar features.\n"
+        + "Examples of places that are not population centers: roads, streets, avenues, or other similar features.\n",
+        default=[],
     )
 
 
 class UTMZoneLLM(BaseModel):
-    utm_zone: int = Field(description="The UTM zone of the map")
+    utm_zone: int = Field(description="The UTM zone of the map", default=0)
 
 
 class QuadranglesLLM(BaseModel):
     quadrangles: List[str] = Field(
-        description="The list of quadrangles extracted from the map area."
+        description="The list of quadrangles extracted from the map area.", default=[]
     )
 
 
 class StateCountryLLM(BaseModel):
     states: List[str] = Field(
         description="Principal subdivisions (eg. states, provinces) covered by the map, expressed using ISO 3166-2 codes."
-        + " Examples: 'US-AZ', 'US-NY', 'CA-ON"
+        + " Examples: 'US-AZ', 'US-NY', 'CA-ON",
+        default=[],
     )
     country: str = Field(
         description="Country covered by the map expressed using ISO 3166-1 codes."
-        + "Examples: 'US', 'CA', 'GB'"
+        + "Examples: 'US', 'CA', 'GB'",
+        default="NULL",
     )
 
 
@@ -248,7 +269,7 @@ class MetadataExtractor(Task):
     def __init__(
         self,
         id: str,
-        model=LLM.GPT_4_TURBO,
+        model=LLM.GPT_4_O,
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
     ):
