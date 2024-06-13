@@ -219,10 +219,10 @@ class MetadataExtractor(Task):
 
     POINT_PLACE_TEMPLATE = (
         "The following blocks of text were extracted from a map using an OCR process, specified "
-        + "as a list with (text, index):\n"
+        + "as a list of tuples with (text, index):\n"
         + "{text_str}"
         + "\n\n"
-        + "Extract places that are points from the text.\n"
+        + "Extract the places that are points from the text.\n"
         + "{format}"
     )
 
@@ -310,10 +310,11 @@ class MetadataExtractor(Task):
             return task_result
 
         doc_text: DocTextExtraction = input.parse_data(
-            TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
+            self._text_key, DocTextExtraction.model_validate
         )
         if not doc_text:
             return task_result
+        print(f"TEXT: {doc_text}")
 
         # post-processing and follow on prompts
         metadata = self._process_doc_text_extraction(doc_text)
@@ -491,8 +492,12 @@ class MetadataExtractor(Task):
         prompt_template = self._generate_prompt_template(
             parser, self.POINT_PLACE_TEMPLATE
         )
+        print(f"PROMPT: {prompt_template}")
+        print(f"TEXT: {text_indices}")
         chain = prompt_template | self._chat_model | parser
         response = chain.invoke({"text_str": text_indices})
+        print(f"POINTS: {response.points}")
+        print(f"RESPONSE: {response}")
 
         return self._map_text_coordinates(response.points, doc_text, True)
 
