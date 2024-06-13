@@ -139,11 +139,16 @@ def start_server():
         "--request_queue", type=str, default=GEO_REFERENCE_REQUEST_QUEUE
     )
     parser.add_argument("--result_queue", type=str, default=GEO_REFERENCE_RESULT_QUEUE)
+    parser.add_argument(
+        "--country_code_filename",
+        type=str,
+        default="./data/country_codes.csv",
+    )
     p = parser.parse_args()
 
     global georef_pipeline
     georef_pipeline = create_geo_referencing_pipeline(
-        p.model, [LARAModelOutput("georef_output")], p.workdir
+        p.model, [LARAModelOutput("georef_output")], p.workdir, p.country_code_filename
     )
 
     #### start flask server or startup up the message queue

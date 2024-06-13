@@ -122,6 +122,14 @@ class MetdataLLM(BaseModel):
         default="NULL",
     )
     publisher: str = Field(description="The publisher of the map.", default="NULL")
+    language: str = Field(
+        description="The best guess of the language used in the blocks of text.",
+        default="NULL",
+    )
+    language_country: str = Field(
+        description="The name of the country derived from the extracted Language.",
+        default="NULL",
+    )
 
 
 class Location(BaseModel):
@@ -458,7 +466,6 @@ class MetadataExtractor(Task):
             return self._create_empty_extraction(doc_text_extraction.doc_id)
 
         except Exception as e:
-            # print exception stack trace
             logger.error(
                 f"Skipping extraction '{doc_text_extraction.doc_id}' - unexpected error during processing",
                 exc_info=True,
@@ -846,4 +853,6 @@ class MetadataExtractor(Task):
             publisher="",
             map_shape=MapShape.UNKNOWN,
             map_chroma=MapChromaType.UNKNOWN,
+            language="",
+            language_country="",
         )
