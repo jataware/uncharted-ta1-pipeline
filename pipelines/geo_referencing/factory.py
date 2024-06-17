@@ -186,7 +186,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             MetadataExtractor(
                 "metadata_extractor",
-                LLM.GPT_3_5_TURBO,
+                LLM.GPT_4_O,
                 "filtered_ocr_text",
                 cache_dir=metadata_cache,
             )
@@ -217,9 +217,10 @@ def create_geo_referencing_pipelines(
         tasks.append(
             MetadataExtractor(
                 "metadata_map_area_extractor",
-                LLM.GPT_3_5_TURBO,
+                LLM.GPT_4_O,
                 "map_area_filter",
                 run_step,
+                include_place_bounds=True,
             )
         )
         tasks.append(

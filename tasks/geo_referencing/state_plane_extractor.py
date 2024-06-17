@@ -276,7 +276,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
             else:
                 return c2, c1, reason
 
-        # if defaulted, test if other set if easting
+        # if defaulted, test if other set is easting
         is_easting, reason = self._is_x_direction(c2)
         if not reason == DIRECTION_DEFAULT:
             # is_easting indicates if c2 (true) is easting or c1 (false) is easting
@@ -323,7 +323,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 "clue point",
             )
 
-        # determine nad27 vs nad83 by assuming nad27 unless nad83 specifically specified
+        # determine nad27 vs nad83 by assuming nad27 unless nad83 explicitly specified
         # TODO: MAKE THIS WAYYYYY BETTER
         projection = "nad83" if is_nad_83(metadata) else "nad27"
 
@@ -333,7 +333,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
         if len(states) > 0:
             state = states[0].lower()
             logger.info(f"narrowing state plane zone to state {state}")
-            state_code = self._state_codes[state]
+            state_code = self._get_state_code(state)
             logger.info(f"narrowing state plane zone to state code {state_code}")
             if state_code in self._code_lookup[projection]:
                 possible = self._code_lookup[projection][state_code]
@@ -357,6 +357,12 @@ class StatePlaneExtractor(CoordinatesExtractor):
             self._determine_epsg_from_coord(centre_lon, centre_lat, year),
             "default",
         )  #   type: ignore
+
+    def _get_state_code(self, state: str) -> str:
+        # depending on parsed metadata, could either be 'US-STATE CODE' or STATE
+        if len(state) == 5 and state.startswith("us"):
+            return state[-2:]
+        return self._state_codes[state]
 
     def _is_scale(self, text: str) -> bool:
         text = text.lower()

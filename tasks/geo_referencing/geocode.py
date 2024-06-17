@@ -123,7 +123,7 @@ class Geocoder(CoordinatesExtractor):
             ]
         data = np.array([c[0] for c in coords])  # .reshape(-1, 1)
 
-        db = DBSCAN(eps=0.3, min_samples=3).fit(data)
+        db = DBSCAN(eps=1, min_samples=3).fit(data)
         labels = db.labels_
 
         # Number of clusters in labels, ignoring noise if present.

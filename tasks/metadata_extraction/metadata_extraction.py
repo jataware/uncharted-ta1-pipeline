@@ -144,6 +144,7 @@ class Location(BaseModel):
 
 
 class PointsLLM(BaseModel):
+    # points: List[Tuple[str, int]] = Field(
     points: List[Location] = Field(
         description="The list of point places extracted from the map area. "
         + "The 'name' key should contain the name of the point and the 'index' key should contain the index of "
@@ -274,6 +275,7 @@ class MetadataExtractor(Task):
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
         cache_dir: str = "",
+        include_place_bounds: bool = False,
     ):
         super().__init__(id, cache_dir=cache_dir)
 
@@ -282,7 +284,7 @@ class MetadataExtractor(Task):
         )  # reads OPEN_AI_API_KEY from environment
         self._model = model
         self._text_key = text_key
-        self._include_place_bounds = False
+        self._include_place_bounds = include_place_bounds
         self._should_run = should_run
 
         logger.info(f"Using model: {self._model.value}")
@@ -314,10 +316,13 @@ class MetadataExtractor(Task):
         )
         if not doc_text:
             return task_result
-        print(f"TEXT: {doc_text}")
 
         # post-processing and follow on prompts
-        metadata = self._process_doc_text_extraction(doc_text)
+        metadata: Optional[MetadataExtraction] = input.parse_data(
+            METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
+        )
+        if metadata is None:
+            metadata = self._process_doc_text_extraction(doc_text)
         if metadata:
             # map state names as needed
             for i, p in enumerate(metadata.states):
@@ -492,12 +497,8 @@ class MetadataExtractor(Task):
         prompt_template = self._generate_prompt_template(
             parser, self.POINT_PLACE_TEMPLATE
         )
-        print(f"PROMPT: {prompt_template}")
-        print(f"TEXT: {text_indices}")
         chain = prompt_template | self._chat_model | parser
         response = chain.invoke({"text_str": text_indices})
-        print(f"POINTS: {response.points}")
-        print(f"RESPONSE: {response}")
 
         return self._map_text_coordinates(response.points, doc_text, True)
 
