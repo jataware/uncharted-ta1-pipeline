@@ -156,6 +156,9 @@ class NominatimGeocoder(GeocodingService):
         country_code = ""
         if len(self._country_lookup) > 0:
             country = place.place_location_restriction.lower()
+            # could already be a code
+            if len(country) == 2:
+                return country
             if country in self._country_lookup:
                 country_code = self._country_lookup[country]
         return country_code

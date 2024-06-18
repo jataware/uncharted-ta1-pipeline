@@ -71,6 +71,7 @@ def create_geo_referencing_pipelines(
 
     segmentation_cache = os.path.join(working_dir, "segmentation")
     text_cache = os.path.join(working_dir, "text")
+    metadata_cache = os.path.join(working_dir, "metadata")
 
     p = []
 
@@ -102,7 +103,11 @@ def create_geo_referencing_pipelines(
     tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(EntropyROIExtractor("entropy roi"))
     if extract_metadata:
-        tasks.append(MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO))
+        tasks.append(
+            MetadataExtractor(
+                "metadata_extractor", LLM.GPT_3_5_TURBO, cache_dir=metadata_cache
+            )
+        )
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(UTMCoordinatesExtractor("fourth"))
     if extract_metadata:
@@ -180,7 +185,10 @@ def create_geo_referencing_pipelines(
         )
         tasks.append(
             MetadataExtractor(
-                "metadata_extractor", LLM.GPT_3_5_TURBO, "filtered_ocr_text"
+                "metadata_extractor",
+                LLM.GPT_4_O,
+                "filtered_ocr_text",
+                cache_dir=metadata_cache,
             )
         )
         tasks.append(
@@ -209,9 +217,10 @@ def create_geo_referencing_pipelines(
         tasks.append(
             MetadataExtractor(
                 "metadata_map_area_extractor",
-                LLM.GPT_3_5_TURBO,
+                LLM.GPT_4_O,
                 "map_area_filter",
                 run_step,
+                include_place_bounds=True,
             )
         )
         tasks.append(
@@ -282,7 +291,10 @@ def create_geo_referencing_pipelines(
         tasks.append(TextFilter("text_filter", output_key="filtered_ocr_text"))
         tasks.append(
             MetadataExtractor(
-                "metadata_extractor", LLM.GPT_3_5_TURBO, "filtered_ocr_text"
+                "metadata_extractor",
+                LLM.GPT_3_5_TURBO,
+                "filtered_ocr_text",
+                cache_dir=metadata_cache,
             )
         )
         tasks.append(
@@ -383,7 +395,10 @@ def create_geo_referencing_pipelines(
         tasks.append(TextFilter("text_filter", output_key="filtered_ocr_text"))
         tasks.append(
             MetadataExtractor(
-                "metadata_extractor", LLM.GPT_3_5_TURBO, "filtered_ocr_text"
+                "metadata_extractor",
+                LLM.GPT_3_5_TURBO,
+                "filtered_ocr_text",
+                cache_dir=metadata_cache,
             )
         )
         tasks.append(
@@ -483,6 +498,7 @@ def create_geo_referencing_pipeline(
     )
     segmentation_cache = os.path.join(working_dir, "segmentation")
     text_cache = os.path.join(working_dir, "text")
+    metadata_cache = os.path.join(working_dir, "metadata")
 
     tasks = []
     tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
@@ -502,7 +518,12 @@ def create_geo_referencing_pipeline(
     )
     tasks.append(TextFilter("text_filter", output_key="filtered_ocr_text"))
     tasks.append(
-        MetadataExtractor("metadata_extractor", LLM.GPT_3_5_TURBO, "filtered_ocr_text")
+        MetadataExtractor(
+            "metadata_extractor",
+            LLM.GPT_3_5_TURBO,
+            "filtered_ocr_text",
+            cache_dir=metadata_cache,
+        )
     )
     tasks.append(
         Geocoder(

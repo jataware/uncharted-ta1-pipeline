@@ -144,6 +144,7 @@ class Location(BaseModel):
 
 
 class PointsLLM(BaseModel):
+    # points: List[Tuple[str, int]] = Field(
     points: List[Location] = Field(
         description="The list of point places extracted from the map area. "
         + "The 'name' key should contain the name of the point and the 'index' key should contain the index of "
@@ -219,10 +220,10 @@ class MetadataExtractor(Task):
 
     POINT_PLACE_TEMPLATE = (
         "The following blocks of text were extracted from a map using an OCR process, specified "
-        + "as a list with (text, index):\n"
+        + "as a list of tuples with (text, index):\n"
         + "{text_str}"
         + "\n\n"
-        + "Extract places that are points from the text.\n"
+        + "Extract the places that are points from the text.\n"
         + "{format}"
     )
 
@@ -274,6 +275,7 @@ class MetadataExtractor(Task):
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
         cache_dir: str = "",
+        include_place_bounds: bool = False,
     ):
         super().__init__(id, cache_dir=cache_dir)
 
@@ -282,7 +284,7 @@ class MetadataExtractor(Task):
         )  # reads OPEN_AI_API_KEY from environment
         self._model = model
         self._text_key = text_key
-        self._include_place_bounds = False
+        self._include_place_bounds = include_place_bounds
         self._should_run = should_run
 
         logger.info(f"Using model: {self._model.value}")
@@ -310,13 +312,17 @@ class MetadataExtractor(Task):
             return task_result
 
         doc_text: DocTextExtraction = input.parse_data(
-            TEXT_EXTRACTION_OUTPUT_KEY, DocTextExtraction.model_validate
+            self._text_key, DocTextExtraction.model_validate
         )
         if not doc_text:
             return task_result
 
         # post-processing and follow on prompts
-        metadata = self._process_doc_text_extraction(doc_text)
+        metadata: Optional[MetadataExtraction] = input.parse_data(
+            METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
+        )
+        if metadata is None:
+            metadata = self._process_doc_text_extraction(doc_text)
         if metadata:
             # map state names as needed
             for i, p in enumerate(metadata.states):
