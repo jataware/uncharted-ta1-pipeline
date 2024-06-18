@@ -16,13 +16,20 @@ from pika import BlockingConnection, ConnectionParameters
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
 import pika.spec as spec
 from pydantic import BaseModel
+from sympy import N
 from cdr.json_log import JSONLog
+from cdr.request_publisher import LaraRequestPublisher
 from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.georeference import GeoreferenceResults, GroundControlPoint
 from schema.cdr_schemas.metadata import CogMetaData
 from tasks.common.queue import (
+    GEO_REFERENCE_REQUEST_QUEUE,
+    METADATA_REQUEST_QUEUE,
+    POINTS_REQUEST_QUEUE,
     REQUEUE_LIMIT,
+    SEGMENTATION_REQUEST_QUEUE,
     OutputType,
+    Request,
     RequestResult,
 )
 from schema.mappers.cdr import get_mapper
@@ -30,6 +37,7 @@ from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoreferenc
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
 from tasks.point_extraction.entities import MapImage as LARAPoints
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
+import datetime
 
 logger = logging.getLogger("result_subscriber")
 
@@ -41,8 +49,36 @@ class LaraResultSubscriber:
     HEARTBEAT_INTERVAL = 900
     BLOCKED_CONNECTION_TIMEOUT = 600
 
+    SEGMENTATION_TASK = "segmentation"
+    METADATA_TASK = "metadata"
+    POINTS_TASK = "points"
+    GEOREFERENCE_TASK = "georeference"
+    NULL_TASK = "null"
+
+    TASK_QUEUES = {
+        SEGMENTATION_TASK: SEGMENTATION_REQUEST_QUEUE,
+        METADATA_TASK: METADATA_REQUEST_QUEUE,
+        POINTS_TASK: POINTS_REQUEST_QUEUE,
+        GEOREFERENCE_TASK: GEO_REFERENCE_REQUEST_QUEUE,
+    }
+
+    TASK_OUTPUTS = {
+        OutputType.SEGMENTATION: SEGMENTATION_TASK,
+        OutputType.METADATA: METADATA_TASK,
+        OutputType.POINTS: POINTS_TASK,
+        OutputType.GEOREFERENCING: GEOREFERENCE_TASK,
+    }
+
+    REQUEST_SEQUENCE = [
+        SEGMENTATION_TASK,
+        METADATA_TASK,
+        POINTS_TASK,
+        GEOREFERENCE_TASK,
+    ]
+
     def __init__(
         self,
+        request_publisher: Optional[LaraRequestPublisher],
         result_queue: str,
         cdr_host: str,
         cdr_token: str,
@@ -53,6 +89,7 @@ class LaraResultSubscriber:
         json_log: JSONLog,
         host="localhost",
     ) -> None:
+        self._request_publisher = request_publisher
         self._result_connection: Optional[BlockingConnection] = None
         self._result_channel: Optional[Channel] = None
         self._result_queue = result_queue
@@ -98,6 +135,31 @@ class LaraResultSubscriber:
         )
         return channel
 
+    @staticmethod
+    def next_request(next_task: str, image_id: str, image_url: str) -> Request:
+        """
+        Creates a new Request object for the next task.
+
+        Args:
+            next_task (str): The name of the next task.
+            image_id (str): The ID of the image.
+            image_url (str): The URL of the image.
+
+        Returns:
+            Request: A new Request object with the specified parameters.
+        """
+        # Get the current UTC time
+        current_time = datetime.datetime.now(datetime.timezone.utc)
+        timestamp = int(current_time.timestamp())
+
+        return Request(
+            id=f"{next_task}-{timestamp}-task",
+            task=f"{next_task}",
+            output_format="cdr",
+            image_id=image_id,
+            image_url=image_url,
+        )
+
     def _process_lara_result(
         self,
         channel: Channel,
@@ -106,7 +168,20 @@ class LaraResultSubscriber:
         body: bytes,
     ):
         """
-        Processes a message from the result queue.
+        Process the received LARA result.  In a serial execution model this will also
+        trigger the next task in the sequence.
+
+        Args:
+            channel (Channel): The channel object.
+            method (spec.Basic.Deliver): The method object.
+            properties (spec.BasicProperties): The properties object.
+            body (bytes): The body of the message.
+
+        Returns:
+            None
+
+        Raises:
+            Exception: If there is an error processing the result.
         """
         try:
             logger.info("received data from result channel")
@@ -117,28 +192,51 @@ class LaraResultSubscriber:
                 f"processing result for request {result.request.id} of type {result.output_type}"
             )
 
-            # reproject image to file on disk for pushing to CDR
             match result.output_type:
-                case OutputType.GEOREFERENCING:
-                    logger.info("georeferencing results received")
-                    self._push_georeferencing(result)
-                case OutputType.METADATA:
-                    logger.info("metadata results received")
-                    self._push_metadata(result)
                 case OutputType.SEGMENTATION:
                     logger.info("segmentation results received")
                     self._push_segmentation(result)
+                case OutputType.METADATA:
+                    logger.info("metadata results received")
+                    self._push_metadata(result)
                 case OutputType.POINTS:
                     logger.info("points results received")
                     self._push_points(result)
+                case OutputType.GEOREFERENCING:
+                    logger.info("georeferencing results received")
+                    self._push_georeferencing(result)
                 case _:
                     logger.info("unsupported output type received from queue")
+
             self._json_log.log(
                 "result",
                 {"type": result.output_type, "cog_id": result.request.image_id},
             )
 
-            # remove the message from the process set
+            # in the serial case we call the next task in the sequence
+            if self._request_publisher:
+                # find the next task
+                output_task = self.TASK_OUTPUTS[result.output_type]
+                next = self.REQUEST_SEQUENCE.index(output_task) + 1
+                next_task = (
+                    self.REQUEST_SEQUENCE[next]
+                    if next < len(self.REQUEST_SEQUENCE)
+                    else self.NULL_TASK
+                )
+
+                # if there is no next task in the sequence then we are done
+                if next_task == self.NULL_TASK:
+                    return
+
+                request = self.next_request(
+                    next_task,
+                    result.request.image_id,
+                    result.request.image_url,
+                )
+                logger.info(f"sending next request in sequence: {request.task}")
+                self._request_publisher.publish_lara_request(
+                    request, self.TASK_QUEUES[next_task]
+                )
 
         except Exception as e:
             logger.exception(f"Error processing result: {str(e)}")

@@ -1,6 +1,5 @@
 import argparse
 import atexit
-import datetime
 from pathlib import Path
 from time import sleep
 import httpx
@@ -63,6 +62,7 @@ class Settings:
     registration_id: str
     rabbitmq_host: str
     json_log: JSONLog
+    serial: bool
 
 
 def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
@@ -140,10 +140,15 @@ def process_cdr_event():
     # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
     # imagedir arg that should be configured to point at this location.
     prefetch_image(Path(settings.imagedir), map_event.cog_id, map_event.cog_url)
-    # queue event in background since it may be blocking on the queue
-    # assert request_channel is not None
-    for queue_name, lara_req in lara_reqs.items():
-        request_publisher.publish_lara_request(lara_req, queue_name)
+
+    if settings.serial:
+        first_task = LaraResultSubscriber.REQUEST_SEQUENCE[0]
+        first_queue = LaraResultSubscriber.TASK_QUEUES[first_task]
+        first_request = lara_reqs[first_task]
+        request_publisher.publish_lara_request(first_request, first_queue)
+    else:
+        for queue_name, lara_req in lara_reqs.items():
+            request_publisher.publish_lara_request(lara_req, queue_name)
 
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
@@ -189,11 +194,19 @@ def process_image(image_id: str, request_publisher: LaraRequestPublisher):
     prefetch_image(Path(settings.imagedir), image_id, image_url)
 
     # push the request onto the queue
-    for queue_name, request in lara_reqs.items():
-        logger.info(
-            f"publishing request for image {image_id} to {queue_name} task: {request.task}"
+    if settings.serial:
+        first_task = LaraResultSubscriber.REQUEST_SEQUENCE[0]
+        first_queue = LaraResultSubscriber.TASK_QUEUES[first_task]
+        first_request = LaraResultSubscriber.next_request(
+            first_task, image_id, image_url
         )
-        request_publisher.publish_lara_request(request, queue_name)
+        request_publisher.publish_lara_request(first_request, first_queue)
+    else:
+        for queue_name, request in lara_reqs.items():
+            logger.info(
+                f"publishing request for image {image_id} to {queue_name} task: {request.task}"
+            )
+            request_publisher.publish_lara_request(request, queue_name)
 
 
 def register_cdr_system():
@@ -312,6 +325,7 @@ def main():
     settings.system_name = p.system
     settings.system_version = CDR_SYSTEM_VERSION
     settings.callback_secret = CDR_CALLBACK_SECRET
+    settings.serial = True
 
     settings.json_log = JSONLog(os.path.join(p.workdir, p.cdr_event_log))
 
@@ -324,20 +338,6 @@ def main():
         logger.info("a cog id cannot be provided if host mode is selected")
         exit(1)
     logger.info(f"starting cdr in {p.mode} mode")
-
-    # start the listener for the results
-    result_subscriber = LaraResultSubscriber(
-        LARA_RESULT_QUEUE_NAME,
-        settings.cdr_host,
-        settings.cdr_api_token,
-        settings.output,
-        settings.workdir,
-        settings.system_name,
-        settings.system_version,
-        settings.json_log,
-        host=p.host,
-    )
-    result_subscriber.start_lara_result_queue()
 
     # declare a global request publisher since we need to access it from the
     # CDR event endpoint
@@ -352,6 +352,22 @@ def main():
         host=p.host,
     )
     request_publisher.start_lara_request_queue()
+
+    # start the listener for the results
+    publisher = request_publisher if settings.serial else None
+    result_subscriber = LaraResultSubscriber(
+        publisher,
+        LARA_RESULT_QUEUE_NAME,
+        settings.cdr_host,
+        settings.cdr_api_token,
+        settings.output,
+        settings.workdir,
+        settings.system_name,
+        settings.system_version,
+        settings.json_log,
+        host=p.host,
+    )
+    result_subscriber.start_lara_result_queue()
 
     # either start the flask app if host mode selected or run the image specified if in process mode
     if p.mode == "host":
