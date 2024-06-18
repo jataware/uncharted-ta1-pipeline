@@ -455,9 +455,9 @@ class LaraResultSubscriber:
             lara_result = LARAMetadata.model_validate(metadata_result_raw)
             mapper = get_mapper(lara_result, self._system_name, self._system_version)
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
-        except:
-            logger.error(
-                "bad metadata result received so unable to send results to cdr"
+        except Exception as e:
+            logger.exception(
+                e, "bad metadata result received so unable to send results to cdr"
             )
             return
 

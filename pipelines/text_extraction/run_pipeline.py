@@ -23,9 +23,7 @@ def main():
     parser.add_argument(
         "--cdr_schema", action=argparse.BooleanOptionalAction, default=False
     )
-    parser.add_argument(
-        "--no-tile", action=argparse.BooleanOptionalAction, default=False
-    )
+    parser.add_argument("--tile", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--pixel_limit", type=int, default=6000)
     parser.add_argument("--gamma_corr", type=float, default=1.0)
     parser.add_argument("--debug", action=argparse.BooleanOptionalAction, default=False)
@@ -37,7 +35,7 @@ def main():
 
     # run the extraction pipeline
     pipeline = TextExtractionPipeline(
-        p.workdir, not p.no_tile, p.pixel_limit, p.gamma_corr, p.debug
+        p.workdir, p.tile, p.pixel_limit, p.gamma_corr, p.debug
     )
 
     file_writer = JSONFileWriter()
