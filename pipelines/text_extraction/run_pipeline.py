@@ -4,20 +4,16 @@ from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWri
 from tasks.common.pipeline import (
     PipelineInput,
     BaseModelOutput,
-    BaseModelListOutput,
     ImageOutput,
 )
 from .text_extraction_pipeline import TextExtractionPipeline
 from PIL.Image import Image as PILImage
+from util import logging as logging_util
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger = logging.getLogger("text_extraction_pipeline")
+    logging_util.config_logger(logger)
 
     # parse command line args
     parser = argparse.ArgumentParser()

@@ -5,8 +5,6 @@ from time import sleep
 import httpx
 import json
 import logging
-
-import coloredlogs
 import ngrok
 import os
 
@@ -28,6 +26,8 @@ from schema.mappers.cdr import get_mapper
 from schema.cdr_schemas.events import MapEventPayload
 
 from typing import Any, Dict, List
+
+from util.logging import config_logger
 
 logger = logging.getLogger("cdr")
 
@@ -295,13 +295,8 @@ def start_app():
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    coloredlogs.DEFAULT_FIELD_STYLES["levelname"] = {"color": "white"}
-    coloredlogs.install(logger=logger)
+    # default log settings
+    config_logger(logger)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("process", "host"), required=True)

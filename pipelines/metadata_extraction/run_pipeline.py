@@ -11,15 +11,12 @@ from pipelines.metadata_extraction.metadata_extraction_pipeline import (
 )
 from tasks.common.io import ImageFileInputIterator, ImageFileWriter, JSONFileWriter
 from tasks.metadata_extraction.metadata_extraction import LLM
+from util import logging as logging_util
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger = logging.getLogger("metadata_pipeline")
+    logging_util.config_logger(logger)
 
     # parse command line args
     parser = argparse.ArgumentParser()

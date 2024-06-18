@@ -14,6 +14,7 @@ from tasks.common.queue import (
     OutputType,
     RequestQueue,
 )
+from util import logging as logging_util
 
 
 #
@@ -75,12 +76,9 @@ def health():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger = logging.getLogger("point extraction app")
+    logging_util.config_logger(logger)
+
     logger.info("*** Starting Point Extraction App ***")
 
     # parse command line args

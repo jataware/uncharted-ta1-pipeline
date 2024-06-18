@@ -1,5 +1,4 @@
 import argparse
-from pathlib import Path
 import logging
 import os
 
@@ -14,6 +13,7 @@ from tasks.common.pipeline import PipelineInput
 from tasks.geo_referencing.georeference import QueryPoint
 from util.coordinate import absolute_minmax
 from util.json import read_json_file
+from util import logging as logging_util
 
 from typing import List, Optional, Tuple
 
@@ -33,13 +33,9 @@ logger: Optional[logging.Logger] = None
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     global logger
     logger = logging.getLogger("georeferencing_pipeline")
+    logging_util.config_logger(logger)
 
     # parse command line args
     parser = argparse.ArgumentParser()

@@ -16,6 +16,7 @@ from tasks.common.queue import (
 )
 from tasks.segmentation.ditod.table_evaluation.evaluate import PATH
 
+from util import logging as logging_util
 
 #
 # Flask web app for Legend and Map Segmenter module
@@ -78,12 +79,8 @@ def health():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger = logging.getLogger("segmenter app")
+    logging_util.config_logger(logger)
 
     logger.info("*** Starting Legend and Map Segmenter App ***")
 

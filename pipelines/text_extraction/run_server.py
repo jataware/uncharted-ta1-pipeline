@@ -16,6 +16,7 @@ from tasks.common.queue import (
 
 from .text_extraction_pipeline import TextExtractionPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput
+from util import logging as logging_util
 
 #
 # Flask web app for text extraction
@@ -73,12 +74,8 @@ def health():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger = logging.getLogger("text_extractor app")
+    logging_util.config_logger(logger)
     logger.info("*** Starting Text Extractor App ***")
 
     parser = argparse.ArgumentParser()
