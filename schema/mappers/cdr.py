@@ -42,7 +42,7 @@ from typing import Dict, List
 logger = logging.getLogger("mapper")
 
 MODEL_NAME = "uncharted-lara"
-MODEL_VERSION = "0.0.3"
+MODEL_VERSION = "0.0.4"
 
 
 class CDRMapper:
