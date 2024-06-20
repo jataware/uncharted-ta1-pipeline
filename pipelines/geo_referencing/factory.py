@@ -59,6 +59,7 @@ def create_geo_referencing_pipelines(
     state_plane_zone_filename: str,
     state_code_filename: str,
     country_code_filename: str,
+    ocr_gamma_correction: float,
 ) -> List[Pipeline]:
     geocoding_cache_bounds = os.path.join(working_dir, "geocoding_cache_bounds.json")
     geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
@@ -71,7 +72,7 @@ def create_geo_referencing_pipelines(
 
     segmentation_cache = os.path.join(working_dir, "segmentation")
     text_cache = os.path.join(working_dir, "text")
-    metadata_cache = os.path.join(working_dir, "metadata")
+    metadata_cache = os.path.join(working_dir, f"metadata-gamma-{ocr_gamma_correction}")
 
     p = []
 
@@ -156,7 +157,11 @@ def create_geo_referencing_pipelines(
     )"""
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
+    tasks.append(
+        TileTextExtractor(
+            "first", Path(text_cache), 6000, gamma_correction=ocr_gamma_correction
+        )
+    )
     tasks.append(
         DetectronSegmenter(
             "segmenter",

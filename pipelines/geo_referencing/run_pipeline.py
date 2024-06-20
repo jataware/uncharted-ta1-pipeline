@@ -71,6 +71,11 @@ def main():
         type=str,
         default="./data/country_codes.csv",
     )
+    parser.add_argument(
+        "--ocr_gamma_correction",
+        type=float,
+        default=0.5,
+    )
     p = parser.parse_args()
 
     # setup an input stream
@@ -113,6 +118,7 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
         parsed.state_plane_zone_filename,
         parsed.state_code_filename,
         parsed.country_code_filename,
+        parsed.ocr_gamma_correction,
     )
 
     # get file paths

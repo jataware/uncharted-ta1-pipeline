@@ -121,7 +121,7 @@ class ResizeTextExtractor(TextExtractor):
         if input.image is None:
             return self._create_result(input)
 
-        doc_key = f"{input.raster_id}_{self._model_id}"
+        doc_key = f"{input.raster_id}_{self._model_id}_{self._gamma_correction}"
 
         # check cache and re-use existing file if present
         cached_json = self.fetch_cached_result(doc_key)
@@ -219,7 +219,7 @@ class TileTextExtractor(TextExtractor):
         if input.image is None:
             return self._create_result(input)
 
-        doc_key = f"{input.raster_id}_{self._model_id}"
+        doc_key = f"{input.raster_id}_{self._model_id}_{self._gamma_correction}"
 
         # check cache and re-use existing file if present
         json_data = self.fetch_cached_result(doc_key)
