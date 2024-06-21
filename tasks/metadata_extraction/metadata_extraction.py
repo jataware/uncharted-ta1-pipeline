@@ -233,6 +233,7 @@ class MetadataExtractor(Task):
 
     UTM_ZONE_TEMPLATE = (
         "The following information was extracted froma map using an OCR process:\n"
+        + "coordinate systems: {coordinate_systems}"
         + "quadrangles: {quadrangles}\n"
         + "counties: {counties}\n"
         + "places: {places}\n"
@@ -348,7 +349,7 @@ class MetadataExtractor(Task):
             metadata.quadrangles = self._extract_quadrangles(metadata)
 
             # extract UTM zone if not present in metadata after initial extraction
-            if metadata.utm_zone == "NULL":
+            if int(metadata.utm_zone) == 0:
                 metadata.utm_zone = str(self._extract_utm_zone(metadata))
 
             # compute map shape from the segmentation output
@@ -456,7 +457,6 @@ class MetadataExtractor(Task):
                 response_dict["places"] = []
                 response_dict["map_shape"] = "unknown"
                 response_dict["map_chroma"] = "unknown"
-                response_dict["utm_zone"] = "NULL"
                 return MetadataExtraction(
                     map_id=doc_text_extraction.doc_id, **response_dict
                 )
@@ -547,17 +547,18 @@ class MetadataExtractor(Task):
             int: The UTM zone extracted from the metadata. 0 indicates that the UTM zone could not be inferred.
         """
         args = {
-            "counties": " ".join(metadata.counties),
-            "quadrangles": " ".join(metadata.quadrangles),
-            "states": " ".join(metadata.states),
+            "coordinate_systems": ",".join(metadata.coordinate_systems),
+            "counties": ",".join(metadata.counties),
+            "quadrangles": ",".join(metadata.quadrangles),
+            "states": ",".join(metadata.states),
             "country": metadata.country,
-            "places": " ".join(
+            "places": ",".join(
                 [
                     s.text if isinstance(s, TextExtraction) else s
                     for s in metadata.places
                 ]
             ),
-            "population_centers": " ".join(
+            "population_centers": ",".join(
                 s.text if isinstance(s, TextExtraction) else s
                 for s in metadata.population_centres
             ),
