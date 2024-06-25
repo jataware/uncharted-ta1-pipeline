@@ -23,6 +23,7 @@ from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.geocode import Geocoder as rfGeocoder
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
+from tasks.geo_referencing.inference import InferenceCoordinateExtractor
 from tasks.geo_referencing.roi_extractor import (
     EntropyROIExtractor,
     ModelROIExtractor,
@@ -45,7 +46,10 @@ logger = logging.getLogger("factory")
 def run_step(input: TaskInput) -> bool:
     lats = input.get_data("lats", [])
     lons = input.get_data("lons", [])
-    num_keypoints = min(len(lons), len(lats))
+
+    lats_distinct = set(map(lambda x: x[1].get_parsed_degree(), lats.items()))
+    lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lons.items()))
+    num_keypoints = min(len(lons_distinct), len(lats_distinct))
     logger.info(f"running step due to insufficient key points: {num_keypoints < 2}")
     return num_keypoints < 2
 
@@ -258,6 +262,7 @@ def create_geo_referencing_pipelines(
         tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(UTMStatePlaneFilter("utm-state-plane"))
         tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
+    tasks.append(InferenceCoordinateExtractor("coordinate-inference"))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))

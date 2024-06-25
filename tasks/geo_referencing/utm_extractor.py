@@ -181,8 +181,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             and len(metadata.utm_zone) > 0
             and metadata.utm_zone.isdigit()
         ):
-            zone_number = int(metadata.utm_zone)
-            zone_number_determined = True
+            zone_number_raw = int(metadata.utm_zone)
+            if zone_number_raw > 0 and zone_number_raw <= 60:
+                zone_number = zone_number_raw
+                zone_number_determined = True
 
         # extract the zone number from the coordinate systems
         for crs in metadata.coordinate_systems:
@@ -422,7 +424,11 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     "extracted northing utm coordinate",
                 )
             else:
-                logger.info("Excluding candidate northing point: {}".format(n))
+                logger.info(
+                    "Excluding candidate northing point due to being out of range: {}".format(
+                        n
+                    )
+                )
 
         if len(northings) > 0:
             northing_clue = statistics.median(map(lambda x: x[0], northings))

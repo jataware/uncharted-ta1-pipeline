@@ -264,7 +264,12 @@ class StatePlaneExtractor(CoordinatesExtractor):
 
         # find the two biggest clusters, assuming they are easting and northing
         c1, c2 = self._cluster_values(unparsed_values)
-        if c1 is None or c2 is None:
+        if c1 is None:
+            return [], [], DIRECTION_DEFAULT
+        # handle the case with 1 main cluster and 1 left over coordinate
+        if len(unparsed_values) - len(c1) == 1:
+            c2 = list(set(unparsed_values) ^ set(c1))
+        if c2 is None:
             return [], [], DIRECTION_DEFAULT
 
         # test if one set is easting
