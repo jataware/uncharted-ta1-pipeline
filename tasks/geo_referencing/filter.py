@@ -18,8 +18,53 @@ NAIVE_FILTER_MINIMUM = 10
 
 
 class FilterCoordinates(Task):
-    _coco_file_path: str = ""
-    _buffering_func = None
+
+    def __init__(self, task_id: str):
+        super().__init__(task_id)
+
+    def run(self, input: TaskInput) -> TaskResult:
+        # get coordinates so far
+        lon_pts = input.get_data("lons")
+        lat_pts = input.get_data("lats")
+        logger.info(
+            f"prior to filtering {len(lat_pts)} latitude and {len(lon_pts)} longitude coordinates have been extracted"
+        )
+
+        # filter the coordinates to retain only those that are deemed valid
+        lon_pts_filtered, lat_pts_filtered = self._filter(input, lon_pts, lat_pts)
+
+        logger.info(
+            f"after filtering run {len(lat_pts_filtered)} latitude and {len(lon_pts_filtered)} longitude coordinates have been retained"
+        )
+
+        # update the coordinates list
+        return self._create_result(input, lon_pts_filtered, lat_pts_filtered)
+
+    def _create_result(
+        self,
+        input: TaskInput,
+        lons: Dict[Tuple[float, float], Coordinate],
+        lats: Dict[Tuple[float, float], Coordinate],
+    ) -> TaskResult:
+        result = super()._create_result(input)
+
+        result.output["lons"] = lons
+        result.output["lats"] = lats
+
+        return result
+
+    def _filter(
+        self,
+        input: TaskInput,
+        lon_coords: Dict[Tuple[float, float], Coordinate],
+        lat_coords: Dict[Tuple[float, float], Coordinate],
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
+        return lon_coords, lat_coords
+
+
+class FilterAxisCoordinates(Task):
 
     def __init__(self, task_id: str):
         super().__init__(task_id)
@@ -66,7 +111,7 @@ class FilterCoordinates(Task):
         return coords
 
 
-class OutlierFilter(FilterCoordinates):
+class OutlierFilter(FilterAxisCoordinates):
     def __init__(self, task_id: str):
         super().__init__(task_id)
 
@@ -85,6 +130,9 @@ class OutlierFilter(FilterCoordinates):
         while len(updated_coords) != test_length:
             test_length = len(updated_coords)
             updated_coords = self._filter_regression(input, updated_coords)
+            logger.info(
+                f"outlier filter updated length {len(updated_coords)} compared to test length {test_length}"
+            )
         return updated_coords
 
     def _filter_regression(
@@ -163,38 +211,76 @@ class UTMStatePlaneFilter(FilterCoordinates):
         super().__init__(task_id)
 
     def _filter(
-        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
-    ) -> Dict[Tuple[float, float], Coordinate]:
-        logger.info(f"utm - state plane filter running against {coords}")
+        self,
+        input: TaskInput,
+        lon_coords: Dict[Tuple[float, float], Coordinate],
+        lat_coords: Dict[Tuple[float, float], Coordinate],
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
+        logger.info(
+            f"utm - state plane filter running against {len(lon_coords)} lon and {len(lat_coords)} lat coords"
+        )
 
-        # figure out which of utm and state plane have the higher confidence
-        conf_sp = -1
-        conf_utm = -1
-        count_sp = 0
+        # get the count and confidence of state plane and utm coordinates
+        lon_count_sp, lon_conf_sp = self._get_score(lon_coords, SOURCE_STATE_PLANE)
+        lon_count_utm, lon_conf_utm = self._get_score(lon_coords, SOURCE_UTM)
+        lat_count_sp, lat_conf_sp = self._get_score(lat_coords, SOURCE_STATE_PLANE)
+        lat_count_utm, lat_conf_utm = self._get_score(lat_coords, SOURCE_UTM)
+
+        # if no utm or no state plane coordinates exist then nothing to filter
+        if lon_count_sp + lat_count_sp == 0:
+            return lon_coords, lat_coords
+        if lon_count_utm + lat_count_utm == 0:
+            return lon_coords, lat_coords
+
+        # if one has coordinates in both directions while the other doesnt then keep that one
+        source_filter = ""
+        if (
+            min(lon_count_utm, lat_count_utm) > 0
+            and min(lon_count_sp, lat_count_sp) == 0
+        ):
+            logger.info("removing state plane coordinates since one axis has none")
+            source_filter = SOURCE_STATE_PLANE
+        elif (
+            min(lon_count_utm, lat_count_utm) == 0
+            and min(lon_count_sp, lat_count_sp) > 0
+        ):
+            logger.info("removing utm coordinates since one axis has none")
+            source_filter = SOURCE_UTM
+
+        # if still unsure then retain the one with the highest confidence
+        # by this point both utm and state plane have coordinates in one or two directions
+        if source_filter == "":
+            source_filter = SOURCE_UTM
+            if max(lon_conf_utm, lat_conf_utm) > max(lon_conf_sp, lat_conf_sp):
+                logger.info(
+                    "removing state plane coordinates since utm coordinates have higher confidence"
+                )
+                source_filter = SOURCE_STATE_PLANE
+            else:
+                logger.info(
+                    "removing utm coordinates since state plane coordinates have higher confidence"
+                )
+
+        logger.info(f"filtering {source_filter} latitude and longitude coordinates")
+
+        return self._filter_source(source_filter, lon_coords), self._filter_source(
+            source_filter, lat_coords
+        )
+
+    def _get_score(
+        self, coords: Dict[Tuple[float, float], Coordinate], source: str
+    ) -> Tuple[int, float]:
+        conf = -1
+        count = 0
         for _, c in coords.items():
             src = c.get_source()
-            if src == SOURCE_STATE_PLANE:
-                count_sp = count_sp + 1
-                if conf_sp < c.get_confidence():
-                    conf_sp = c.get_confidence()
-            if src == SOURCE_UTM:
-                count_sp = count_sp - 1
-                if conf_utm < c.get_confidence():
-                    conf_utm = c.get_confidence()
-
-        # retain the one with higher confidence
-        source_filter = ""
-        if conf_utm >= 0 and conf_sp >= 0:
-            source_filter = SOURCE_UTM
-            if conf_utm > conf_sp:
-                source_filter = SOURCE_STATE_PLANE
-            elif conf_utm == conf_sp:
-                # use the count to determine which to filter
-                if count_sp < 0:
-                    source_filter = SOURCE_STATE_PLANE
-            logger.info(f"removing coordinates with source {source_filter}")
-
-        return self._filter_source(source_filter, coords)
+            if src == source:
+                count = count + 1
+                if conf < c.get_confidence():
+                    conf = c.get_confidence()
+        return (count, conf)
 
     def _filter_source(
         self, source: str, coords: Dict[Tuple[float, float], Coordinate]
@@ -206,7 +292,7 @@ class UTMStatePlaneFilter(FilterCoordinates):
         return coords_filtered
 
 
-class NaiveFilter(FilterCoordinates):
+class NaiveFilter(FilterAxisCoordinates):
     def __init__(self, task_id: str):
         super().__init__(task_id)
 
