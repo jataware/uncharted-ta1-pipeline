@@ -1,5 +1,6 @@
 from ast import parse
 import copy
+from dataclasses import dataclass
 import logging
 import re
 from enum import Enum
@@ -143,19 +144,16 @@ class Location(BaseModel):
     )
 
 
-class PointsLLM(BaseModel):
+class PointLocationsLLM(BaseModel):
     # points: List[Tuple[str, int]] = Field(
-    points: List[Location] = Field(
+    places: List[Location] = Field(
         description="The list of point places extracted from the map area. "
         + "The 'name' key should contain the name of the point and the 'index' key should contain the index of "
-        + "the point in the extracted text."
+        + "the point in the extracted text.  Point places are land based features that are not population centers."
         + "Examples of places that are points: mountains, peaks, trailheads, hills, summits.\n"
         + "Examples of places that are not points: pond, brook, lake, river.\n",
         default=[],
     )
-
-
-class PopulationCenterLLM(BaseModel):
     population_centers: List[Location] = Field(
         description="The list of recognizeable population centers extracted from the map area. "
         + "The 'name' key should contain the name of the population center and the 'index' key should contain the "
@@ -164,6 +162,12 @@ class PopulationCenterLLM(BaseModel):
         + "Examples of places that are not population centers: roads, streets, avenues, or other similar features.\n",
         default=[],
     )
+
+
+@dataclass
+class PointLocations:
+    places: List[TextExtraction]
+    population_centers: List[TextExtraction]
 
 
 class UTMZoneLLM(BaseModel):
@@ -218,26 +222,18 @@ class MetadataExtractor(Task):
         + 'If any string value is not present the field should be set to "NULL"\n'
     )
 
-    POINT_PLACE_TEMPLATE = (
+    POINT_LOCATIONS_TEMPLATE = (
         "The following blocks of text were extracted from a map using an OCR process, specified "
         + "as a list of tuples with (text, index):\n"
         + "{text_str}"
         + "\n\n"
-        + "Extract the places that are points from the text.\n"
-        + "{format}"
-    )
-
-    POPULATION_CENTER_TEMPLATE = (
-        "The following blocks of text were extracted from a map using an OCR process, "
-        + "specified as a list with (text, index):\n"
-        + "{text_str}"
-        + "\n\n"
-        + " Extract the places that are recognizable metropolitan areas, cities, towns, or villages.\n"
+        + "Extract the places that are map point features and population centers from the text.\n"
         + "{format}"
     )
 
     UTM_ZONE_TEMPLATE = (
         "The following information was extracted froma map using an OCR process:\n"
+        + "coordinate systems: {coordinate_systems}"
         + "quadrangles: {quadrangles}\n"
         + "counties: {counties}\n"
         + "places: {places}\n"
@@ -275,7 +271,7 @@ class MetadataExtractor(Task):
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
         cache_dir: str = "",
-        include_place_bounds: bool = False,
+        include_place_bounds: bool = True,
     ):
         super().__init__(id, cache_dir=cache_dir)
 
@@ -333,15 +329,15 @@ class MetadataExtractor(Task):
             metadata.scale = self._normalize_scale(metadata.scale)
 
             # # extract places
-            metadata.places = self._extract_point_places(doc_text)
+            point_locations = self._extract_point_locations(doc_text)
             if not self._include_place_bounds:
-                metadata.places = [p.text for p in metadata.places]
-
-            metadata.population_centres = self._extract_population_centers(doc_text)
-            if not self._include_place_bounds:
+                metadata.places = [p.text for p in point_locations.places]
                 metadata.population_centres = [
-                    p.text for p in metadata.population_centres
+                    p.text for p in point_locations.population_centers
                 ]
+            else:
+                metadata.places = point_locations.places
+                metadata.population_centres = point_locations.population_centers
 
             # extract state and country if not present in metadata after initial extraction
             if not metadata.states or metadata.country == "NULL":
@@ -353,7 +349,7 @@ class MetadataExtractor(Task):
             metadata.quadrangles = self._extract_quadrangles(metadata)
 
             # extract UTM zone if not present in metadata after initial extraction
-            if metadata.utm_zone == "NULL":
+            if int(metadata.utm_zone) == 0:
                 metadata.utm_zone = str(self._extract_utm_zone(metadata))
 
             # compute map shape from the segmentation output
@@ -461,7 +457,6 @@ class MetadataExtractor(Task):
                 response_dict["places"] = []
                 response_dict["map_shape"] = "unknown"
                 response_dict["map_chroma"] = "unknown"
-                response_dict["utm_zone"] = "NULL"
                 return MetadataExtraction(
                     map_id=doc_text_extraction.doc_id, **response_dict
                 )
@@ -478,10 +473,10 @@ class MetadataExtractor(Task):
             )
             return self._create_empty_extraction(doc_text_extraction.doc_id)
 
-    def _extract_point_places(
+    def _extract_point_locations(
         self,
         doc_text: DocTextExtraction,
-    ) -> List[TextExtraction]:
+    ) -> PointLocations:
         """
         Uses an LLM to extract point locations from input texts.
 
@@ -493,38 +488,18 @@ class MetadataExtractor(Task):
         """
         text_indices = self._extract_text_with_index(doc_text)
 
-        parser = PydanticOutputParser(pydantic_object=PointsLLM)
+        parser = PydanticOutputParser(pydantic_object=PointLocationsLLM)
         prompt_template = self._generate_prompt_template(
-            parser, self.POINT_PLACE_TEMPLATE
+            parser, self.POINT_LOCATIONS_TEMPLATE
         )
         chain = prompt_template | self._chat_model | parser
-        response = chain.invoke({"text_str": text_indices})
+        response: PointLocationsLLM = chain.invoke({"text_str": text_indices})
 
-        return self._map_text_coordinates(response.points, doc_text, True)
-
-    def _extract_population_centers(
-        self,
-        doc_text: DocTextExtraction,
-    ) -> List[TextExtraction]:
-        """
-        Uses an LLM to extract population centers from input texts.
-
-        Args:
-            doc_text (DocTextExtraction): The document text to extract locations from.
-
-        Returns:
-            List[TextExtraction]: A list of extracted locations as TextExtraction objects.
-        """
-        text_indices = self._extract_text_with_index(doc_text)
-
-        parser = PydanticOutputParser(pydantic_object=PopulationCenterLLM)
-        prompt_template = self._generate_prompt_template(
-            parser, self.POPULATION_CENTER_TEMPLATE
+        places = self._map_text_coordinates(response.places, doc_text, True)
+        population_centers = self._map_text_coordinates(
+            response.population_centers, doc_text, True
         )
-        chain = prompt_template | self._chat_model | parser
-        response: PopulationCenterLLM = chain.invoke({"text_str": text_indices})
-
-        return self._map_text_coordinates(response.population_centers, doc_text, True)
+        return PointLocations(places=places, population_centers=population_centers)
 
     def _extract_state_country(
         self, metadata: MetadataExtraction
@@ -572,17 +547,18 @@ class MetadataExtractor(Task):
             int: The UTM zone extracted from the metadata. 0 indicates that the UTM zone could not be inferred.
         """
         args = {
-            "counties": " ".join(metadata.counties),
-            "quadrangles": " ".join(metadata.quadrangles),
-            "states": " ".join(metadata.states),
+            "coordinate_systems": ",".join(metadata.coordinate_systems),
+            "counties": ",".join(metadata.counties),
+            "quadrangles": ",".join(metadata.quadrangles),
+            "states": ",".join(metadata.states),
             "country": metadata.country,
-            "places": " ".join(
+            "places": ",".join(
                 [
                     s.text if isinstance(s, TextExtraction) else s
                     for s in metadata.places
                 ]
             ),
-            "population_centers": " ".join(
+            "population_centers": ",".join(
                 s.text if isinstance(s, TextExtraction) else s
                 for s in metadata.population_centres
             ),
