@@ -344,7 +344,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 possible = self._code_lookup[projection][state_code]
                 if len(possible) == 1:
                     # only one zone exists in the state
-                    return possible.items()[0][1], "only option"
+                    return list(possible.items())[0][1], "only option"
 
                 # use the projection info to try and narrow it down to one zone
                 for n, c in possible.items():
