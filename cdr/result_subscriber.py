@@ -16,7 +16,6 @@ from pika import BlockingConnection, ConnectionParameters
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
 import pika.spec as spec
 from pydantic import BaseModel
-from sympy import N
 from cdr.json_log import JSONLog
 from cdr.request_publisher import LaraRequestPublisher
 from schema.cdr_schemas.feature_results import FeatureResults
@@ -49,12 +48,14 @@ class LaraResultSubscriber:
     HEARTBEAT_INTERVAL = 900
     BLOCKED_CONNECTION_TIMEOUT = 600
 
+    # task name definitions
     SEGMENTATION_TASK = "segmentation"
     METADATA_TASK = "metadata"
     POINTS_TASK = "points"
     GEOREFERENCE_TASK = "georeference"
     NULL_TASK = "null"
 
+    # task related rabbitmq queue names
     TASK_QUEUES = {
         SEGMENTATION_TASK: SEGMENTATION_REQUEST_QUEUE,
         METADATA_TASK: METADATA_REQUEST_QUEUE,
@@ -62,6 +63,7 @@ class LaraResultSubscriber:
         GEOREFERENCE_TASK: GEO_REFERENCE_REQUEST_QUEUE,
     }
 
+    # map of task output types to task names
     TASK_OUTPUTS = {
         OutputType.SEGMENTATION: SEGMENTATION_TASK,
         OutputType.METADATA: METADATA_TASK,
@@ -69,6 +71,7 @@ class LaraResultSubscriber:
         OutputType.GEOREFERENCING: GEOREFERENCE_TASK,
     }
 
+    # sequence of task execution
     REQUEST_SEQUENCE = [
         SEGMENTATION_TASK,
         METADATA_TASK,

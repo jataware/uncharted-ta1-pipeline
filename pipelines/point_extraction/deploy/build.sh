@@ -6,8 +6,8 @@ cp ../*.py pipelines/point_extraction
 cp ../pyproject.toml pipelines/point_extraction
 
 cp -r ../../../schema .
-
 cp -r ../../../tasks .
+c- pr ../../../util .
 
 # get the point model and segment model weights passed in as an argument
 # we can leave it empty if not supplied
@@ -43,4 +43,5 @@ docker build -t uncharted/lara-point-extract:latest .
 rm -rf pipelines
 rm -rf tasks
 rm -rf schema
+rm -rf util
 

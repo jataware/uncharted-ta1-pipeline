@@ -6,9 +6,7 @@ cp ../*.py pipelines/geo_referencing
 cp ../pyproject.toml pipelines/geo_referencing
 
 cp -r ../../../schema .
-
 cp -r ../../../tasks .
-
 cp -r ../../../util .
 
 mkdir -p pipelines/segmentation_weights
