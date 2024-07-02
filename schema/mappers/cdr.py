@@ -27,7 +27,7 @@ from schema.cdr_schemas.features.point_features import (
 
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoferenceResult
 from tasks.metadata_extraction.entities import (
-    MapChromaType,
+    MapColorType,
     MapShape,
     MetadataExtraction as LARAMetadata,
 )
@@ -145,13 +145,13 @@ class MetadataMapper(CDRMapper):
         # for now
         cdr_map_color_scheme = None
         match model.map_chroma:
-            case MapChromaType.UNKNOWN:
+            case MapColorType.UNKNOWN:
                 cdr_map_color_scheme = None
-            case MapChromaType.LOW_CHROMA:
+            case MapColorType.LOW:
                 cdr_map_color_scheme = MapColorSchemeTypes.full_color
-            case MapChromaType.MONO_CHROMA:
+            case MapColorType.MONO:
                 cdr_map_color_scheme = MapColorSchemeTypes.monochrome
-            case MapChromaType.HIGH_CHROMA:
+            case MapColorType.HIGH:
                 cdr_map_color_scheme = MapColorSchemeTypes.full_color
 
         return CogMetaData(

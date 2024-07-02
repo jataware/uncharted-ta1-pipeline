@@ -4,15 +4,15 @@ import json
 from typing import List, Dict
 from pathlib import Path
 from nltk.translate.meteor_score import single_meteor_score
-from tasks.metadata_extraction.entities import MapChromaType, MetadataExtraction
+from tasks.metadata_extraction.entities import MapColorType, MetadataExtraction
 
 MetadataScore = Dict[str, float]
 MetadataScores = Dict[str, MetadataScore]
 
 
 SKIP_FIELDS = {
-    "map_shape": MapChromaType.UNKNOWN,
-    "map_chroma": MapChromaType.HIGH_CHROMA,
+    "map_shape": MapColorType.UNKNOWN,
+    "map_chroma": MapColorType.HIGH,
     "publisher": "NULL",
     "population_centres": [],
 }

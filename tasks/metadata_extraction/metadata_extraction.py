@@ -17,7 +17,7 @@ import tiktoken
 from tasks.common.image_io import pil_to_cv_image
 from tasks.common.task import TaskInput, TaskResult
 from tasks.metadata_extraction.entities import (
-    MapChromaType,
+    MapColorType,
     MapShape,
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
@@ -772,9 +772,9 @@ class MetadataExtractor(Task):
 
     def _compute_chroma(
         self, input_image: PILImage, max_dim=500, mono_thresh=20, low_thresh=60
-    ) -> MapChromaType:
+    ) -> MapColorType:
         """
-        Computes the chroma of the map image using the LAB color space
+        Computes the colour level of the map image using the LAB color space
         and the centroid of the a and b channels
 
         Args:
@@ -782,7 +782,7 @@ class MetadataExtractor(Task):
             max_dim (int): The maximum dimension for resizing the image
 
         Returns:
-            MapChromaType: The chroma type of the map
+            MapColorType: The chroma type of the map
         """
         if max_dim > 0:
             # uniformly resize the image so that major axis is max_dim
@@ -806,11 +806,11 @@ class MetadataExtractor(Task):
 
         # classify the chroma based on the error
         if error < mono_thresh:
-            return MapChromaType.MONO_CHROMA
+            return MapColorType.MONO
         elif error < low_thresh:
-            return MapChromaType.LOW_CHROMA
+            return MapColorType.LOW
         else:
-            return MapChromaType.HIGH_CHROMA
+            return MapColorType.HIGH
 
     @staticmethod
     def _create_empty_extraction(doc_id: str) -> MetadataExtraction:
@@ -834,7 +834,7 @@ class MetadataExtractor(Task):
             places=[],
             publisher="",
             map_shape=MapShape.UNKNOWN,
-            map_chroma=MapChromaType.UNKNOWN,
+            map_chroma=MapColorType.UNKNOWN,
             language="",
             language_country="",
         )
