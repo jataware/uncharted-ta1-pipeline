@@ -322,10 +322,8 @@ class MetadataExtractor(Task):
             METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
         )
         if metadata is None:
-            logger.info("processing doc text extraction")
             metadata = self._process_doc_text_extraction(doc_text)
         if metadata:
-            logger.info("post-processing metadata extraction")
             # map state names as needed
             for i, p in enumerate(metadata.states):
                 if p.lower() in PLACE_EXTENSION_MAP:
