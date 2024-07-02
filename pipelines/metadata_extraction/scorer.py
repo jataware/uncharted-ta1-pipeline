@@ -12,7 +12,7 @@ MetadataScores = Dict[str, MetadataScore]
 
 SKIP_FIELDS = {
     "map_shape": MapColorType.UNKNOWN,
-    "map_chroma": MapColorType.HIGH,
+    "map_color": MapColorType.HIGH,
     "publisher": "NULL",
     "population_centres": [],
 }

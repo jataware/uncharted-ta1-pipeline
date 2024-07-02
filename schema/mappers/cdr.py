@@ -144,7 +144,7 @@ class MetadataMapper(CDRMapper):
         # not what we want in there.  We'll just map to full color / monochrome
         # for now
         cdr_map_color_scheme = None
-        match model.map_chroma:
+        match model.map_color:
             case MapColorType.UNKNOWN:
                 cdr_map_color_scheme = None
             case MapColorType.LOW:

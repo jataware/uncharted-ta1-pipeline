@@ -47,7 +47,7 @@ class MetadataExtraction(BaseModel):
     )  # a list of places, each place having a name and coordinates
     publisher: str
     map_shape: MapShape
-    map_chroma: MapColorType
+    map_color: MapColorType
     language: str
     language_country: str
 

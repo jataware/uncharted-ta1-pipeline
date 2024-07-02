@@ -357,7 +357,7 @@ class MetadataExtractor(Task):
             metadata.map_shape = self._compute_shape(segments)
 
             # compute map chroma from the image
-            metadata.map_chroma = self._compute_chroma(input.image)
+            metadata.map_color = self._compute_chroma(input.image)
 
             # update the cache
             self.write_result_to_cache(metadata.model_dump(), doc_id)
@@ -456,7 +456,7 @@ class MetadataExtractor(Task):
                 response_dict["population_centres"] = []
                 response_dict["places"] = []
                 response_dict["map_shape"] = "unknown"
-                response_dict["map_chroma"] = "unknown"
+                response_dict["map_color"] = "unknown"
                 return MetadataExtraction(
                     map_id=doc_text_extraction.doc_id, **response_dict
                 )
@@ -834,7 +834,7 @@ class MetadataExtractor(Task):
             places=[],
             publisher="",
             map_shape=MapShape.UNKNOWN,
-            map_chroma=MapColorType.UNKNOWN,
+            map_color=MapColorType.UNKNOWN,
             language="",
             language_country="",
         )
