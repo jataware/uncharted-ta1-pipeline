@@ -6,7 +6,7 @@ cp ../*.py pipelines/segmentation
 cp ../pyproject.toml pipelines/segmentation
 
 cp -r ../../../schema .
-
+cp -r ../../../util .
 cp -r ../../../tasks .
 
 mkdir -p pipelines/segmentation_weights
@@ -28,4 +28,4 @@ docker build -t uncharted/lara-segmentation:latest .
 rm -rf pipelines
 rm -rf tasks
 rm -rf schema
-
+rm -rf util

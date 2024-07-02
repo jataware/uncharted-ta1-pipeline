@@ -295,6 +295,9 @@ class MetadataExtractor(Task):
         Returns:
             TaskResult: The result of the task.
         """
+
+        logger.info(f"Running metadata extraction task for '{input.raster_id}'")
+
         if self._should_run and not self._should_run(input):
             return self._create_result(input)
 
@@ -311,6 +314,7 @@ class MetadataExtractor(Task):
             self._text_key, DocTextExtraction.model_validate
         )
         if not doc_text:
+            logger.info("returning empty metadata extraction result")
             return task_result
 
         # post-processing and follow on prompts
@@ -318,8 +322,10 @@ class MetadataExtractor(Task):
             METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
         )
         if metadata is None:
+            logger.info("processing doc text extraction")
             metadata = self._process_doc_text_extraction(doc_text)
         if metadata:
+            logger.info("post-processing metadata extraction")
             # map state names as needed
             for i, p in enumerate(metadata.states):
                 if p.lower() in PLACE_EXTENSION_MAP:

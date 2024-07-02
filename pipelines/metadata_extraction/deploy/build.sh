@@ -6,8 +6,9 @@ cp ../*.py pipelines/metadata_extraction
 cp ../pyproject.toml pipelines/metadata_extraction
 
 cp -r ../../../schema .
-
+cp -r ../../../util .
 cp -r ../../../tasks .
+
 
 mkdir -p pipelines/segmentation_weights
 if [ -z "$1" ]
@@ -28,4 +29,4 @@ docker build -t uncharted/lara-metadata-extract:latest .
 rm -rf pipelines
 rm -rf tasks
 rm -rf schema
-
+rm -rf util

@@ -7,7 +7,7 @@ cp ../pyproject.toml pipelines/point_extraction
 
 cp -r ../../../schema .
 cp -r ../../../tasks .
-c- pr ../../../util .
+cp -r ../../../util .
 
 # get the point model and segment model weights passed in as an argument
 # we can leave it empty if not supplied

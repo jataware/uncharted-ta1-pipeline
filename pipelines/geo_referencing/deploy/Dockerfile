@@ -20,6 +20,7 @@ RUN pip install -e ./tasks[segmentation]
 COPY schema schema
 COPY pipelines pipelines
 COPY util util
+COPY data data
 
 # install lara packages - including point detection extras
 RUN pip install -e ./pipelines/geo_referencing

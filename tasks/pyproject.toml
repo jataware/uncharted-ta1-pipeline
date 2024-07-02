@@ -30,7 +30,8 @@ dependencies = [
     "pika",
     "langchain",
     "langchain-openai",
-    "stateplane"
+    "stateplane",
+    "coloredlogs"
 ]
 
 [project.optional-dependencies]

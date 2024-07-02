@@ -4,7 +4,7 @@ DEV_TAG := test
 TAG := latest
 IMAGE_NAMES := lara-cdr lara-georef lara-point-extract lara-segmentation lara-metadata-extract lara-text-extract
 
-build_segmentation check_env:
+build_segmentation:
 	@echo "\n*** Building segmentation ***"
 	@cd pipelines/segmentation/deploy && ./build.sh $(SEGMENTATION_MODEL)
 
@@ -33,13 +33,22 @@ build: build_segmentation build_metadata build_points build_georef build_cdr
 tag_dev:
 	@echo "*** Tagging images with dev tag [$(DEV_TAG)] ***"
 	@$(foreach name, $(IMAGE_NAMES), \
+		echo $(name):$(DEV_TAG);\
 		docker tag uncharted/$(name):$(TAG) uncharted/$(name):$(DEV_TAG);)
 
 push_dev:
+	@echo "*** Pushing images with dev tag [$(DEV_TAG)] ***"
 	@$(foreach name, $(IMAGE_NAMES), \
+		echo $(name):$(DEV_TAG);\
 		docker push uncharted/$(name):$(DEV_TAG);)
 
 push:
+	@echo "*** Tagging images with dev tag [$(TAG)] ***"
 	@$(foreach name, $(IMAGE_NAMES), \
+		echo $(name):$(TAG);\
 		docker push uncharted/$(name):$(TAG);)
+
+run:
+	@echo "*** Running docker-compose ***"
+	@cd deploy && docker compose up
 
