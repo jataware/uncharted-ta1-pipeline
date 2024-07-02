@@ -39,7 +39,7 @@ class MetadataExtractorPipeline(Pipeline):
         model_data_path: str,
         debug_images=False,
         cdr_schema=False,
-        model=LLM.GPT_3_5_TURBO,
+        model=LLM.GPT_4_O,
         gpu=True,
     ):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
