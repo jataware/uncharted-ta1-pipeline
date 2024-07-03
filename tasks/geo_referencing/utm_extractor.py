@@ -29,6 +29,7 @@ from tasks.geo_referencing.util import (
     ocr_to_coordinates,
     get_bounds_bounding_box,
     is_in_range,
+    get_min_max_count,
 )
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -207,16 +208,6 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         # no overlap between zone and geofence
         return False
 
-    def _get_min_max_count(
-        self, coordinates: Dict[Tuple[float, float], Coordinate]
-    ) -> Tuple[float, float, int]:
-        if len(coordinates) == 0:
-            return 0, 0, 0
-
-        values = list(map(lambda x: x[1].get_parsed_degree(), coordinates.items()))
-
-        return min(values), max(values), len(values)
-
     def _determine_utm_zone(
         self,
         metadata: MetadataExtraction,
@@ -247,8 +238,8 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         ) / 2.0
 
         # check for parsed lon & lat coordinates
-        min_lon, max_lon, count_lon = self._get_min_max_count(lons)
-        min_lat, max_lat, count_lat = self._get_min_max_count(lats)
+        min_lon, max_lon, count_lon = get_min_max_count(lons)
+        min_lat, max_lat, count_lat = get_min_max_count(lats)
         if count_lon > 0:
             utm_min = utm.from_latlon(centre_lat, min_lon)[2]
             utm_max = utm.from_latlon(centre_lat, max_lon)[2]
