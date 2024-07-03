@@ -22,6 +22,7 @@ RUN pip install -e ./tasks[point]
 
 COPY schema schema
 COPY pipelines pipelines
+COPY util util
 
 RUN pip install -e ./pipelines/point_extraction
 

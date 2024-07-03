@@ -8,18 +8,14 @@ from pipelines.point_extraction.point_extraction_pipeline import PointExtraction
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
 from tasks.point_extraction.point_extractor_utils import parse_legend_point_hints
 from tasks.point_extraction.entities import (
-    LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
 )
+from util import logging as logging_util
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger = logging.getLogger("point_extraction_pipeline")
+    logging_util.config_logger(logger)
 
     # parse command line args
     parser = argparse.ArgumentParser()

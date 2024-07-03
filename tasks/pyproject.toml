@@ -29,7 +29,9 @@ dependencies = [
     "scipy",
     "pika",
     "langchain",
-    "langchain-openai"
+    "langchain-openai",
+    "stateplane",
+    "coloredlogs"
 ]
 
 [project.optional-dependencies]

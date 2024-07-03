@@ -21,6 +21,7 @@ RUN pip install -e ./tasks[segmentation]
 # install the segmentation pipeline
 COPY schema schema
 COPY pipelines pipelines
+COPY util util
 RUN pip install -e ./pipelines/segmentation
 
 ENTRYPOINT ["python3", "-m", "pipelines.segmentation.run_server"]

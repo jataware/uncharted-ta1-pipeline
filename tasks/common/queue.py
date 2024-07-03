@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import random
 from threading import Thread
 from time import sleep
 
@@ -42,6 +43,8 @@ POINTS_RESULT_QUEUE = "points_result"
 
 TEXT_REQUEST_QUEUE = "text_request"
 TEXT_RESULT_QUEUE = "text_result"
+
+REQUEUE_LIMIT = 3
 
 
 class Request(BaseModel):
@@ -132,12 +135,20 @@ class RequestQueue:
                     for method_frame, properties, body in self._input_channel.consume(
                         self._request_queue,
                         inactivity_timeout=5,
-                        auto_ack=True,
                     ):
                         if method_frame:
-                            self._process_queue_input(
-                                self._input_channel, method_frame, properties, body
-                            )
+                            # ack on success, nack on failure - the message will be requeued
+                            # on nack and eventually dropped if the requeue limit is reached
+                            try:
+                                self._process_queue_input(
+                                    self._input_channel, method_frame, properties, body
+                                )
+                                self._input_channel.basic_ack(method_frame.delivery_tag)
+                            except Exception as e:
+                                logger.exception(e)
+                                self._input_channel.basic_nack(
+                                    method_frame.delivery_tag
+                                )
 
             except (AMQPChannelError, AMQPConnectionError):
                 logger.warn("request connection closed, reconnecting")
@@ -163,7 +174,12 @@ class RequestQueue:
             )
         )
         self._input_channel = self._request_connection.channel()
-        self._input_channel.queue_declare(queue=self._request_queue)
+        # use quorum queues with a delivery limit to prevent infinite requeueing of a bad map
+        self._input_channel.queue_declare(
+            queue=self._request_queue,
+            durable=True,
+            arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
+        )
         self._input_channel.basic_qos(prefetch_count=1)
 
     def _connect_to_result(self):
@@ -179,7 +195,11 @@ class RequestQueue:
             )
         )
         self._output_channel = self._result_connection.channel()
-        self._output_channel.queue_declare(queue=self._result_queue)
+        self._output_channel.queue_declare(
+            queue=self._result_queue,
+            durable=True,
+            arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
+        )
 
     def start_result_queue(self):
         """Start the result publishing thread."""

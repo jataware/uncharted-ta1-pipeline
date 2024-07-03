@@ -295,6 +295,9 @@ class MetadataExtractor(Task):
         Returns:
             TaskResult: The result of the task.
         """
+
+        logger.info(f"Running metadata extraction task for '{input.raster_id}'")
+
         if self._should_run and not self._should_run(input):
             return self._create_result(input)
 
@@ -311,6 +314,7 @@ class MetadataExtractor(Task):
             self._text_key, DocTextExtraction.model_validate
         )
         if not doc_text:
+            logger.info("returning empty metadata extraction result")
             return task_result
 
         # post-processing and follow on prompts
@@ -357,7 +361,7 @@ class MetadataExtractor(Task):
             metadata.map_shape = self._compute_shape(segments)
 
             # compute map chroma from the image
-            metadata.map_color = self._compute_chroma(input.image)
+            metadata.map_color = self._compute_color_level(input.image)
 
             # update the cache
             self.write_result_to_cache(metadata.model_dump(), doc_id)
@@ -770,7 +774,7 @@ class MetadataExtractor(Task):
                     break
         return map_shape
 
-    def _compute_chroma(
+    def _compute_color_level(
         self, input_image: PILImage, max_dim=500, mono_thresh=20, low_thresh=60
     ) -> MapColorType:
         """

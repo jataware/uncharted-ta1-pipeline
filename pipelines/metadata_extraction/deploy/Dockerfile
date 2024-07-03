@@ -19,6 +19,7 @@ RUN pip install -e ./tasks[segmentation]
 # install the metadata extraction
 COPY schema schema
 COPY pipelines pipelines
+COPY util util
 RUN pip install -e ./pipelines/metadata_extraction
 
 ENTRYPOINT ["python3", "-m", "pipelines.metadata_extraction.run_server"]
