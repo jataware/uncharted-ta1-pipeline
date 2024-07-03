@@ -1,6 +1,6 @@
 from tasks.point_extraction.entities import MapImage
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.point_extraction.point_extractor import POINT_CLASS
+from tasks.point_extraction.label_map import POINT_CLASS
 from tasks.point_extraction.task_config import PointOrientationConfig
 from tasks.point_extraction import point_extractor_utils
 from tasks.text_extraction.entities import (

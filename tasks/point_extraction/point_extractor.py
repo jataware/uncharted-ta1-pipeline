@@ -10,7 +10,6 @@ from tasks.point_extraction.point_extractor_utils import find_legend_label_match
 
 from tasks.common.s3_data_cache import S3DataCache
 from tasks.common.task import Task, TaskInput, TaskResult
-from enum import Enum
 import hashlib
 import logging
 import os
@@ -28,27 +27,6 @@ CONF_THRES = 0.20  # (0.25) minimum confidence threshold for detections
 IOU_THRES = 0.7  # IoU threshold for NMS
 
 logger = logging.getLogger(__name__)
-
-
-class POINT_CLASS(str, Enum):
-    STRIKE_AND_DIP = "strike_and_dip"  # aka inclined bedding
-    HORIZONTAL_BEDDING = "horizontal_bedding"
-    OVERTURNED_BEDDING = "overturned_bedding"
-    VERTICAL_BEDDING = "vertical_bedding"
-    INCLINED_FOLIATION = "inclined_foliation"  # line with solid triangle
-    INCLINED_FOLIATION_IGNEOUS = "inclined_foliation_igneous"  # with hollow triangle
-    VERTICAL_FOLIATION = "vertical_foliation"
-    VERTICAL_JOINT = "vertical_joint"
-    SINK_HOLE = "sink_hole"
-    LINEATION = "lineation"
-    GRAVEL_BORROW_PIT = "gravel_borrow_pit"
-    MINE_SHAFT = "mine_shaft"
-    PROSPECT = "prospect"
-    MINE_TUNNEL = "mine_tunnel"  # aka adit or "4_pt"
-    MINE_QUARRY = "mine_quarry"
-
-    def __str__(self):
-        return self.value
 
 
 class YOLOPointDetector(Task):
