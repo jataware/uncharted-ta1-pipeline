@@ -1,10 +1,10 @@
 from tasks.text_extraction.entities import Point
 from tasks.common.task import TaskInput
-from tasks.geo_referencing.entities import DocGeoFence, GEOFENCE_OUTPUT_KEY
+from tasks.geo_referencing.entities import DocGeoFence, GEOFENCE_OUTPUT_KEY, Coordinate
 from tasks.metadata_extraction.entities import MetadataExtraction
 from util.coordinate import absolute_minmax
 
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 
 def ocr_to_coordinates(bounds: List[Point]) -> List[List[int]]:
@@ -79,3 +79,19 @@ def is_nad_83(metadata: MetadataExtraction) -> bool:
         year = int(metadata.year)
 
     return "83" in metadata.projection or year >= 1986
+
+
+def get_min_max_count(
+    coordinates: Dict[Tuple[float, float], Coordinate], sources: List[str] = []
+) -> Tuple[float, float, int]:
+    if len(coordinates) == 0:
+        return 0, 0, 0
+
+    coords = filter(
+        lambda x: x[1].get_source() in sources if len(sources) > 0 else True,
+        coordinates.items(),
+    )
+
+    values = list(map(lambda x: x[1].get_parsed_degree(), coords))
+
+    return min(values), max(values), len(values)

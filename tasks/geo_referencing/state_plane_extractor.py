@@ -26,6 +26,7 @@ from tasks.geo_referencing.entities import (
     DocGeoFence,
     GEOFENCE_OUTPUT_KEY,
     SOURCE_STATE_PLANE,
+    SOURCE_LAT_LON,
 )
 from tasks.geo_referencing.util import is_nad_83
 from tasks.metadata_extraction.entities import (
@@ -36,6 +37,7 @@ from tasks.geo_referencing.util import (
     ocr_to_coordinates,
     get_bounds_bounding_box,
     is_in_range,
+    get_min_max_count,
 )
 
 from util.json import read_json_file
@@ -153,7 +155,9 @@ class StatePlaneExtractor(CoordinatesExtractor):
         lon_pts = input.input.get_data("lons")
         lat_pts = input.input.get_data("lats")
 
-        state_plane_zone = self._determine_epsg(metadata, geofence_raw, clue_point)
+        state_plane_zone = self._determine_epsg(
+            metadata, geofence_raw, clue_point, lon_pts, lat_pts
+        )
         if state_plane_zone[0] == "":
             logger.info("no state plane zone determined so stopping parsing attempt")
             # unable to determine state plane coordinates without a zone
@@ -315,6 +319,8 @@ class StatePlaneExtractor(CoordinatesExtractor):
         metadata: MetadataExtraction,
         raw_geofence: DocGeoFence,
         clue_point: Optional[Tuple[float, float]],
+        lons: Dict[Tuple[float, float], Coordinate],
+        lats: Dict[Tuple[float, float], Coordinate],
     ) -> Tuple[str, str]:
         logger.info("attempting to determine state plane zone")
         year = 1900
@@ -326,6 +332,17 @@ class StatePlaneExtractor(CoordinatesExtractor):
             return (
                 self._determine_epsg_from_coord(clue_point[0], clue_point[1], year),
                 "clue point",
+            )
+
+        # use middle of parsed lon & lat if some of both exist and they fall within geofence
+        min_lon, max_lon, count_lon = get_min_max_count(lons, [SOURCE_LAT_LON])
+        min_lat, max_lat, count_lat = get_min_max_count(lats, [SOURCE_LAT_LON])
+        if count_lon > 0 and count_lat > 0:
+            return (
+                self._determine_epsg_from_coord(
+                    (min_lon + max_lon) / 2, (min_lat + max_lat) / 2, year
+                ),
+                "parsed coordinates",
             )
 
         # determine nad27 vs nad83 by assuming nad27 unless nad83 explicitly specified
@@ -346,18 +363,30 @@ class StatePlaneExtractor(CoordinatesExtractor):
                     # only one zone exists in the state
                     return list(possible.items())[0][1], "only option"
 
+                # TODO: check if the parsed coordinates can narrow down the options
+
                 # use the projection info to try and narrow it down to one zone
                 for n, c in possible.items():
-                    if n in metadata.coordinate_systems:
+                    if n.lower() in list(
+                        map(lambda x: x.lower(), metadata.coordinate_systems)
+                    ):
                         return c, "crs"
 
-        # use the centre of the geofence to pick the code
-        centre_lon = (
-            raw_geofence.geofence.lon_minmax[0] + raw_geofence.geofence.lon_minmax[1]
-        ) / 2
-        centre_lat = (
-            raw_geofence.geofence.lat_minmax[0] + raw_geofence.geofence.lat_minmax[1]
-        ) / 2
+        # use the centre of the geofence or parsed coordinates to pick the code
+        if count_lon == 0:
+            centre_lon = (
+                raw_geofence.geofence.lon_minmax[0]
+                + raw_geofence.geofence.lon_minmax[1]
+            ) / 2
+        else:
+            centre_lon = (min_lon + max_lon) / 2
+        if count_lat == 0:
+            centre_lat = (
+                raw_geofence.geofence.lat_minmax[0]
+                + raw_geofence.geofence.lat_minmax[1]
+            ) / 2
+        else:
+            centre_lat = (min_lat + max_lat) / 2
         return (
             self._determine_epsg_from_coord(centre_lon, centre_lat, year),
             "default",
