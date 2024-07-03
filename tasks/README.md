@@ -95,6 +95,7 @@ Initial efforts have focused on identifying and extracting the following 15 symb
 * Vertical Joint
 * Sink Hole
 * Lineation
+* Drill Hole
 * Gravel Borrow Pit
 * Mine Shaft
 * Prospect
