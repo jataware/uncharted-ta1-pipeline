@@ -144,7 +144,10 @@ def process_cdr_event():
     if settings.serial:
         first_task = LaraResultSubscriber.REQUEST_SEQUENCE[0]
         first_queue = LaraResultSubscriber.TASK_QUEUES[first_task]
-        first_request = lara_reqs[first_task]
+        # first_request = lara_reqs[first_task]
+        first_request = LaraResultSubscriber.next_request(
+            first_task, map_event.cog_id, map_event.cog_url
+        )
         request_publisher.publish_lara_request(first_request, first_queue)
     else:
         for queue_name, lara_req in lara_reqs.items():
