@@ -139,7 +139,7 @@ class MetadataMapper(CDRMapper):
             case MapShape.RECTANGULAR:
                 cdr_map_shape = MapShapeTypes.rectangular
 
-        # map the chrom to the CDR map color scheme - CDR has different
+        # map the map color level to the CDR map color scheme - CDR has different
         # values (monochrome, full color, grayscale) that I think are probably
         # not what we want in there.  We'll just map to full color / monochrome
         # for now
