@@ -99,6 +99,15 @@ class TemplateMatchPointExtractor(Task):
             map_image_results.labels, legend_pt_items.items, min_predictions=MIN_MATCHES  # type: ignore
         )
 
+        if not pt_features:
+            # no template-matching point extraction needed
+            logger.info(
+                "No legend items need further processing. Skipping Template-Match Point Extractor"
+            )
+            result = self._create_result(task_input)
+            result.add_output("map_image", task_input.data["map_image"])
+            return result
+
         # convert image from PIL to opencv (numpy) format --  assumed color channel order is RGB
         im_in = np.array(task_input.image)
 
