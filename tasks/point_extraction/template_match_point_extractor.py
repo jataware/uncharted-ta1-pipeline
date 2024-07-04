@@ -1,4 +1,3 @@
-import pprint
 import cv2
 import logging
 import math
@@ -8,7 +7,7 @@ from scipy import ndimage
 from collections import defaultdict
 
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
-from tasks.segmentation.segmenter_utils import get_segment_bounds
+from tasks.segmentation.segmenter_utils import get_segment_bounds, segments_to_mask
 from tasks.point_extraction import point_extractor_utils as pe_utils
 from tasks.common.task import Task, TaskInput, TaskResult
 
@@ -100,6 +99,15 @@ class TemplateMatchPointExtractor(Task):
             map_image_results.labels, legend_pt_items.items, min_predictions=MIN_MATCHES  # type: ignore
         )
 
+        if not pt_features:
+            # no template-matching point extraction needed
+            logger.info(
+                "No legend items need further processing. Skipping Template-Match Point Extractor"
+            )
+            result = self._create_result(task_input)
+            result.add_output("map_image", task_input.data["map_image"])
+            return result
+
         # convert image from PIL to opencv (numpy) format --  assumed color channel order is RGB
         im_in = np.array(task_input.image)
 
@@ -131,12 +139,19 @@ class TemplateMatchPointExtractor(Task):
         # --- get segment info for the map ROI
         map_roi = [0, 0, im_in.shape[1], im_in.shape[0]]
         if SEGMENTATION_OUTPUT_KEY in task_input.data:
-            p_map = get_segment_bounds(
-                MapSegmentation.model_validate(
-                    task_input.data[SEGMENTATION_OUTPUT_KEY]
-                ),
-                SEGMENT_MAP_CLASS,
+            segmentation = MapSegmentation.model_validate(
+                task_input.data[SEGMENTATION_OUTPUT_KEY]
             )
+            # get a binary mask of the regions-of-interest and apply to the input image
+            binary_mask = segments_to_mask(
+                segmentation,
+                (im_in.shape[1], im_in.shape[0]),
+                roi_classes=[SEGMENT_MAP_CLASS],
+            )
+            if binary_mask.size != 0:
+                # apply binary mask to input image
+                im_in = cv2.bitwise_and(im_in, im_in, mask=binary_mask)
+            p_map = get_segment_bounds(segmentation, SEGMENT_MAP_CLASS)
             if len(p_map) > 0:
                 # restrict to use *only* the bounding rectangle of map area
                 # TODO: ideally should use map polygon area as a binary mask

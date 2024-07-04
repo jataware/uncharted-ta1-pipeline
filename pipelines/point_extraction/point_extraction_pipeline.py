@@ -25,8 +25,8 @@ from tasks.common.pipeline import (
     ImageDictOutput,
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
+from tasks.segmentation.denoise_segments import DenoiseSegments
 from tasks.text_extraction.text_extractor import TileTextExtractor
-from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 
 
 logger = logging.getLogger(__name__)
@@ -66,12 +66,15 @@ class PointExtractionPipeline(Pipeline):
             )
         )
         if model_path_segmenter:
-            tasks.append(
-                DetectronSegmenter(
-                    "segmenter",
-                    model_path_segmenter,
-                    str(Path(work_dir).joinpath("segmentation")),
-                )
+            tasks.extend(
+                [
+                    DetectronSegmenter(
+                        "segmenter",
+                        model_path_segmenter,
+                        str(Path(work_dir).joinpath("segmentation")),
+                    ),
+                    DenoiseSegments("segment_denoising"),
+                ]
             )
         else:
             logger.warning(
