@@ -105,7 +105,9 @@ def create_geo_referencing_pipelines(
     )"""
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
+    tasks.append(
+        TileTextExtractor("first", Path(text_cache), 6000, gamma_correction=0.5)
+    )
     tasks.append(EntropyROIExtractor("entropy roi"))
     if extract_metadata:
         tasks.append(
@@ -282,7 +284,9 @@ def create_geo_referencing_pipelines(
     )
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
+    tasks.append(
+        TileTextExtractor("first", Path(text_cache), 6000, gamma_correction=0.5)
+    )
     tasks.append(
         DetectronSegmenter(
             "segmenter",
@@ -511,7 +515,9 @@ def create_geo_referencing_pipeline(
     metadata_cache = os.path.join(working_dir, "metadata")
 
     tasks = []
-    tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
+    tasks.append(
+        TileTextExtractor("first", Path(text_cache), 6000, gamma_correction=0.5)
+    )
     tasks.append(
         DetectronSegmenter(
             "segmenter",
