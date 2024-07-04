@@ -3,7 +3,9 @@ import math
 from tasks.segmentation.entities import MapSegmentation
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from typing import List
+from typing import List, Tuple, Optional
+import numpy as np
+import cv2
 
 logger = logging.getLogger(__name__)
 
@@ -71,3 +73,44 @@ def merge_overlapping_polygons(polys: List[Polygon]) -> List[Polygon]:
         merged_polys = polys
 
     return merged_polys
+
+
+def segments_to_mask(
+    segmentation: MapSegmentation,
+    width_height: Tuple[int, int],
+    roi_classes=["map", "legend_points_lines"],
+    buffer_pixel=150,
+    buffer_percent=0.03,
+) -> np.ndarray:
+    """
+    Convert segmentation results into a binary mask, using "roi_classes" segments as the mask foreground
+    A mask "buffer" is used to dilate segment regions prior to mask creation
+    """
+    if not segmentation:
+        logger.warning(
+            "No segmentation results available. Skipping creating of binary mask."
+        )
+        return np.array([])
+
+    w, h = width_height
+    binary_mask = np.zeros((h, w), dtype=np.uint8)
+    buffer_size = min(buffer_pixel, max(h, w) * buffer_percent)
+    polys = []
+    # get all foreground segments
+    for seg in segmentation.segments:
+        if seg.class_label in roi_classes:
+            p = Polygon(seg.poly_bounds)
+            p_buffered = p.buffer(buffer_size)  # join_style="mitre")
+            polys.append(p_buffered)
+    if not polys:
+        logger.warning("No ROI segments available. Skipping creating of binary mask.")
+        return np.array([])
+    # handle overlapping ROI polygons, if present
+    polys = merge_overlapping_polygons(polys)
+    poly_arrays = [
+        np.array([(int(x), int(y)) for x, y in p.exterior.coords]) for p in polys
+    ]
+    # convert segment polygons to a binary mask
+    cv2.fillPoly(binary_mask, pts=poly_arrays, color=255)  # type: ignore
+
+    return binary_mask

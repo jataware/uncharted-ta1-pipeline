@@ -3,12 +3,13 @@ import numpy as np
 from tqdm import tqdm
 from typing import List
 import logging
+import cv2
 
 from common.task import Task, TaskInput, TaskResult
 
 from tasks.point_extraction.entities import MapTile, MapTiles, MapImage, MapPointLabel
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
-from tasks.segmentation.segmenter_utils import get_segment_bounds
+from tasks.segmentation.segmenter_utils import get_segment_bounds, segments_to_mask
 
 SEGMENT_MAP_CLASS = "map"  # class label for map area segmentation
 TILE_OVERLAP_DEFAULT = (  # default tliing overlap = point bbox + 10%
@@ -51,15 +52,22 @@ class Tiler(Task):
 
         # use image segmentation to restrict point extraction to map area only
         if SEGMENTATION_OUTPUT_KEY in task_input.data:
-            p_map = get_segment_bounds(
-                MapSegmentation.model_validate(
-                    task_input.data[SEGMENTATION_OUTPUT_KEY]
-                ),
-                SEGMENT_MAP_CLASS,
+            segmentation = MapSegmentation.model_validate(
+                task_input.data[SEGMENTATION_OUTPUT_KEY]
             )
+            # get a binary mask of the regions-of-interest and apply to the input image before tiling
+            binary_mask = segments_to_mask(
+                segmentation, (x_max, y_max), roi_classes=[SEGMENT_MAP_CLASS]
+            )
+            if binary_mask.size != 0:
+                # apply binary mask to input image prior to tiling
+                image_array = cv2.bitwise_and(
+                    image_array, image_array, mask=binary_mask
+                )
+
+            p_map = get_segment_bounds(segmentation, SEGMENT_MAP_CLASS)
             if len(p_map) > 0:
                 # restrict tiling to use *only* the bounding rectangle of map area
-                # TODO: ideally should use map polygon area as a binary mask
                 p_map = p_map[0]  # use 1st (highest ranked) map segment
                 (x_min, y_min, x_max, y_max) = [int(b) for b in p_map.bounds]
 
