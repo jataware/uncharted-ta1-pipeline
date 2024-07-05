@@ -1,3 +1,34 @@
+from enum import Enum
+
+
+# ontology for common / high priority YOLO point classes
+class POINT_CLASS(str, Enum):
+    STRIKE_AND_DIP = "strike_and_dip"  # aka inclined bedding
+    HORIZONTAL_BEDDING = "horizontal_bedding"
+    OVERTURNED_BEDDING = "overturned_bedding"
+    VERTICAL_BEDDING = "vertical_bedding"
+    INCLINED_FOLIATION = "inclined_foliation"  # line with solid triangle
+    INCLINED_FOLIATION_IGNEOUS = "inclined_foliation_igneous"  # with hollow triangle
+    VERTICAL_FOLIATION = "vertical_foliation"
+    VERTICAL_JOINT = "vertical_joint"
+    SINK_HOLE = "sink_hole"
+    LINEATION = "lineation"
+    DRILL_HOLE = "drill_hole"
+    GRAVEL_BORROW_PIT = "gravel_borrow_pit"
+    MINE_SHAFT = "mine_shaft"
+    PROSPECT = "prospect"
+    MINE_TUNNEL = "mine_tunnel"  # aka adit or "4_pt"
+    MINE_QUARRY = "mine_quarry"
+
+    def __str__(self):
+        return self.value
+
+
+# mapping of YOLO model classes to output CDR ontology for common point symbols
+# (if different than LARA's internal ontology)
+YOLO_TO_CDR_LABEL = {POINT_CLASS.STRIKE_AND_DIP: "inclined_bedding"}
+
+
 # mapping of YOLO model classes to legend item labels
 LABEL_MAPPING = {
     # --- STRIKE and DIP (aka INCLINED BEDDING)
@@ -17,6 +48,7 @@ LABEL_MAPPING = {
         "horiz_bedding",
         "bedding_horiz",
         "horizbed",
+        "horizon_bedding",
     ],
     # --- OVERTURNED BEDDING
     "overturned_bedding": [
@@ -45,6 +77,7 @@ LABEL_MAPPING = {
     "vertical_foliation": [
         "vertical_foliation",
         "vert_meta_foliation",
+        "GrandCanyon_vertical_joint_pt",
     ],
     # --- VERTICAL JOINT (line with square in middle, solid or hollow)
     "vertical_joint": ["vertical_joint", "joint_vertical"],
@@ -65,25 +98,13 @@ LABEL_MAPPING = {
         "geo_mosaic_3_pt",
     ],
     # --- MINE TUNNEL (4_pt -- aka ADIT, rotated Y)
-    "mine_tunnel": [
-        "mine_tunnel",
-        "geo_mosaic_4_pt",
-    ],
+    "mine_tunnel": ["mine_tunnel", "geo_mosaic_4_pt", "adit"],
     # --- MINE or QUARRY or OPEN PIT    (5_pt -- crossed pick-axes)
-    "mine_quarry": [
-        "mine_quarry",
-        "geo_mosaic_5_pt",
-    ],
+    "mine_quarry": ["mine_quarry", "geo_mosaic_5_pt"],
     # --- SINK HOLE
-    "sink_hole": [
-        "sink_hole",
-    ],
-    # --- LINEATION -- skip for now
-    "lineation": [
-        "lineation",
-    ],
+    "sink_hole": ["sink_hole", "sinkhole_pt"],
+    # --- LINEATION
+    "lineation": ["lineation", "lineation_pt"],
+    # --- DRILL HOLE
+    "drill_hole": ["drill_hole", "drillhole_pt"],
 }
-
-# mapping of YOLO model classes to output CDR point types
-# (if different)
-YOLO_TO_CDR_LABEL = {"strike_and_dip": "inclined_bedding"}
