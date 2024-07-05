@@ -1,4 +1,4 @@
-from tasks.point_extraction.entities import MapImage
+from tasks.point_extraction.entities import PointLabels
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.point_extraction.label_map import POINT_CLASS
 from tasks.point_extraction.task_config import PointOrientationConfig
@@ -178,15 +178,15 @@ class PointOrientationExtractor(Task):
 
     def run(self, input: TaskInput) -> TaskResult:
         """
-        Run batch predictions over a MapImage object.
+        Run batch predictions over a PointLabels object.
 
-        This modifies the MapImage object predictions in-place.
+        This modifies the PointLabels object predictions in-place.
         """
 
         # get result from point extractor task (with point symbol predictions)
-        map_image = MapImage.model_validate(input.data["map_image"])
+        map_image = PointLabels.model_validate(input.data["map_image"])
         if map_image.labels is None:
-            raise RuntimeError("MapImage must have labels to run batch_predict")
+            raise RuntimeError("PointLabels must have labels to run batch_predict")
         if len(map_image.labels) == 0:
             logger.warning(
                 "No point symbol extractions found. Skipping Point orientation extraction."
@@ -371,8 +371,8 @@ class PointOrientationExtractor(Task):
 
     @property
     def input_type(self):
-        return MapImage
+        return PointLabels
 
     @property
     def output_type(self):
-        return MapImage
+        return PointLabels

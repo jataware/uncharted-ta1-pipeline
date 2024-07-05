@@ -12,7 +12,7 @@ from tasks.point_extraction.template_match_point_extractor import (
 )
 from tasks.point_extraction.tiling import Tiler, Untiler
 from tasks.point_extraction.entities import (
-    MapImage,
+    PointLabels,
     LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
 )
@@ -117,13 +117,13 @@ class MapPointLabelOutput(OutputCreator):
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         """
-        Creates a MapPointLabel object from the pipeline result.
+        Creates a PointLabel object from the pipeline result.
 
         Args:
             pipeline_result (PipelineResult): The pipeline result.
 
         Returns:
-            MapPointLabel: The map point label extraction object.
+            PointLabel: The map point label extraction object.
         """
         map_image = MapImage.model_validate(pipeline_result.data["map_image"])
         return BaseModelOutput(

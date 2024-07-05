@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 
 from collections import defaultdict
-from tasks.point_extraction.entities import MapImage
+from tasks.point_extraction.entities import PointLabels
 from tasks.text_extraction.entities import TextExtraction
 from shapely.geometry import Polygon
 from shapely.strtree import STRtree
@@ -314,13 +314,13 @@ def mask_ocr_blocks(
 
 
 def convert_preds_to_bitmasks(
-    map_image: MapImage,
+    map_image: PointLabels,
     legend_pt_labels: List[str],
     w_h: Tuple[int, int],
     binary_pixel_val=1,
 ) -> Dict[str, Image.Image]:
     """
-    Convert the MapImage point predictions to CMA contest style bitmasks
+    Convert the PointLabels point predictions to CMA contest style bitmasks
     Output is dict: point label -> bitmask image
     """
     if not map_image.labels:

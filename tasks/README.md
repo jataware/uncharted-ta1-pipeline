@@ -117,9 +117,9 @@ Point orientation (ie "strike" direction) and the "dip" magnitude are also extra
 
 #### Using the Point Extraction Tasks ####
 * The main point extraction is available in the `YOLOPointDetector` task
-* Ouput is a`MapImage` JSON object, which contains a list of `MapPointLabel` capturing the point information.
-* Both dectector tasks take `MapTiles` objects as inputs - `MapTiles` are produced by the `Tiler` task
-* `MapTiles` can be re-assembled into a `MapImage` using the `Untiler` task
+* Ouput is a`PointLabels` JSON object, which contains a list of `PointLabel` capturing the point information.
+* Both dectector tasks take `ImageTiles` objects as inputs - `ImageTiles` are produced by the `Tiler` task
+* `ImageTiles` can be re-assembled into a `PointLabels` using the `Untiler` task
 
 A pipeline using these task, along with a CLI and sever wrapper are available at [../pipelines/point_extraction](../pipelines/point_extraction)
 

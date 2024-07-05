@@ -16,14 +16,14 @@ from tasks.text_extraction.entities import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.point_extraction.entities import (
-    MapImage,
-    MapPointLabel,
+    PointLabels,
+    PointLabel,
     LegendPointItem,
     LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
 )
 
-MODEL_NAME = "uncharted_template_pointextractor"
+MODEL_NAME = "uncharted_oneshot_point_extractor"
 MODEL_VER = "0.0.1"
 
 # class labels for map and points legend areas
@@ -86,11 +86,11 @@ class TemplateMatchPointExtractor(Task):
 
         # get existing point predictions from YOLO point extractor
         if "map_image" in task_input.data:
-            map_image_results = MapImage.model_validate(task_input.data["map_image"])
+            map_image_results = PointLabels.model_validate(task_input.data["map_image"])
             if map_image_results.labels is None:
                 map_image_results.labels = []
         else:
-            map_image_results = MapImage(
+            map_image_results = PointLabels(
                 path="", raster_id=task_input.raster_id, labels=[]
             )
 
@@ -401,10 +401,10 @@ class TemplateMatchPointExtractor(Task):
         map_roi: List[int],
         legend_bbox: List,
         bbox_size: int = 90,
-    ) -> List[MapPointLabel]:
+    ) -> List[PointLabel]:
         """
         Convert template based detection results
-        to a list of MapPointLabel objects
+        to a list of PointLabel objects
         """
         pt_labels = []
         bbox_half = bbox_size / 2
@@ -420,9 +420,9 @@ class TemplateMatchPointExtractor(Task):
             # prepare final result label
             # note: using hash(label) as class numeric ID
             pt_labels.append(
-                MapPointLabel(
-                    classifier_name=MODEL_NAME,
-                    classifier_version=MODEL_VER,
+                PointLabel(
+                    model_name=MODEL_NAME,
+                    model_version=MODEL_VER,
                     class_id=hash(label),
                     class_name=label,
                     x1=x1,
@@ -431,7 +431,7 @@ class TemplateMatchPointExtractor(Task):
                     y2=y2,
                     score=xcorr / 255.0,
                     legend_name=label,
-                    legend_bbox=legend_bbox,
+                    # legend_bbox=legend_bbox,
                 )
             )
 
@@ -439,7 +439,7 @@ class TemplateMatchPointExtractor(Task):
 
     def _which_points_need_processing(
         self,
-        map_point_labels: List[MapPointLabel],
+        map_point_labels: List[PointLabel],
         legend_pt_items: List[LegendPointItem],
         min_predictions=0,
     ) -> List[LegendPointItem]:

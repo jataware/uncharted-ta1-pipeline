@@ -31,7 +31,7 @@ from tasks.metadata_extraction.entities import (
     MapShape,
     MetadataExtraction as LARAMetadata,
 )
-from tasks.point_extraction.entities import MapImage as LARAPoints
+from tasks.point_extraction.entities import PointLabels as LARAPoints
 from tasks.point_extraction.label_map import YOLO_TO_CDR_LABEL
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 
@@ -256,6 +256,7 @@ class PointsMapper(CDRMapper):
                 if pt_label not in point_features_by_class:
                     # init result object for this point type...
                     # TODO -- fill in legend item info if available in future
+                    # ( we should use legend item annotations here, if possible, to fill in legend fields and then append point extractions afterwards)
                     point_features_by_class[pt_label] = []
                     point_features_result = PointLegendAndFeaturesResult(
                         id="id",
@@ -263,7 +264,7 @@ class PointsMapper(CDRMapper):
                         name=pt_label,
                         abbreviation=pt_label,
                         description=pt_label.replace("_", " ").strip().lower(),
-                        legend_bbox=map_pt_label.legend_bbox,
+                        # legend_bbox=map_pt_label.legend_bbox,
                         point_features=None,  # points are filled in below
                     )
                     point_features.append(point_features_result)
