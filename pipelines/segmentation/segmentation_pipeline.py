@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from typing import Dict, List
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.common.pipeline import (
@@ -46,7 +47,11 @@ class SegmentationPipeline(Pipeline):
             DetectronSegmenter(
                 "segmenter",
                 model_data_path,
-                model_data_cache_path,
+                str(
+                    Path(
+                        model_data_cache_path,
+                    ).joinpath("segmentation")
+                ),
                 confidence_thres=confidence_thres,
                 gpu=gpu,
             )

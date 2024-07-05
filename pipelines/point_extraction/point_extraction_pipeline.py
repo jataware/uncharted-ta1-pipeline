@@ -55,6 +55,7 @@ class PointExtractionPipeline(Pipeline):
         verbose=False,
         include_cdr_output=True,
         include_bitmasks_output=False,
+        gpu=True,
     ):
         # extract text from image, segmentation to only keep the map area,
         # tile, extract points, untile, predict direction
@@ -72,6 +73,7 @@ class PointExtractionPipeline(Pipeline):
                         "segmenter",
                         model_path_segmenter,
                         str(Path(work_dir).joinpath("segmentation")),
+                        gpu=gpu,
                     ),
                     DenoiseSegments("segment_denoising"),
                 ]

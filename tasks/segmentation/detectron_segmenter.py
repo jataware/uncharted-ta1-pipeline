@@ -128,7 +128,7 @@ class DetectronSegmenter(Task):
         # https://detectron2.readthedocs.io/en/latest/tutorials/models.html
 
         doc_key = f"{input.raster_id}_segmentation-{self._model_id}"
-
+        logger.info("SEGMENTATION CACHE KEY: " + doc_key)
         # check cache and re-use existing file if present
         json_data = self.fetch_cached_result(doc_key)
         if json_data:
