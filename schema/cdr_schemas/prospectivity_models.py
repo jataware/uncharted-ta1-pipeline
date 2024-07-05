@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from .prospectivity_input import StackMetaData
+from schema.cdr_schemas.prospectivity_input import StackMetaData
 
 
 class Accelerator(str, Enum):
