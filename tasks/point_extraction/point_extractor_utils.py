@@ -5,9 +5,8 @@ import numpy as np
 from PIL import Image
 
 from collections import defaultdict
-from tasks.point_extraction.entities import LegendPointItem, LegendPointItems, MapImage
+from tasks.point_extraction.entities import MapImage
 from tasks.text_extraction.entities import TextExtraction
-from tasks.point_extraction.label_map import LABEL_MAPPING
 from shapely.geometry import Polygon
 from shapely.strtree import STRtree
 from typing import List, Tuple, Dict
@@ -312,85 +311,6 @@ def mask_ocr_blocks(
                 ocr_pxl_slice[:, :, 2] = med_val[2]
 
     return im
-
-
-def parse_legend_point_hints(legend_hints: dict) -> LegendPointItems:
-    """
-    parse legend hints JSON data (from the CMA contest)
-    and convert to LegendPointItem objects
-
-    legend_hints -- input hints dict
-    only_keep_points -- if True, will discard any hints about line or polygon features
-    """
-
-    legend_point_items = []
-    for shape in legend_hints["shapes"]:
-        label = shape["label"]
-        if not label.endswith("_pt") and not label.endswith("_point"):
-            continue  # not a point symbol, skip
-
-        # contour coords for the legend item's thumbnail swatch
-        xy_pts = shape.get("points", [])
-        if xy_pts:
-            x_min = xy_pts[0][0]
-            x_max = xy_pts[0][0]
-            y_min = xy_pts[0][1]
-            y_max = xy_pts[0][1]
-            for x, y in xy_pts:
-                x_min = int(min(x, x_min))
-                x_max = int(max(x, x_max))
-                y_min = int(min(y, y_min))
-                y_max = int(max(y, y_max))
-        else:
-            x_min = 0
-            x_max = 0
-            y_min = 0
-            y_max = 0
-        legend_point_items.append(
-            LegendPointItem(
-                name=label,
-                legend_bbox=[x_min, y_min, x_max, y_max],
-                legend_contour=xy_pts,
-            )
-        )
-    return LegendPointItems(items=legend_point_items, provenance="ground_truth")
-
-
-def find_legend_label_matches(
-    legend_items: LegendPointItems,
-    raster_id: str,
-) -> Dict[str, LegendPointItem]:
-    """
-    Use keyword matching to map point extractor YOLO classes to legend item labels
-    Output is dict: point extractor model class -> legend label
-    """
-
-    def find_label_match(legend_item: LegendPointItem, raster_id: str) -> str:
-        leg_label_norm = raster_id + "_" + legend_item.name.strip().lower()
-        matches = []
-        for symbol_class, suffixs in LABEL_MAPPING.items():
-            for s in suffixs:
-                if s in leg_label_norm:
-                    # match found
-                    matches.append((s, symbol_class))
-        if matches:
-            # sort to get longest suffix match
-            matches.sort(key=lambda a: len(a[0]), reverse=True)
-            symbol_class = matches[0][1]
-            logger.info(
-                f"Legend label: {legend_item.name} matches point class: {symbol_class}"
-            )
-            return symbol_class
-
-        logger.info(f"No point class match found for legend label: {legend_item.name}")
-        return ""
-
-    label_mappings = {}
-    for legend_item in legend_items.items:
-        symbol_class = find_label_match(legend_item, raster_id)
-        if symbol_class:
-            label_mappings[symbol_class] = legend_item
-    return label_mappings
 
 
 def convert_preds_to_bitmasks(

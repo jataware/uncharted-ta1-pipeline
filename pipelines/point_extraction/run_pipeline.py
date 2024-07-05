@@ -6,7 +6,10 @@ import os
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, ImageDictOutput
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
-from tasks.point_extraction.point_extractor_utils import parse_legend_point_hints
+from tasks.point_extraction.legend_item_utils import (
+    parse_legend_annotations,
+    parse_legend_point_hints,
+)
 from tasks.point_extraction.entities import (
     LEGEND_ITEMS_OUTPUT_KEY,
 )
@@ -26,6 +29,7 @@ def main():
     parser.add_argument("--model_segmenter", type=str, default=None)
     parser.add_argument("--cdr_schema", action="store_true")  # False by default
     parser.add_argument("--bitmasks", action="store_true")  # False by default
+    parser.add_argument("--legend_annotations_dir", type=str, default="")
     parser.add_argument("--legend_hints_dir", type=str, default="")
     p = parser.parse_args()
 
@@ -61,15 +65,34 @@ def main():
         logger.info(f"Processing {doc_id}")
         image_input = PipelineInput(image=image, raster_id=doc_id)
 
-        # load JSON legend hints file, if present, parse and add to PipelineInput
-        if p.legend_hints_dir:
+        if p.legend_annotations_dir:
+            # load JSON legend annotations file, if present, parse and add to PipelineInput
+            # expected format is LegendItemResponse CDR pydantic objects
             try:
-                # check or legend hints for this image (JSON CMA contest data)
+                # check for legend annotations for this image
+                with open(
+                    os.path.join(p.legend_annotations_dir, doc_id + ".json"), "r"
+                ) as fp:
+                    legend_anns = json.load(fp)
+                    legend_pt_items = parse_legend_annotations(legend_anns, doc_id)
+                    # add legend item annotations as a pipeline input param
+                    image_input.params[LEGEND_ITEMS_OUTPUT_KEY] = legend_pt_items
+                    logger.info(
+                        f"Number of legend point items loaded for this map: {len(legend_pt_items.items)}"
+                    )
+
+            except Exception as e:
+                logger.error("EXCEPTION loading legend hints json: " + repr(e))
+
+        elif p.legend_hints_dir:
+            # load JSON legend hints file, if present, parse and add to PipelineInput
+            try:
+                # check for legend hints for this image (JSON CMA contest data)
                 with open(
                     os.path.join(p.legend_hints_dir, doc_id + ".json"), "r"
                 ) as fp:
                     legend_hints = json.load(fp)
-                    legend_pt_items = parse_legend_point_hints(legend_hints)
+                    legend_pt_items = parse_legend_point_hints(legend_hints, doc_id)
                     # add legend item hints as a pipeline input param
                     image_input.params[LEGEND_ITEMS_OUTPUT_KEY] = legend_pt_items
                     logger.info(

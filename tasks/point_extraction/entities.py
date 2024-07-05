@@ -171,6 +171,13 @@ class LegendPointItem(BaseModel):
     # TODO -- could be modified to use CDR PointLegendAndFeaturesResult class in the future
 
     name: str = Field(description="Label of the map unit in the legend")
+    class_name: str = Field(
+        default="",
+        description="Normalized label of the legend map unit, if available (based on point symbol ontology)",
+    )
+    abbreviation: str = Field(
+        default="", description="Abbreviation of the map unit label."
+    )
     description: str = Field(
         default="", description="Description of the map unit in the legend"
     )
@@ -185,6 +192,14 @@ class LegendPointItem(BaseModel):
         description="""The more precise polygon bounding box of the map units
                     label. Format is expected to be [x,y] coordinate pairs
                     where the top left is the origin (0,0).""",
+    )
+    system: str = Field(
+        default="", description="System that published this item"
+    )  # dgdg -- is this needed? (or get rid of provenance below?)
+    validated: bool = Field(default=False, description="Validated by human")
+    confidence: Optional[float] = Field(
+        default=None,
+        description="Confidence for this legend item (whether extracted by a model or human annotated)",
     )
 
 
