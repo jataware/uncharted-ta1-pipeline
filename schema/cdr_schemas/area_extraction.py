@@ -47,13 +47,21 @@ class Area_Extraction(BaseModel):
             The text within the extraction area.
         """,
     )
+    reference_id: str = Field(
+        default="",
+        description="""
+            Identifies the original CDR item ID from which this new item was derived,
+            aiding in tracking provenance.
+        """,
+    )
+    validated: bool = Field(default=False, description="Validated by human")
 
     # Model Provenance
     model: str = Field(description="Name of the model used to generate this data")
     model_version: str = Field(
         description="Version of the model used to generate this data"
     )
-    model_config = ConfigDict(protected_namespaces=())
     confidence: Optional[float | int] = Field(
         default=None, description="The prediction confidence of the model"
     )
+    model_config = ConfigDict(protected_namespaces=())

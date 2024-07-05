@@ -121,6 +121,7 @@ class ProjectionResult(BaseModel):
             Name of file uploaded for this projection.
         """,
     )
+    validated: bool = Field(default=False, description="Validated by human")
 
 
 class GeoreferenceResult(BaseModel):
