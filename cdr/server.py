@@ -1,7 +1,6 @@
 import argparse
 import atexit
 from pathlib import Path
-from time import sleep
 import httpx
 import json
 import logging
@@ -63,6 +62,7 @@ class Settings:
     rabbitmq_host: str
     json_log: JSONLog
     serial: bool
+    sequence: List[str]
 
 
 def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
@@ -142,9 +142,8 @@ def process_cdr_event():
     prefetch_image(Path(settings.imagedir), map_event.cog_id, map_event.cog_url)
 
     if settings.serial:
-        first_task = LaraResultSubscriber.REQUEST_SEQUENCE[0]
+        first_task = settings.sequence[0]
         first_queue = LaraResultSubscriber.TASK_QUEUES[first_task]
-        # first_request = lara_reqs[first_task]
         first_request = LaraResultSubscriber.next_request(
             first_task, map_event.cog_id, map_event.cog_url
         )
@@ -198,8 +197,8 @@ def process_image(image_id: str, request_publisher: LaraRequestPublisher):
 
     # push the request onto the queue
     if settings.serial:
-        first_task = LaraResultSubscriber.REQUEST_SEQUENCE[0]
-        first_queue = LaraResultSubscriber.TASK_QUEUES[first_task]
+        first_task = settings.sequence[0]
+        first_queue = LaraResultSubscriber.PIPELINE_QUEUES[first_task]
         first_request = LaraResultSubscriber.next_request(
             first_task, image_id, image_url
         )
@@ -311,6 +310,9 @@ def main():
     parser.add_argument("--cdr_event_log", type=str, default=CDR_EVENT_LOG)
     parser.add_argument("--input", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
+    parser.add_argument(
+        "--sequence", nargs="*", default=LaraResultSubscriber.DEFAULT_PIPELINE_SEQUENCE
+    )
     p = parser.parse_args()
 
     global settings
@@ -324,7 +326,7 @@ def main():
     settings.system_version = CDR_SYSTEM_VERSION
     settings.callback_secret = CDR_CALLBACK_SECRET
     settings.serial = True
-
+    settings.sequence = p.sequence
     settings.json_log = JSONLog(os.path.join(p.workdir, p.cdr_event_log))
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
@@ -364,6 +366,7 @@ def main():
         settings.system_version,
         settings.json_log,
         host=p.host,
+        pipeline_sequence=settings.sequence,
     )
     result_subscriber.start_lara_result_queue()
 
