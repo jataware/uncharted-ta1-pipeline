@@ -143,7 +143,7 @@ def process_cdr_event():
 
     if settings.serial:
         first_task = settings.sequence[0]
-        first_queue = LaraResultSubscriber.TASK_QUEUES[first_task]
+        first_queue = LaraResultSubscriber.PIPELINE_QUEUES[first_task]
         first_request = LaraResultSubscriber.next_request(
             first_task, map_event.cog_id, map_event.cog_url
         )

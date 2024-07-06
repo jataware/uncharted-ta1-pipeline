@@ -63,6 +63,7 @@ class TextExtractor(Task):
         """
         Apply image gamma correction prior to OCR
         """
+        logger.info(f"applying gamma correction of {self._gamma_correction} to image")
         if self._gamma_correction == 1.0:
             # skip gamma correction
             return img

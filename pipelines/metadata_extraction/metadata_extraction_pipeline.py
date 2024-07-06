@@ -45,7 +45,7 @@ class MetadataExtractorPipeline(Pipeline):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
             ResizeTextExtractor(
-                "resize_text", Path(work_dir).joinpath("text"), False, True, 6000
+                "resize_text", Path(work_dir).joinpath("text"), False, True, 6000, 0.5
             ),
             DetectronSegmenter(
                 "segmenter",

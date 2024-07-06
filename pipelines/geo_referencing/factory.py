@@ -516,7 +516,14 @@ def create_geo_referencing_pipeline(
 
     tasks = []
     tasks.append(
-        TileTextExtractor("first", Path(text_cache), 6000, gamma_correction=0.5)
+        ResizeTextExtractor(
+            "resize_text_extractor",
+            Path(text_cache),
+            False,
+            True,
+            6000,
+            gamma_correction=0.5,
+        )
     )
     tasks.append(
         DetectronSegmenter(
@@ -532,11 +539,21 @@ def create_geo_referencing_pipeline(
             buffer_fixed,
         )
     )
-    tasks.append(TextFilter("text_filter", output_key="filtered_ocr_text"))
+    tasks.append(
+        TextFilter(
+            "text_filter",
+            classes=[
+                "cross_section",
+                "legend_points_lines",
+                "legend_polygons",
+            ],
+            output_key="filtered_ocr_text",
+        )
+    )
     tasks.append(
         MetadataExtractor(
             "metadata_extractor",
-            LLM.GPT_3_5_TURBO,
+            LLM.GPT_4_O,
             "filtered_ocr_text",
             cache_dir=metadata_cache,
         )
@@ -551,6 +568,14 @@ def create_geo_referencing_pipeline(
         )
     )
     tasks.append(GeoFencer("geofence"))
+    tasks.append(
+        TileTextExtractor(
+            "tiled_text_extractor",
+            Path(text_cache),
+            6000,
+            gamma_correction=0.5,
+        )
+    )
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
@@ -566,9 +591,10 @@ def create_geo_referencing_pipeline(
     tasks.append(
         MetadataExtractor(
             "metadata_map_area_extractor",
-            LLM.GPT_3_5_TURBO,
+            LLM.GPT_4_O,
             "map_area_filter",
             run_step,
+            include_place_bounds=True,
         )
     )
     tasks.append(
