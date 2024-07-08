@@ -297,8 +297,10 @@ class StatePlaneExtractor(CoordinatesExtractor):
         # if still defaulted, then return default
         return [], [], DIRECTION_DEFAULT
 
-    def _determine_epsg_from_coord(self, lon: float, lat: float, year: float) -> str:
-        if year >= 1986:
+    def _determine_epsg_from_coord(
+        self, projection: str, lon: float, lat: float, year: float
+    ) -> str:
+        if projection == "nad83" or year >= 1986:
             # can use the library to determine the epsg code as it uses NAD83
             return stateplane.identify(lon, lat)  #   type: ignore
 
@@ -327,27 +329,38 @@ class StatePlaneExtractor(CoordinatesExtractor):
         if metadata.year.isdigit():
             year = int(metadata.year)
 
+        # determine nad27 vs nad83
+        projection = "nad83" if is_nad_83(metadata) else "nad27"
+
         # use clue point if available
         if clue_point is not None:
             return (
-                self._determine_epsg_from_coord(clue_point[0], clue_point[1], year),
+                self._determine_epsg_from_coord(
+                    projection, clue_point[0], clue_point[1], year
+                ),
                 "clue point",
             )
 
         # use middle of parsed lon & lat if some of both exist and they fall within geofence
-        min_lon, max_lon, count_lon = get_min_max_count(lons, [SOURCE_LAT_LON])
-        min_lat, max_lat, count_lat = get_min_max_count(lats, [SOURCE_LAT_LON])
+        centre_lat = (
+            raw_geofence.geofence.lat_minmax[0] + raw_geofence.geofence.lat_minmax[1]
+        ) / 2
+        centre_lon = (
+            raw_geofence.geofence.lon_minmax[0] + raw_geofence.geofence.lon_minmax[1]
+        ) / 2
+        min_lon, max_lon, count_lon = get_min_max_count(
+            lons, centre_lon < 0, [SOURCE_LAT_LON]
+        )
+        min_lat, max_lat, count_lat = get_min_max_count(
+            lats, centre_lat < 0, [SOURCE_LAT_LON]
+        )
         if count_lon > 0 and count_lat > 0:
             return (
                 self._determine_epsg_from_coord(
-                    (min_lon + max_lon) / 2, (min_lat + max_lat) / 2, year
+                    projection, (min_lon + max_lon) / 2, (min_lat + max_lat) / 2, year
                 ),
                 "parsed coordinates",
             )
-
-        # determine nad27 vs nad83 by assuming nad27 unless nad83 explicitly specified
-        # TODO: MAKE THIS WAYYYYY BETTER
-        projection = "nad83" if is_nad_83(metadata) else "nad27"
 
         # use the state from the metadata
         # TODO: FIGURE OUT WHICH OF THE POSSIBLE STATES TO USE
@@ -373,22 +386,12 @@ class StatePlaneExtractor(CoordinatesExtractor):
                         return c, "crs"
 
         # use the centre of the geofence or parsed coordinates to pick the code
-        if count_lon == 0:
-            centre_lon = (
-                raw_geofence.geofence.lon_minmax[0]
-                + raw_geofence.geofence.lon_minmax[1]
-            ) / 2
-        else:
+        if count_lon != 0:
             centre_lon = (min_lon + max_lon) / 2
-        if count_lat == 0:
-            centre_lat = (
-                raw_geofence.geofence.lat_minmax[0]
-                + raw_geofence.geofence.lat_minmax[1]
-            ) / 2
-        else:
+        if count_lat != 0:
             centre_lat = (min_lat + max_lat) / 2
         return (
-            self._determine_epsg_from_coord(centre_lon, centre_lat, year),
+            self._determine_epsg_from_coord(projection, centre_lon, centre_lat, year),
             "default",
         )  #   type: ignore
 

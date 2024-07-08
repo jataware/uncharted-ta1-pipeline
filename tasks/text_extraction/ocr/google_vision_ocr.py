@@ -57,6 +57,39 @@ class GoogleVisionOCR:
 
         return text_extractions
 
+    def _build_text_block(
+        self, text_block: str, text_block_next: str, texts_subset: List[Dict[str, Any]]
+    ) -> Tuple[Optional[BoundingPoly], int]:
+        group_counter = 0
+        bounding_poly = None
+        try:
+            for text in texts_subset:
+                prose = text["text"].strip()
+                group_counter += 1
+                text_block_sub = text_block.replace(
+                    prose, "", 1
+                ).strip()  # TODO could make this replace from the start of string...
+                if len(text_block_sub) == 0:
+                    bounding_poly = self._add_bounding_polygons(
+                        bounding_poly, text["bounding_poly"]
+                    )
+                    break
+                elif (
+                    len(prose) > 0
+                    and len(text_block_sub) == len(text_block)
+                    and text_block_next.startswith(prose)
+                ):  # and len(text_block_sub) < 3
+                    # partial OCR block parsed! ... finish with this block and go to next one
+                    group_counter -= 1
+                    break
+                bounding_poly = self._add_bounding_polygons(
+                    bounding_poly, text["bounding_poly"]
+                )
+                text_block = text_block_sub
+        except:
+            logger.error("error joining ocr blocks")
+        return bounding_poly, group_counter
+
     def text_to_blocks(self, texts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Clean up extract OCR text list into blocks of continuus text (lines)
@@ -76,59 +109,33 @@ class GoogleVisionOCR:
 
         group_offset = 1
         num_blocks = 0
-        group_counter = 0
 
         results: List[Dict[str, Any]] = []
 
         text_blocks = full_text.split("\n")
         text_block = text_blocks[0]
+        bounding_poly: Optional[BoundingPoly] = None
         for text_block_next in text_blocks[1:]:
-            try:
-                text_block = text_block.strip()
-                text_block0 = text_block
-                bounding_poly: Optional[BoundingPoly] = None  # vision.BoundingPoly()
-                for text in texts[group_offset:]:
-                    prose = text["text"].strip()
-                    group_counter += 1
-                    text_block_sub = text_block.replace(
-                        prose, "", 1
-                    ).strip()  # TODO could make this replace from the start of string...
-                    if len(text_block_sub) == 0:
-                        bounding_poly = self._add_bounding_polygons(
-                            bounding_poly, text["bounding_poly"]
-                        )
-                        break
-                    elif (
-                        len(prose) > 0
-                        and len(text_block_sub) == len(text_block)
-                        and text_block_next.startswith(prose)
-                    ):  # and len(text_block_sub) < 3
-                        # partial OCR block parsed! ... finish with this block and go to next one
-                        group_counter -= 1
-                        break
-                    bounding_poly = self._add_bounding_polygons(
-                        bounding_poly, text["bounding_poly"]
-                    )
-                    text_block = text_block_sub
+            text_block = text_block.strip()
+            text_block0 = text_block
+            bounding_poly, group_counter = self._build_text_block(
+                text_block, text_block_next, texts[group_offset:]
+            )
+            num_blocks += 1
 
-                num_blocks += 1
-
-                # TODO could try this too.. for bounding_poly
-                # from google.protobuf.json_format import MessageToDict
-                # dict_obj = MessageToDict(org)
-                if bounding_poly is not None:
-                    results.append(
-                        {"text": text_block0, "bounding_poly": bounding_poly}
-                    )
-                group_offset += group_counter
-                group_counter = 0
-                text_block = text_block_next
-            except:
-                logger.error("error joining ocr blocks")
-                continue
+            # TODO could try this too.. for bounding_poly
+            # from google.protobuf.json_format import MessageToDict
+            # dict_obj = MessageToDict(org)
+            if bounding_poly is not None:
+                results.append({"text": text_block0, "bounding_poly": bounding_poly})
+                bounding_poly = None
+            group_offset += group_counter
+            text_block = text_block_next
 
         # and save last block too
-        # results.append({'text' : text_block.strip(), 'bounding_poly' : bounding_poly})
+        bounding_poly, _ = self._build_text_block(text_block, "", texts[group_offset:])
+        if bounding_poly is not None:
+            results.append({"text": text_block.strip(), "bounding_poly": bounding_poly})
         if len(results) < len(text_blocks) - 1:
             logger.warning(
                 "Possible error grouping OCR results"

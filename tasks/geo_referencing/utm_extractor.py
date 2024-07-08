@@ -238,8 +238,8 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         ) / 2.0
 
         # check for parsed lon & lat coordinates
-        min_lon, max_lon, count_lon = get_min_max_count(lons)
-        min_lat, max_lat, count_lat = get_min_max_count(lats)
+        min_lon, max_lon, count_lon = get_min_max_count(lons, centre_lon < 0)
+        min_lat, max_lat, count_lat = get_min_max_count(lats, centre_lat < 0)
         if count_lon > 0:
             utm_min = utm.from_latlon(centre_lat, min_lon)[2]
             utm_max = utm.from_latlon(centre_lat, max_lon)[2]

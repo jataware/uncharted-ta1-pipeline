@@ -74,6 +74,12 @@ def is_in_range(value: float, range_minmax: List[float]) -> bool:
 
 def is_nad_83(metadata: MetadataExtraction) -> bool:
     # assume nad27 unless evidence for nad83
+    if "83" in metadata.datum:
+        return True
+    for crs in metadata.coordinate_systems:
+        if "83" in crs:
+            return True
+
     year = 1900
     if metadata.year.isdigit():
         year = int(metadata.year)
@@ -82,7 +88,9 @@ def is_nad_83(metadata: MetadataExtraction) -> bool:
 
 
 def get_min_max_count(
-    coordinates: Dict[Tuple[float, float], Coordinate], sources: List[str] = []
+    coordinates: Dict[Tuple[float, float], Coordinate],
+    is_negative_hemisphere: bool,
+    sources: List[str] = [],
 ) -> Tuple[float, float, int]:
     if len(coordinates) == 0:
         return 0, 0, 0
@@ -92,6 +100,11 @@ def get_min_max_count(
         coordinates.items(),
     )
 
-    values = list(map(lambda x: x[1].get_parsed_degree(), coords))
+    # adjust values to be in the right hemisphere
+    multiplier = 1
+    if is_negative_hemisphere:
+        multiplier = -1
+
+    values = list(map(lambda x: multiplier * abs(x[1].get_parsed_degree()), coords))
 
     return min(values), max(values), len(values)
