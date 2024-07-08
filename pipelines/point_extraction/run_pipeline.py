@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--cdr_schema", action="store_true")  # False by default
     parser.add_argument("--bitmasks", action="store_true")  # False by default
     parser.add_argument("--legend_hints_dir", type=str, default="")
+    parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
     # setup an input stream
@@ -43,6 +44,7 @@ def main():
         p.workdir,
         include_cdr_output=p.cdr_schema,
         include_bitmasks_output=p.bitmasks,
+        gpu=not p.no_gpu,
     )
 
     # run the extraction pipeline
