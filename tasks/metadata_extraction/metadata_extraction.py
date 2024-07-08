@@ -413,7 +413,6 @@ class MetadataExtractor(Task):
             max_text_length = self.MAX_TEXT_FILTER_LENGTH
             num_tokens = 0
 
-            prompt_str = ""
             input_prompt: Optional[PromptValue] = None
             text = []
 
@@ -444,14 +443,12 @@ class MetadataExtractor(Task):
                 logger.debug(
                     f"Token count after filtering exceeds limit - reducing max text length to {max_text_length}"
                 )
-
             logger.info(f"Processing {num_tokens} tokens.")
-
-            logger.debug("Prompt string:\n")
-            logger.debug(prompt_str)
 
             # generate the response
             if input_prompt is not None:
+                logger.debug("Prompt string:\n")
+                logger.debug(input_prompt.to_string())
                 chain = prompt_template | self._chat_model | parser
                 response = chain.invoke({"text_str": "\n".join(text)})
                 # add placeholders for fields we don't extract
