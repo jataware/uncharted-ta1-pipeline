@@ -137,11 +137,39 @@ def start_server():
         type=str,
         default="./data/country_codes.csv",
     )
+    # TODO: DEFAULT VALUES SHOULD POINT TO PROPER FOLDER IN CONTAINER!
+    parser.add_argument(
+        "--state_plane_lookup_filename",
+        type=str,
+        default="./data/state_plane_reference.csv",
+    )
+    parser.add_argument(
+        "--state_plane_zone_filename",
+        type=str,
+        default="./data/USA_State_Plane_Zones_NAD27.geojson",
+    )
+    parser.add_argument(
+        "--state_code_filename",
+        type=str,
+        default="./data/state_codes.csv",
+    )
+    parser.add_argument(
+        "--ocr_gamma_correction",
+        type=float,
+        default=0.5,
+    )
     p = parser.parse_args()
 
     global georef_pipeline
     georef_pipeline = create_geo_referencing_pipeline(
-        p.model, [LARAModelOutput("georef_output")], p.workdir, p.country_code_filename
+        p.model,
+        [LARAModelOutput("georef_output")],
+        p.workdir,
+        p.state_plane_lookup_filename,
+        p.state_plane_zone_filename,
+        p.state_code_filename,
+        p.country_code_filename,
+        p.ocr_gamma_correction,
     )
 
     #### start flask server or startup up the message queue
