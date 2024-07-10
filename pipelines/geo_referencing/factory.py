@@ -34,7 +34,11 @@ from tasks.geo_referencing.roi_extractor import (
 from tasks.metadata_extraction.geocoder import Geocoder, NominatimGeocoder
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.scale import ScaleExtractor
-from tasks.metadata_extraction.text_filter import FilterMode, TextFilter
+from tasks.metadata_extraction.text_filter import (
+    FilterMode,
+    TextFilter,
+    TEXT_EXTRACTION_OUTPUT_KEY,
+)
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 
@@ -122,6 +126,7 @@ def create_geo_referencing_pipelines(
             TextFilter(
                 "map_area_filter",
                 FilterMode.INCLUDE,
+                TEXT_EXTRACTION_OUTPUT_KEY,
                 "map_area_filter",
                 ["map"],
                 run_step,
@@ -163,6 +168,17 @@ def create_geo_referencing_pipelines(
     )"""
 
     tasks = []
+    """tasks.append(
+        ResizeTextExtractor(
+            "resize_text_extractor",
+            Path(text_cache),
+            False,
+            True,
+            6000,
+            gamma_correction=0.5,
+            output_key="metadata_ocr"
+        )
+    )"""
     tasks.append(
         TileTextExtractor(
             "first", Path(text_cache), 6000, gamma_correction=ocr_gamma_correction
@@ -186,6 +202,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             TextFilter(
                 "text_filter",
+                # input_key="metadata_ocr",
                 output_key="filtered_ocr_text",
                 classes=[
                     "cross_section",
@@ -220,6 +237,7 @@ def create_geo_referencing_pipelines(
             TextFilter(
                 "map_area_filter",
                 FilterMode.INCLUDE,
+                TEXT_EXTRACTION_OUTPUT_KEY,
                 "map_area_filter",
                 ["map"],
                 run_step,
@@ -329,6 +347,7 @@ def create_geo_referencing_pipelines(
             TextFilter(
                 "map_area_filter",
                 FilterMode.INCLUDE,
+                TEXT_EXTRACTION_OUTPUT_KEY,
                 "map_area_filter",
                 ["map"],
                 run_step,
@@ -433,6 +452,7 @@ def create_geo_referencing_pipelines(
             TextFilter(
                 "map_area_filter",
                 FilterMode.INCLUDE,
+                TEXT_EXTRACTION_OUTPUT_KEY,
                 "map_area_filter",
                 ["map"],
                 run_step,
@@ -500,7 +520,11 @@ def create_geo_referencing_pipeline(
     segmentation_model_path: str,
     outputs: List[OutputCreator],
     working_dir: str,
+    state_plane_lookup_filename: str,
+    state_plane_zone_filename: str,
+    state_code_filename: str,
     country_code_filename: str,
+    ocr_gamma_correction: float,
 ) -> Pipeline:
     geocoding_cache_bounds = os.path.join(working_dir, "geocoding_cache_bounds.json")
     geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
@@ -522,7 +546,13 @@ def create_geo_referencing_pipeline(
             False,
             True,
             6000,
-            gamma_correction=0.5,
+            gamma_correction=ocr_gamma_correction,
+            output_key="metadata_ocr",
+        )
+    )
+    tasks.append(
+        TileTextExtractor(
+            "first", Path(text_cache), 6000, gamma_correction=ocr_gamma_correction
         )
     )
     tasks.append(
@@ -542,12 +572,13 @@ def create_geo_referencing_pipeline(
     tasks.append(
         TextFilter(
             "text_filter",
+            input_key="metadata_ocr",
+            output_key="filtered_ocr_text",
             classes=[
                 "cross_section",
                 "legend_points_lines",
                 "legend_polygons",
             ],
-            output_key="filtered_ocr_text",
         )
     )
     tasks.append(
@@ -568,14 +599,6 @@ def create_geo_referencing_pipeline(
         )
     )
     tasks.append(GeoFencer("geofence"))
-    tasks.append(
-        TileTextExtractor(
-            "tiled_text_extractor",
-            Path(text_cache),
-            6000,
-            gamma_correction=0.5,
-        )
-    )
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
@@ -583,6 +606,7 @@ def create_geo_referencing_pipeline(
         TextFilter(
             "map_area_filter",
             FilterMode.INCLUDE,
+            TEXT_EXTRACTION_OUTPUT_KEY,
             "map_area_filter",
             ["map"],
             run_step,
@@ -616,8 +640,18 @@ def create_geo_referencing_pipeline(
         )
     )
     tasks.append(UTMCoordinatesExtractor("fifth"))
+    tasks.append(
+        StatePlaneExtractor(
+            "great-plains",
+            state_plane_lookup_filename,
+            state_plane_zone_filename,
+            state_code_filename,
+        )
+    )
     tasks.append(OutlierFilter("utm-outliers"))
+    tasks.append(UTMStatePlaneFilter("utm-state-plane"))
     tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
+    tasks.append(InferenceCoordinateExtractor("coordinate-inference"))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
