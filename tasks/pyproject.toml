@@ -31,7 +31,8 @@ dependencies = [
     "langchain",
     "langchain-openai",
     "stateplane",
-    "coloredlogs"
+    "coloredlogs",
+    "cdrc @ git+https://github.com/DARPA-CRITICALMAAS/cdrc.git@main",
 ]
 
 [project.optional-dependencies]
