@@ -29,6 +29,7 @@ from tasks.geo_referencing.util import (
     ocr_to_coordinates,
     get_bounds_bounding_box,
     is_in_range,
+    get_min_max_count,
 )
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -43,14 +44,15 @@ RE_NORTHEAST = re.compile(
 
 RE_NONNUMERIC = re.compile(r"[^0-9]")
 
-RE_UTM_ZONE = re.compile(r"^utm zone ([1-9]{1,2})\s?([ns])($|\b)")
+RE_UTM_ZONE = re.compile(r"^utm[^0-9]*([1-9]{1,2})\s?([ns])($|\b)")
 
 FOV_RANGE_METERS = 200000  # fallback search range (meters)
 
 UTM_ZONE_DEFAULT = "default"
 NORTHING_DEFAULT = "default"
 
-EASTING_UPPER_LIMIT = 1000000  # easting values must be under a million
+MAX_EASTING = 833000
+MIN_EASTING = 167000
 
 
 class UTMCoordinatesExtractor(CoordinatesExtractor):
@@ -79,10 +81,12 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             p for p in geocoded_places.places if p.place_type == "population"
         ]
 
+        lon_pts = input.input.get_data("lons")
+        lat_pts = input.input.get_data("lats")
         clue_point = input.input.get_request_info("clue_point")
 
         utm_zone = self._determine_utm_zone(
-            metadata, population_centres, geofence_raw, clue_point
+            metadata, population_centres, geofence_raw, clue_point, lon_pts, lat_pts
         )
         self._add_param(
             input.input,
@@ -100,16 +104,27 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         # lat_minmax = input.input.get_request_info("lat_minmax", [-80, 84])
         # lon_minmax, lat_minmax, _ = self._get_input_geofence(input)
         lat_minmax = copy.deepcopy(geofence_raw.geofence.lat_minmax)
+        lat_minmax = [min(lat_minmax), max(lat_minmax)]
         lon_minmax = copy.deepcopy(geofence_raw.geofence.lon_minmax)
-
-        lon_pts = input.input.get_data("lons")
-        lat_pts = input.input.get_data("lats")
+        lon_minmax = [min(lon_minmax), max(lon_minmax)]
 
         # UTM is limited to the range of 80 south to 84 north
         if lat_minmax[0] < -80:
             lat_minmax[0] = -80
         if lat_minmax[1] > 84:
             lat_minmax[1] = 84
+        zone_geofence_overlap = self._check_geofence_zone(
+            lon_minmax, lat_minmax, utm_zone
+        )
+        logger.info(
+            f"geofence and derived utm zone from {utm_zone[2]}{' do not' if not zone_geofence_overlap else ''} overlap"
+        )
+        if not zone_geofence_overlap:
+            logger.info(
+                "setting lat limits to maximum spread since geofence does not overlap with utm zone for longitudes"
+            )
+            lat_minmax = [-80.0, 84.0]
+
         logger.info(f"utm lon & lat limits: {lon_minmax}\t{lat_minmax}")
         logger.info(f"derived utm zone: {utm_zone}")
 
@@ -157,17 +172,56 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
 
         return value > 834000, NORTHING_DEFAULT
 
+    def _check_geofence_zone(
+        self,
+        lon_minmax: List[float],
+        lat_minmax: List[float],
+        utm_zone: Tuple[int, bool, str],
+    ) -> bool:
+        # get the northing value for the middle range latitude
+        latitude = (lat_minmax[0] + lat_minmax[1]) / 2
+        northing = utm.from_latlon(latitude, lon_minmax[0])[1]
+
+        # return true if the zone is present within the geofence on the longitude axis
+        min_lon = utm.to_latlon(
+            MIN_EASTING, northing, utm_zone[0], northern=utm_zone[1]
+        )[1]
+        max_lon = utm.to_latlon(
+            MAX_EASTING, northing, utm_zone[0], northern=utm_zone[1]
+        )[1]
+        logger.info(
+            f"derived utm zone min-max is ({min_lon}, {max_lon}) at latitude {latitude}"
+        )
+
+        # zone starts within the geofence either ending within or outside the geofence
+        if lon_minmax[0] <= min_lon <= lon_minmax[1]:
+            return True
+
+        # zone ends within the geofence starting outside of it
+        if lon_minmax[0] <= max_lon <= lon_minmax[1]:
+            return True
+
+        # geofence is contained within the zone
+        if min_lon <= lon_minmax[0] <= max_lon:
+            return True
+
+        # no overlap between zone and geofence
+        return False
+
     def _determine_utm_zone(
         self,
         metadata: MetadataExtraction,
         geocoded_centres: List[GeocodedPlace],
         raw_geofence: DocGeoFence,
         clue_point: Optional[Tuple[float, float]],
+        lons: Dict[Tuple[float, float], Coordinate],
+        lats: Dict[Tuple[float, float], Coordinate],
     ) -> Tuple[int, bool, str]:
         # determine the UTM zone number and direction
         zone_number_determined = False
         zone_number = 1
         northern = False
+        northern_determined = False
 
         # check clue point first
         if clue_point is not None:
@@ -175,25 +229,55 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             coord = utm.from_latlon(clue_point[1], clue_point[0])
             return coord[2], clue_point[1] > 0, "clue point"
 
+        # figure out centre of geofence for mapping purposes
+        centre_lat = (
+            raw_geofence.geofence.lat_minmax[0] + raw_geofence.geofence.lat_minmax[1]
+        ) / 2.0
+        centre_lon = (
+            raw_geofence.geofence.lon_minmax[0] + raw_geofence.geofence.lon_minmax[1]
+        ) / 2.0
+
+        # check for parsed lon & lat coordinates
+        min_lon, max_lon, count_lon = get_min_max_count(lons, centre_lon < 0)
+        min_lat, max_lat, count_lat = get_min_max_count(lats, centre_lat < 0)
+        if count_lon > 0:
+            utm_min = utm.from_latlon(centre_lat, min_lon)[2]
+            utm_max = utm.from_latlon(centre_lat, max_lon)[2]
+            if utm_min == utm_max:
+                zone_number = utm_min
+                zone_number_determined = True
+        if count_lat > 0:
+            # check if both min and max latitudes are in the same hemisphere
+            if min_lat < 0 == max_lat < 0:
+                northern = min_lat < 0
+                northern_determined = True
+        if northern_determined and zone_number_determined:
+            return zone_number, northern, "parsed coordinates"
+
+        # extract the zone number from the coordinate systems
+        # prioritize the crs zone number since it appears to be more accurate
+        for crs in metadata.coordinate_systems:
+            # check for utm zone  DD[ns]
+            lowered = crs.lower()
+            for z in RE_UTM_ZONE.finditer(lowered):
+                g = z.groups()
+                zone_number = int(g[0])
+                if not northern_determined:
+                    northern = g[1] == "n"
+                return zone_number, northern, "metadata crs"
+
         # check the utm zone for the number
         if (
             metadata.utm_zone is not None
             and len(metadata.utm_zone) > 0
             and metadata.utm_zone.isdigit()
         ):
-            zone_number = int(metadata.utm_zone)
-            zone_number_determined = True
-
-        # extract the zone number from the coordinate systems
-        for crs in metadata.coordinate_systems:
-            # check for utm zone  DD[ns]
-            lowered = crs.lower()
-            for z in RE_UTM_ZONE.finditer(lowered):
-                g = z.groups()
-                if not zone_number_determined:
-                    zone_number = int(g[0])
-                northern = g[1] == "n"
-                return zone_number, northern, "metadata crs"
+            zone_number_raw = int(metadata.utm_zone)
+            if zone_number_raw > 0 and zone_number_raw <= 60:
+                zone_number = zone_number_raw
+                zone_number_determined = True
+        if northern_determined and zone_number_determined:
+            return zone_number, northern, "utm zone"
 
         # if zone not specified in metadata, look to geocoded centres
         # TODO: MAYBE CHECK THAT THE GEOCODING IS WITHIN REASONABLE DISTANCE
@@ -203,24 +287,26 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     geocoded_centres[0].results[0].coordinates[0].geo_y,
                     geocoded_centres[0].results[0].coordinates[0].geo_x,
                 )
-            northern = geocoded_centres[0].results[0].coordinates[0].geo_y > 0
+            if not northern_determined:
+                northern = geocoded_centres[0].results[0].coordinates[0].geo_y > 0
             return zone_number, northern, "geocoding"
 
         # use geofence to determine the zone
         # set direction properly if min and max latitudes are in same hemisphere
-        derived_direction = False
-        unique_hemi = (
-            raw_geofence.geofence.lat_minmax[0] * raw_geofence.geofence.lat_minmax[1]
-        )
-        if unique_hemi >= 0:
-            hemi = (
+        if not northern_determined:
+            unique_hemi = (
                 raw_geofence.geofence.lat_minmax[0]
-                + raw_geofence.geofence.lat_minmax[1]
+                * raw_geofence.geofence.lat_minmax[1]
             )
-            northern = hemi > 0
-            derived_direction = True
+            if unique_hemi >= 0:
+                hemi = (
+                    raw_geofence.geofence.lat_minmax[0]
+                    + raw_geofence.geofence.lat_minmax[1]
+                )
+                northern = hemi > 0
+                northern_determined = True
 
-        if zone_number_determined and derived_direction:
+        if zone_number_determined and northern_determined:
             return zone_number, northern, "geofence"
 
         # use the lon min & max to get the zone, and if only 1 is possible then it is resolved
@@ -233,22 +319,16 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             )
             if utm_min[2] == utm_max[2]:
                 zone_number = utm_min[2]
-                if derived_direction:
+                if northern_determined:
                     return zone_number, northern, "geofence"
 
         # use the centre of the geofence as default
-        centre_lat = (
-            raw_geofence.geofence.lat_minmax[0] + raw_geofence.geofence.lat_minmax[1]
-        ) / 2.0
-        centre_lon = (
-            raw_geofence.geofence.lon_minmax[0] + raw_geofence.geofence.lon_minmax[1]
-        ) / 2.0
         centre_utm = utm.from_latlon(centre_lat, centre_lon)
 
         # default the zone to make sure coordinates can be parsed
         if not zone_number_determined:
             zone_number = centre_utm[2]
-        if not derived_direction:
+        if not northern_determined:
             northern = centre_lat > 0
 
         return zone_number, northern, UTM_ZONE_DEFAULT
@@ -258,7 +338,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
     ) -> bool:
         # invalid if an easting point is over the easting limit
         for pd in parsed_direction:
-            if not pd[1] and pd[0] >= EASTING_UPPER_LIMIT:
+            if not pd[1] and pd[0] >= MAX_EASTING:
                 return False
 
         return True
@@ -369,7 +449,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             else:
                 # longitude keypoint (x-axis)
                 # given limited range of easting values and false easting values, use an arbitrary upper limit for upper bound
-                if utm_dist < EASTING_UPPER_LIMIT:
+                if utm_dist < MAX_EASTING:
                     eastings.append((utm_dist, span, idx))
                 else:
                     logger.info(
@@ -422,7 +502,11 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     "extracted northing utm coordinate",
                 )
             else:
-                logger.info("Excluding candidate northing point: {}".format(n))
+                logger.info(
+                    "Excluding candidate northing point due to being out of range: {}".format(
+                        n
+                    )
+                )
 
         if len(northings) > 0:
             northing_clue = statistics.median(map(lambda x: x[0], northings))

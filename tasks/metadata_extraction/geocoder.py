@@ -1,4 +1,5 @@
 import json
+import csv
 import logging
 import os
 import random
@@ -39,13 +40,35 @@ class GeocodingService(ABC):
 class NominatimGeocoder(GeocodingService):
     _service: Nominatim
 
-    def __init__(self, timeout: int, cache_location: str, limit_hits: int = 4) -> None:
+    def __init__(
+        self,
+        timeout: int,
+        cache_location: str,
+        limit_hits: int = 4,
+        country_code_filename: str = "",
+    ) -> None:
         self._service = Nominatim(
             timeout=timeout, user_agent="uncharted-lara-geocoder"  # type: ignore
         )
         self._limit_hits = limit_hits
         self._cache = self._load_cache(cache_location)
         self._cache_location = cache_location
+        self._country_lookup = self._build_country_lookup(country_code_filename)
+
+    def _build_country_lookup(self, country_code_filename: str) -> Dict[str, str]:
+        if len(country_code_filename) == 0:
+            return {}
+
+        # read the lookup file
+        data = []
+        with open(country_code_filename, newline="") as f:
+            reader = csv.reader(f)
+            data = list(reader)
+
+        codes = {}
+        for r in data[1:]:
+            codes[r[0].lower()] = r[1].lower()
+        return codes
 
     def _load_cache(self, cache_location: str) -> Dict[Any, Any]:
         cache = {}
@@ -123,10 +146,22 @@ class NominatimGeocoder(GeocodingService):
         self,
         place: GeocodedPlace,
         geofence: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None,
+        is_country: bool = False,
     ) -> Tuple[GeocodedPlace, bool]:
         place_geocoded, result = self._geocode_place(place, geofence)
 
         return place_geocoded, result
+
+    def _get_country_code(self, place: GeocodedPlace) -> str:
+        country_code = ""
+        if len(self._country_lookup) > 0:
+            country = place.place_location_restriction.lower()
+            # could already be a code
+            if len(country) == 2:
+                return country
+            if country in self._country_lookup:
+                country_code = self._country_lookup[country]
+        return country_code
 
     def _get_geocode(
         self,
@@ -134,7 +169,13 @@ class NominatimGeocoder(GeocodingService):
         geofence: Optional[Tuple[Tuple[float, float], Tuple[float, float]]],
     ) -> Optional[List[Tuple[List[float], str]]]:
         # TODO: update key to use country codes once they no longer get fixed to us
-        key = f"{place.place_name}|{self._limit_hits}|us|{geofence}"
+        country_code = self._get_country_code(place)
+        if country_code == "":
+            country_code = None
+        featuretype = ""
+        if place.place_type == "bound" and place.place_location_restriction == "":
+            featuretype = "country"
+        key = f"{place.place_name}|{self._limit_hits}|{country_code}|{geofence}|{featuretype}"
 
         # check cache, assuming cache is a structure {"boundingbox": list[list[float]]}
         if key in self._cache:
@@ -146,8 +187,9 @@ class NominatimGeocoder(GeocodingService):
             place.place_name,  # type: ignore
             exactly_one=False,  # type: ignore
             limit=self._limit_hits,  # type: ignore
-            country_codes="us",  # type: ignore
+            country_codes=country_code,  # type: ignore
             viewbox=geofence,
+            featuretype=featuretype,
         )
 
         if res is None:
@@ -167,8 +209,12 @@ class NominatimGeocoder(GeocodingService):
         return results
 
     def _get_state(self, display_name: str) -> str:
+        parts = display_name.split(",")
+        if len(parts) < 2:
+            return ""
+
         # state is second last part of display name unless that is a zip code, in which case state is the one before
-        state = display_name.split(",")[-2].strip()
+        state = parts[-2].strip()
         if state.isdigit():
             state = display_name.split(",")[-3].strip()
         return state
@@ -195,6 +241,9 @@ class Geocoder(Task):
         logger.info(f"running geocoding task with id {self._task_id}")
         to_geocode = self._get_places(input)
 
+        metadata: MetadataExtraction = input.parse_data(
+            METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
+        )
         geocoded_output = input.parse_data(
             GEOCODED_PLACES_OUTPUT_KEY, DocGeocodedPlaces.model_validate
         )
@@ -203,12 +252,15 @@ class Geocoder(Task):
 
         new_places = self._geocode_list(input, to_geocode)
         logger.info(f"geocoded {len(new_places)} places")
-        narrow_geofence = self._narrow_geofence(input, new_places)
-        logger.info(f"narrowed geofence determined to be '{narrow_geofence}'")
-        if narrow_geofence is not None and len(narrow_geofence) > 0:
-            logger.info("rerunning geocoding using narrowed geofence")
-            new_places = self._geocode_list(input, to_geocode, geofence=narrow_geofence)
-            logger.info(f"narrowing geofence geocoded {len(new_places)} places")
+        if metadata.country.lower() == "united states":
+            narrow_geofence = self._narrow_geofence(input, new_places)
+            logger.info(f"narrowed geofence determined to be '{narrow_geofence}'")
+            if narrow_geofence is not None and len(narrow_geofence) > 0:
+                logger.info("rerunning geocoding using narrowed geofence")
+                new_places = self._geocode_list(
+                    input, to_geocode, geofence=narrow_geofence
+                )
+                logger.info(f"narrowing geofence geocoded {len(new_places)} places")
 
         geocoded_output.places = geocoded_output.places + new_places
 
@@ -298,9 +350,10 @@ class Geocoder(Task):
 
         places: List[GeocodedPlace] = []
         country = ""
+        if metadata.country and not metadata.country == "NULL":
+            country = metadata.country
         if self._run_bounds:
-            if metadata.country and not metadata.country == "NULL":
-                country = metadata.country
+            if len(country) > 0:
                 places.append(
                     GeocodedPlace(
                         place_name=metadata.country,
@@ -341,6 +394,9 @@ class Geocoder(Task):
 
         if self._run_points:
             for p in metadata.places:
+                if not isinstance(p, TextExtraction):
+                    logger.error("place is not a text extraction")
+                    continue
                 places.append(
                     GeocodedPlace(
                         place_name=p.text,
@@ -357,6 +413,9 @@ class Geocoder(Task):
 
         if self._run_centres:
             for p in metadata.population_centres:
+                if not isinstance(p, TextExtraction):
+                    logger.error("population centre is not a text extraction")
+                    continue
                 places.append(
                     GeocodedPlace(
                         place_name=p.text,

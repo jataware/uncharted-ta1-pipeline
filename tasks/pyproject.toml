@@ -12,7 +12,6 @@ dependencies = [
     "tqdm",
     "pydantic",
     "tiktoken",
-    "openai",
     "google-cloud-vision",
     "grpcio",
     "boto3",
@@ -28,7 +27,11 @@ dependencies = [
     "utm",
     "parmap",
     "scipy",
-    "pika"
+    "pika",
+    "langchain",
+    "langchain-openai",
+    "stateplane",
+    "coloredlogs"
 ]
 
 [project.optional-dependencies]
@@ -46,6 +49,7 @@ point = [
     "torch==2.0.1",
     "torchvision==0.15.2",
     "scipy",
+    "dill",
     "ultralytics"
 ]
 development = [

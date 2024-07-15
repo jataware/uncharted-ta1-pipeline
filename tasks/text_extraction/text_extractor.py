@@ -42,6 +42,7 @@ class TextExtractor(Task):
         to_blocks: bool = True,
         document_ocr: bool = False,
         gamma_correction: float = GAMMA_CORR_DEFAULT,
+        output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
     ):
         super().__init__(task_id, str(cache_dir))
         self._ocr = GoogleVisionOCR()
@@ -49,6 +50,7 @@ class TextExtractor(Task):
         self._to_blocks = to_blocks
         self._document_ocr = document_ocr
         self._gamma_correction = gamma_correction
+        self._output_key = output_key
 
         # init gamma correction look up table
         self._gamma_lut = np.empty((1, 256), np.uint8)
@@ -63,6 +65,7 @@ class TextExtractor(Task):
         """
         Apply image gamma correction prior to OCR
         """
+        logger.info(f"applying gamma correction of {self._gamma_correction} to image")
         if self._gamma_correction == 1.0:
             # skip gamma correction
             return img
@@ -111,8 +114,11 @@ class ResizeTextExtractor(TextExtractor):
         document_ocr=False,
         pixel_lim: int = PIXEL_LIM_DEFAULT,
         gamma_correction: float = GAMMA_CORR_DEFAULT,
+        output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
     ):
-        super().__init__(task_id, cache_dir, to_blocks, document_ocr, gamma_correction)
+        super().__init__(
+            task_id, cache_dir, to_blocks, document_ocr, gamma_correction, output_key
+        )
         self._pixel_lim = pixel_lim
         self._model_id += f"_resize-{pixel_lim}"
 
@@ -121,14 +127,14 @@ class ResizeTextExtractor(TextExtractor):
         if input.image is None:
             return self._create_result(input)
 
-        doc_key = f"{input.raster_id}_{self._model_id}"
+        doc_key = f"{input.raster_id}_{self._model_id}_{self._gamma_correction}"
 
         # check cache and re-use existing file if present
         cached_json = self.fetch_cached_result(doc_key)
         if cached_json:
             result = self._create_result(input)
             result.add_output(
-                TEXT_EXTRACTION_OUTPUT_KEY,
+                self._output_key,
                 DocTextExtraction(**cached_json).model_dump(),
             )
             return result
@@ -164,7 +170,7 @@ class ResizeTextExtractor(TextExtractor):
         self.write_result_to_cache(doc_text_extraction.model_dump(), doc_key)
 
         result = self._create_result(input)
-        result.add_output(TEXT_EXTRACTION_OUTPUT_KEY, doc_text_extraction.model_dump())
+        result.add_output(self._output_key, doc_text_extraction.model_dump())
         return result
 
     def _resize_image(self, im: PILImage) -> Tuple[PILImage, float]:
@@ -198,8 +204,11 @@ class TileTextExtractor(TextExtractor):
         cache_dir: Path,
         split_lim: int = PIXEL_LIM_DEFAULT,
         gamma_correction: float = GAMMA_CORR_DEFAULT,
+        output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
     ):
-        super().__init__(task_id, cache_dir, gamma_correction=gamma_correction)
+        super().__init__(
+            task_id, cache_dir, gamma_correction=gamma_correction, output_key=output_key
+        )
         self.split_lim = split_lim
         self._model_id += f"_tile-{split_lim}"
 
@@ -219,7 +228,7 @@ class TileTextExtractor(TextExtractor):
         if input.image is None:
             return self._create_result(input)
 
-        doc_key = f"{input.raster_id}_{self._model_id}"
+        doc_key = f"{input.raster_id}_{self._model_id}_{self._gamma_correction}"
 
         # check cache and re-use existing file if present
         json_data = self.fetch_cached_result(doc_key)
@@ -227,7 +236,7 @@ class TileTextExtractor(TextExtractor):
             logger.info(f"Using cached OCR results for raster: {input.raster_id}")
             result = self._create_result(input)
             result.add_output(
-                TEXT_EXTRACTION_OUTPUT_KEY,
+                self._output_key,
                 DocTextExtraction(**json_data).model_dump(),
             )
             return result
@@ -271,7 +280,7 @@ class TileTextExtractor(TextExtractor):
         self.write_result_to_cache(json_data, doc_key)
 
         result = self._create_result(input)
-        result.add_output(TEXT_EXTRACTION_OUTPUT_KEY, json_data)
+        result.add_output(self._output_key, json_data)
         return result
 
     def _split_image(self, image: PILImage, size_limit: int) -> List[Tile]:

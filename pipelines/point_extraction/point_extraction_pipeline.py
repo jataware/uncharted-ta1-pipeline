@@ -25,8 +25,8 @@ from tasks.common.pipeline import (
     ImageDictOutput,
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
+from tasks.segmentation.denoise_segments import DenoiseSegments
 from tasks.text_extraction.text_extractor import TileTextExtractor
-from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 
 
 logger = logging.getLogger(__name__)
@@ -55,6 +55,7 @@ class PointExtractionPipeline(Pipeline):
         verbose=False,
         include_cdr_output=True,
         include_bitmasks_output=False,
+        gpu=True,
     ):
         # extract text from image, segmentation to only keep the map area,
         # tile, extract points, untile, predict direction
@@ -66,12 +67,16 @@ class PointExtractionPipeline(Pipeline):
             )
         )
         if model_path_segmenter:
-            tasks.append(
-                DetectronSegmenter(
-                    "segmenter",
-                    model_path_segmenter,
-                    str(Path(work_dir).joinpath("segmentation")),
-                )
+            tasks.extend(
+                [
+                    DetectronSegmenter(
+                        "segmenter",
+                        model_path_segmenter,
+                        str(Path(work_dir).joinpath("segmentation")),
+                        gpu=gpu,
+                    ),
+                    DenoiseSegments("segment_denoising"),
+                ]
             )
         else:
             logger.warning(

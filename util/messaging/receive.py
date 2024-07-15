@@ -14,7 +14,11 @@ def main():
     connection = pika.BlockingConnection(pika.ConnectionParameters(host="localhost"))
     channel = connection.channel()
 
-    channel.queue_declare(queue=args.queue_name)
+    channel.queue_declare(
+        queue=args.queue_name,
+        durable=True,
+        arguments={"x-queue-type": "quorum", "x-delivery-limit": 3},
+    )
 
     def callback(ch, method, properties, body):
         body_decoded = json.loads(body.decode())

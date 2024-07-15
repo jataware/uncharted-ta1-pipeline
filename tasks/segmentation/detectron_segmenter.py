@@ -16,7 +16,8 @@ from tasks.segmentation.entities import (
     MapSegmentation,
     SEGMENTATION_OUTPUT_KEY,
 )
-from tasks.segmentation.segmenter_utils import segmenter_postprocess
+from tasks.segmentation.segmenter_utils import rank_segments
+
 from detectron2.config import get_cfg
 from detectron2.layers import mask_ops
 from detectron2.engine import DefaultPredictor
@@ -73,6 +74,7 @@ class DetectronSegmenter(Task):
         self.model_weights = str(model_paths.model_weights_path)
         self.class_labels = class_labels
         self.gpu = gpu
+        self.confidence_thres = confidence_thres
 
         # instantiate config
         self.cfg = get_cfg()
@@ -97,18 +99,18 @@ class DetectronSegmenter(Task):
         # TODO use a local cache to check for existing model weights (instead of re-downloading each time?)
 
         # confidence threshold
-        self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = confidence_thres
+        self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = self.confidence_thres
 
         # set device
         device = "cuda" if self.gpu == True and torch.cuda.is_available() else "cpu"
         self.cfg.MODEL.DEVICE = device
         logger.info(f"torch device: {device}")
 
+        self._model_id = self._get_model_id()
+
         # load the segmentation model...
         logger.info(f"Loading segmentation model {self.model_name}")
         self.predictor = DefaultPredictor(self.cfg)
-        self._model_id = self._get_model_id(self.predictor.model)
-        logger.info(f"Model ID: {self._model_id }")
 
     def run(self, input: TaskInput) -> TaskResult:
         """
@@ -126,9 +128,8 @@ class DetectronSegmenter(Task):
         # TODO -- switch to using detectron2 model API directly for inference on batches of images
         # https://detectron2.readthedocs.io/en/latest/tutorials/models.html
 
-        doc_key = f"{input.raster_id}_segmentation-{self._model_id}"
-
         # check cache and re-use existing file if present
+        doc_key = f"{input.raster_id}_segmentation-{self._model_id}"
         json_data = self.fetch_cached_result(doc_key)
         if json_data:
             logger.info(
@@ -138,7 +139,7 @@ class DetectronSegmenter(Task):
 
             # load and post-process the cached segmentation result
             map_segmentation = MapSegmentation(**json_data)
-            segmenter_postprocess(map_segmentation, self.class_labels)
+            rank_segments(map_segmentation, self.class_labels)
 
             result.add_output(
                 SEGMENTATION_OUTPUT_KEY,
@@ -191,8 +192,8 @@ class DetectronSegmenter(Task):
                     seg_results.append(seg_result)
         map_segmentation = MapSegmentation(doc_id=input.raster_id, segments=seg_results)
 
-        # post-process the segmentation result
-        segmenter_postprocess(map_segmentation, self.class_labels)
+        # rank the segments per class (most impt first)
+        rank_segments(map_segmentation, self.class_labels)
 
         json_data = map_segmentation.model_dump()
 
@@ -229,15 +230,21 @@ class DetectronSegmenter(Task):
         has_holes = (reshaped[:, 3] >= 0).sum() > 0
         return (res[-2], has_holes)
 
-    def _get_model_id(self, model) -> str:
+    def _get_model_id(self) -> str:
         """
         Create a unique string ID for this model,
         based on MD5 hash of the model's state-dict
         """
-
-        state_dict_str = str(model.state_dict())
-        hash_result = hashlib.md5(bytes(state_dict_str, encoding="utf-8"))
-        return hash_result.hexdigest()
+        attributes = "_".join(
+            [
+                "segmentation",
+                self.model_weights,
+                self.config_file,
+                str(self.confidence_thres),
+                "_".join(self.class_labels),
+            ]
+        )
+        return hashlib.sha256(attributes.encode()).hexdigest()
 
     def _prep_config_data(
         self, model_data_path: str, data_cache_path: str

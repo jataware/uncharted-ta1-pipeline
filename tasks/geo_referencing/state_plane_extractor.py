@@ -26,6 +26,7 @@ from tasks.geo_referencing.entities import (
     DocGeoFence,
     GEOFENCE_OUTPUT_KEY,
     SOURCE_STATE_PLANE,
+    SOURCE_LAT_LON,
 )
 from tasks.geo_referencing.util import is_nad_83
 from tasks.metadata_extraction.entities import (
@@ -36,6 +37,7 @@ from tasks.geo_referencing.util import (
     ocr_to_coordinates,
     get_bounds_bounding_box,
     is_in_range,
+    get_min_max_count,
 )
 
 from util.json import read_json_file
@@ -153,7 +155,9 @@ class StatePlaneExtractor(CoordinatesExtractor):
         lon_pts = input.input.get_data("lons")
         lat_pts = input.input.get_data("lats")
 
-        state_plane_zone = self._determine_epsg(metadata, geofence_raw, clue_point)
+        state_plane_zone = self._determine_epsg(
+            metadata, geofence_raw, clue_point, lon_pts, lat_pts
+        )
         if state_plane_zone[0] == "":
             logger.info("no state plane zone determined so stopping parsing attempt")
             # unable to determine state plane coordinates without a zone
@@ -264,7 +268,12 @@ class StatePlaneExtractor(CoordinatesExtractor):
 
         # find the two biggest clusters, assuming they are easting and northing
         c1, c2 = self._cluster_values(unparsed_values)
-        if c1 is None or c2 is None:
+        if c1 is None:
+            return [], [], DIRECTION_DEFAULT
+        # handle the case with 1 main cluster and 1 left over coordinate
+        if len(unparsed_values) - len(c1) == 1:
+            c2 = list(set(unparsed_values) ^ set(c1))
+        if c2 is None:
             return [], [], DIRECTION_DEFAULT
 
         # test if one set is easting
@@ -276,7 +285,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
             else:
                 return c2, c1, reason
 
-        # if defaulted, test if other set if easting
+        # if defaulted, test if other set is easting
         is_easting, reason = self._is_x_direction(c2)
         if not reason == DIRECTION_DEFAULT:
             # is_easting indicates if c2 (true) is easting or c1 (false) is easting
@@ -288,8 +297,10 @@ class StatePlaneExtractor(CoordinatesExtractor):
         # if still defaulted, then return default
         return [], [], DIRECTION_DEFAULT
 
-    def _determine_epsg_from_coord(self, lon: float, lat: float, year: float) -> str:
-        if year >= 1986:
+    def _determine_epsg_from_coord(
+        self, projection: str, lon: float, lat: float, year: float
+    ) -> str:
+        if projection == "nad83" or year >= 1986:
             # can use the library to determine the epsg code as it uses NAD83
             return stateplane.identify(lon, lat)  #   type: ignore
 
@@ -310,22 +321,46 @@ class StatePlaneExtractor(CoordinatesExtractor):
         metadata: MetadataExtraction,
         raw_geofence: DocGeoFence,
         clue_point: Optional[Tuple[float, float]],
+        lons: Dict[Tuple[float, float], Coordinate],
+        lats: Dict[Tuple[float, float], Coordinate],
     ) -> Tuple[str, str]:
         logger.info("attempting to determine state plane zone")
         year = 1900
         if metadata.year.isdigit():
             year = int(metadata.year)
 
+        # determine nad27 vs nad83
+        projection = "nad83" if is_nad_83(metadata) else "nad27"
+
         # use clue point if available
         if clue_point is not None:
             return (
-                self._determine_epsg_from_coord(clue_point[0], clue_point[1], year),
+                self._determine_epsg_from_coord(
+                    projection, clue_point[0], clue_point[1], year
+                ),
                 "clue point",
             )
 
-        # determine nad27 vs nad83 by assuming nad27 unless nad83 specifically specified
-        # TODO: MAKE THIS WAYYYYY BETTER
-        projection = "nad83" if is_nad_83(metadata) else "nad27"
+        # use middle of parsed lon & lat if some of both exist and they fall within geofence
+        centre_lat = (
+            raw_geofence.geofence.lat_minmax[0] + raw_geofence.geofence.lat_minmax[1]
+        ) / 2
+        centre_lon = (
+            raw_geofence.geofence.lon_minmax[0] + raw_geofence.geofence.lon_minmax[1]
+        ) / 2
+        min_lon, max_lon, count_lon = get_min_max_count(
+            lons, centre_lon < 0, [SOURCE_LAT_LON]
+        )
+        min_lat, max_lat, count_lat = get_min_max_count(
+            lats, centre_lat < 0, [SOURCE_LAT_LON]
+        )
+        if count_lon > 0 and count_lat > 0:
+            return (
+                self._determine_epsg_from_coord(
+                    projection, (min_lon + max_lon) / 2, (min_lat + max_lat) / 2, year
+                ),
+                "parsed coordinates",
+            )
 
         # use the state from the metadata
         # TODO: FIGURE OUT WHICH OF THE POSSIBLE STATES TO USE
@@ -333,30 +368,38 @@ class StatePlaneExtractor(CoordinatesExtractor):
         if len(states) > 0:
             state = states[0].lower()
             logger.info(f"narrowing state plane zone to state {state}")
-            state_code = self._state_codes[state]
+            state_code = self._get_state_code(state)
             logger.info(f"narrowing state plane zone to state code {state_code}")
             if state_code in self._code_lookup[projection]:
                 possible = self._code_lookup[projection][state_code]
                 if len(possible) == 1:
                     # only one zone exists in the state
-                    return possible.items()[0][1], "only option"
+                    return list(possible.items())[0][1], "only option"
+
+                # TODO: check if the parsed coordinates can narrow down the options
 
                 # use the projection info to try and narrow it down to one zone
                 for n, c in possible.items():
-                    if n in metadata.coordinate_systems:
+                    if n.lower() in list(
+                        map(lambda x: x.lower(), metadata.coordinate_systems)
+                    ):
                         return c, "crs"
 
-        # use the centre of the geofence to pick the code
-        centre_lon = (
-            raw_geofence.geofence.lon_minmax[0] + raw_geofence.geofence.lon_minmax[1]
-        ) / 2
-        centre_lat = (
-            raw_geofence.geofence.lat_minmax[0] + raw_geofence.geofence.lat_minmax[1]
-        ) / 2
+        # use the centre of the geofence or parsed coordinates to pick the code
+        if count_lon != 0:
+            centre_lon = (min_lon + max_lon) / 2
+        if count_lat != 0:
+            centre_lat = (min_lat + max_lat) / 2
         return (
-            self._determine_epsg_from_coord(centre_lon, centre_lat, year),
+            self._determine_epsg_from_coord(projection, centre_lon, centre_lat, year),
             "default",
         )  #   type: ignore
+
+    def _get_state_code(self, state: str) -> str:
+        # depending on parsed metadata, could either be 'US-STATE CODE' or STATE
+        if len(state) == 5 and state.startswith("us"):
+            return state[-2:]
+        return self._state_codes[state]
 
     def _is_scale(self, text: str) -> bool:
         text = text.lower()

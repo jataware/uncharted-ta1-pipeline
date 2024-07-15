@@ -40,7 +40,6 @@ class LineProperty(BaseModel):
     model_version: str = Field(
         description="Version of the model used to generate this data"
     )
-    model_config = ConfigDict(protected_namespaces=())
     confidence: Optional[float | int] = Field(
         default=None, description="The prediction confidence of the model"
     )
@@ -50,6 +49,15 @@ class LineProperty(BaseModel):
         default=None, description="values = {solid, dash, dotted}"
     )
     symbol: str = Field(default="", description="TODO : Add description")
+    reference_id: str = Field(
+        default="",
+        description="""
+            Identifies the original CDR item ID from which this new item was derived,
+            aiding in tracking provenance.
+        """,
+    )
+    validated: bool = Field(default=False, description="Validated by human")
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class LineFeature(BaseModel):
@@ -111,6 +119,14 @@ class LineLegendAndFeaturesResult(BaseModel):
                     label. Format is expected to be [x,y] coordinate pairs
                     where the top left is the origin (0,0).""",
     )
+    reference_id: str = Field(
+        default="",
+        description="""
+            Identifies the original CDR item ID from which this new item was derived,
+            aiding in tracking provenance.
+        """,
+    )
+    validated: bool = Field(default=False, description="Validated by human")
 
     # Segmentation Fields
     crs: str = Field(

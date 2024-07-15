@@ -11,12 +11,14 @@ RUN apt-get install -y libgdal-dev g++ --no-install-recommends && apt-get clean 
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
 
+COPY tasks tasks
+# install lara packages
+RUN pip install -e ./tasks
+
 COPY schema schema
 COPY pipelines pipelines
-COPY tasks tasks
+COPY util util
 
-# install lara packages - including point detection extras
-RUN pip install -e ./tasks
 RUN pip install -e ./pipelines/text_extraction
 
 ENTRYPOINT ["python3", "-m", "pipelines.text_extraction.run_server"]

@@ -14,6 +14,7 @@ from tasks.common.queue import (
     OutputType,
     RequestQueue,
 )
+from util import logging as logging_util
 
 
 #
@@ -75,12 +76,9 @@ def health():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger = logging.getLogger("point extraction app")
+    logging_util.config_logger(logger)
+
     logger.info("*** Starting Point Extraction App ***")
 
     # parse command line args
@@ -95,11 +93,12 @@ if __name__ == "__main__":
     parser.add_argument("--rabbit_host", type=str, default="localhost")
     parser.add_argument("--request_queue", type=str, default=POINTS_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=POINTS_RESULT_QUEUE)
+    parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
     # init point extraction pipeline
     point_extraction_pipeline = PointExtractionPipeline(
-        p.model_point_extractor, p.model_segmenter, p.workdir
+        p.model_point_extractor, p.model_segmenter, p.workdir, gpu=not p.no_gpu
     )
 
     result_key = (

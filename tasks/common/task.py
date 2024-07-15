@@ -1,7 +1,7 @@
 import copy, json, logging, os
 from PIL.Image import Image as PILImage
 
-from typing import Callable, List, Any, Dict
+from typing import Callable, List, Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +144,7 @@ class Task:
         """
         return os.path.join(self._cache_dir, f"{doc_key}.json")
 
-    def fetch_cached_result(self, doc_key: str) -> Any:
+    def fetch_cached_result(self, doc_key: str) -> Optional[Dict[Any, Any]]:
         """
         Check if task result is available in the local cache
         """

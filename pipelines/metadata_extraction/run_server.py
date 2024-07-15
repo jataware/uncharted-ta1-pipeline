@@ -1,6 +1,5 @@
 import argparse
 from pathlib import Path
-from unittest.mock import DEFAULT
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
@@ -18,6 +17,7 @@ from tasks.common.queue import (
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
 from tasks.metadata_extraction.entities import METADATA_EXTRACTION_OUTPUT_KEY
+from util import logging as logging_util
 
 app = Flask(__name__)
 
@@ -77,12 +77,9 @@ def health():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger = logging.getLogger("metadata extraction app")
+    logging_util.config_logger(logger)
+
     logger.info("*** Starting map metadata app ***")
 
     parser = argparse.ArgumentParser()

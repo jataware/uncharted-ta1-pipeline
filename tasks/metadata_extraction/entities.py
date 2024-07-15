@@ -15,10 +15,10 @@ class MapShape(str, Enum):
     UNKNOWN = "unknown"
 
 
-class MapChromaType(str, Enum):
-    MONO_CHROMA = "mono chroma"
-    LOW_CHROMA = "low chroma"
-    HIGH_CHROMA = "high chroma"
+class MapColorType(str, Enum):
+    MONO = "mono"
+    LOW = "low"
+    HIGH = "high"
     UNKNOWN = "unknown"
 
 
@@ -37,15 +37,19 @@ class MetadataExtraction(BaseModel):
     utm_zone: str
     base_map: str
     counties: List[str]
-    population_centres: List[TextExtraction]  # a list of cities, towns, and villages
+    population_centres: (
+        List[TextExtraction] | List[str]
+    )  # a list of cities, towns, and villages
     states: List[str]
     country: str
-    places: List[
-        TextExtraction
-    ]  # a list of places, each place having a name and coordinates
+    places: (
+        List[TextExtraction] | List[str]
+    )  # a list of places, each place having a name and coordinates
     publisher: str
     map_shape: MapShape
-    map_chroma: MapChromaType
+    map_color: MapColorType
+    language: str
+    language_country: str
 
 
 class GeocodedCoordinate(BaseModel):

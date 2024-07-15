@@ -27,7 +27,7 @@ from schema.cdr_schemas.features.point_features import (
 
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoferenceResult
 from tasks.metadata_extraction.entities import (
-    MapChromaType,
+    MapColorType,
     MapShape,
     MetadataExtraction as LARAMetadata,
 )
@@ -42,7 +42,7 @@ from typing import Dict, List
 logger = logging.getLogger("mapper")
 
 MODEL_NAME = "uncharted-lara"
-MODEL_VERSION = "0.0.3"
+MODEL_VERSION = "0.0.4"
 
 
 class CDRMapper:
@@ -139,19 +139,19 @@ class MetadataMapper(CDRMapper):
             case MapShape.RECTANGULAR:
                 cdr_map_shape = MapShapeTypes.rectangular
 
-        # map the chrom to the CDR map color scheme - CDR has different
+        # map the map color level to the CDR map color scheme - CDR has different
         # values (monochrome, full color, grayscale) that I think are probably
         # not what we want in there.  We'll just map to full color / monochrome
         # for now
         cdr_map_color_scheme = None
-        match model.map_chroma:
-            case MapChromaType.UNKNOWN:
+        match model.map_color:
+            case MapColorType.UNKNOWN:
                 cdr_map_color_scheme = None
-            case MapChromaType.LOW_CHROMA:
+            case MapColorType.LOW:
                 cdr_map_color_scheme = MapColorSchemeTypes.full_color
-            case MapChromaType.MONO_CHROMA:
+            case MapColorType.MONO:
                 cdr_map_color_scheme = MapColorSchemeTypes.monochrome
-            case MapChromaType.HIGH_CHROMA:
+            case MapColorType.HIGH:
                 cdr_map_color_scheme = MapColorSchemeTypes.full_color
 
         return CogMetaData(

@@ -9,6 +9,7 @@ SOURCE_LAT_LON = "lat-lon parser"
 SOURCE_STATE_PLANE = "state plane parser"
 SOURCE_UTM = "utm parser"
 SOURCE_GEOCODE = "geocoder"
+SOURCE_INFERENCE = "inference"
 
 
 class GeoFence(BaseModel):

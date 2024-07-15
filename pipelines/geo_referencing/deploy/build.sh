@@ -6,10 +6,9 @@ cp ../*.py pipelines/geo_referencing
 cp ../pyproject.toml pipelines/geo_referencing
 
 cp -r ../../../schema .
-
 cp -r ../../../tasks .
-
 cp -r ../../../util .
+cp -r ../../../data .
 
 mkdir -p pipelines/segmentation_weights
 if [ -z "$1" ]
@@ -31,4 +30,5 @@ rm -rf pipelines
 rm -rf tasks
 rm -rf schema
 rm -rf util
+rm -rf data
 

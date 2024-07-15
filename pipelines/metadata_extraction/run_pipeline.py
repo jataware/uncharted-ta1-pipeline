@@ -11,15 +11,12 @@ from pipelines.metadata_extraction.metadata_extraction_pipeline import (
 )
 from tasks.common.io import ImageFileInputIterator, ImageFileWriter, JSONFileWriter
 from tasks.metadata_extraction.metadata_extraction import LLM
+from util import logging as logging_util
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger = logging.getLogger("metadata_pipeline")
+    logging_util.config_logger(logger)
 
     # parse command line args
     parser = argparse.ArgumentParser()
@@ -29,7 +26,7 @@ def main():
     parser.add_argument("--model", type=str, default=None)
     parser.add_argument("--cdr_schema", action="store_true")
     parser.add_argument("--debug_images", action="store_true")
-    parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_3_5_TURBO)
+    parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
     parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 

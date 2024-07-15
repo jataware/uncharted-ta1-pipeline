@@ -39,13 +39,13 @@ class MetadataExtractorPipeline(Pipeline):
         model_data_path: str,
         debug_images=False,
         cdr_schema=False,
-        model=LLM.GPT_3_5_TURBO,
+        model=LLM.GPT_4_O,
         gpu=True,
     ):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
             ResizeTextExtractor(
-                "resize_text", Path(work_dir).joinpath("text"), False, True, 6000
+                "resize_text", Path(work_dir).joinpath("text"), False, True, 6000, 0.5
             ),
             DetectronSegmenter(
                 "segmenter",
@@ -61,7 +61,11 @@ class MetadataExtractorPipeline(Pipeline):
                     "legend_polygons",
                 ],
             ),
-            MetadataExtractor("metadata_extractor", model=model),
+            MetadataExtractor(
+                "metadata_extractor",
+                model=model,
+                cache_dir=os.path.join(work_dir, "metadata"),
+            ),
         ]
 
         outputs: List[OutputCreator] = [

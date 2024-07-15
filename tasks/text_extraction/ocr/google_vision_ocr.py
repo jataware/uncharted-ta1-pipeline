@@ -7,7 +7,7 @@ import numpy as np
 import io, copy, logging
 from typing import List, Dict, Any, Optional, Tuple
 from shapely.geometry import Polygon
-from shapely import unary_union, concave_hull
+from shapely import MultiPolygon, unary_union, concave_hull
 
 logger = logging.getLogger(__name__)
 
@@ -57,36 +57,13 @@ class GoogleVisionOCR:
 
         return text_extractions
 
-    def text_to_blocks(self, texts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Clean up extract OCR text list into blocks of continuus text (lines)
-        and adjust bounding-boxes (polygons) as needed
-        NOTE:
-        - meant to be used in conjunction with `detect_text` func
-        - assumes first element contains the full text delimited by line breaks)
-        """
-
-        if len(texts) < 2:
-            logger.warning(
-                "Less than 2 blocks of OCR text found! Skipping ocr_text_to_blocks"
-            )
-            return []
-
-        full_text = texts[0]["text"]
-
-        group_offset = 1
-        num_blocks = 0
+    def _build_text_block(
+        self, text_block: str, text_block_next: str, texts_subset: List[Dict[str, Any]]
+    ) -> Tuple[Optional[BoundingPoly], int]:
         group_counter = 0
-
-        results: List[Dict[str, Any]] = []
-
-        text_blocks = full_text.split("\n")
-        text_block = text_blocks[0]
-        for text_block_next in text_blocks[1:]:
-            text_block = text_block.strip()
-            text_block0 = text_block
-            bounding_poly: Optional[BoundingPoly] = None  # vision.BoundingPoly()
-            for text in texts[group_offset:]:
+        bounding_poly = None
+        try:
+            for text in texts_subset:
                 prose = text["text"].strip()
                 group_counter += 1
                 text_block_sub = text_block.replace(
@@ -109,7 +86,41 @@ class GoogleVisionOCR:
                     bounding_poly, text["bounding_poly"]
                 )
                 text_block = text_block_sub
+        except:
+            logger.error("error joining ocr blocks")
+        return bounding_poly, group_counter
 
+    def text_to_blocks(self, texts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Clean up extract OCR text list into blocks of continuus text (lines)
+        and adjust bounding-boxes (polygons) as needed
+        NOTE:
+        - meant to be used in conjunction with `detect_text` func
+        - assumes first element contains the full text delimited by line breaks)
+        """
+
+        if len(texts) < 2:
+            logger.warning(
+                "Less than 2 blocks of OCR text found! Skipping ocr_text_to_blocks"
+            )
+            return []
+
+        full_text = texts[0]["text"]
+
+        group_offset = 1
+        num_blocks = 0
+
+        results: List[Dict[str, Any]] = []
+
+        text_blocks = full_text.split("\n")
+        text_block = text_blocks[0]
+        bounding_poly: Optional[BoundingPoly] = None
+        for text_block_next in text_blocks[1:]:
+            text_block = text_block.strip()
+            text_block0 = text_block
+            bounding_poly, group_counter = self._build_text_block(
+                text_block, text_block_next, texts[group_offset:]
+            )
             num_blocks += 1
 
             # TODO could try this too.. for bounding_poly
@@ -117,12 +128,14 @@ class GoogleVisionOCR:
             # dict_obj = MessageToDict(org)
             if bounding_poly is not None:
                 results.append({"text": text_block0, "bounding_poly": bounding_poly})
+                bounding_poly = None
             group_offset += group_counter
-            group_counter = 0
             text_block = text_block_next
 
         # and save last block too
-        # results.append({'text' : text_block.strip(), 'bounding_poly' : bounding_poly})
+        bounding_poly, _ = self._build_text_block(text_block, "", texts[group_offset:])
+        if bounding_poly is not None:
+            results.append({"text": text_block.strip(), "bounding_poly": bounding_poly})
         if len(results) < len(text_blocks) - 1:
             logger.warning(
                 "Possible error grouping OCR results"
@@ -183,17 +196,24 @@ class GoogleVisionOCR:
             return poly1
 
         # use Shapely to combine polygons together
-        p1_coords = [(v.x, v.y) for v in poly1.vertices]
+        p1_coords = [(v.x, v.y) for v in poly1.vertices]  # type: ignore
         p1 = Polygon(p1_coords)
-        p2_coords = [(v.x, v.y) for v in poly2.vertices]
+        p2_coords = [(v.x, v.y) for v in poly2.vertices]  # type: ignore
         p2 = Polygon(p2_coords)
         p_union = unary_union([p1, p2])
 
-        if p_union.geom_type == "MultiPolygon":
+        if isinstance(p_union, MultiPolygon):
             # input polygons don't overlap, so merge into one single 'parent' polygon using concave hull
             p_union = concave_hull(p_union, ratio=1)
+
         # remove any redundant vertices in final polygon
         p_union = p_union.simplify(0.0)
+
+        if not isinstance(p_union, Polygon):
+            logger.error(
+                f"Error combining bounding polygons - result is {type(p_union)}"
+            )
+            return None
 
         # convert shapely polygon result back to Google Vision BoundingPoly object
         verts = [

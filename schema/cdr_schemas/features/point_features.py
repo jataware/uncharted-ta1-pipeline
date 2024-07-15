@@ -32,13 +32,12 @@ class PointProperties(BaseModel):
     model_version: str = Field(
         description="Version of the model used to generate this data"
     )
-    model_config = ConfigDict(protected_namespaces=())
     confidence: Optional[float | int] = Field(
         default=None, description="The prediction confidence of the model"
     )
 
     # Point Properties
-    bbox: Optional[List[Union[float, int]]] = Field(
+    bbox: List[Union[float, int]] = Field(
         default=None,
         description="""The extacted 2 point bounding box of the point item.
                     Format is expected to be [x1,y1,x2,y2] where the top left
@@ -50,6 +49,16 @@ class PointProperties(BaseModel):
     dip_direction: Optional[int] = Field(  # TODO add description
         default=None, description="TODO : Add description"
     )
+    reference_id: str = Field(
+        default="",
+        description="""
+            Identifies the original CDR item ID from which this new item was derived,
+            aiding in tracking provenance.
+        """,
+    )
+    validated: bool = Field(default=False, description="Validated by human")
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class PointFeature(BaseModel):
@@ -111,6 +120,14 @@ class PointLegendAndFeaturesResult(BaseModel):
                     label. Format is expected to be [x,y] coordinate pairs
                     where the top left is the origin (0,0).""",
     )
+    reference_id: str = Field(
+        default="",
+        description="""
+            Identifies the original CDR item ID from which this new item was derived,
+            aiding in tracking provenance.
+        """,
+    )
+    validated: bool = Field(default=False, description="Validated by human")
 
     # Segmentation Fields
     crs: str = Field(

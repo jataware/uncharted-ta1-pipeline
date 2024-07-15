@@ -3,7 +3,6 @@ import json
 import logging
 import os
 from pathlib import Path
-from unittest import result
 
 from flask import Flask, request, Response
 from hashlib import sha1
@@ -13,10 +12,7 @@ from PIL import Image
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
 from pipelines.geo_referencing.output import (
-    GCPOutput,
-    JSONWriter,
     LARAModelOutput,
-    ObjectOutput,
 )
 from tasks.common.pipeline import BaseModelOutput, Pipeline, PipelineInput
 from tasks.common.queue import (
@@ -25,8 +21,8 @@ from tasks.common.queue import (
     RequestQueue,
     OutputType,
 )
-
 from typing import Tuple
+from util import logging as logging_util
 
 Image.MAX_IMAGE_PIXELS = 400000000
 
@@ -119,12 +115,9 @@ def health():
 
 
 def start_server():
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger = logging.getLogger("georef app")
+    logging_util.config_logger(logger)
+
     logger.info("*** Starting geo referencing app ***")
 
     parser = argparse.ArgumentParser()
@@ -139,11 +132,44 @@ def start_server():
         "--request_queue", type=str, default=GEO_REFERENCE_REQUEST_QUEUE
     )
     parser.add_argument("--result_queue", type=str, default=GEO_REFERENCE_RESULT_QUEUE)
+    parser.add_argument(
+        "--country_code_filename",
+        type=str,
+        default="./data/country_codes.csv",
+    )
+    # TODO: DEFAULT VALUES SHOULD POINT TO PROPER FOLDER IN CONTAINER!
+    parser.add_argument(
+        "--state_plane_lookup_filename",
+        type=str,
+        default="./data/state_plane_reference.csv",
+    )
+    parser.add_argument(
+        "--state_plane_zone_filename",
+        type=str,
+        default="./data/USA_State_Plane_Zones_NAD27.geojson",
+    )
+    parser.add_argument(
+        "--state_code_filename",
+        type=str,
+        default="./data/state_codes.csv",
+    )
+    parser.add_argument(
+        "--ocr_gamma_correction",
+        type=float,
+        default=0.5,
+    )
     p = parser.parse_args()
 
     global georef_pipeline
     georef_pipeline = create_geo_referencing_pipeline(
-        p.model, [LARAModelOutput("georef_output")], p.workdir
+        p.model,
+        [LARAModelOutput("georef_output")],
+        p.workdir,
+        p.state_plane_lookup_filename,
+        p.state_plane_zone_filename,
+        p.state_code_filename,
+        p.country_code_filename,
+        p.ocr_gamma_correction,
     )
 
     #### start flask server or startup up the message queue

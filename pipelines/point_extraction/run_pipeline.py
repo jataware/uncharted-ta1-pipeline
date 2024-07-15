@@ -8,18 +8,14 @@ from pipelines.point_extraction.point_extraction_pipeline import PointExtraction
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
 from tasks.point_extraction.point_extractor_utils import parse_legend_point_hints
 from tasks.point_extraction.entities import (
-    LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
 )
+from util import logging as logging_util
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format=f"%(asctime)s %(levelname)s %(name)s\t: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger = logging.getLogger("point_extraction_pipeline")
+    logging_util.config_logger(logger)
 
     # parse command line args
     parser = argparse.ArgumentParser()
@@ -31,6 +27,7 @@ def main():
     parser.add_argument("--cdr_schema", action="store_true")  # False by default
     parser.add_argument("--bitmasks", action="store_true")  # False by default
     parser.add_argument("--legend_hints_dir", type=str, default="")
+    parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
     # setup an input stream
@@ -47,6 +44,7 @@ def main():
         p.workdir,
         include_cdr_output=p.cdr_schema,
         include_bitmasks_output=p.bitmasks,
+        gpu=not p.no_gpu,
     )
 
     # run the extraction pipeline
