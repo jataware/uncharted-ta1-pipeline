@@ -16,6 +16,7 @@ from tasks.common.task import TaskInput
 from tasks.geo_referencing.coordinates_extractor import (
     GeoCoordinatesExtractor,
 )
+from tasks.geo_referencing.corner_point_extractor import CornerPointExtractor
 from tasks.geo_referencing.state_plane_extractor import StatePlaneExtractor
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
 from tasks.geo_referencing.filter import (
@@ -245,6 +246,7 @@ def create_geo_referencing_pipelines(
     tasks.append(ROIFilter("roiness"))
     tasks.append(DistinctDegreeOutlierFilter("uniqueness"))
     tasks.append(HighQualityCoordinateFilter("goodness"))
+    tasks.append(CornerPointExtractor("corner_point_extractor"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
     if extract_metadata:
@@ -582,7 +584,10 @@ def create_geo_referencing_pipeline(
     )
     tasks.append(
         TileTextExtractor(
-            "first", Path(text_cache), 6000, gamma_correction=ocr_gamma_correction
+            "tile_text_extractor",
+            Path(text_cache),
+            6000,
+            gamma_correction=ocr_gamma_correction,
         )
     )
     tasks.append(
@@ -595,13 +600,13 @@ def create_geo_referencing_pipeline(
     )
     tasks.append(
         ModelROIExtractor(
-            "model roi",
+            "model_roi_buffering",
             buffer_fixed,
         )
     )
     tasks.append(
         TextFilter(
-            "text_filter",
+            "resize_text_filter",
             input_key="metadata_ocr",
             output_key="filtered_ocr_text",
             classes=[
@@ -621,7 +626,7 @@ def create_geo_referencing_pipeline(
     )
     tasks.append(
         Geocoder(
-            "geo-bounds",
+            "geobounds",
             geocoder_bounds,
             run_bounds=True,
             run_points=False,
@@ -629,14 +634,14 @@ def create_geo_referencing_pipeline(
         )
     )
     tasks.append(GeoFencer("geofence"))
-    tasks.append(GeoCoordinatesExtractor("third"))
+    tasks.append(GeoCoordinatesExtractor("geocoodinates_extractor"))
     tasks.append(ROIFilter("roiness"))
     tasks.append(DistinctDegreeOutlierFilter("uniqueness"))
-    tasks.append(OutlierFilter("fourth"))
-    tasks.append(NaiveFilter("fun"))
+    tasks.append(OutlierFilter("coordinate_outlier_filter"))
+    tasks.append(NaiveFilter("coordinate_naive_filter"))
     tasks.append(
         TextFilter(
-            "map_area_filter",
+            "tiled_map_area_filter",
             FilterMode.INCLUDE,
             TEXT_EXTRACTION_OUTPUT_KEY,
             "map_area_filter",
@@ -655,7 +660,7 @@ def create_geo_referencing_pipeline(
     )
     tasks.append(
         Geocoder(
-            "geo-places",
+            "places_geocoder",
             geocoder_points,
             run_bounds=False,
             run_points=True,
@@ -664,17 +669,17 @@ def create_geo_referencing_pipeline(
     )
     tasks.append(
         Geocoder(
-            "geo-centres",
+            "popluation_centers_geocoder",
             geocoder_bounds,
             run_bounds=False,
             run_points=False,
             run_centres=True,
         )
     )
-    tasks.append(UTMCoordinatesExtractor("fifth"))
+    tasks.append(UTMCoordinatesExtractor("utm_coordinate_extractor"))
     tasks.append(
         StatePlaneExtractor(
-            "great-plains",
+            "state_plain_coordinate_extractor",
             state_plane_lookup_filename,
             state_plane_zone_filename,
             state_code_filename,
@@ -684,7 +689,7 @@ def create_geo_referencing_pipeline(
     tasks.append(UTMStatePlaneFilter("utm-state-plane"))
     tasks.append(PointGeocoder("geocoded-georeferencing", ["point", "population"], 10))
     tasks.append(InferenceCoordinateExtractor("coordinate-inference"))
-    tasks.append(ScaleExtractor("scaler", ""))
-    tasks.append(CreateGroundControlPoints("seventh"))
-    tasks.append(GeoReference("eighth", 1))
+    tasks.append(ScaleExtractor("scale_extractor", ""))
+    tasks.append(CreateGroundControlPoints("gcp_creator"))
+    tasks.append(GeoReference("geo_referencer", 1))
     return Pipeline("wally-finder", "wally-finder", outputs, tasks)
