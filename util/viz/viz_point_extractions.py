@@ -102,7 +102,7 @@ def run(input_path: Path, json_pred_path: Path):
         # Draw bounding boxes from the labels onto the image
         # create a color map for each unique class_name
         counts_per_class = defaultdict(int)
-        font = ImageFont.load_default()
+        font = ImageFont.load_default(FONT_SIZE)
 
         for label in data["labels"]:
             box_coords = (label["x1"], label["y1"], label["x2"], label["y2"])
