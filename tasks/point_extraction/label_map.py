@@ -26,7 +26,13 @@ class POINT_CLASS(str, Enum):
 
 # mapping of YOLO model classes to output CDR ontology for common point symbols
 # (if different than LARA's internal ontology)
-YOLO_TO_CDR_LABEL = {POINT_CLASS.STRIKE_AND_DIP: "inclined_bedding"}
+YOLO_TO_CDR_LABEL = {
+    POINT_CLASS.STRIKE_AND_DIP: "inclined_bedding",
+    POINT_CLASS.INCLINED_FOLIATION: "inclined_foliation_metamorphic",
+    POINT_CLASS.INCLINED_FOLIATION_IGNEOUS: "inclined_foliation_igneous",
+    POINT_CLASS.GRAVEL_BORROW_PIT: "pit",
+    POINT_CLASS.MINE_QUARRY: "quarry",
+}
 
 
 # mapping of YOLO model classes to legend item labels
