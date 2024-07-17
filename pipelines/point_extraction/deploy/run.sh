@@ -17,7 +17,7 @@ docker run \
     uncharted/lara-point-extract:latest \
         --workdir /workdir \
         --imagedir /imagedir \
-        --model_point_extractor pipelines/point_extraction_weights/lara_yolo_20240406_best.pt \
-        --model_segmenter pipelines/segmentation_weights/layoutlmv3_xsection_20231201 \
+        --model_point_extractor pipelines/point_extraction_weights/lara_yolo9_20240702_best.pt \
+        --model_segmenter pipelines/segmentation_weights/layoutlmv3_20240531 \
         --cdr_schema \
 	--rabbit_host rabbitmq
