@@ -152,8 +152,8 @@ class CoordinatesExtractor(Task):
         return result
 
     def _should_run(self, input: CoordinateInput) -> bool:
-        lats = input.input.get_data("lats", [])
-        lons = input.input.get_data("lons", [])
+        lats = input.input.get_data("lats", {})
+        lons = input.input.get_data("lons", {})
         num_keypoints = min(len(lons), len(lats))
         logger.info(f"checking run condition: {num_keypoints} key points")
         return num_keypoints < 2

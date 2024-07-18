@@ -92,13 +92,9 @@ def get_min_max_count(
     is_negative_hemisphere: bool,
     sources: List[str] = [],
 ) -> Tuple[float, float, int]:
-    if len(coordinates) == 0:
+    coords = get_points(coordinates, sources).items()
+    if len(coords) == 0:
         return 0, 0, 0
-
-    coords = filter(
-        lambda x: x[1].get_source() in sources if len(sources) > 0 else True,
-        coordinates.items(),
-    )
 
     # adjust values to be in the right hemisphere
     multiplier = 1
@@ -108,3 +104,23 @@ def get_min_max_count(
     values = list(map(lambda x: multiplier * abs(x[1].get_parsed_degree()), coords))
 
     return min(values), max(values), len(values)
+
+
+def get_points(
+    coordinates: Dict[Tuple[float, float], Coordinate], sources: List[str] = []
+) -> Dict[Tuple[float, float], Coordinate]:
+
+    if len(coordinates) == 0:
+        return {}
+
+    coords = list(
+        filter(
+            lambda x: x[1].get_source() in sources if len(sources) > 0 else True,
+            coordinates.items(),
+        )
+    )
+
+    filtered = {}
+    for c in coords:
+        filtered[c[0]] = c[1]
+    return filtered
