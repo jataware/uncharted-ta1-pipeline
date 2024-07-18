@@ -329,7 +329,9 @@ class LaraResultSubscriber:
         files_ = []
         try:
             lara_result = LARAGeoreferenceResult.model_validate(georef_result_raw)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result, f"{self._system_name}-georeference", self._system_version
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
             assert cdr_result is not None
             assert cdr_result.georeference_results is not None
