@@ -7,7 +7,7 @@ import numpy as np
 import io, copy, logging
 from typing import List, Dict, Any, Optional, Tuple
 from shapely.geometry import Polygon
-from shapely import unary_union, concave_hull
+from shapely import MultiPolygon, unary_union, concave_hull
 
 logger = logging.getLogger(__name__)
 
@@ -196,17 +196,24 @@ class GoogleVisionOCR:
             return poly1
 
         # use Shapely to combine polygons together
-        p1_coords = [(v.x, v.y) for v in poly1.vertices]
+        p1_coords = [(v.x, v.y) for v in poly1.vertices]  # type: ignore
         p1 = Polygon(p1_coords)
-        p2_coords = [(v.x, v.y) for v in poly2.vertices]
+        p2_coords = [(v.x, v.y) for v in poly2.vertices]  # type: ignore
         p2 = Polygon(p2_coords)
         p_union = unary_union([p1, p2])
 
-        if p_union.geom_type == "MultiPolygon":
+        if isinstance(p_union, MultiPolygon):
             # input polygons don't overlap, so merge into one single 'parent' polygon using concave hull
             p_union = concave_hull(p_union, ratio=1)
+
         # remove any redundant vertices in final polygon
         p_union = p_union.simplify(0.0)
+
+        if not isinstance(p_union, Polygon):
+            logger.error(
+                f"Error combining bounding polygons - result is {type(p_union)}"
+            )
+            return None
 
         # convert shapely polygon result back to Google Vision BoundingPoly object
         verts = [
