@@ -329,7 +329,9 @@ class LaraResultSubscriber:
         files_ = []
         try:
             lara_result = LARAGeoreferenceResult.model_validate(georef_result_raw)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result, f"{self._system_name}-georeference", self._system_version
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
             assert cdr_result is not None
             assert cdr_result.georeference_results is not None
@@ -361,7 +363,7 @@ class LaraResultSubscriber:
                 cog_id=result.request.image_id,
                 georeference_results=[],
                 gcps=[],
-                system=self._system_name,
+                system=f"{self._system_name}-georeference",
                 system_version=self._system_version,
             )
 
@@ -425,7 +427,9 @@ class LaraResultSubscriber:
         cdr_result: Optional[FeatureResults] = None
         try:
             lara_result = LARASegmentation.model_validate(segmentation_raw_result)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result, f"{self._system_name}-area", self._system_version
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except:
             logger.error(
@@ -443,7 +447,9 @@ class LaraResultSubscriber:
         cdr_result: Optional[FeatureResults] = None
         try:
             lara_result = LARAPoints.model_validate(points_raw_result)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result, f"{self._system_name}-points", self._system_version
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except:
             logger.error("bad points result received so unable to send results to cdr")
@@ -462,7 +468,9 @@ class LaraResultSubscriber:
         cdr_result: Optional[CogMetaData] = None
         try:
             lara_result = LARAMetadata.model_validate(metadata_result_raw)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result, f"{self._system_name}-metadata", self._system_version
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
             logger.exception(
