@@ -21,7 +21,7 @@ from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
 from tasks.geo_referencing.filter import NaiveFilter, OutlierFilter, UTMStatePlaneFilter
 from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
-from tasks.geo_referencing.geocode import Geocoder as rfGeocoder
+from tasks.geo_referencing.geocode import PointGeocoder, BoxGeocoder
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.inference import InferenceCoordinateExtractor
 from tasks.geo_referencing.roi_extractor import (
@@ -48,8 +48,8 @@ logger = logging.getLogger("factory")
 
 
 def run_step(input: TaskInput) -> bool:
-    lats = input.get_data("lats", [])
-    lons = input.get_data("lons", [])
+    lats = input.get_data("lats", {})
+    lons = input.get_data("lons", {})
 
     lats_distinct = set(map(lambda x: x[1].get_parsed_degree(), lats.items()))
     lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lons.items()))
@@ -81,6 +81,7 @@ def create_geo_referencing_pipelines(
     segmentation_cache = os.path.join(working_dir, "segmentation")
     text_cache = os.path.join(working_dir, "text")
     metadata_cache = os.path.join(working_dir, f"metadata-gamma-{ocr_gamma_correction}")
+    geocoder_thresh = 10
 
     p = []
 
@@ -148,7 +149,11 @@ def create_geo_referencing_pipelines(
                 run_points=True,
             )
         )
-        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
+        tasks.append(
+            PointGeocoder(
+                "geocoded-georeferencing", ["point", "population"], geocoder_thresh
+            )
+        )
     tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
@@ -281,7 +286,14 @@ def create_geo_referencing_pipelines(
         )
         tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(UTMStatePlaneFilter("utm-state-plane"))
-        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
+        tasks.append(
+            PointGeocoder(
+                "geocoded-georeferencing", ["point", "population"], geocoder_thresh
+            )
+        )
+        tasks.append(
+            BoxGeocoder("geocoded-box", ["point", "population"], geocoder_thresh)
+        )
     tasks.append(InferenceCoordinateExtractor("coordinate-inference"))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
@@ -390,7 +402,11 @@ def create_geo_referencing_pipelines(
         )
         tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(UTMStatePlaneFilter("utm-state-plane"))
-        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
+        tasks.append(
+            PointGeocoder(
+                "geocoded-georeferencing", ["point", "population"], geocoder_thresh
+            )
+        )
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     """p.append(
@@ -495,7 +511,11 @@ def create_geo_referencing_pipelines(
         )
         tasks.append(OutlierFilter("utm-outliers"))
         tasks.append(UTMStatePlaneFilter("utm-state-plane"))
-        tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
+        tasks.append(
+            PointGeocoder(
+                "geocoded-georeferencing", ["point", "population"], geocoder_thresh
+            )
+        )
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
     """p.append(
@@ -650,7 +670,7 @@ def create_geo_referencing_pipeline(
     )
     tasks.append(OutlierFilter("utm-outliers"))
     tasks.append(UTMStatePlaneFilter("utm-state-plane"))
-    tasks.append(rfGeocoder("geocoded-georeferencing", ["point", "population"]))
+    tasks.append(PointGeocoder("geocoded-georeferencing", ["point", "population"], 10))
     tasks.append(InferenceCoordinateExtractor("coordinate-inference"))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh"))
