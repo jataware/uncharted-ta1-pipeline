@@ -72,13 +72,13 @@ class MetdataLLM(BaseModel):
         description="The scale of the map.  Example: '1:24000'", default="NULL"
     )
     datum: str = Field(
-        description="The datum of the map."
-        + "Examples: 'North American Datum of 1927', 'NAD83', 'WGS 84'",
+        description="The geoditic datum of the map expressed as an EPSG code. If this is not present, it can often be inferred from the map's country and year."
+        + "Examples of geodetic datums: 'North American Datum of 1927', 'NAD83', 'WGS 84'.  Examples of output: 'EPSG:4269', 'EPSG:4326'",
         default="NULL",
     )
     vertical_datum: str = Field(
         description="The vertical datum of the map."
-        + "Examples: 'mean sea level', 'vertical datum of 1901', 'national vertical geoditic datum of 1929'",
+        + "Examples: 'mean sea level', 'vertical datum of 1901', 'national vertical geodetic datum of 1929'",
         default="NULL",
     )
     projection: str = Field(
