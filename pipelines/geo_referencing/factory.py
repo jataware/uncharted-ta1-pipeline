@@ -93,7 +93,7 @@ def create_geo_referencing_pipelines(
 
     p = []
 
-    tasks = []
+    """tasks = []
     tasks.append(ResizeTextExtractor("first", Path(text_cache), False, True, 6000))
     tasks.append(EntropyROIExtractor("entropy roi"))
     if extract_metadata:
@@ -102,7 +102,7 @@ def create_geo_referencing_pipelines(
     tasks.append(UTMCoordinatesExtractor("fourth"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "resize",
             "resize",
@@ -117,6 +117,7 @@ def create_geo_referencing_pipelines(
         )
     )"""
 
+    """
     tasks = []
     tasks.append(
         TileTextExtractor("first", Path(text_cache), 6000, gamma_correction=0.5)
@@ -165,7 +166,7 @@ def create_geo_referencing_pipelines(
     tasks.append(UTMCoordinatesExtractor("fifth"))
     tasks.append(CreateGroundControlPoints("sixth"))
     tasks.append(GeoReference("seventh", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "tile",
             "tile",
@@ -306,6 +307,7 @@ def create_geo_referencing_pipelines(
         tasks.append(
             BoxGeocoder("geocoded-box", ["point", "population"], geocoder_thresh)
         )
+    tasks.append(CornerPointExtractor("corner_point_extractor"))
     tasks.append(InferenceCoordinateExtractor("coordinate-inference"))
     tasks.append(ScaleExtractor("scaler", ""))
     tasks.append(CreateGroundControlPoints("seventh", create_random_pts=False))
@@ -325,6 +327,7 @@ def create_geo_referencing_pipelines(
         )
     )
 
+    """
     tasks = []
     tasks.append(
         TileTextExtractor("first", Path(text_cache), 6000, gamma_correction=0.5)
@@ -421,7 +424,7 @@ def create_geo_referencing_pipelines(
         )
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "roi poly image",
             "roi poly",
@@ -436,6 +439,7 @@ def create_geo_referencing_pipelines(
         )
     )"""
 
+    """
     tasks = []
     tasks.append(TileTextExtractor("first", Path(text_cache), 6000))
     tasks.append(
@@ -530,7 +534,7 @@ def create_geo_referencing_pipelines(
         )
     tasks.append(CreateGroundControlPoints("seventh"))
     tasks.append(GeoReference("eighth", 1))
-    """p.append(
+    p.append(
         Pipeline(
             "roi poly roi",
             "roi poly",

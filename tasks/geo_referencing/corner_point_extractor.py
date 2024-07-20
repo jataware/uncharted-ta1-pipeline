@@ -1,30 +1,54 @@
-import json
+from curses import meta
 import logging
-import pprint
+from unittest.mock import DEFAULT
 
 from shapely import LineString, Point
 
-from schema.cdr_schemas.georeference import Geom_Point, GroundControlPoint, Pixel_Point
+from pipelines.metadata_extraction.metadata_extraction_pipeline import (
+    MetadataExtractionOutput,
+)
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.geo_referencing.entities import Coordinate
+from tasks.geo_referencing.entities import (
+    Coordinate,
+    GroundControlPoint,
+    CORNER_POINTS_OUTPUT_KEY,
+)
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger("corner_point_extractor")
 
 
 class CornerPointExtractor(Task):
+    """
+    Extracts corner points from longitude and latitude coordinates.
+
+    This task takes in longitude and latitude coordinates and generates corner points
+    by finding the intersection of vertical and horizontal lines passing through the
+    center of each coordinate label.
+
+    Args:
+        task_id (str): The ID of the task.
+
+    Attributes:
+        task_id (str): The ID of the task.
+
+    """
+
     def __init__(self, task_id: str):
         super().__init__(task_id)
 
     def run(self, input: TaskInput) -> TaskResult:
-        logger.info(
-            f"==========> running corner point extractor task index {input.task_index} with id {self._task_id}"
-        )
+        """
+        Runs the corner point extraction task.
 
-        # check if query points already defined
-        corner_points = None
+        Args:
+            input (TaskInput): The input data for the task.
 
+        Returns:
+            TaskResult: The result object updated with the corner points if present.
+
+        """
         lon_pts: Dict[Tuple[float, float], Coordinate] = input.get_data("lons")
         lat_pts: Dict[Tuple[float, float], Coordinate] = input.get_data("lats")
 
@@ -46,7 +70,7 @@ class CornerPointExtractor(Task):
                 ]
             )
             for lat_key, lat_coord in lat_pts.items():
-                # generate a vertical segment through the center of the lat label
+                # generate a horizontal segment through the center of the lat label
                 lat_bounds = lat_coord.get_bounds()
                 lat_label_width = lat_bounds[1].x - lat_bounds[0].x
                 lat_center_x = (
@@ -68,35 +92,33 @@ class CornerPointExtractor(Task):
                 intersection = lon_line.intersection(lat_line)
                 if isinstance(intersection, Point):
                     intersection_points.append(
-                        (Point(-lon_key[0], lat_key[0]), intersection)
+                        (Point(lon_key[0], lat_key[0]), intersection)
                     )
 
-        if len(intersection_points) == 4:
-            logger.info("Found 4 intersection points")
-            output = {"gcps": []}
+        if len(intersection_points) >= 3:
+            logger.info(f"Found {len(intersection_points)} corner points")
+
+            output: List[GroundControlPoint] = []
             # write out as gcps
             for i, point in enumerate(intersection_points):
                 geo_point = point[0]
                 pixel_point = point[1]
                 gcp = GroundControlPoint(
-                    gcp_id=str(i),
-                    map_geom=Geom_Point(longitude=geo_point.x, latitude=geo_point.y),
-                    px_geom=Pixel_Point(
-                        columns_from_left=pixel_point.x, rows_from_top=pixel_point.y
-                    ),
-                    model="corner_point_extractor",
-                    model_version="0.0.1",
-                    crs="EPSG:4267",
+                    id=f"corner.{str(i)}",
+                    longitude=geo_point.x,
+                    latitude=geo_point.y,
+                    pixel_x=pixel_point.x,
+                    pixel_y=pixel_point.y,
+                    confidence=1.0,
                 )
-                output["gcps"].append(gcp.model_dump())
+                output.append(gcp)
+        else:
+            logger.info(
+                f"Found {len(intersection_points)} corner points, require at least 3.  Corner point referencing not available."
+            )
+            output = []
 
-            # convert output to json
-            with open("corner_points.json", "w") as outfile:
-                json.dump(output, outfile, indent=4)
-
-        # if we have intersection points, we can use them as corner points
-        # add them to the output
         result = self._create_result(input)
-        result.output["corner_points"] = "scaramouche"
+        result.output[CORNER_POINTS_OUTPUT_KEY] = output
 
         return result

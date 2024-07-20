@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 GEOFENCE_OUTPUT_KEY = "geofence_output"
+CORNER_POINTS_OUTPUT_KEY = "corner_points"
 SOURCE_LAT_LON = "lat-lon parser"
 SOURCE_STATE_PLANE = "state plane parser"
 SOURCE_UTM = "utm parser"

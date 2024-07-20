@@ -2,6 +2,7 @@ from .task import Task, TaskInput, TaskResult
 from typing import Optional, List, Dict, Any, Sequence
 from PIL.Image import Image as PILImage
 from pydantic import BaseModel
+import traceback
 
 
 class PipelineInput:
@@ -149,7 +150,7 @@ class Pipeline:
                 print(
                     f"EXCEPTION executing pipeline at step {t.get_task_id()} ({task_input.task_index}) for raster {input.raster_id}"
                 )
-                print(e)
+                traceback.print_exc()
 
         return self._produce_output(pipeline_result)
 
