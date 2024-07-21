@@ -33,6 +33,7 @@ dependencies = [
     "stateplane",
     "coloredlogs",
     "cdrc @ git+https://github.com/DARPA-CRITICALMAAS/cdrc.git@main",
+    "rasterio"
 ]
 
 [project.optional-dependencies]
