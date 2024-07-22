@@ -4,13 +4,19 @@ import uuid
 import numpy as np
 
 from sklearn.cluster import DBSCAN
+import matplotlib.path as mpltPath
 
-from tasks.geo_referencing.entities import Coordinate, SOURCE_STATE_PLANE, SOURCE_UTM
+from tasks.geo_referencing.entities import (
+    Coordinate,
+    SOURCE_STATE_PLANE,
+    SOURCE_UTM,
+    SOURCE_LAT_LON,
+)
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.geo_projection import PolyRegression
 from tasks.geo_referencing.util import ocr_to_coordinates
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 logger = logging.getLogger("coordinates_filter")
 
@@ -353,3 +359,172 @@ class NaiveFilter(FilterAxisCoordinates):
                     "excluded due to naive outlier detection",
                 )
         return filtered_coords
+
+
+class ROIFilter(FilterCoordinates):
+    def __init__(self, task_id: str):
+        super().__init__(task_id)
+
+    def _filter(
+        self,
+        input: TaskInput,
+        lon_coords: Dict[Tuple[float, float], Coordinate],
+        lat_coords: Dict[Tuple[float, float], Coordinate],
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
+        logger.info(f"roi filter running against lon and lat coordinates")
+        roi_xy = input.get_data("roi")
+        self._add_param(input, str(uuid.uuid4()), "roi", {"bounds": roi_xy})
+        roi_inner_xy = input.get_data("roi_inner")
+        self._add_param(input, str(uuid.uuid4()), "roi_inner", {"bounds": roi_inner_xy})
+
+        num_keypoints = min(len(lon_coords), len(lat_coords))
+        if num_keypoints == 0:
+            logger.info(
+                f"roi filter not filtering since {num_keypoints} coord exists along one axis"
+            )
+            return lon_coords, lat_coords
+        # ----- do Region-of-Interest analysis (automatic cropping)
+        lon_pts, lat_pts = self._validate_lonlat_extractions(
+            input, lon_coords, lat_coords, input.image.size, roi_xy, roi_inner_xy
+        )
+
+        # apply to the parsed coordinates
+        return lon_pts, lat_pts
+
+    def _validate_lonlat_extractions(
+        self,
+        input: TaskInput,
+        lon_results: Dict[Tuple[float, float], Coordinate],
+        lat_results: Dict[Tuple[float, float], Coordinate],
+        im_size: Tuple[float, float],
+        roi_xy: List[Tuple[float, float]] = [],
+        roi_inner_xy: List[Tuple[float, float]] = [],
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
+        logger.info("validating lonlat")
+
+        num_lat_pts = len(lat_results)
+        num_lon_pts = len(lon_results)
+
+        if roi_xy and (num_lat_pts > 4 or num_lon_pts > 4):
+            for (deg, y), coord in list(lat_results.items()):
+                if not self._in_polygon(coord.get_pixel_alignment(), roi_xy) or (
+                    len(roi_inner_xy) > 0
+                    and self._in_polygon(coord.get_pixel_alignment(), roi_inner_xy)
+                ):
+                    logger.info(
+                        f"Excluding out-of-bounds latitude point: {deg} ({coord.get_pixel_alignment()})"
+                    )
+                    del lat_results[(deg, y)]
+                    self._add_param(
+                        input,
+                        str(uuid.uuid4()),
+                        "coordinate-excluded",
+                        {
+                            "bounds": ocr_to_coordinates(coord.get_bounds()),
+                            "text": coord.get_text(),
+                            "type": "latitude" if coord.is_lat() else "longitude",
+                            "pixel_alignment": coord.get_pixel_alignment(),
+                            "confidence": coord.get_confidence(),
+                        },
+                        "excluded due to being outside roi",
+                    )
+            for (deg, x), coord in list(lon_results.items()):
+                if not self._in_polygon(coord.get_pixel_alignment(), roi_xy) or (
+                    len(roi_inner_xy) > 0
+                    and self._in_polygon(coord.get_pixel_alignment(), roi_inner_xy)
+                ):
+                    logger.info(
+                        f"Excluding out-of-bounds longitude point: {deg} ({coord.get_pixel_alignment()})"
+                    )
+                    del lon_results[(deg, x)]
+                    self._add_param(
+                        input,
+                        str(uuid.uuid4()),
+                        "coordinate-excluded",
+                        {
+                            "bounds": ocr_to_coordinates(coord.get_bounds()),
+                            "text": coord.get_text(),
+                            "type": "latitude" if coord.is_lat() else "longitude",
+                            "pixel_alignment": coord.get_pixel_alignment(),
+                            "confidence": coord.get_confidence(),
+                        },
+                        "excluded due to being outside roi",
+                    )
+
+        num_lat_pts = len(lat_results)
+        num_lon_pts = len(lon_results)
+        logger.info(f"point count after exclusion lat,lon: {num_lat_pts},{num_lon_pts}")
+
+        # check number of unique lat and lon values
+        num_lat_pts = len(set([x[0] for x in lat_results]))
+        num_lon_pts = len(set([x[0] for x in lon_results]))
+        logger.info(f"distinct after outlier lat,lon: {num_lat_pts},{num_lon_pts}")
+
+        if num_lon_pts >= 2 and num_lat_pts == 1:
+            # estimate additional lat pt (based on lon pxl resolution)
+            lst = [
+                (k[0], k[1], v.get_pixel_alignment()[1]) for k, v in lon_results.items()
+            ]
+            max_pt = max(lst, key=lambda p: p[1])
+            min_pt = min(lst, key=lambda p: p[1])
+            pxl_range = max_pt[1] - min_pt[1]
+            deg_range = max_pt[0] - min_pt[0]
+            if deg_range != 0 and pxl_range != 0:
+                deg_per_pxl = abs(
+                    deg_range / pxl_range
+                )  # TODO could use geodesic dist here?
+                lat_pt = list(lat_results.items())[0]
+                # new_y = im_size[1]-1
+                new_y = 0 if lat_pt[0][1] > im_size[1] / 2 else im_size[1] - 1
+                new_lat = -deg_per_pxl * (new_y - lat_pt[0][1]) + lat_pt[0][0]
+                coord = Coordinate(
+                    "lat keypoint",
+                    "",
+                    new_lat,
+                    SOURCE_LAT_LON,
+                    True,
+                    pixel_alignment=(lat_pt[1].to_deg_result()[1], new_y),
+                    confidence=0.6,
+                )
+                lat_results[(new_lat, new_y)] = coord
+
+        elif num_lat_pts >= 2 and num_lon_pts == 1:
+            # estimate additional lon pt (based on lat pxl resolution)
+            lst = [
+                (k[0], k[1], v.get_pixel_alignment()[0]) for k, v in lat_results.items()
+            ]
+            max_pt = max(lst, key=lambda p: p[1])
+            min_pt = min(lst, key=lambda p: p[1])
+            pxl_range = max_pt[1] - min_pt[1]
+            deg_range = max_pt[0] - min_pt[0]
+            if deg_range != 0 and pxl_range != 0:
+                deg_per_pxl = abs(
+                    deg_range / pxl_range
+                )  # TODO could use geodesic dist here?
+                lon_pt = list(lon_results.items())[0]
+                # new_x = im_size[0]-1
+                new_x = 0 if lon_pt[0][1] > im_size[0] / 2 else im_size[0] - 1
+                new_lon = -deg_per_pxl * (new_x - lon_pt[0][1]) + lon_pt[0][0]
+                coord = Coordinate(
+                    "lon keypoint",
+                    "",
+                    new_lon,
+                    SOURCE_LAT_LON,
+                    False,
+                    pixel_alignment=(new_x, lon_pt[1].to_deg_result()[1]),
+                    confidence=0.6,
+                )
+                lon_results[(new_lon, new_x)] = coord
+        logger.info("done validating coordinates")
+
+        return (lon_results, lat_results)
+
+    def _in_polygon(
+        self, point: Tuple[float, float], polygon: List[Tuple[float, float]]
+    ) -> bool:
+        path = mpltPath.Path(polygon)  # type: ignore
+        return path.contains_point(point)

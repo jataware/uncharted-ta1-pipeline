@@ -18,7 +18,12 @@ from tasks.geo_referencing.coordinates_extractor import (
 )
 from tasks.geo_referencing.state_plane_extractor import StatePlaneExtractor
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
-from tasks.geo_referencing.filter import NaiveFilter, OutlierFilter, UTMStatePlaneFilter
+from tasks.geo_referencing.filter import (
+    NaiveFilter,
+    OutlierFilter,
+    ROIFilter,
+    UTMStatePlaneFilter,
+)
 from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.geocode import PointGeocoder, BoxGeocoder
@@ -235,6 +240,7 @@ def create_geo_referencing_pipelines(
         )
         tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
+    tasks.append(ROIFilter("roiness"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
     if extract_metadata:
