@@ -7,7 +7,6 @@ from pipelines.geo_referencing.output import (
     OutputCreator,
     GCPOutput,
     GeoReferencingOutput,
-    IntegrationOutput,
     UserLeverOutput,
     SummaryOutput,
 )
@@ -321,7 +320,6 @@ def create_geo_referencing_pipelines(
                 SummaryOutput("summary"),
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
-                IntegrationOutput("schema"),
             ],
             tasks,
         )
@@ -692,6 +690,7 @@ def create_geo_referencing_pipeline(
     tasks.append(OutlierFilter("utm-outliers"))
     tasks.append(UTMStatePlaneFilter("utm-state-plane"))
     tasks.append(PointGeocoder("geocoded-georeferencing", ["point", "population"], 10))
+    tasks.append(CornerPointExtractor("corner_point_extractor"))
     tasks.append(InferenceCoordinateExtractor("coordinate-inference"))
     tasks.append(ScaleExtractor("scale_extractor", ""))
     tasks.append(CreateGroundControlPoints("gcp_creator"))

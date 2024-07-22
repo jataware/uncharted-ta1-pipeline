@@ -1,6 +1,9 @@
+from math import pi
 import jsons
 import os
 import uuid
+
+import pip
 
 from tasks.common.pipeline import (
     BaseModelOutput,
@@ -11,6 +14,7 @@ from tasks.common.pipeline import (
     PipelineResult,
 )
 from tasks.geo_referencing.entities import (
+    CORNER_POINTS_OUTPUT_KEY,
     GeoreferenceResult,
     GroundControlPoint as LARAGroundControlPoint,
     SOURCE_GEOCODE,
@@ -22,14 +26,7 @@ from tasks.geo_referencing.entities import (
 
 from typing import Any, Dict, List
 
-
-def get_projection(datum: str) -> str:
-    # get espg code via basic lookup of the two frequently seen datums
-    if "83" in datum:
-        return "EPSG:4269"
-    elif "27" in datum:
-        return "EPSG:4267"
-    return "EPSG:4326"
+from tasks.geo_referencing.georeference import QueryPoint
 
 
 class GeoReferencingOutput(OutputCreator):
@@ -233,79 +230,51 @@ class GCPOutput(OutputCreator):
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         assert pipeline_result.image is not None
-        query_points = pipeline_result.data["query_pts"]
-        projection_raw = pipeline_result.data["projection"]
-        datum_raw = pipeline_result.data["datum"]
-        projection_mapped = get_projection(datum_raw)
+        crs = pipeline_result.data["crs"]
+        query_points: List[QueryPoint] = pipeline_result.data["query_pts"]
+        corner_points: List[LARAGroundControlPoint] = pipeline_result.data[
+            CORNER_POINTS_OUTPUT_KEY
+        ]
 
         res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
 
         res.data = {
             "map": pipeline_result.raster_id,
-            "crs": [projection_mapped],
-            "datum_raw": datum_raw,
-            "projection_raw": projection_raw,
+            "crs": [crs],
             "image_height": pipeline_result.image.size[1],
             "image_width": pipeline_result.image.size[0],
             "gcps": [],
             "levers": [],
         }
-        for qp in query_points:
-            o = {
-                "crs": projection_mapped,
-                "gcp_id": uuid.uuid4(),
-                "rowb": qp.xy[1],
-                "coll": qp.xy[0],
-                "x": qp.lonlat[0],
-                "y": qp.lonlat[1],
-            }
-            if qp.properties and len(qp.properties) > 0:
-                o["properties"] = qp.properties
-            res.data["gcps"].append(o)
+
+        if corner_points:
+            for cp in corner_points:
+                o = {
+                    "crs": crs,
+                    "gcp_id": cp.id,
+                    "rowb": cp.pixel_y,
+                    "coll": cp.pixel_x,
+                    "x": cp.longitude,
+                    "y": cp.latitude,
+                }
+                res.data["gcps"].append(o)
+        else:
+            for qp in query_points:
+                o = {
+                    "crs": crs,
+                    "gcp_id": uuid.uuid4(),
+                    "rowb": qp.xy[1],
+                    "coll": qp.xy[0],
+                    "x": qp.lonlat[0],
+                    "y": qp.lonlat[1],
+                }
+                if qp.properties and len(qp.properties) > 0:
+                    o["properties"] = qp.properties
+                res.data["gcps"].append(o)
 
         # extract the levers available via params
         for p in pipeline_result.params:
             res.data["levers"].append(p)
-        return res
-
-
-class IntegrationOutput(OutputCreator):
-    def __init__(self, id: str):
-        super().__init__(id)
-
-    def create_output(self, pipeline_result: PipelineResult) -> Output:
-        # capture query points as output
-        query_points = pipeline_result.data["query_pts"]
-        projection_raw = pipeline_result.data["projection"]
-        datum_raw = pipeline_result.data["datum"]
-        projection_mapped = get_projection(datum_raw)
-
-        res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
-
-        # need to format the data to meet the schema definition
-        gcps = []
-        count = 0
-        for qp in query_points:
-            count = count + 1
-            o = {
-                "id": count,
-                "map_geom": (qp.lonlat[0], qp.lonlat[1]),
-                "px_geom": (qp.xy[0], qp.xy[1]),
-                "confidence": qp.confidence,
-                "provenance": "modelled",
-            }
-            gcps.append(o)
-        res.data = {
-            "map": {
-                "name": pipeline_result.raster_id,
-                "projection_info": {
-                    "projection": projection_mapped,
-                    "provenance": "modelled",
-                    "gcps": gcps,
-                },
-            }
-        }
-
         return res
 
 
@@ -316,33 +285,45 @@ class LARAModelOutput(OutputCreator):
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         # capture query points as output
         query_points = pipeline_result.data["query_pts"]
-        projection_raw = pipeline_result.data["projection"]
-        datum_raw = pipeline_result.data["datum"]
-        projection_mapped = get_projection(datum_raw)
-
-        gcps = []
-        count = 0
+        crs = pipeline_result.data["crs"]
+        corner_points: List[LARAGroundControlPoint] = pipeline_result.data[
+            CORNER_POINTS_OUTPUT_KEY
+        ]
         confidence = 0
-        for qp in query_points:
-            count = count + 1
-            gcp = LARAGroundControlPoint(
-                id=f"gcp-{count}",
-                pixel_x=qp.xy[0],
-                pixel_y=qp.xy[1],
-                latitude=qp.lonlat[1],
-                longitude=qp.lonlat[0],
-                confidence=qp.confidence,
-            )
-            gcps.append(gcp)
-            confidence = qp.confidence
+
+        gcps: List[LARAGroundControlPoint] = []
 
         result = GeoreferenceResult(
             map_id=pipeline_result.raster_id,
             gcps=gcps,
-            projection=projection_mapped,
+            crs=crs,
             provenance="modelled",
             confidence=confidence,
         )
+
+        if corner_points:
+            for i, cp in enumerate(corner_points):
+                o = LARAGroundControlPoint(
+                    id=f"gpc.{i}",
+                    pixel_x=cp.pixel_x,
+                    pixel_y=cp.pixel_y,
+                    latitude=cp.latitude,
+                    longitude=cp.longitude,
+                    confidence=cp.confidence,
+                )
+                gcps.append(o)
+        else:
+            for i, qp in enumerate(query_points):
+                o = LARAGroundControlPoint(
+                    id=f"gcp.{i}",
+                    pixel_x=qp.xy[0],
+                    pixel_y=qp.xy[1],
+                    latitude=qp.lonlat[1],
+                    longitude=qp.lonlat[0],
+                    confidence=qp.confidence,
+                )
+                gcps.append(o)
+
         return BaseModelOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, result
         )
@@ -355,9 +336,7 @@ class CDROutput(OutputCreator):
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         assert pipeline_result.image is not None
         query_points = pipeline_result.data["query_pts"]
-        projection_raw = pipeline_result.data["projection"]
-        datum_raw = pipeline_result.data["datum"]
-        projection_mapped = get_projection(datum_raw)
+        crs = pipeline_result.data["crs"]
 
         res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
 
@@ -370,7 +349,7 @@ class CDROutput(OutputCreator):
                 "confidence": qp.confidence,
                 "model": "uncharted",
                 "model_version": "0.0.1",
-                "crs": projection_mapped,
+                "crs": crs,
             }
             gcps.append(o)
 
@@ -378,11 +357,11 @@ class CDROutput(OutputCreator):
             "cog_id": pipeline_result.raster_id,
             "georeference_results": [
                 {
-                    "likely_CRSs": [projection_mapped],
+                    "likely_CRSs": [crs],
                     "map_area": None,
                     "projections": [
                         {
-                            "crs": projection_mapped,
+                            "crs": crs,
                             "gcp_ids": [gcp["gcp_id"] for gcp in gcps],
                             "file_name": f"lara-{pipeline_result.raster_id}.tif",
                         }

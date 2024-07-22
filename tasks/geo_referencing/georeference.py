@@ -79,7 +79,7 @@ class GeoReference(Task):
     _poly_order = 1
 
     # default destination datum for georeferencing output
-    DEFAULT_DEST_DATUM = "EPSG:4269"
+    DEFAULT_DEST_CRS = "EPSG:4269"
 
     def __init__(self, task_id: str, poly_order: int = 1):
         super().__init__(task_id)
@@ -250,15 +250,15 @@ class GeoReference(Task):
         # results = self._clip_query_pts(query_pts, lon_minmax, lat_minmax)
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
-        source_datum, projection = self._determine_projection(input)
+        crs = self._determine_crs(input)
         logger.info(
-            f"extracted datum: {source_datum}\textracted projection: {projection}"
+            f"extracted CRS: {crs}"
         )
 
-        if source_datum != self.DEFAULT_DEST_DATUM:
+        if crs != self.DEFAULT_DEST_CRS:
             for qp in query_pts:
                 proj = Transformer.from_crs(
-                    source_datum, self.DEFAULT_DEST_DATUM, always_xy=True
+                    crs, self.DEFAULT_DEST_CRS, always_xy=True
                 )
                 x_p, y_p = proj.transform(qp.lonlat[0], qp.lonlat[1])
                 qp.lonlat = (x_p, y_p)
@@ -270,8 +270,7 @@ class GeoReference(Task):
         result.output["query_pts"] = results
         result.output["rmse"] = rmse
         result.output["error_scale"] = scale_error
-        result.output["datum"] = self.DEFAULT_DEST_DATUM
-        result.output["projection"] = projection
+        result.output["crs"] = self.DEFAULT_DEST_CRS
         result.output["keypoints"] = keypoint_stats
         return result
 
@@ -322,15 +321,15 @@ class GeoReference(Task):
         )
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
-        source_datum, projection = self._determine_projection(input)
+        crs, projection = self._determine_crs(input)
         logger.info(
-            f"extracted datum: {source_datum}\textracted projection: {projection}"
+            f"extracted crs: {crs}"
         )
 
         # transform to NAD83 when external query points are supplied
-        if source_datum != self.DEFAULT_DEST_DATUM:
+        if crs != self.DEFAULT_DEST_CRS:
             proj = Transformer.from_crs(
-                source_datum, self.DEFAULT_DEST_DATUM, always_xy=True
+                crs, self.DEFAULT_DEST_CRS, always_xy=True
             )
             for pt in results:
                 x_proj, y_proj = proj.transform(*pt.lonlat)
@@ -347,8 +346,7 @@ class GeoReference(Task):
         result.output["query_pts"] = results
         result.output["rmse"] = rmse
         result.output["error_scale"] = scale_error
-        result.output["datum"] = self.DEFAULT_DEST_DATUM
-        result.output["projection"] = projection
+        result.output["crs"] = self.DEFAULT_DEST_CRS
         return result
 
     def _count_keypoints(
@@ -577,8 +575,8 @@ class GeoReference(Task):
 
         return query_pts
 
-    def _determine_projection(self, input: TaskInput) -> Tuple[str, str]:
-        logger.info("determining projection for georeferencing")
+    def _determine_crs(self, input: TaskInput) -> str:
+        logger.info("determining CRS for georeferencing")
         # parse extracted metadata
         metadata = input.parse_data(
             METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
@@ -586,18 +584,31 @@ class GeoReference(Task):
 
         # make sure there is metadata
         if not metadata:
-            return "", ""
+            return self.DEFAULT_DEST_CRS
 
+        # we we assume geographic coordinates and combine that with the datum to
+        # come up with a CRS
         datum = metadata.datum
-        if not datum or len(datum) == 0:
-            year = metadata.year
-            if year >= "1985":
-                datum = "NAD83"
-            if year >= "1930":
-                datum = "NAD27"
+        if datum is not None and datum != "NULL":
+            if datum.contains("NAD") and metadata.year >= "1985":
+                return "EPSG:4269"
+            if datum.contains("NAD") and metadata.year >= "1930":
+                return "EPSG:4267"
+            # default to a WGS84 CRS
+            return "EPSG:4326"
 
-        # return the datum and the projection
-        return datum, metadata.projection
+        # no datum info in the metadata so we will use the country and year
+        if not datum or datum == "NULL" or len(datum) == 0:
+            if metadata.country is not "NULL" and (
+                metadata.country == "US" or metadata.country == "CA"
+            ):
+                if metadata.year >= "1985":
+                    return "EPSG:4269"
+                if metadata.year >= "1930":
+                    return "EPSG:4267"
+
+        # default to a WGS84 CRS when all else fails
+        return "EPSG:4326"
 
     def _build_fallback(
         self,

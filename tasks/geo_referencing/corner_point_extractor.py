@@ -4,9 +4,6 @@ from unittest.mock import DEFAULT
 
 from shapely import LineString, Point
 
-from pipelines.metadata_extraction.metadata_extraction_pipeline import (
-    MetadataExtractionOutput,
-)
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.entities import (
     Coordinate,
@@ -14,7 +11,7 @@ from tasks.geo_referencing.entities import (
     CORNER_POINTS_OUTPUT_KEY,
 )
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 logger = logging.getLogger("corner_point_extractor")
 
@@ -104,7 +101,7 @@ class CornerPointExtractor(Task):
                 geo_point = point[0]
                 pixel_point = point[1]
                 gcp = GroundControlPoint(
-                    id=f"corner.{str(i)}",
+                    id=f"corner_point.{str(i)}",
                     longitude=geo_point.x,
                     latitude=geo_point.y,
                     pixel_x=pixel_point.x,

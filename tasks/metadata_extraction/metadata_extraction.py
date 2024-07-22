@@ -72,8 +72,8 @@ class MetdataLLM(BaseModel):
         description="The scale of the map.  Example: '1:24000'", default="NULL"
     )
     datum: str = Field(
-        description="The geoditic datum of the map expressed as an EPSG code. If this is not present, it can often be inferred from the map's country and year."
-        + "Examples of geodetic datums: 'North American Datum of 1927', 'NAD83', 'WGS 84'.  Examples of output: 'EPSG:4269', 'EPSG:4326'",
+        description="The geoditic datum of the map. If this is not present, it can often be inferred from the map's country and year."
+        + "Examples of geodetic datums: 'North American Datum of 1927', 'NAD83', 'WGS 84'",
         default="NULL",
     )
     vertical_datum: str = Field(
@@ -299,6 +299,7 @@ class MetadataExtractor(Task):
         logger.info(f"Running metadata extraction task for '{input.raster_id}'")
 
         if self._should_run and not self._should_run(input):
+            logging.info("Skipping metadata extraction task")
             return self._create_result(input)
 
         task_result = TaskResult(self._task_id)
@@ -308,7 +309,9 @@ class MetadataExtractor(Task):
             self._create_empty_extraction,
         )
         if not doc_text:
-            logger.info("returning empty metadata extraction result")
+            logger.info(
+                "OCR output not available - returning empty metadata extraction result"
+            )
             return task_result
 
         doc_id = self._generate_doc_key(input, doc_text)

@@ -35,7 +35,7 @@ class GroundControlPoint(BaseModel):
 
 class GeoreferenceResult(BaseModel):
     map_id: str
-    projection: str
+    crs: str
     gcps: List[GroundControlPoint]
     provenance: str
     confidence: float
