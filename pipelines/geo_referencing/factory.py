@@ -109,8 +109,7 @@ def create_geo_referencing_pipelines(
                 GeoReferencingOutput("geo"),
                 SummaryOutput("summary"),
                 UserLeverOutput("levers"),
-                GCPOutput("gcps"),
-                IntegrationOutput("schema"),
+                GCPOutput("gcps")
             ],
             tasks,
         )
@@ -173,8 +172,7 @@ def create_geo_referencing_pipelines(
                 GeoReferencingOutput("geo"),
                 SummaryOutput("summary"),
                 UserLeverOutput("levers"),
-                GCPOutput("gcps"),
-                IntegrationOutput("schema"),
+                GCPOutput("gcps")
             ],
             tasks,
         )
@@ -430,8 +428,7 @@ def create_geo_referencing_pipelines(
                 GeoReferencingOutput("geo"),
                 SummaryOutput("summary"),
                 UserLeverOutput("levers"),
-                GCPOutput("gcps"),
-                IntegrationOutput("schema"),
+                GCPOutput("gcps")
             ],
             tasks,
         )
@@ -540,8 +537,7 @@ def create_geo_referencing_pipelines(
                 GeoReferencingOutput("geo"),
                 SummaryOutput("summary"),
                 UserLeverOutput("levers"),
-                GCPOutput("gcps"),
-                IntegrationOutput("schema"),
+                GCPOutput("gcps")
             ],
             tasks,
         )

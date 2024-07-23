@@ -251,15 +251,11 @@ class GeoReference(Task):
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
         crs = self._determine_crs(input)
-        logger.info(
-            f"extracted CRS: {crs}"
-        )
+        logger.info(f"extracted CRS: {crs}")
 
         if crs != self.DEFAULT_DEST_CRS:
             for qp in query_pts:
-                proj = Transformer.from_crs(
-                    crs, self.DEFAULT_DEST_CRS, always_xy=True
-                )
+                proj = Transformer.from_crs(crs, self.DEFAULT_DEST_CRS, always_xy=True)
                 x_p, y_p = proj.transform(qp.lonlat[0], qp.lonlat[1])
                 qp.lonlat = (x_p, y_p)
 
@@ -321,16 +317,12 @@ class GeoReference(Task):
         )
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
-        crs, projection = self._determine_crs(input)
-        logger.info(
-            f"extracted crs: {crs}"
-        )
+        crs = self._determine_crs(input)
+        logger.info(f"extracted crs: {crs}")
 
         # transform to NAD83 when external query points are supplied
         if crs != self.DEFAULT_DEST_CRS:
-            proj = Transformer.from_crs(
-                crs, self.DEFAULT_DEST_CRS, always_xy=True
-            )
+            proj = Transformer.from_crs(crs, self.DEFAULT_DEST_CRS, always_xy=True)
             for pt in results:
                 x_proj, y_proj = proj.transform(*pt.lonlat)
                 pt.lonlat = (x_proj, y_proj)
@@ -599,7 +591,7 @@ class GeoReference(Task):
 
         # no datum info in the metadata so we will use the country and year
         if not datum or datum == "NULL" or len(datum) == 0:
-            if metadata.country is not "NULL" and (
+            if metadata.country != "NULL" and (
                 metadata.country == "US" or metadata.country == "CA"
             ):
                 if metadata.year >= "1985":

@@ -1,5 +1,6 @@
 from curses import meta
 import logging
+import pprint
 from unittest.mock import DEFAULT
 
 from shapely import LineString, Point
@@ -49,12 +50,13 @@ class CornerPointExtractor(Task):
         lon_pts: Dict[Tuple[float, float], Coordinate] = input.get_data("lons")
         lat_pts: Dict[Tuple[float, float], Coordinate] = input.get_data("lats")
 
+
         intersection_points: List[Tuple[Point, Point]] = []
 
         for lon_key, lon_coord in lon_pts.items():
             # generate a vertical segment through the center of the lon label
             lon_bounds = lon_coord.get_bounds()
-            lon_label_width = lon_bounds[1].x - lon_bounds[0].x
+            lon_label_width = 2 * (lon_bounds[1].x - lon_bounds[0].x)
             lon_center_x = lon_bounds[0].x + (lon_bounds[1].x - lon_bounds[0].x) / 2.0
             lon_center_y = lon_bounds[0].y + (lon_bounds[2].y - lon_bounds[0].y) / 2.0
             lon_line = LineString(
@@ -69,7 +71,7 @@ class CornerPointExtractor(Task):
             for lat_key, lat_coord in lat_pts.items():
                 # generate a horizontal segment through the center of the lat label
                 lat_bounds = lat_coord.get_bounds()
-                lat_label_width = lat_bounds[1].x - lat_bounds[0].x
+                lat_label_width = 2 * (lat_bounds[1].x - lat_bounds[0].x)
                 lat_center_x = (
                     lat_bounds[0].x + (lat_bounds[1].x - lat_bounds[0].x) / 2.0
                 )

@@ -75,7 +75,7 @@ class GeoreferenceMapper(CDRMapper):
                 confidence=gcp.confidence,
                 model=MODEL_NAME,
                 model_version=MODEL_VERSION,
-                crs=model.projection,
+                crs=model.crs,
             )
             gcps.append(cdr_gcp)
 
@@ -83,11 +83,11 @@ class GeoreferenceMapper(CDRMapper):
             cog_id=model.map_id,
             georeference_results=[
                 GeoreferenceResult(
-                    likely_CRSs=[model.projection],
+                    likely_CRSs=[model.crs],
                     map_area=None,
                     projections=[
                         ProjectionResult(
-                            crs=model.projection,
+                            crs=model.crs,
                             gcp_ids=[gcp.gcp_id for gcp in gcps],
                             file_name=f"lara-{model.map_id}.tif",
                         )

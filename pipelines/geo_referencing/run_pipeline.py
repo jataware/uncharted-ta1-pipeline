@@ -152,11 +152,6 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
             results_summary[pipeline.id].append(output["summary"])
             results_levers[pipeline.id].append(output["levers"])
             results_gcps[pipeline.id].append(output["gcps"])
-            results_integration[pipeline.id].append(output["schema"])
-            schema_output_path = os.path.join(
-                parsed.output, "maps", f"{pipeline.id}", f"{raster_id}.json"
-            )
-            writer_json.output([output["schema"]], {"path": schema_output_path})  # type: ignore
             logger.info(f"done pipeline {pipeline.id}\n\n")
 
         for p in pipelines:

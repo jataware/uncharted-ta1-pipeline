@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import pprint
 import threading
 from time import sleep
 from typing import List, Optional
@@ -362,9 +363,10 @@ class LaraResultSubscriber:
             files_.append(
                 ("files", (output_file_name, open(output_file_name_full, "rb")))
             )
-        except:
-            logger.error(
-                "bad georeferencing result received so creating an empty result to send to cdr"
+        except Exception as e:
+            logger.exception(
+                "bad georeferencing result received so creating an empty result to send to cdr",
+                e,
             )
 
             # create an empty result to send to cdr
@@ -576,10 +578,19 @@ class LaraResultSubscriber:
         ]
         cps_p = []
         for cp in cps:
-            proj = Transformer.from_crs(cp["crs"], to_crs, always_xy=True)
-            x_p, y_p = proj.transform(xx=cp["x"], yy=cp["y"])
-            cps_p.append(
-                riot.GroundControlPoint(row=cp["row"], col=cp["col"], x=x_p, y=y_p)
-            )
+            if cp["crs"] != to_crs:
+                proj = Transformer.from_crs(cp["crs"], to_crs, always_xy=True)
+                x_p, y_p = proj.transform(xx=cp["x"], yy=cp["y"])
+                cps_p.append(
+                    riot.GroundControlPoint(row=cp["row"], col=cp["col"], x=x_p, y=y_p)
+                )
+            else:
+                cps_p.append(
+                    riot.GroundControlPoint(
+                        row=cp["row"], col=cp["col"], x=cp["x"], y=cp["y"]
+                    )
+                )
+        print("cps_p:")
+        pprint.pprint(cps_p)
 
         return riot.from_gcps(cps_p)
