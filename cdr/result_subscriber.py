@@ -48,35 +48,35 @@ class LaraResultSubscriber:
     HEARTBEAT_INTERVAL = 900
     BLOCKED_CONNECTION_TIMEOUT = 600
 
-    # task name definitions
-    SEGMENTATION_TASK = "segmentation"
-    METADATA_TASK = "metadata"
-    POINTS_TASK = "points"
-    GEOREFERENCE_TASK = "georeference"
-    NULL_TASK = "null"
+    # pipeline name definitions
+    SEGMENTATION_PIPELINE = "segmentation"
+    METADATA_PIPELINE = "metadata"
+    POINTS_PIPELINE = "points"
+    GEOREFERENCE_PIPELINE = "georeference"
+    NULL_PIPELINE = "null"
 
-    # task related rabbitmq queue names
-    TASK_QUEUES = {
-        SEGMENTATION_TASK: SEGMENTATION_REQUEST_QUEUE,
-        METADATA_TASK: METADATA_REQUEST_QUEUE,
-        POINTS_TASK: POINTS_REQUEST_QUEUE,
-        GEOREFERENCE_TASK: GEO_REFERENCE_REQUEST_QUEUE,
+    # pipeline related rabbitmq queue names
+    PIPELINE_QUEUES = {
+        SEGMENTATION_PIPELINE: SEGMENTATION_REQUEST_QUEUE,
+        METADATA_PIPELINE: METADATA_REQUEST_QUEUE,
+        POINTS_PIPELINE: POINTS_REQUEST_QUEUE,
+        GEOREFERENCE_PIPELINE: GEO_REFERENCE_REQUEST_QUEUE,
     }
 
-    # map of task output types to task names
-    TASK_OUTPUTS = {
-        OutputType.SEGMENTATION: SEGMENTATION_TASK,
-        OutputType.METADATA: METADATA_TASK,
-        OutputType.POINTS: POINTS_TASK,
-        OutputType.GEOREFERENCING: GEOREFERENCE_TASK,
+    # map of pipeline output types to pipeline names
+    PIPELINE_OUTPUTS = {
+        OutputType.SEGMENTATION: SEGMENTATION_PIPELINE,
+        OutputType.METADATA: METADATA_PIPELINE,
+        OutputType.POINTS: POINTS_PIPELINE,
+        OutputType.GEOREFERENCING: GEOREFERENCE_PIPELINE,
     }
 
-    # sequence of task execution
-    REQUEST_SEQUENCE = [
-        SEGMENTATION_TASK,
-        METADATA_TASK,
-        POINTS_TASK,
-        GEOREFERENCE_TASK,
+    # sequence of pipelines execution
+    DEFAULT_PIPELINE_SEQUENCE = [
+        SEGMENTATION_PIPELINE,
+        METADATA_PIPELINE,
+        POINTS_PIPELINE,
+        GEOREFERENCE_PIPELINE,
     ]
 
     def __init__(
@@ -91,6 +91,7 @@ class LaraResultSubscriber:
         system_version: str,
         json_log: JSONLog,
         host="localhost",
+        pipeline_sequence: List[str] = DEFAULT_PIPELINE_SEQUENCE,
     ) -> None:
         self._request_publisher = request_publisher
         self._result_connection: Optional[BlockingConnection] = None
@@ -104,6 +105,11 @@ class LaraResultSubscriber:
         self._system_version = system_version
         self._json_log = json_log
         self._host = host
+        self._pipeline_sequence = (
+            pipeline_sequence
+            if len(pipeline_sequence) > 0
+            else self.DEFAULT_PIPELINE_SEQUENCE
+        )
 
     def start_lara_result_queue(self):
         threading.Thread(
@@ -139,12 +145,12 @@ class LaraResultSubscriber:
         return channel
 
     @staticmethod
-    def next_request(next_task: str, image_id: str, image_url: str) -> Request:
+    def next_request(next_pipeline: str, image_id: str, image_url: str) -> Request:
         """
-        Creates a new Request object for the next task.
+        Creates a new Request object for the next pipeline.
 
         Args:
-            next_task (str): The name of the next task.
+            next_pipeline (str): The name of the next pipeline.
             image_id (str): The ID of the image.
             image_url (str): The URL of the image.
 
@@ -156,8 +162,8 @@ class LaraResultSubscriber:
         timestamp = int(current_time.timestamp())
 
         return Request(
-            id=f"{next_task}-{timestamp}-task",
-            task=f"{next_task}",
+            id=f"{next_pipeline}-{timestamp}-pipeline",
+            task=f"{next_pipeline}",
             output_format="cdr",
             image_id=image_id,
             image_url=image_url,
@@ -172,7 +178,7 @@ class LaraResultSubscriber:
     ):
         """
         Process the received LARA result.  In a serial execution model this will also
-        trigger the next task in the sequence.
+        trigger the next pipeline in the sequence.
 
         Args:
             channel (Channel): The channel object.
@@ -216,29 +222,29 @@ class LaraResultSubscriber:
                 {"type": result.output_type, "cog_id": result.request.image_id},
             )
 
-            # in the serial case we call the next task in the sequence
+            # in the serial case we call the next pipeline in the sequence
             if self._request_publisher:
-                # find the next task
-                output_task = self.TASK_OUTPUTS[result.output_type]
-                next = self.REQUEST_SEQUENCE.index(output_task) + 1
-                next_task = (
-                    self.REQUEST_SEQUENCE[next]
-                    if next < len(self.REQUEST_SEQUENCE)
-                    else self.NULL_TASK
+                # find the next pipeline
+                output_pipeline = self.PIPELINE_OUTPUTS[result.output_type]
+                next = self._pipeline_sequence.index(output_pipeline) + 1
+                next_pipeline = (
+                    self._pipeline_sequence[next]
+                    if next < len(self._pipeline_sequence)
+                    else self.NULL_PIPELINE
                 )
 
-                # if there is no next task in the sequence then we are done
-                if next_task == self.NULL_TASK:
+                # if there is no next pipeline in the sequence then we are done
+                if next_pipeline == self.NULL_PIPELINE:
                     return
 
                 request = self.next_request(
-                    next_task,
+                    next_pipeline,
                     result.request.image_id,
                     result.request.image_url,
                 )
                 logger.info(f"sending next request in sequence: {request.task}")
                 self._request_publisher.publish_lara_request(
-                    request, self.TASK_QUEUES[next_task]
+                    request, self.PIPELINE_QUEUES[next_pipeline]
                 )
 
         except Exception as e:
@@ -323,7 +329,9 @@ class LaraResultSubscriber:
         files_ = []
         try:
             lara_result = LARAGeoreferenceResult.model_validate(georef_result_raw)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result, f"{self._system_name}-georeference", self._system_version
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
             assert cdr_result is not None
             assert cdr_result.georeference_results is not None
@@ -355,7 +363,7 @@ class LaraResultSubscriber:
                 cog_id=result.request.image_id,
                 georeference_results=[],
                 gcps=[],
-                system=self._system_name,
+                system=f"{self._system_name}-georeference",
                 system_version=self._system_version,
             )
 
@@ -419,7 +427,9 @@ class LaraResultSubscriber:
         cdr_result: Optional[FeatureResults] = None
         try:
             lara_result = LARASegmentation.model_validate(segmentation_raw_result)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result, f"{self._system_name}-area", self._system_version
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except:
             logger.error(
@@ -437,7 +447,9 @@ class LaraResultSubscriber:
         cdr_result: Optional[FeatureResults] = None
         try:
             lara_result = LARAPoints.model_validate(points_raw_result)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result, f"{self._system_name}-points", self._system_version
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except:
             logger.error("bad points result received so unable to send results to cdr")
@@ -456,7 +468,9 @@ class LaraResultSubscriber:
         cdr_result: Optional[CogMetaData] = None
         try:
             lara_result = LARAMetadata.model_validate(metadata_result_raw)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result, f"{self._system_name}-metadata", self._system_version
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
             logger.exception(

@@ -26,11 +26,13 @@ class TextFilter(Task):
         self,
         task_id: str,
         filter_mode=FilterMode.EXCLUDE,
+        input_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
         classes: List[str] = THING_CLASSES_DEFAULT,
         should_run: Optional[Callable] = None,
     ):
         self._filter_mode = filter_mode
+        self._input_key = input_key
         self._output_key = output_key
         self._filering_classes = classes
         self._should_run = should_run
@@ -41,7 +43,7 @@ class TextFilter(Task):
             return self._create_result(input)
 
         # get OCR output
-        text_data = input.data[TEXT_EXTRACTION_OUTPUT_KEY]
+        text_data = input.data[self._input_key]
         doc_text = DocTextExtraction.model_validate(text_data)
 
         # get map segments

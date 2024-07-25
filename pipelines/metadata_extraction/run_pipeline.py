@@ -26,7 +26,7 @@ def main():
     parser.add_argument("--model", type=str, default=None)
     parser.add_argument("--cdr_schema", action="store_true")
     parser.add_argument("--debug_images", action="store_true")
-    parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_3_5_TURBO)
+    parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
     parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 

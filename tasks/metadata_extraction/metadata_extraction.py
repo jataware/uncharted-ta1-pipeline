@@ -301,21 +301,26 @@ class MetadataExtractor(Task):
         if self._should_run and not self._should_run(input):
             return self._create_result(input)
 
-        # use the cached result if available
         task_result = TaskResult(self._task_id)
-        doc_id = self._generate_doc_key(input)
-        result = self.fetch_cached_result(doc_id)
-        if result:
-            logger.info("Using cached metadata extraction result")
-            task_result.add_output(METADATA_EXTRACTION_OUTPUT_KEY, result)
-            return task_result
-
         doc_text: DocTextExtraction = input.parse_data(
-            self._text_key, DocTextExtraction.model_validate
+            self._text_key,
+            DocTextExtraction.model_validate,
+            self._create_empty_extraction,
         )
         if not doc_text:
             logger.info("returning empty metadata extraction result")
             return task_result
+
+        doc_id = self._generate_doc_key(input, doc_text)
+
+        # use the cached result if available
+        result = self.fetch_cached_result(doc_id)
+        if result:
+            logger.info(f"Using cached metadata extraction result for key {doc_id}")
+            task_result.add_output(METADATA_EXTRACTION_OUTPUT_KEY, result)
+            return task_result
+
+        logger.info(f"No cached metadata extraction result found for {doc_id}")
 
         # post-processing and follow on prompts
         metadata: Optional[MetadataExtraction] = input.parse_data(
@@ -323,7 +328,9 @@ class MetadataExtractor(Task):
         )
         if metadata is None:
             metadata = self._process_doc_text_extraction(doc_text)
+
         if metadata:
+            logger.info("Post-processing metadata extraction result")
             # map state names as needed
             for i, p in enumerate(metadata.states):
                 if p.lower() in PLACE_EXTENSION_MAP:
@@ -369,10 +376,14 @@ class MetadataExtractor(Task):
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
+        else:
+            logger.warn("No metadata extraction result found")
 
         return task_result
 
-    def _generate_doc_key(self, task_input: TaskInput) -> str:
+    def _generate_doc_key(
+        self, task_input: TaskInput, doc_text: DocTextExtraction
+    ) -> str:
         """
         Generates a unique document key based on the given task input and configuration.
 
@@ -387,8 +398,8 @@ class MetadataExtractor(Task):
                 "metadata",
                 task_input.raster_id,
                 self._model,
-                self._text_key,
                 str(self._include_place_bounds),
+                doc_text.model_dump_json(),
             ]
         )
         doc_key = hashlib.sha256(attributes.encode()).hexdigest()
@@ -408,12 +419,13 @@ class MetadataExtractor(Task):
         """
 
         try:
-            logger.info(f"Processing '{doc_text_extraction.doc_id}'")
+            logger.info(
+                f"Processing doc text extractions from '{doc_text_extraction.doc_id}'"
+            )
 
             max_text_length = self.MAX_TEXT_FILTER_LENGTH
             num_tokens = 0
 
-            prompt_str = ""
             input_prompt: Optional[PromptValue] = None
             text = []
 
@@ -444,14 +456,12 @@ class MetadataExtractor(Task):
                 logger.debug(
                     f"Token count after filtering exceeds limit - reducing max text length to {max_text_length}"
                 )
-
             logger.info(f"Processing {num_tokens} tokens.")
-
-            logger.debug("Prompt string:\n")
-            logger.debug(prompt_str)
 
             # generate the response
             if input_prompt is not None:
+                logger.debug("Prompt string:\n")
+                logger.debug(input_prompt.to_string())
                 chain = prompt_template | self._chat_model | parser
                 response = chain.invoke({"text_str": "\n".join(text)})
                 # add placeholders for fields we don't extract
@@ -490,6 +500,8 @@ class MetadataExtractor(Task):
         Returns:
             List[TextExtraction]: A list of extracted locations as TextExtraction objects.
         """
+        logger.info(f"Secondary extraction of point locations")
+
         text_indices = self._extract_text_with_index(doc_text)
 
         parser = PydanticOutputParser(pydantic_object=PointLocationsLLM)
@@ -517,6 +529,8 @@ class MetadataExtractor(Task):
         Returns:
             Tuple[str, str]: A tuple containing the extracted state and country.
         """
+        logger.info("Secondary extraction of state/country")
+
         parser = PydanticOutputParser(pydantic_object=StateCountryLLM)
         prompt_template = self._generate_prompt_template(
             parser, self.STATE_COUNTRY_TEMPLATE
@@ -550,6 +564,8 @@ class MetadataExtractor(Task):
         Returns:
             int: The UTM zone extracted from the metadata. 0 indicates that the UTM zone could not be inferred.
         """
+        logger.info(f"Secondary extraction of UTM zone")
+
         args = {
             "coordinate_systems": ",".join(metadata.coordinate_systems),
             "counties": ",".join(metadata.counties),
@@ -584,6 +600,7 @@ class MetadataExtractor(Task):
         Returns:
             List[str]: A list of extracted quadrangles.
         """
+        logger.info(f"Secondary extraction of quadrangles")
 
         args = {"title": metadata.title, "base_map": metadata.base_map}
 

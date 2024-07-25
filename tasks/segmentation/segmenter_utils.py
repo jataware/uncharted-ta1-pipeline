@@ -1,5 +1,7 @@
 import logging
 import math
+
+from shapely import MultiPolygon
 from tasks.segmentation.entities import MapSegmentation
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
@@ -63,10 +65,11 @@ def merge_overlapping_polygons(polys: List[Polygon]) -> List[Polygon]:
         return polys
 
     merged_polys = unary_union(polys)
+
     # convert merged geometry back to list of polygons
-    if merged_polys.geom_type == "MultiPolygon":
+    if isinstance(merged_polys, MultiPolygon):
         merged_polys = list(merged_polys.geoms)
-    elif merged_polys.geom_type == "Polygon":
+    elif isinstance(merged_polys, Polygon):
         merged_polys = [merged_polys]
     else:  # merged_poly.is_empty:
         # unary_union didn't work (unexpected, so return the original list
