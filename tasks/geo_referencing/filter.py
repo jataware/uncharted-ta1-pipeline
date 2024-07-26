@@ -6,6 +6,7 @@ import numpy as np
 from copy import deepcopy
 from sklearn.cluster import DBSCAN
 import matplotlib.path as mpltPath
+from shapely import distance, Polygon
 
 from tasks.geo_referencing.entities import (
     Coordinate,
@@ -380,7 +381,8 @@ class ROIFilter(FilterCoordinates):
         roi_inner_xy = input.get_data("roi_inner")
         self._add_param(input, str(uuid.uuid4()), "roi_inner", {"bounds": roi_inner_xy})
 
-        num_keypoints = min(len(lon_coords), len(lat_coords))
+        lon_counts, lat_counts = self._get_distinct_degrees(lon_coords, lat_coords)
+        num_keypoints = min(lon_counts, lat_counts)
         if num_keypoints < 2:
             logger.info(
                 f"roi filter not filtering since {num_keypoints} coord exists along one axis"
@@ -393,20 +395,78 @@ class ROIFilter(FilterCoordinates):
             input, lon_inputs, lat_inputs, True, roi_inner_xy
         )
         lon_pts, lat_pts = self._filter_roi(input, lon_pts, lat_pts, False, roi_xy)
+        lon_counts, lat_counts = self._get_distinct_degrees(lon_pts, lat_pts)
+
+        # TODO: SHOULD PRIORITIZE CERTAIN COORDS
+        #   EX: DETECT CORNER COORDS, OR COORDS THAT LINE UP WITH COORDS WITHIN THE ROI
+
+        # adjust based on distance to roi if insufficient points
+        if lon_counts < 2:
+            logger.info(
+                f"only {lon_counts} lon coords after roi filtering so re-adding coordinates"
+            )
+            lons_kept = self._adjust_filter(lon_inputs, roi_xy)
+            for lk in lons_kept:
+                lon_pts[lk.to_deg_result()[0]] = lk
+        if lat_counts < 2:
+            logger.info(
+                f"only {lon_counts} lat coords after roi filtering so re-adding coordinates"
+            )
+            lats_kept = self._adjust_filter(lat_inputs, roi_xy)
+            for lk in lats_kept:
+                lat_pts[lk.to_deg_result()[0]] = lk
+
         lon_pts, lat_pts = self._validate_lonlat_extractions(
             lon_pts, lat_pts, input.image.size
         )
 
         # check if too many points were removed
-        lats_distinct = set(map(lambda x: x[1].get_parsed_degree(), lat_pts.items()))
-        lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lon_pts.items()))
-        num_keypoints = min(len(lons_distinct), len(lats_distinct))
+        lon_counts, lat_counts = self._get_distinct_degrees(lon_pts, lat_pts)
+        num_keypoints = min(lon_counts, lat_counts)
         if num_keypoints < 2:
             logger.info(f"not filtering using roi due to too many points being removed")
             return lon_coords, lat_coords
 
         # apply to the parsed coordinates
+        logger.info(f"done filtering coordinates using roi")
         return lon_pts, lat_pts
+
+    def _adjust_filter(
+        self,
+        coords: Dict[Tuple[float, float], Coordinate],
+        roi_xy: List[Tuple[float, float]],
+    ) -> List[Coordinate]:
+        # get distance to roi for all coordinates
+        coordinates = [x[1] for x in coords.items()]
+        roi_poly = Polygon(roi_xy)
+        dist_coordinates = [(distance(c, roi_poly), c) for c in coordinates]
+
+        # rank all coordinates by distance to roi
+        coords_sorted = sorted(dist_coordinates, key=lambda x: x[0])
+
+        # include sufficient coordinates to still be able to georeference
+        degrees = set()
+        coords_kept = []
+        for c in coords_sorted:
+            if c[0] == 0:
+                # those within the polygon should already be included
+                degrees.add(c[1].get_parsed_degree())
+                coords_kept.append(c[1])
+                continue
+            degree = c[1].get_parsed_degree()
+            if len(degrees) < 2 and degree not in degrees:
+                degrees.add(degree)
+                coords_kept.append(c[1])
+        return coords_kept
+
+    def _get_distinct_degrees(
+        self,
+        lon_coords: Dict[Tuple[float, float], Coordinate],
+        lat_coords: Dict[Tuple[float, float], Coordinate],
+    ) -> Tuple[int, int]:
+        lats_distinct = set(map(lambda x: x[1].get_parsed_degree(), lat_coords.items()))
+        lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lon_coords.items()))
+        return len(lons_distinct), len(lats_distinct)
 
     def _validate_lonlat_extractions(
         self,
