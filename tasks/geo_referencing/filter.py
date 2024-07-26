@@ -6,7 +6,7 @@ import numpy as np
 from copy import deepcopy
 from sklearn.cluster import DBSCAN
 import matplotlib.path as mpltPath
-from shapely import distance, Polygon
+from shapely import distance, Polygon, Point
 
 from tasks.geo_referencing.entities import (
     Coordinate,
@@ -410,7 +410,7 @@ class ROIFilter(FilterCoordinates):
                 lon_pts[lk.to_deg_result()[0]] = lk
         if lat_counts < 2:
             logger.info(
-                f"only {lon_counts} lat coords after roi filtering so re-adding coordinates"
+                f"only {lat_counts} lat coords after roi filtering so re-adding coordinates"
             )
             lats_kept = self._adjust_filter(lat_inputs, roi_xy)
             for lk in lats_kept:
@@ -439,7 +439,9 @@ class ROIFilter(FilterCoordinates):
         # get distance to roi for all coordinates
         coordinates = [x[1] for x in coords.items()]
         roi_poly = Polygon(roi_xy)
-        dist_coordinates = [(distance(c, roi_poly), c) for c in coordinates]
+        dist_coordinates = [
+            (distance(Point(c.get_pixel_alignment()), roi_poly), c) for c in coordinates
+        ]
 
         # rank all coordinates by distance to roi
         coords_sorted = sorted(dist_coordinates, key=lambda x: x[0])
