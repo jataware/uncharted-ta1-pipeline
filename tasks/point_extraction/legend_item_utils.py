@@ -5,7 +5,7 @@ from collections import defaultdict
 from shapely import Polygon, distance
 
 from tasks.point_extraction.entities import LegendPointItem, LegendPointItems
-from tasks.point_extraction.label_map import LABEL_MAPPING
+from tasks.point_extraction.label_map import LABEL_MAPPING, YOLO_TO_CDR_LABEL
 from schema.cdr_schemas.cdr_responses.legend_items import LegendItemResponse
 from tasks.segmentation.entities import MapSegmentation
 
@@ -159,6 +159,17 @@ def find_legend_keyword_match(legend_item_name: str, raster_id: str) -> str:
         )
         return symbol_class
 
+    # if no matches, then double-check exact matches with CDR ontology terms
+    cdr_to_yolo = {v: k for k, v in YOLO_TO_CDR_LABEL.items()}
+    leg_label_norm = legend_item_name.strip().lower()
+    if leg_label_norm in cdr_to_yolo:
+        # match found
+        symbol_class = cdr_to_yolo[leg_label_norm]
+        logger.info(
+            f"Legend label: {legend_item_name} matches point class: {symbol_class}"
+        )
+        return symbol_class
+
     logger.info(f"No point class match found for legend label: {legend_item_name}")
     return ""
 
@@ -256,3 +267,24 @@ def filter_labelme_annotations(
                 # legend item swatch bbox is close to square
                 filtered_leg_items.append(leg)
     leg_point_items.items = filtered_leg_items
+
+
+def legend_items_use_ontology(leg_point_items: LegendPointItems) -> bool:
+    """
+    Check if all legend items use the feature ontology
+    (ie the class names are set)
+    """
+    class_labels_ok = True
+    if len(leg_point_items.items) > 0:
+        for leg_item in leg_point_items.items:
+            if not leg_item.class_name:
+                logger.info(
+                    "Point ontology labels are missing for some of the legend items. Proceeding with tiling and further analysis of legend area..."
+                )
+                class_labels_ok = False
+                break
+        if class_labels_ok:
+            logger.info(
+                f"*** Point ontology labels are available for ALL legend items. Skipping further legend item analysis."
+            )
+    return class_labels_ok

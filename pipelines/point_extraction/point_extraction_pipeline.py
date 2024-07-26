@@ -3,7 +3,10 @@ from pathlib import Path
 from typing import List
 
 from schema.mappers.cdr import PointsMapper
-from tasks.point_extraction.legend_analyzer import PointLegendAnalyzer
+from tasks.point_extraction.legend_analyzer import (
+    LegendPreprocessor,
+    LegendPostprocessor,
+)
 from tasks.point_extraction.point_extractor import YOLOPointDetector
 from tasks.point_extraction.point_orientation_extractor import PointOrientationExtractor
 from tasks.point_extraction.point_extractor_utils import convert_preds_to_bitmasks
@@ -84,7 +87,7 @@ class PointExtractionPipeline(Pipeline):
             )
         tasks.extend(
             [
-                PointLegendAnalyzer("legend_analyzer", ""),
+                LegendPreprocessor("legend_preprocessor", ""),
                 Tiler("tiling"),
                 YOLOPointDetector(
                     "point_detection",
@@ -94,6 +97,7 @@ class PointExtractionPipeline(Pipeline):
                 ),
                 Untiler("untiling"),
                 PointOrientationExtractor("point_orientation_extraction"),
+                LegendPostprocessor("legend_postprocessor", ""),
                 TemplateMatchPointExtractor(
                     "template_match_point_extraction",
                     str(Path(work_dir).joinpath("template_match_points")),
@@ -127,7 +131,7 @@ class MapPointLabelOutput(OutputCreator):
         Returns:
             PointLabel: The map point label extraction object.
         """
-        map_image = MapImage.model_validate(pipeline_result.data["map_image"])
+        map_image = PointLabels.model_validate(pipeline_result.data["map_image"])
         return BaseModelOutput(
             pipeline_result.pipeline_id,
             pipeline_result.pipeline_name,
@@ -159,7 +163,7 @@ class CDROutput(OutputCreator):
         Returns:
             Output: The output of the pipeline.
         """
-        map_image = MapImage.model_validate(pipeline_result.data["map_image"])
+        map_image = PointLabels.model_validate(pipeline_result.data["map_image"])
         mapper = PointsMapper(MODEL_NAME, MODEL_VERSION)
 
         cdr_points = mapper.map_to_cdr(map_image)
@@ -192,7 +196,7 @@ class BitmasksOutput(OutputCreator):
         Returns:
             Output: The output of the pipeline.
         """
-        map_image = MapImage.model_validate(pipeline_result.data["map_image"])
+        map_image = PointLabels.model_validate(pipeline_result.data["map_image"])
         legend_labels = []
         if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
             legend_pt_items = LegendPointItems.model_validate(

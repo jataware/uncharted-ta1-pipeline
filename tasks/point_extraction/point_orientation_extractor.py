@@ -184,15 +184,16 @@ class PointOrientationExtractor(Task):
         """
 
         # get result from point extractor task (with point symbol predictions)
-        map_image = PointLabels.model_validate(input.data["map_image"])
-        if map_image.labels is None:
+        map_point_labels = PointLabels.model_validate(input.data["map_point_labels"])
+        if map_point_labels.labels is None:
             raise RuntimeError("PointLabels must have labels to run batch_predict")
-        if len(map_image.labels) == 0:
+        if len(map_point_labels.labels) == 0:
             logger.warning(
                 "No point symbol extractions found. Skipping Point orientation extraction."
             )
             TaskResult(
-                task_id=self._task_id, output={"map_image": map_image.model_dump()}
+                task_id=self._task_id,
+                output={"map_point_labels": map_point_labels.model_dump()},
             )
 
         # get OCR output
@@ -212,7 +213,7 @@ class PointOrientationExtractor(Task):
 
         # group point extractions by class label
         match_candidates = defaultdict(list)  # class name -> list of tuples
-        for i, p in enumerate(map_image.labels):
+        for i, p in enumerate(map_point_labels.labels):
             # tuple of (original extraction id, pt extraction object)
             match_candidates[p.class_name].append((i, p))
 
@@ -241,7 +242,7 @@ class PointOrientationExtractor(Task):
                 )
                 # save dip angle results for this point class
                 for idx, (dip_angle, _) in dip_magnitudes.items():
-                    map_image.labels[idx].dip = dip_angle
+                    map_point_labels.labels[idx].dip = dip_angle
 
             # --- 2. estimate symbol orientation (using template matching)
             # --- pre-process the main image and template image, before template matching
@@ -347,13 +348,14 @@ class PointOrientationExtractor(Task):
             for idx, (_, best_angle) in xcorr_results.items():
                 # convert final result from 'trig' angle convention
                 # to compass angle convention (CW with 0 deg at top)
-                map_image.labels[idx].direction = self._trig_to_compass_angle(
+                map_point_labels.labels[idx].direction = self._trig_to_compass_angle(
                     best_angle, task_config.rotate_max
                 )
             logger.info(f"Finished point orientation analysis for class {c}")
 
         return TaskResult(
-            task_id=self._task_id, output={"map_image": map_image.model_dump()}
+            task_id=self._task_id,
+            output={"map_point_labels": map_point_labels.model_dump()},
         )
 
     def _trig_to_compass_angle(self, angle_deg: int, rotate_max: int) -> int:

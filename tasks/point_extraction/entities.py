@@ -28,11 +28,6 @@ class PointLabel(BaseModel):
     score: float
     direction: Optional[float] = None  # [deg] orientation of point symbol
     dip: Optional[float] = None  # [deg] dip angle associated with symbol
-    legend_name: str = Field(
-        default="",
-        description="Label for the legend item associated with this extraction",
-    )
-    # legend_bbox: List[Union[float, int]] # TODO -- is this needed here?
 
 
 class PointLabels(BaseModel):
@@ -127,9 +122,7 @@ class ImageTiles(BaseModel):
             tiles=tiles_cache,
         )
 
-    def join_with_cached_predictions(
-        self, cached_preds: ImageTiles, point_legend_mapping: Dict[str, LegendPointItem]
-    ) -> bool:
+    def join_with_cached_predictions(self, cached_preds: ImageTiles) -> bool:
         """
         Append cached point predictions to ImageTiles
         """
@@ -145,16 +138,6 @@ class ImageTiles(BaseModel):
                     return False
                 t_cached: ImageTile = cached_dict[key]
                 t.predictions = t_cached.predictions
-
-                if t.predictions is not None:
-                    for pred in t.predictions:
-                        class_name = pred.class_name
-                        # map YOLO class name to legend item name, if available
-                        if pred.class_name in point_legend_mapping:
-                            pred.legend_name = point_legend_mapping[class_name].name
-                            pred.legend_bbox = point_legend_mapping[
-                                class_name
-                            ].legend_bbox
 
             return True
         except Exception as e:
@@ -192,9 +175,7 @@ class LegendPointItem(BaseModel):
                     label. Format is expected to be [x,y] coordinate pairs
                     where the top left is the origin (0,0).""",
     )
-    system: str = Field(
-        default="", description="System that published this item"
-    )  # dgdg -- is this needed? (or get rid of provenance below?)
+    system: str = Field(default="", description="System that published this item")
     validated: bool = Field(default=False, description="Validated by human")
     confidence: Optional[float] = Field(
         default=None,

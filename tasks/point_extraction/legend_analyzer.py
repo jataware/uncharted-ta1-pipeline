@@ -13,9 +13,9 @@ from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 logger = logging.getLogger(__name__)
 
 
-class PointLegendAnalyzer(Task):
+class LegendPreprocessor(Task):
     """
-    Analysis of Point Symbol Legend Items
+    Pre-processing of Point Symbol Legend Items
     """
 
     def __init__(
@@ -69,3 +69,26 @@ class PointLegendAnalyzer(Task):
             )
 
         return self._create_result(task_input)
+
+
+class LegendPostprocessor(Task):
+    """
+    Post-processing of Point Symbol Legend Items
+    """
+
+    def __init__(
+        self,
+        task_id: str,
+        cache_path: str,
+    ):
+
+        super().__init__(task_id, cache_path)
+
+    def run(self, task_input: TaskInput) -> TaskResult:
+        """
+        run point symbol legend post-processing
+        """
+        ## WIP!
+
+        return self._create_result(task_input)
+

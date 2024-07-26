@@ -107,9 +107,9 @@ def main():
         if p.bitmasks:
             bitmasks_out_dir = os.path.join(p.output, "bitmasks")
             os.makedirs(bitmasks_out_dir, exist_ok=True)
-            if not p.legend_hints_dir:
+            if not p.legend_hints_dir or not p.legend_annotations_dir:
                 logger.warning(
-                    'Points pipeline is configured to create CMA contest bitmasks without using legend hints! Setting "legend_hints_dir" param is recommended.'
+                    'Points pipeline is configured to create CMA contest bitmasks without using legend annotations! Setting "legend_hints_dir" or "legend_annotations_dir" param is recommended.'
                 )
 
         results = pipeline.run(image_input)
