@@ -381,8 +381,10 @@ class ROIFilter(FilterCoordinates):
         roi_inner_xy = input.get_data("roi_inner")
         self._add_param(input, str(uuid.uuid4()), "roi_inner", {"bounds": roi_inner_xy})
 
-        lon_counts, lat_counts = self._get_distinct_degrees(lon_coords, lat_coords)
-        num_keypoints = min(lon_counts, lat_counts)
+        lon_counts_initial, lat_counts_initial = self._get_distinct_degrees(
+            lon_coords, lat_coords
+        )
+        num_keypoints = min(lon_counts_initial, lat_counts_initial)
         if num_keypoints < 2:
             logger.info(
                 f"roi filter not filtering since {num_keypoints} coord exists along one axis"
@@ -401,21 +403,20 @@ class ROIFilter(FilterCoordinates):
         #   EX: DETECT CORNER COORDS, OR COORDS THAT LINE UP WITH COORDS WITHIN THE ROI
 
         # adjust based on distance to roi if insufficient points
-        if lon_counts < 2:
+        if lon_counts < 2 and lon_counts < lon_counts_initial:
             logger.info(
                 f"only {lon_counts} lon coords after roi filtering so re-adding coordinates"
             )
-            lons_kept = self._adjust_filter(lon_inputs, roi_xy)
+            lons_kept = self._adjust_filter(lon_coords, roi_xy)
             for lk in lons_kept:
                 lon_pts[lk.to_deg_result()[0]] = lk
-        if lat_counts < 2:
+        if lat_counts < 2 and lat_counts < lat_counts_initial:
             logger.info(
                 f"only {lat_counts} lat coords after roi filtering so re-adding coordinates"
             )
-            lats_kept = self._adjust_filter(lat_inputs, roi_xy)
+            lats_kept = self._adjust_filter(lat_coords, roi_xy)
             for lk in lats_kept:
                 lat_pts[lk.to_deg_result()[0]] = lk
-
         lon_pts, lat_pts = self._validate_lonlat_extractions(
             lon_pts, lat_pts, input.image.size
         )
@@ -439,22 +440,15 @@ class ROIFilter(FilterCoordinates):
         # get distance to roi for all coordinates
         coordinates = [x[1] for x in coords.items()]
         roi_poly = Polygon(roi_xy)
-        dist_coordinates = [
-            (distance(Point(c.get_pixel_alignment()), roi_poly), c) for c in coordinates
-        ]
+        score_coordinates = [(self._get_roi_score(c, roi_poly), c) for c in coordinates]
 
         # rank all coordinates by distance to roi
-        coords_sorted = sorted(dist_coordinates, key=lambda x: x[0])
+        coords_sorted = sorted(score_coordinates, key=lambda x: x[0], reverse=True)
 
         # include sufficient coordinates to still be able to georeference
         degrees = set()
         coords_kept = []
         for c in coords_sorted:
-            if c[0] == 0:
-                # those within the polygon should already be included
-                degrees.add(c[1].get_parsed_degree())
-                coords_kept.append(c[1])
-                continue
             degree = c[1].get_parsed_degree()
             if len(degrees) < 2 and degree not in degrees:
                 degrees.add(degree)
@@ -620,3 +614,22 @@ class ROIFilter(FilterCoordinates):
                     )
 
         return (lon_results, lat_results)
+
+    def _get_roi_score(self, coordinate: Coordinate, roi_poly: Polygon) -> float:
+        # combine distance and coordinate confidence for an initial scoring mechanism
+        coord_dist = distance(Point(coordinate.get_pixel_alignment()), roi_poly)
+        coord_conf = coordinate.get_confidence()
+
+        # penalize confidence based on ratio of distance and roi size
+        roi_bounds = roi_poly.bounds
+        min_dimension = min(
+            (roi_bounds[2] - roi_bounds[0]), (roi_bounds[3] - roi_bounds[1])
+        )
+        comparable_size = min_dimension / 10
+
+        conf_adjustment = max(1 - (coord_dist / comparable_size), 0)
+        score = coord_conf * conf_adjustment
+        logger.info(
+            f"adjusting confidence of point {coordinate.get_pixel_alignment()} by {conf_adjustment} to {score}"
+        )
+        return score
