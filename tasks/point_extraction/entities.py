@@ -176,6 +176,9 @@ class LegendPointItem(BaseModel):
                     where the top left is the origin (0,0).""",
     )
     system: str = Field(default="", description="System that published this item")
+    system_version: str = Field(
+        default="", description="System version that published this item"
+    )
     validated: bool = Field(default=False, description="Validated by human")
     confidence: Optional[float] = Field(
         default=None,

@@ -131,11 +131,13 @@ class MapPointLabelOutput(OutputCreator):
         Returns:
             PointLabel: The map point label extraction object.
         """
-        map_image = PointLabels.model_validate(pipeline_result.data["map_image"])
+        map_point_labels = PointLabels.model_validate(
+            pipeline_result.data["map_point_labels"]
+        )
         return BaseModelOutput(
             pipeline_result.pipeline_id,
             pipeline_result.pipeline_name,
-            map_image,
+            map_point_labels,
         )
 
 
@@ -163,10 +165,18 @@ class CDROutput(OutputCreator):
         Returns:
             Output: The output of the pipeline.
         """
-        map_image = PointLabels.model_validate(pipeline_result.data["map_image"])
+        map_point_labels = PointLabels.model_validate(
+            pipeline_result.data["map_point_labels"]
+        )
+        legend_pt_items = LegendPointItems(items=[])
+        if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
+            legend_pt_items = LegendPointItems.model_validate(
+                pipeline_result.data[LEGEND_ITEMS_OUTPUT_KEY]
+            )
+
         mapper = PointsMapper(MODEL_NAME, MODEL_VERSION)
 
-        cdr_points = mapper.map_to_cdr(map_image)
+        cdr_points = mapper.map_to_cdr(map_point_labels, legend_pt_items)
         return BaseModelOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, cdr_points
         )
@@ -196,18 +206,20 @@ class BitmasksOutput(OutputCreator):
         Returns:
             Output: The output of the pipeline.
         """
-        map_image = PointLabels.model_validate(pipeline_result.data["map_image"])
-        legend_labels = []
+        map_point_labels = PointLabels.model_validate(
+            pipeline_result.data["map_point_labels"]
+        )
         if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
             legend_pt_items = LegendPointItems.model_validate(
                 pipeline_result.data[LEGEND_ITEMS_OUTPUT_KEY]
             )
-            legend_labels = [pt_type.name for pt_type in legend_pt_items.items]
 
         if pipeline_result.image is None:
             raise ValueError("Pipeline result image is None")
         (w, h) = pipeline_result.image.size
-        bitmasks_dict = convert_preds_to_bitmasks(map_image, legend_labels, (w, h))
+        bitmasks_dict = convert_preds_to_bitmasks(
+            map_point_labels, legend_pt_items, (w, h)
+        )
 
         return ImageDictOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, bitmasks_dict

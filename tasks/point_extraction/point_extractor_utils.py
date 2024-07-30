@@ -5,7 +5,8 @@ import numpy as np
 from PIL import Image
 
 from collections import defaultdict
-from tasks.point_extraction.entities import PointLabels
+from tasks.point_extraction.entities import PointLabels, LegendPointItems
+from tasks.point_extraction.label_map import YOLO_TO_CDR_LABEL
 from tasks.text_extraction.entities import TextExtraction
 from shapely.geometry import Polygon
 from shapely.strtree import STRtree
@@ -313,9 +314,22 @@ def mask_ocr_blocks(
     return im
 
 
+def get_cdr_point_name(class_name: str, legend_name: str) -> str:
+    """
+    get normalized name for this point symbol type, based on internal ML class name,
+    legend item name, and CDR point ontology
+    """
+    # use CDR point ontology, if possible...
+    pt_name = class_name if class_name else legend_name
+    if pt_name in YOLO_TO_CDR_LABEL:
+        # map from YOLO point class to CDR point label
+        pt_name = YOLO_TO_CDR_LABEL[pt_name]
+    return pt_name
+
+
 def convert_preds_to_bitmasks(
-    map_image: PointLabels,
-    legend_pt_labels: List[str],
+    map_pt_labels: PointLabels,
+    legend_pt_items: LegendPointItems,
     w_h: Tuple[int, int],
     binary_pixel_val=1,
 ) -> Dict[str, Image.Image]:
@@ -323,40 +337,43 @@ def convert_preds_to_bitmasks(
     Convert the PointLabels point predictions to CMA contest style bitmasks
     Output is dict: point label -> bitmask image
     """
-    if not map_image.labels:
+    if not map_pt_labels.labels:
         logger.warning(
-            f"No point predictions for raster id {map_image.raster_id}. Skipping creation of bitmasks."
+            f"No point predictions for raster id {map_pt_labels.raster_id}. Skipping creation of bitmasks."
         )
         return {}
 
-    # group predictions by legend label or class name
+    # note, for contest bitmask output names use legend annotations/hints labels in place of
+    # CDR point ontology, where applicable
+    pt_class_to_legend_name = {}
     point_preds_by_class = defaultdict(list)
-    # initialize with any available legend labels, so we will create an empty bitmask
-    # even if no extractions were found for a given point type
-    for pt_label in legend_pt_labels:
-        point_preds_by_class[pt_label] = []
-    for map_pt_label in map_image.labels:
-        # point label
-        pt_label = (
-            map_pt_label.legend_name
-            if map_pt_label.legend_name
-            else map_pt_label.class_name
-        )
+    # create class name to legend item mapping
+    for leg_item in legend_pt_items.items:
+        pt_name = get_cdr_point_name(leg_item.class_name, leg_item.name)
+        pt_class_to_legend_name[pt_name] = leg_item.name
+        # also create empty point_preds entry, so we will create an empty bitmask
+        # even if no extractions were found for a given point type
+        point_preds_by_class[pt_name] = []
+
+    for map_pt_label in map_pt_labels.labels:
+        pt_name = get_cdr_point_name(map_pt_label.class_name, "")
         # bbox center
         xc = int((map_pt_label.x1 + map_pt_label.x2) / 2)
         yc = int((map_pt_label.y1 + map_pt_label.y2) / 2)
-
-        point_preds_by_class[pt_label].append((xc, yc))
+        point_preds_by_class[pt_name].append((xc, yc))
 
     logger.info(
-        f"Creating {len(point_preds_by_class)} bitmasks for raster id {map_image.raster_id}"
+        f"Creating {len(point_preds_by_class)} bitmasks for raster id {map_pt_labels.raster_id}"
     )
 
     bitmasks = {}
-    for pt_label, pts_xy in point_preds_by_class.items():
+    for class_name, pts_xy in point_preds_by_class.items():
         im_binary = np.zeros((w_h[1], w_h[0]), dtype=np.uint8)
         for x, y in pts_xy:
             im_binary[y, x] = binary_pixel_val
+        # generate final bitmask feature label and store result
+        pt_label = pt_class_to_legend_name.get(class_name, class_name)
+        pt_label = pt_label.strip().replace(" ", "_")
         bitmasks[pt_label] = Image.fromarray(im_binary.astype(np.uint8))
 
     return bitmasks

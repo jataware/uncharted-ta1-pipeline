@@ -215,6 +215,7 @@ def legend_ann_to_legend_items(
                 legend_bbox=leg_ann.px_bbox,
                 legend_contour=xy_pts,
                 system=leg_ann.system,
+                system_version=leg_ann.system_version,
                 confidence=leg_ann.confidence,
                 validated=leg_ann.validated,
             )
