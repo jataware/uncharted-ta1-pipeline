@@ -78,7 +78,7 @@ class TemplateMatchPointExtractor(Task):
             legend_pt_items = LegendPointItems(items=[])
 
         if not legend_pt_items or not legend_pt_items.items:
-            logger.warning(
+            logger.info(
                 "No Legend item info available. Skipping Template-Match Point Extractor"
             )
             result = self._create_result(task_input)

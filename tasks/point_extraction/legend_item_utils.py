@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-from typing import List
+from typing import List, Tuple
 from collections import defaultdict
 from shapely import Polygon, distance
 
@@ -66,18 +66,21 @@ def parse_legend_annotations(
         system_label = system
         legend_point_items.extend(legend_ann_to_legend_items(leg_anns, raster_id))
     if legend_point_items:
+        logger.info(f"Parsed {len(legend_point_items)} legend point items")
         return LegendPointItems(items=legend_point_items, provenance=system_label)
     else:
-        # try to parse label annotations 2nd (since labelme anns have noisy data for point/line features)
+        # try to parse labelme annotations 2nd (since labelme anns have noisy data for point/line features)
         for system, leg_anns in legend_item_resps.items():
             if not system == LEGEND_ANNOTATION_PROVENANCE.LABELME:
                 continue
             legend_point_items.extend(legend_ann_to_legend_items(leg_anns, raster_id))
         if legend_point_items:
+            logger.info(f"Parsed {len(legend_point_items)} labelme legend point items")
             return LegendPointItems(
                 items=legend_point_items,
                 provenance=LEGEND_ANNOTATION_PROVENANCE.LABELME,
             )
+    logger.info(f"Parsed 0 legend point items")
     return LegendPointItems(items=[], provenance="")
 
 
@@ -170,6 +173,23 @@ def find_legend_keyword_match(legend_item_name: str, raster_id: str) -> str:
     return ""
 
 
+def get_swatch_contour(bbox: List, xy_pts: List[List]) -> Tuple:
+    if bbox and xy_pts:
+        return (bbox, xy_pts)
+    if xy_pts:
+        # calc bbox from contour
+        p = Polygon(xy_pts)
+        bbox = list(p.bounds)
+    if bbox:
+        xy_pts = [
+            [bbox[0], bbox[1]],
+            [bbox[2], bbox[1]],
+            [bbox[2], bbox[3]],
+            [bbox[0], bbox[3]],
+        ]
+    return (bbox, xy_pts)
+
+
 def legend_ann_to_legend_items(
     legend_anns: List[LegendItemResponse], raster_id: str
 ) -> List[LegendPointItems]:
@@ -190,17 +210,18 @@ def legend_ann_to_legend_items(
             # skip the 2nd labelme annotation in each pair
             # (this 2nd entry is just the bbox for the legend item text; TODO -- could extract and include this text too?)
             continue
+        if (
+            not leg_ann.system == LEGEND_ANNOTATION_PROVENANCE.LABELME
+            and not leg_ann.category == "point"
+        ):
+            # this legend annotation does not represent a point feature; skip
+            # (Note: LABELME annotations are handled separately, because it labels ALL feature types as "polygons")
+            continue
+
         class_name = find_legend_keyword_match(label, raster_id)
-        xy_pts = (
-            leg_ann.px_geojson.coordinates[0]
-            if leg_ann.px_geojson
-            else [
-                [leg_ann.px_bbox[0], leg_ann.px_bbox[1]],
-                [leg_ann.px_bbox[2], leg_ann.px_bbox[1]],
-                [leg_ann.px_bbox[2], leg_ann.px_bbox[3]],
-                [leg_ann.px_bbox[0], leg_ann.px_bbox[3]],
-            ]
-        )
+
+        xy_pts = leg_ann.px_geojson.coordinates[0] if leg_ann.px_geojson else []
+        (bbox, xy_pts) = get_swatch_contour(leg_ann.px_bbox, xy_pts)
 
         legend_point_items.append(
             LegendPointItem(
@@ -208,7 +229,7 @@ def legend_ann_to_legend_items(
                 class_name=class_name,
                 abbreviation=leg_ann.abbreviation,
                 description=leg_ann.description,
-                legend_bbox=leg_ann.px_bbox,
+                legend_bbox=bbox,
                 legend_contour=xy_pts,
                 system=leg_ann.system,
                 system_version=leg_ann.system_version,

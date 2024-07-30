@@ -210,6 +210,7 @@ class BitmasksOutput(OutputCreator):
         map_point_labels = PointLabels.model_validate(
             pipeline_result.data[MAP_PT_LABELS_OUTPUT_KEY]
         )
+        legend_pt_items = LegendPointItems(items=[])
         if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
             legend_pt_items = LegendPointItems.model_validate(
                 pipeline_result.data[LEGEND_ITEMS_OUTPUT_KEY]

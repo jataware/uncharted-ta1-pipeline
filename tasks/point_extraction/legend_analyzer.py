@@ -44,22 +44,28 @@ class LegendPreprocessor(Task):
             )
         elif LEGEND_ITEMS_OUTPUT_KEY in task_input.request:
             # legend items for point symbols already exist as a request param
-            # (ie, loaded from a JSON hints file)
+            # (ie, loaded from a JSON hints or annotations file)
             # convert to a TaskResult...
             legend_pt_items = LegendPointItems.model_validate(
                 task_input.request[LEGEND_ITEMS_OUTPUT_KEY]
             )
 
-        if (
-            legend_pt_items
-            and legend_pt_items.provenance == LEGEND_ANNOTATION_PROVENANCE.LABELME
-        ):
+        if legend_pt_items:
+            if not legend_pt_items.provenance == LEGEND_ANNOTATION_PROVENANCE.LABELME:
+                # not "labelme" legend items, just output task result
+                return TaskResult(
+                    task_id=self._task_id,
+                    output={LEGEND_ITEMS_OUTPUT_KEY: legend_pt_items.model_dump()},
+                )
+
+            # "labelme" legend items...
+            # use segmentation results to filter noisy "labelme" legend annotations
+            # (needed because all labelme annotations are set to type "polygon" regardless of feature type: polygons, lines or points)
             if SEGMENTATION_OUTPUT_KEY in task_input.data:
                 segmentation = MapSegmentation.model_validate(
                     task_input.data[SEGMENTATION_OUTPUT_KEY]
                 )
-                # use segmentation results to filter noisy "labelme" legend annotations
-                # (needed because all labelme annotations are set to type "polygon" regardless of feature type: polygons, lines or points)
+
                 filter_labelme_annotations(legend_pt_items, segmentation)
                 logger.info(
                     f"Number of legend point annotations after filtering: {len(legend_pt_items.items)}"
