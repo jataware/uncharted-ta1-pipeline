@@ -24,7 +24,7 @@ from tasks.common.queue import (
 from schema.mappers.cdr import get_mapper
 from schema.cdr_schemas.events import MapEventPayload
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from util.logging import config_logger
 
@@ -34,7 +34,6 @@ app = Flask(__name__)
 
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 CDR_HOST = "https://api.cdr.land"
-CDR_SYSTEM_NAME = "uncharted"
 CDR_SYSTEM_VERSION = "0.0.4"
 CDR_CALLBACK_SECRET = "maps rock"
 APP_PORT = 5001
@@ -54,15 +53,14 @@ class Settings:
     workdir: str
     imagedir: str
     output: str
-    system_name: str
     system_version: str
     callback_secret: str
     callback_url: str
-    registration_id: str
+    registration_id: Dict[str, str] = {}
     rabbitmq_host: str
     json_log: JSONLog
     serial: bool
-    sequence: List[str]
+    sequence: List[str] = []
 
 
 def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
@@ -212,31 +210,41 @@ def process_image(image_id: str, request_publisher: LaraRequestPublisher):
 
 
 def register_cdr_system():
-    logger.info(f"registering system {settings.system_name} with cdr")
-    headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
 
-    registration = {
-        "name": settings.system_name,
-        "version": settings.system_version,
-        "callback_url": settings.callback_url,
-        "webhook_secret": settings.callback_secret,
-        # Leave blank if callback url has no auth requirement
-        # "auth_header": "",
-        # "auth_token": "",
-        # Registers for ALL events
-        "events": [],
-    }
+    for i, pipeline in enumerate(settings.sequence):
+        system_name = LaraResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]
+        logger.info(f"registering system {system_name} with cdr")
+        headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
 
-    client = httpx.Client(follow_redirects=True)
+        # register for all events on the first pipeline others can ignore
+        events: Optional[List[str]] = [] if i == 0 else ["ping"]
 
-    r = client.post(
-        f"{settings.cdr_host}/user/me/register", json=registration, headers=headers
-    )
+        registration = {
+            "name": system_name,
+            "version": settings.system_version,
+            "callback_url": settings.callback_url,
+            "webhook_secret": settings.callback_secret,
+            # Leave blank if callback url has no auth requirement
+            # "auth_header": "",
+            # "auth_token": "",
+            "events": events,
+        }
 
-    # Log our registration_id such we can delete it when we close the program.
-    response_raw = r.json()
-    settings.registration_id = response_raw["id"]
-    logger.info(f"system {settings.system_name} registered with cdr")
+        client = httpx.Client(follow_redirects=True)
+
+        r = client.post(
+            f"{settings.cdr_host}/user/me/register", json=registration, headers=headers
+        )
+        # check if the request was successful
+        if r.status_code != 200:
+            logger.error(f"failed to register system {system_name} with cdr")
+            logger.error(f"response: {r.text}")
+            exit(1)
+
+        # Log our registration_id such we can delete it when we close the program.
+        response_raw = r.json()
+        settings.registration_id[pipeline] = response_raw["id"]
+        logger.info(f"system {system_name} registered with cdr")
 
 
 def get_cdr_registrations() -> List[Dict[str, Any]]:
@@ -266,8 +274,9 @@ def cdr_unregister(registration_id: str):
 def cdr_clean_up():
     logger.info(f"unregistering system {settings.registration_id} with cdr")
     # delete our registered system at CDR on program end
-    cdr_unregister(settings.registration_id)
-    logger.info(f"system {settings.registration_id} no longer registered with cdr")
+    for pipeline in settings.sequence:
+        cdr_unregister(settings.registration_id[pipeline])
+        logger.info(f"system {settings.registration_id} no longer registered with cdr")
 
 
 def cdr_startup(host: str):
@@ -275,8 +284,11 @@ def cdr_startup(host: str):
     registrations = get_cdr_registrations()
     if len(registrations) > 0:
         for r in registrations:
-            if r["name"] == settings.system_name:
-                cdr_unregister(r["id"])
+            for pipeline in settings.sequence:
+                if r["name"] == LaraResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]:
+                    logger.info(f"unregistering system {r['name']} with cdr")
+                    cdr_unregister(r["id"])
+                    break
 
     # make it accessible from the outside
     settings.callback_url = f"{host}/process_event"
@@ -302,7 +314,6 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("process", "host"), required=True)
-    parser.add_argument("--system", type=str, default=CDR_SYSTEM_NAME)
     parser.add_argument("--workdir", type=str, required=True)
     parser.add_argument("--imagedir", type=str, required=True)
     parser.add_argument("--cog_id", type=str, required=False)
@@ -322,7 +333,6 @@ def main():
     settings.workdir = p.workdir
     settings.imagedir = p.imagedir
     settings.output = p.output
-    settings.system_name = p.system
     settings.system_version = CDR_SYSTEM_VERSION
     settings.callback_secret = CDR_CALLBACK_SECRET
     settings.serial = True
@@ -362,7 +372,6 @@ def main():
         settings.cdr_api_token,
         settings.output,
         settings.workdir,
-        settings.system_name,
         settings.system_version,
         settings.json_log,
         host=p.host,
