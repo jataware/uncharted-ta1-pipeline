@@ -2,6 +2,8 @@ from tasks.point_extraction.entities import (
     ImageTile,
     ImageTiles,
     PointLabel,
+    MAP_TILES_OUTPUT_KEY,
+    LEGEND_TILES_OUTPUT_KEY,
 )
 
 from tasks.common.s3_data_cache import S3DataCache
@@ -141,7 +143,7 @@ class YOLOPointDetector(Task):
         """
         run YOLO model inference for point symbol detection
         """
-        map_tiles = ImageTiles.model_validate(task_input.data["map_tiles"])
+        map_tiles = ImageTiles.model_validate(task_input.data[MAP_TILES_OUTPUT_KEY])
 
         if self.device == "auto":
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -152,9 +154,11 @@ class YOLOPointDetector(Task):
         logger.info(f"Running model inference on {len(map_tiles.tiles)} map tiles")
         self._process_tiles(map_tiles, task_input.raster_id, "map")
 
-        if "legend_tiles" in task_input.data:
+        if LEGEND_TILES_OUTPUT_KEY in task_input.data:
             # --- also run point extraction model on legend area tiles, if available
-            legend_tiles = ImageTiles.model_validate(task_input.data["legend_tiles"])
+            legend_tiles = ImageTiles.model_validate(
+                task_input.data[LEGEND_TILES_OUTPUT_KEY]
+            )
             logger.info(
                 f"Also running model inference on {len(legend_tiles.tiles)} legend tiles"
             )
@@ -163,13 +167,13 @@ class YOLOPointDetector(Task):
             return TaskResult(
                 task_id=self._task_id,
                 output={
-                    "map_tiles": map_tiles.model_dump(),
-                    "legend_tiles": legend_tiles.model_dump(),
+                    MAP_TILES_OUTPUT_KEY: map_tiles.model_dump(),
+                    LEGEND_TILES_OUTPUT_KEY: legend_tiles.model_dump(),
                 },
             )
 
         return TaskResult(
-            task_id=self._task_id, output={"map_tiles": map_tiles.model_dump()}
+            task_id=self._task_id, output={MAP_TILES_OUTPUT_KEY: map_tiles.model_dump()}
         )
 
     def _process_tiles(

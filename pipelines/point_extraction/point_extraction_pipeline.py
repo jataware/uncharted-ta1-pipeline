@@ -18,6 +18,7 @@ from tasks.point_extraction.entities import (
     PointLabels,
     LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
+    MAP_PT_LABELS_OUTPUT_KEY,
 )
 from tasks.common.pipeline import (
     BaseModelOutput,
@@ -132,7 +133,7 @@ class MapPointLabelOutput(OutputCreator):
             PointLabel: The map point label extraction object.
         """
         map_point_labels = PointLabels.model_validate(
-            pipeline_result.data["map_point_labels"]
+            pipeline_result.data[MAP_PT_LABELS_OUTPUT_KEY]
         )
         return BaseModelOutput(
             pipeline_result.pipeline_id,
@@ -166,7 +167,7 @@ class CDROutput(OutputCreator):
             Output: The output of the pipeline.
         """
         map_point_labels = PointLabels.model_validate(
-            pipeline_result.data["map_point_labels"]
+            pipeline_result.data[MAP_PT_LABELS_OUTPUT_KEY]
         )
         legend_pt_items = LegendPointItems(items=[])
         if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
@@ -207,7 +208,7 @@ class BitmasksOutput(OutputCreator):
             Output: The output of the pipeline.
         """
         map_point_labels = PointLabels.model_validate(
-            pipeline_result.data["map_point_labels"]
+            pipeline_result.data[MAP_PT_LABELS_OUTPUT_KEY]
         )
         if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
             legend_pt_items = LegendPointItems.model_validate(

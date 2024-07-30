@@ -23,6 +23,10 @@ from tasks.segmentation.segmenter_utils import get_segment_bounds, segments_to_m
 from tasks.point_extraction.entities import (
     LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
+    MAP_TILES_OUTPUT_KEY,
+    LEGEND_TILES_OUTPUT_KEY,
+    MAP_PT_LABELS_OUTPUT_KEY,
+    LEGEND_PT_LABELS_OUTPUT_KEY,
 )
 from tasks.point_extraction.legend_item_utils import legend_items_use_ontology
 
@@ -118,14 +122,14 @@ class Tiler(Task):
                 return TaskResult(
                     task_id=self._task_id,
                     output={
-                        "map_tiles": map_tiles.model_dump(),
-                        "legend_tiles": legend_tiles.model_dump(),
+                        MAP_TILES_OUTPUT_KEY: map_tiles.model_dump(),
+                        LEGEND_TILES_OUTPUT_KEY: legend_tiles.model_dump(),
                     },
                 )
 
         # prepare task result with only map tiles
         return TaskResult(
-            task_id=self._task_id, output={"map_tiles": map_tiles.model_dump()}
+            task_id=self._task_id, output={MAP_TILES_OUTPUT_KEY: map_tiles.model_dump()}
         )
 
     def _create_tiles(
@@ -221,28 +225,30 @@ class Untiler(Task):
 
         # run untiling on map tiles
         logger.info("Untiling map tiles...")
-        map_tiles = ImageTiles.model_validate(task_input.data["map_tiles"])
+        map_tiles = ImageTiles.model_validate(task_input.data[MAP_TILES_OUTPUT_KEY])
         map_point_labels = self._merge_tiles(map_tiles, task_input.raster_id)
 
-        if "legend_tiles" in task_input.data:
+        if LEGEND_TILES_OUTPUT_KEY in task_input.data:
             # --- also run untiling on legend area tiles, if available
             logger.info("Also untiling legend area tiles...")
-            legend_tiles = ImageTiles.model_validate(task_input.data["legend_tiles"])
+            legend_tiles = ImageTiles.model_validate(
+                task_input.data[LEGEND_TILES_OUTPUT_KEY]
+            )
             legend_point_labels = self._merge_tiles(legend_tiles, task_input.raster_id)
 
             # store untiling results for both map and legend areas
             return TaskResult(
                 task_id=self._task_id,
                 output={
-                    "map_point_labels": map_point_labels.model_dump(),
-                    "legend_point_labels": legend_point_labels.model_dump(),
+                    MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump(),
+                    LEGEND_PT_LABELS_OUTPUT_KEY: legend_point_labels.model_dump(),
                 },
             )
 
         # store untiling results for map area
         return TaskResult(
             task_id=self._task_id,
-            output={"map_point_labels": map_point_labels.model_dump()},
+            output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
         )
 
     def _merge_tiles(self, image_tiles: ImageTiles, raster_id: str) -> PointLabels:

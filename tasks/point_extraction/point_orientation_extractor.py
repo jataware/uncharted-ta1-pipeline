@@ -1,4 +1,4 @@
-from tasks.point_extraction.entities import PointLabels
+from tasks.point_extraction.entities import PointLabels, MAP_PT_LABELS_OUTPUT_KEY
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.point_extraction.label_map import POINT_CLASS
 from tasks.point_extraction.task_config import PointOrientationConfig
@@ -184,7 +184,9 @@ class PointOrientationExtractor(Task):
         """
 
         # get result from point extractor task (with point symbol predictions)
-        map_point_labels = PointLabels.model_validate(input.data["map_point_labels"])
+        map_point_labels = PointLabels.model_validate(
+            input.data[MAP_PT_LABELS_OUTPUT_KEY]
+        )
         if map_point_labels.labels is None:
             raise RuntimeError("PointLabels must have labels to run batch_predict")
         if len(map_point_labels.labels) == 0:
@@ -193,7 +195,7 @@ class PointOrientationExtractor(Task):
             )
             TaskResult(
                 task_id=self._task_id,
-                output={"map_point_labels": map_point_labels.model_dump()},
+                output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
             )
 
         # get OCR output
@@ -355,7 +357,7 @@ class PointOrientationExtractor(Task):
 
         return TaskResult(
             task_id=self._task_id,
-            output={"map_point_labels": map_point_labels.model_dump()},
+            output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
         )
 
     def _trig_to_compass_angle(self, angle_deg: int, rotate_max: int) -> int:

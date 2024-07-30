@@ -25,6 +25,7 @@ from tasks.point_extraction.entities import (
     LegendPointItem,
     LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
+    MAP_PT_LABELS_OUTPUT_KEY,
 )
 
 MODEL_NAME = "uncharted_oneshot_point_extractor"
@@ -81,13 +82,15 @@ class TemplateMatchPointExtractor(Task):
                 "No Legend item info available. Skipping Template-Match Point Extractor"
             )
             result = self._create_result(task_input)
-            result.add_output("map_point_labels", task_input.data["map_point_labels"])
+            result.add_output(
+                MAP_PT_LABELS_OUTPUT_KEY, task_input.data[MAP_PT_LABELS_OUTPUT_KEY]
+            )
             return result
 
         # get existing point predictions from YOLO point extractor
-        if "map_point_labels" in task_input.data:
+        if MAP_PT_LABELS_OUTPUT_KEY in task_input.data:
             map_point_labels = PointLabels.model_validate(
-                task_input.data["map_point_labels"]
+                task_input.data[MAP_PT_LABELS_OUTPUT_KEY]
             )
             if map_point_labels.labels is None:
                 map_point_labels.labels = []
@@ -107,7 +110,9 @@ class TemplateMatchPointExtractor(Task):
                 "No legend items need further processing. Skipping Template-Match Point Extractor"
             )
             result = self._create_result(task_input)
-            result.add_output("map_point_labels", task_input.data["map_point_labels"])
+            result.add_output(
+                MAP_PT_LABELS_OUTPUT_KEY, task_input.data[MAP_PT_LABELS_OUTPUT_KEY]
+            )
             return result
 
         # convert image from PIL to opencv (numpy) format --  assumed color channel order is RGB
@@ -328,7 +333,7 @@ class TemplateMatchPointExtractor(Task):
 
         return TaskResult(
             task_id=self._task_id,
-            output={"map_point_labels": map_point_labels.model_dump()},
+            output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
         )
 
     def _get_template_images(

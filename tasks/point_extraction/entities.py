@@ -8,7 +8,14 @@ from typing import Optional, List, Union, Any, Dict
 logger = logging.getLogger(__name__)
 ## Data Objects
 
+# task keys for LegendItems
 LEGEND_ITEMS_OUTPUT_KEY = "legend_point_items"
+# task keys for ImageTiles results
+MAP_TILES_OUTPUT_KEY = "map_tiles"
+LEGEND_TILES_OUTPUT_KEY = "legend_tiles"
+# task keys for PointLabels results
+MAP_PT_LABELS_OUTPUT_KEY = "map_point_labels"
+LEGEND_PT_LABELS_OUTPUT_KEY = "legend_point_labels"
 
 
 class PointLabel(BaseModel):

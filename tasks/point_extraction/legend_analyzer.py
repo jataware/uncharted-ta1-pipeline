@@ -6,6 +6,7 @@ from tasks.point_extraction.entities import (
     LegendPointItems,
     LegendPointItem,
     LEGEND_ITEMS_OUTPUT_KEY,
+    LEGEND_PT_LABELS_OUTPUT_KEY,
     PointLabels,
 )
 from tasks.point_extraction.legend_item_utils import (
@@ -97,7 +98,7 @@ class LegendPostprocessor(Task):
         to legend item annotation objects (or join with existing)
         """
 
-        if not "legend_point_labels" in task_input.data:
+        if not LEGEND_PT_LABELS_OUTPUT_KEY in task_input.data:
             logger.info(
                 "Point predictions not available for the legend area. Skipping legend post-processing."
             )
@@ -105,7 +106,7 @@ class LegendPostprocessor(Task):
 
         # --- load legend area ML point predictions
         legend_pt_preds = PointLabels.model_validate(
-            task_input.data["legend_point_labels"]
+            task_input.data[LEGEND_PT_LABELS_OUTPUT_KEY]
         )
         if not legend_pt_preds.labels:
             return self._create_result(task_input)
