@@ -42,6 +42,7 @@ def main():
 
     # run the extraction pipeline
     for doc_id, image in input:
+        logger.info(f"Processing doc_id: {doc_id}")
         image_input = PipelineInput(image=image, raster_id=doc_id)
         results = pipeline.run(image_input)
 

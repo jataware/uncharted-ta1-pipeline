@@ -3,6 +3,10 @@ from typing import List, Tuple
 
 SEGMENTATION_OUTPUT_KEY = "segmentation"
 
+# class labels for map and points legend areas
+SEGMENT_MAP_CLASS = "map"
+SEGMENT_POINT_LEGEND_CLASS = "legend_points_lines"
+
 
 class SegmentationResult(BaseModel):
     """

@@ -6,7 +6,11 @@ from typing import List, Tuple
 from scipy import ndimage
 from collections import defaultdict
 
-from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
+from tasks.segmentation.entities import (
+    MapSegmentation,
+    SEGMENTATION_OUTPUT_KEY,
+    SEGMENT_MAP_CLASS,
+)
 from tasks.segmentation.segmenter_utils import get_segment_bounds, segments_to_mask
 from tasks.point_extraction import point_extractor_utils as pe_utils
 from tasks.common.task import Task, TaskInput, TaskResult
@@ -25,10 +29,6 @@ from tasks.point_extraction.entities import (
 
 MODEL_NAME = "uncharted_oneshot_point_extractor"
 MODEL_VER = "0.0.1"
-
-# class labels for map and points legend areas
-SEGMENT_MAP_CLASS = "map"
-SEGMENT_PT_LEGEND_CLASS = "legend_points_lines"
 
 OCR_MIN_LEN = 3
 CONTOUR_SIZE_FACTOR = 2.0

@@ -7,14 +7,10 @@ from shapely import Polygon, distance
 from tasks.point_extraction.entities import LegendPointItem, LegendPointItems
 from tasks.point_extraction.label_map import LABEL_MAPPING, YOLO_TO_CDR_LABEL
 from schema.cdr_schemas.cdr_responses.legend_items import LegendItemResponse
-from tasks.segmentation.entities import MapSegmentation
+from tasks.segmentation.entities import MapSegmentation, SEGMENT_POINT_LEGEND_CLASS
 
 
 logger = logging.getLogger(__name__)
-
-SEGMENT_PT_LEGEND_CLASS = (
-    "legend_points_lines"  # class label for points legend area segmentation
-)
 
 
 # Legend item annotations "system" or provenance labels
@@ -238,7 +234,7 @@ def filter_labelme_annotations(
 
     segs_point_legend = list(
         filter(
-            lambda s: (s.class_label == SEGMENT_PT_LEGEND_CLASS),
+            lambda s: (s.class_label == SEGMENT_POINT_LEGEND_CLASS),
             segmentation.segments,
         )
     )

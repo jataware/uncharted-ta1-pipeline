@@ -13,7 +13,12 @@ from tasks.point_extraction.entities import (
     PointLabels,
     PointLabel,
 )
-from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
+from tasks.segmentation.entities import (
+    MapSegmentation,
+    SEGMENTATION_OUTPUT_KEY,
+    SEGMENT_MAP_CLASS,
+    SEGMENT_POINT_LEGEND_CLASS,
+)
 from tasks.segmentation.segmenter_utils import get_segment_bounds, segments_to_mask
 from tasks.point_extraction.entities import (
     LegendPointItems,
@@ -21,9 +26,6 @@ from tasks.point_extraction.entities import (
 )
 from tasks.point_extraction.legend_item_utils import legend_items_use_ontology
 
-# segmentation class labels for map and points legend areas
-SEGMENT_MAP_CLASS = "map"
-SEGMENT_POINT_LEGEND_CLASS = "legend_points_lines"
 TILE_OVERLAP_DEFAULT = (  # default tliing overlap = point bbox + 10%
     int(1.1 * 90),
     int(1.1 * 90),
