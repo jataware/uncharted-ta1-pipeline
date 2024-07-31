@@ -126,8 +126,8 @@ class YOLOPointDetector(Task):
 
                 pt_labels.append(
                     PointLabel(
-                        model_name=MODEL_NAME,
-                        model_version=self._model_id,
+                        classifier_name=MODEL_NAME,
+                        classifier_version=self._model_id,
                         class_id=int(class_id),
                         class_name=class_name,
                         x1=int(x1),

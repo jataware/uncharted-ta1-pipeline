@@ -301,8 +301,8 @@ class Untiler(Task):
                     continue
 
                 global_prediction = PointLabel(
-                    model_name=pred.model_name,
-                    model_version=pred.model_version,
+                    classifier_name=pred.classifier_name,
+                    classifier_version=pred.classifier_version,
                     class_id=pred.class_id,
                     class_name=label_name,
                     # Add offset of tile to project onto original map...

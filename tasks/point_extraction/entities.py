@@ -24,8 +24,8 @@ class PointLabel(BaseModel):
     Can be used for either ML Object Detection or One-shot template matching results
     """
 
-    model_name: str
-    model_version: str
+    classifier_name: str
+    classifier_version: str
     class_id: int
     class_name: str
     x1: int

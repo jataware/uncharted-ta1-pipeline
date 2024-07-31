@@ -429,8 +429,8 @@ class TemplateMatchPointExtractor(Task):
             # note: using hash(label) as class numeric ID
             pt_labels.append(
                 PointLabel(
-                    model_name=MODEL_NAME,
-                    model_version=MODEL_VER,
+                    classifier_name=MODEL_NAME,
+                    classifier_version=MODEL_VER,
                     class_id=hash(label),
                     class_name=label,
                     x1=x1,
