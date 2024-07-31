@@ -64,6 +64,13 @@ class PointExtractionPipeline(Pipeline):
         # extract text from image, segmentation to only keep the map area,
         # tile, extract points, untile, predict direction
         logger.info("Initializing Point Extraction Pipeline")
+        yolo_point_extractor = YOLOPointDetector(
+            "point_detection",
+            model_path,
+            str(Path(work_dir).joinpath("points")),
+            batch_size=20,
+        )
+
         tasks = []
         tasks.append(
             TileTextExtractor(
@@ -90,14 +97,13 @@ class PointExtractionPipeline(Pipeline):
             [
                 LegendPreprocessor("legend_preprocessor", ""),
                 Tiler("tiling"),
-                YOLOPointDetector(
-                    "point_detection",
-                    model_path,
-                    str(Path(work_dir).joinpath("points")),
-                    batch_size=20,
-                ),
+                yolo_point_extractor,
                 Untiler("untiling"),
-                PointOrientationExtractor("point_orientation_extraction"),
+                PointOrientationExtractor(
+                    "point_orientation_extraction",
+                    yolo_point_extractor._model_id,
+                    str(Path(work_dir).joinpath("point_orientations")),
+                ),
                 LegendPostprocessor("legend_postprocessor", ""),
                 TemplateMatchPointExtractor(
                     "template_match_point_extraction",

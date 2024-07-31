@@ -9,7 +9,7 @@ from tasks.text_extraction.entities import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 import cv2
 import logging
 import math
@@ -26,10 +26,10 @@ from scipy import ndimage
 logger = logging.getLogger(__name__)
 
 RE_NONNUMERIC = re.compile(r"[^0-9]")  # matches non-numeric chars
+CODE_VER = "0.0.1"
 
 
 class PointOrientationExtractor(Task):
-    _VERSION = 1
 
     # ---- supported point classes and corresponding template image paths
     POINT_TEMPLATES = {
@@ -101,10 +101,11 @@ class PointOrientationExtractor(Task):
         ),
     }
 
-    def __init__(self, task_id: str):
+    def __init__(self, task_id: str, points_model_id: str, cache_path: str):
+        self.points_model_id = points_model_id
         self.templates = self._load_templates()
 
-        super().__init__(task_id)
+        super().__init__(task_id, cache_path)
 
     def _load_templates(self) -> Dict:
         """
@@ -176,7 +177,7 @@ class PointOrientationExtractor(Task):
                     )
         return dip_magnitudes
 
-    def run(self, input: TaskInput) -> TaskResult:
+    def run(self, task_input: TaskInput) -> TaskResult:
         """
         Run batch predictions over a PointLabels object.
 
@@ -185,7 +186,7 @@ class PointOrientationExtractor(Task):
 
         # get result from point extractor task (with point symbol predictions)
         map_point_labels = PointLabels.model_validate(
-            input.data[MAP_PT_LABELS_OUTPUT_KEY]
+            task_input.data[MAP_PT_LABELS_OUTPUT_KEY]
         )
         if map_point_labels.labels is None:
             raise RuntimeError("PointLabels must have labels to run batch_predict")
@@ -193,16 +194,34 @@ class PointOrientationExtractor(Task):
             logger.warning(
                 "No point symbol extractions found. Skipping Point orientation extraction."
             )
-            TaskResult(
+            return TaskResult(
                 task_id=self._task_id,
                 output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
             )
 
+        # --- check cache and re-use existing result if present
+        doc_key = (
+            f"{task_input.raster_id}_orientations-{self.points_model_id}-{CODE_VER}"
+        )
+        cached_point_labels = self._get_cached_data(
+            doc_key, len(map_point_labels.labels)
+        )
+        if cached_point_labels:
+            logger.info(
+                f"Using cached orientation results for raster: {task_input.raster_id}"
+            )
+            return TaskResult(
+                task_id=self._task_id,
+                output={MAP_PT_LABELS_OUTPUT_KEY: cached_point_labels.model_dump()},
+            )
+
         # get OCR output
         img_text = (
-            DocTextExtraction.model_validate(input.data[TEXT_EXTRACTION_OUTPUT_KEY])
-            if TEXT_EXTRACTION_OUTPUT_KEY in input.data
-            else DocTextExtraction(doc_id=input.raster_id, extractions=[])
+            DocTextExtraction.model_validate(
+                task_input.data[TEXT_EXTRACTION_OUTPUT_KEY]
+            )
+            if TEXT_EXTRACTION_OUTPUT_KEY in task_input.data
+            else DocTextExtraction(doc_id=task_input.raster_id, extractions=[])
         )
 
         if len(img_text.extractions) == 0:
@@ -249,7 +268,7 @@ class PointOrientationExtractor(Task):
             # --- 2. estimate symbol orientation (using template matching)
             # --- pre-process the main image and template image, before template matching
             im, im_templ = point_extractor_utils.image_pre_processing(
-                np.array(input.image),
+                np.array(task_input.image),
                 self.templates[c],
                 np.array([]),
             )
@@ -355,9 +374,13 @@ class PointOrientationExtractor(Task):
                 )
             logger.info(f"Finished point orientation analysis for class {c}")
 
+        json_data = map_point_labels.model_dump()
+        # write to cache
+        self.write_result_to_cache(json_data, doc_key)
+
         return TaskResult(
             task_id=self._task_id,
-            output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
+            output={MAP_PT_LABELS_OUTPUT_KEY: json_data},
         )
 
     def _trig_to_compass_angle(self, angle_deg: int, rotate_max: int) -> int:
@@ -372,6 +395,26 @@ class PointOrientationExtractor(Task):
         if angle_compass > rotate_max:
             angle_compass -= rotate_max
         return angle_compass
+
+    def _get_cached_data(
+        self, doc_key: str, num_predictions: int
+    ) -> Optional[PointLabels]:
+
+        try:
+            json_data = self.fetch_cached_result(doc_key)
+            if json_data:
+                map_point_labels = PointLabels(**json_data)
+                if (
+                    map_point_labels.labels
+                    and len(map_point_labels.labels) == num_predictions
+                ):
+                    # cached data is ok
+                    return map_point_labels
+
+        except Exception as e:
+            # legend_pt_items = LegendPointItems(items=[], provenance="")
+            logger.warning(f"Exception checking cached data: {repr(e)}")
+        return None
 
     @property
     def input_type(self):
