@@ -19,7 +19,11 @@ from tasks.segmentation.entities import (
     SEGMENT_MAP_CLASS,
     SEGMENT_POINT_LEGEND_CLASS,
 )
-from tasks.segmentation.segmenter_utils import get_segment_bounds, segments_to_mask
+from tasks.segmentation.segmenter_utils import (
+    get_segment_bounds,
+    segments_to_mask,
+    merge_overlapping_polygons,
+)
 from tasks.point_extraction.entities import (
     LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
@@ -87,7 +91,9 @@ class Tiler(Task):
                 )
 
             poly_map = get_segment_bounds(segmentation, SEGMENT_MAP_CLASS)
-            poly_legend = get_segment_bounds(segmentation, SEGMENT_POINT_LEGEND_CLASS)
+            poly_legend = get_segment_bounds(
+                segmentation, SEGMENT_POINT_LEGEND_CLASS, merge_overlapping=True
+            )
             if len(poly_map) > 0:
                 # restrict tiling to use *only* the bounding rectangle of map area
                 poly_map = poly_map[0]  # use 1st (highest ranked) map segment
