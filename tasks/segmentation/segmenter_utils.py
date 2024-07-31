@@ -49,7 +49,7 @@ def get_segment_bounds(
         filter(lambda s: (s.class_label == segment_class), segmentation.segments)
     )
     if not segments:
-        logger.warning(f"No {segment_class} segment found")
+        logger.info(f"No {segment_class} segment found")
         return []
     if max_results > 0:
         segments = segments[:max_results]
