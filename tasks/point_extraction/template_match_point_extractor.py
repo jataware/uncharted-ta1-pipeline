@@ -6,7 +6,11 @@ from typing import List, Tuple
 from scipy import ndimage
 from collections import defaultdict
 
-from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
+from tasks.segmentation.entities import (
+    MapSegmentation,
+    SEGMENTATION_OUTPUT_KEY,
+    SEGMENT_MAP_CLASS,
+)
 from tasks.segmentation.segmenter_utils import get_segment_bounds, segments_to_mask
 from tasks.point_extraction import point_extractor_utils as pe_utils
 from tasks.common.task import Task, TaskInput, TaskResult
@@ -16,19 +20,16 @@ from tasks.text_extraction.entities import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.point_extraction.entities import (
-    MapImage,
-    MapPointLabel,
+    PointLabels,
+    PointLabel,
     LegendPointItem,
     LegendPointItems,
     LEGEND_ITEMS_OUTPUT_KEY,
+    MAP_PT_LABELS_OUTPUT_KEY,
 )
 
-MODEL_NAME = "uncharted_template_pointextractor"
+MODEL_NAME = "uncharted_oneshot_point_extractor"
 MODEL_VER = "0.0.1"
-
-# class labels for map and points legend areas
-SEGMENT_MAP_CLASS = "map"
-SEGMENT_PT_LEGEND_CLASS = "legend_points_lines"
 
 OCR_MIN_LEN = 3
 CONTOUR_SIZE_FACTOR = 2.0
@@ -77,26 +78,30 @@ class TemplateMatchPointExtractor(Task):
             legend_pt_items = LegendPointItems(items=[])
 
         if not legend_pt_items or not legend_pt_items.items:
-            logger.warning(
+            logger.info(
                 "No Legend item info available. Skipping Template-Match Point Extractor"
             )
             result = self._create_result(task_input)
-            result.add_output("map_image", task_input.data["map_image"])
+            result.add_output(
+                MAP_PT_LABELS_OUTPUT_KEY, task_input.data[MAP_PT_LABELS_OUTPUT_KEY]
+            )
             return result
 
         # get existing point predictions from YOLO point extractor
-        if "map_image" in task_input.data:
-            map_image_results = MapImage.model_validate(task_input.data["map_image"])
-            if map_image_results.labels is None:
-                map_image_results.labels = []
+        if MAP_PT_LABELS_OUTPUT_KEY in task_input.data:
+            map_point_labels = PointLabels.model_validate(
+                task_input.data[MAP_PT_LABELS_OUTPUT_KEY]
+            )
+            if map_point_labels.labels is None:
+                map_point_labels.labels = []
         else:
-            map_image_results = MapImage(
+            map_point_labels = PointLabels(
                 path="", raster_id=task_input.raster_id, labels=[]
             )
 
         # --- check which legend points still need to be processed, if any?
         pt_features = self._which_points_need_processing(
-            map_image_results.labels, legend_pt_items.items, min_predictions=MIN_MATCHES  # type: ignore
+            map_point_labels.labels, legend_pt_items.items, min_predictions=MIN_MATCHES  # type: ignore
         )
 
         if not pt_features:
@@ -105,7 +110,9 @@ class TemplateMatchPointExtractor(Task):
                 "No legend items need further processing. Skipping Template-Match Point Extractor"
             )
             result = self._create_result(task_input)
-            result.add_output("map_image", task_input.data["map_image"])
+            result.add_output(
+                MAP_PT_LABELS_OUTPUT_KEY, task_input.data[MAP_PT_LABELS_OUTPUT_KEY]
+            )
             return result
 
         # convert image from PIL to opencv (numpy) format --  assumed color channel order is RGB
@@ -163,7 +170,10 @@ class TemplateMatchPointExtractor(Task):
         # --------------
         # loop through all available point legend items
         for i, pt_feature in enumerate(pt_features):
-            logger.info(f"Processing {pt_feature.name}")
+            feature_name = (
+                pt_feature.class_name if pt_feature.class_name else pt_feature.name
+            )
+            logger.info(f"Processing {feature_name}")
             matches_dedup = []
 
             # --- pre-process the main image and template image, before template matching
@@ -314,17 +324,16 @@ class TemplateMatchPointExtractor(Task):
 
             logger.info(
                 "Final number of unique points extracted for label {}: {}".format(
-                    pt_feature.name, len(matches_dedup)
+                    feature_name, len(matches_dedup)
                 )
             )
             if len(matches_dedup) > 0:
-                preds = self._process_output(
-                    matches_dedup, pt_feature.name, map_roi, pt_feature.legend_bbox
-                )
-                map_image_results.labels.extend(preds)  # type: ignore
+                preds = self._process_output(matches_dedup, feature_name, map_roi)
+                map_point_labels.labels.extend(preds)  # type: ignore
 
         return TaskResult(
-            task_id=self._task_id, output={"map_image": map_image_results}
+            task_id=self._task_id,
+            output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
         )
 
     def _get_template_images(
@@ -333,7 +342,7 @@ class TemplateMatchPointExtractor(Task):
 
         im_templates = []
         for feat in feats:
-            (xmin, ymin, xmax, ymax) = feat.legend_bbox
+            (xmin, ymin, xmax, ymax) = [int(a) for a in feat.legend_bbox]
             im_templ = (im[ymin:ymax, xmin:xmax]).copy()
             im_templates.append(im_templ)
 
@@ -399,12 +408,11 @@ class TemplateMatchPointExtractor(Task):
         matches: List,
         label: str,
         map_roi: List[int],
-        legend_bbox: List,
         bbox_size: int = 90,
-    ) -> List[MapPointLabel]:
+    ) -> List[PointLabel]:
         """
         Convert template based detection results
-        to a list of MapPointLabel objects
+        to a list of PointLabel objects
         """
         pt_labels = []
         bbox_half = bbox_size / 2
@@ -420,7 +428,7 @@ class TemplateMatchPointExtractor(Task):
             # prepare final result label
             # note: using hash(label) as class numeric ID
             pt_labels.append(
-                MapPointLabel(
+                PointLabel(
                     classifier_name=MODEL_NAME,
                     classifier_version=MODEL_VER,
                     class_id=hash(label),
@@ -430,8 +438,6 @@ class TemplateMatchPointExtractor(Task):
                     x2=x2,
                     y2=y2,
                     score=xcorr / 255.0,
-                    legend_name=label,
-                    legend_bbox=legend_bbox,
                 )
             )
 
@@ -439,39 +445,46 @@ class TemplateMatchPointExtractor(Task):
 
     def _which_points_need_processing(
         self,
-        map_point_labels: List[MapPointLabel],
+        map_point_labels: List[PointLabel],
         legend_pt_items: List[LegendPointItem],
         min_predictions=0,
     ) -> List[LegendPointItem]:
         """
         Check which legend items still need processing
-        (Since some point classes may've already been handled by the YOLO point extractor)
+        (Since some point classes may've already been handled by the ML point extractor)
         """
         if min_predictions < 0:
-            # process all legend items regardless of upstream YOLO predictions
+            # process all legend items regardless of upstream ML predictions
             return legend_pt_items
 
         legend_items_unprocessed = []
         preds_per_class = defaultdict(int)
         for pred in map_point_labels:
-            if pred.legend_name:
-                preds_per_class[pred.legend_name] += 1
-            elif pred.class_name:
+            if pred.class_name:
                 preds_per_class[pred.class_name] += 1
 
         for legend_item in legend_pt_items:
 
             if not self._is_template_valid(legend_item):
                 logger.warning(
-                    f"No valid legend template is available for legend item {legend_item.name}"
+                    f"No valid legend template is available for legend item {legend_item.name} - skipping"
                 )
                 continue
 
-            if legend_item.name not in preds_per_class:
-                # no YOLO predictions for this point type; needs processing
+            leg_item_name = (
+                legend_item.class_name if legend_item.class_name else legend_item.name
+            )
+            if not leg_item_name:
+                logger.warning(
+                    f"No valid legend name is available for legend item - skipping"
+                )
+                continue
+
+            if leg_item_name not in preds_per_class:
+                # no ML predictions for this point type; needs processing
                 legend_items_unprocessed.append(legend_item)
-            elif preds_per_class[legend_item.name] < min_predictions:
-                # only a few YOLO predictions for this point type; still needs processing
+            elif preds_per_class[leg_item_name] < min_predictions:
+                # only a few ML predictions for this point type; still needs processing
                 legend_items_unprocessed.append(legend_item)
 
         return legend_items_unprocessed

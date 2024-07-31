@@ -53,7 +53,7 @@ The segmentation dependencies are required due to the use of the map segmentatio
 * Pipeline is defined in `point_extraction_pipeline.py` and is suitable for integration into other systems
 * Input is a image (ie binary image file buffer)
 * Ouput is the set of extracted points materialized as a:
-  * `MapImage` JSON object, which contains a list of `MapPointLabel` capturing the point information
+  * `PointLabels` JSON object, which contains a list of `PointLabel` capturing the point information
   * List of `FeatureResults` JSON objects as defined in the CMA TA1 CDR schema
 
 ### Command Line Execution ###

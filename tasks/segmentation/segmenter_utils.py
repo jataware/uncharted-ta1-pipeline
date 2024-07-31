@@ -33,7 +33,10 @@ def rank_segments(segmentation: MapSegmentation, class_labels: List):
 
 
 def get_segment_bounds(
-    segmentation: MapSegmentation, segment_class: str, max_results: int = 0
+    segmentation: MapSegmentation,
+    segment_class: str,
+    max_results: int = 0,
+    merge_overlapping: bool = False,
 ) -> List[Polygon]:
     """
     Parse segmentation result and return the polygon bounds for the desired segmentation class, if present
@@ -49,11 +52,14 @@ def get_segment_bounds(
         filter(lambda s: (s.class_label == segment_class), segmentation.segments)
     )
     if not segments:
-        logger.warning(f"No {segment_class} segment found")
+        logger.info(f"No {segment_class} segment found")
         return []
     if max_results > 0:
         segments = segments[:max_results]
-    return [Polygon(s.poly_bounds) for s in segments]
+    polys = [Polygon(s.poly_bounds) for s in segments]
+    if merge_overlapping:
+        polys = merge_overlapping_polygons(polys)
+    return polys
 
 
 def merge_overlapping_polygons(polys: List[Polygon]) -> List[Polygon]:
@@ -61,7 +67,7 @@ def merge_overlapping_polygons(polys: List[Polygon]) -> List[Polygon]:
     Merge overlapping shapely polygons into single polygon objects
     If polygons are not overlapping, the original polygon list is returned
     """
-    if not polys:
+    if not polys or len(polys) < 2:
         return polys
 
     merged_polys = unary_union(polys)

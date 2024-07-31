@@ -8,13 +8,20 @@ from typing import Optional, List, Union, Any, Dict
 logger = logging.getLogger(__name__)
 ## Data Objects
 
+# task keys for LegendItems
 LEGEND_ITEMS_OUTPUT_KEY = "legend_point_items"
+# task keys for ImageTiles results
+MAP_TILES_OUTPUT_KEY = "map_tiles"
+LEGEND_TILES_OUTPUT_KEY = "legend_tiles"
+# task keys for PointLabels results
+MAP_PT_LABELS_OUTPUT_KEY = "map_point_labels"
+LEGEND_PT_LABELS_OUTPUT_KEY = "legend_point_labels"
 
 
-class MapPointLabel(BaseModel):
+class PointLabel(BaseModel):
     """
-    Represents a label on a map image.
-    Class ID should correspond to the ID encoded in the underlying model.
+    Represents a point feature extraction.
+    Can be used for either ML Object Detection or One-shot template matching results
     """
 
     classifier_name: str
@@ -28,27 +35,17 @@ class MapPointLabel(BaseModel):
     score: float
     direction: Optional[float] = None  # [deg] orientation of point symbol
     dip: Optional[float] = None  # [deg] dip angle associated with symbol
-    legend_name: str
-    legend_bbox: List[Union[float, int]]
 
 
-class MapImage(BaseModel):
+class PointLabels(BaseModel):
     """
-    Represents a map image with point symbol prediction results
+    Represents a collection of PointLabel objects for an image or region-of-interest
     """
 
     path: str
     raster_id: str
-    labels: Optional[List[MapPointLabel]] = None
-    map_bounds: Optional[List[int]] = (
-        None  # [x1, y1, h, w] location of map. TODO: Accept polygonal seg mask.
-    )
-    point_legend_bounds: Optional[List[int]] = (
-        None  # [x1, y1, h, w] location of point legend.
-    )
-    polygon_legend_bounds: Optional[List[int]] = (
-        None  # [x1, y1, h, w] location of polygon legend.
-    )
+    roi_label: str = ""  # roi (segment) area label for these tiles
+    labels: Optional[List[PointLabel]] = None
 
     _cached_image = None
 
@@ -66,11 +63,10 @@ class MapImage(BaseModel):
             if img.size[0] == 0 or img.size[1] == 0:
                 raise ValueError("Image cannot have 0 height or width")
             self._cached_image = img
-        # TODO: Use polygonal segmask stored in self.map_bounds to filter the image and crop out the non-map regions.
         return img
 
 
-class MapTile(BaseModel):
+class ImageTile(BaseModel):
     """
     Represents a tile of a map image in (x, y, width, height) format.
     x and y are coordinates on the original map image.
@@ -82,10 +78,9 @@ class MapTile(BaseModel):
     y_offset: int  # y offset of the tile in the original image.
     width: int
     height: int
-    map_bounds: tuple  # map global bounds (x_min, y_min, x_max, y_max)
     image: Any  # torch.Tensor or PIL.Image
-    map_path: str  # Path to the original map image.
-    predictions: Optional[List[MapPointLabel]] = None
+    image_path: str  # Path to the original map image.
+    predictions: Optional[List[PointLabel]] = None
 
     @validator("image", pre=True, always=True)
     def validate_image(cls, value):
@@ -102,11 +97,13 @@ class MapTile(BaseModel):
         arbitrary_types_allowed = True
 
 
-class MapTiles(BaseModel):
+class ImageTiles(BaseModel):
     raster_id: str
-    tiles: List[MapTile]
+    tiles: List[ImageTile]
+    roi_bounds: tuple  # roi global bounds (x_min, y_min, x_max, y_max)
+    roi_label: str = ""  # roi (segment) area label for these tiles
 
-    def format_for_caching(self) -> MapTiles:
+    def format_for_caching(self) -> ImageTiles:
         """
         Reformat point extraction tiles prior to caching
         - tile image raster is discarded
@@ -114,29 +111,31 @@ class MapTiles(BaseModel):
 
         tiles_cache = []
         for t in self.tiles:
-            t_cache = MapTile(
+            t_cache = ImageTile(
                 x_offset=t.x_offset,
                 y_offset=t.y_offset,
                 width=t.width,
                 height=t.height,
-                map_bounds=t.map_bounds,
                 image=None,
-                map_path=t.map_path,
+                image_path=t.image_path,
                 predictions=t.predictions,
             )
             tiles_cache.append(t_cache)
 
-        return MapTiles(raster_id=self.raster_id, tiles=tiles_cache)
+        return ImageTiles(
+            raster_id=self.raster_id,
+            roi_bounds=self.roi_bounds,
+            roi_label=self.roi_label,
+            tiles=tiles_cache,
+        )
 
-    def join_with_cached_predictions(
-        self, cached_preds: MapTiles, point_legend_mapping: Dict[str, LegendPointItem]
-    ) -> bool:
+    def join_with_cached_predictions(self, cached_preds: ImageTiles) -> bool:
         """
-        Append cached point predictions to MapTiles
+        Append cached point predictions to ImageTiles
         """
         try:
             # re-format cached predictions with key as (x_offset, y_offset)
-            cached_dict: Dict[Any, MapTile] = {}
+            cached_dict: Dict[Any, ImageTile] = {}
             for p in cached_preds.tiles:
                 cached_dict[(p.x_offset, p.y_offset)] = p
             for t in self.tiles:
@@ -144,18 +143,8 @@ class MapTiles(BaseModel):
                 if key not in cached_dict:
                     # cached predictions not found for this tile!
                     return False
-                t_cached: MapTile = cached_dict[key]
+                t_cached: ImageTile = cached_dict[key]
                 t.predictions = t_cached.predictions
-
-                if t.predictions is not None:
-                    for pred in t.predictions:
-                        class_name = pred.class_name
-                        # map YOLO class name to legend item name, if available
-                        if pred.class_name in point_legend_mapping:
-                            pred.legend_name = point_legend_mapping[class_name].name
-                            pred.legend_bbox = point_legend_mapping[
-                                class_name
-                            ].legend_bbox
 
             return True
         except Exception as e:
@@ -171,6 +160,13 @@ class LegendPointItem(BaseModel):
     # TODO -- could be modified to use CDR PointLegendAndFeaturesResult class in the future
 
     name: str = Field(description="Label of the map unit in the legend")
+    class_name: str = Field(
+        default="",
+        description="Normalized label of the legend map unit, if available (based on point symbol ontology)",
+    )
+    abbreviation: str = Field(
+        default="", description="Abbreviation of the map unit label."
+    )
     description: str = Field(
         default="", description="Description of the map unit in the legend"
     )
@@ -185,6 +181,15 @@ class LegendPointItem(BaseModel):
         description="""The more precise polygon bounding box of the map units
                     label. Format is expected to be [x,y] coordinate pairs
                     where the top left is the origin (0,0).""",
+    )
+    system: str = Field(default="", description="System that published this item")
+    system_version: str = Field(
+        default="", description="System version that published this item"
+    )
+    validated: bool = Field(default=False, description="Validated by human")
+    confidence: Optional[float] = Field(
+        default=None,
+        description="Confidence for this legend item (whether extracted by a model or human annotated)",
     )
 
 

@@ -34,7 +34,7 @@ from tasks.common.queue import (
 from schema.mappers.cdr import get_mapper
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoreferenceResult
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
-from tasks.point_extraction.entities import MapImage as LARAPoints
+from tasks.point_extraction.entities import PointLabels as LARAPoints
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 import datetime
 
