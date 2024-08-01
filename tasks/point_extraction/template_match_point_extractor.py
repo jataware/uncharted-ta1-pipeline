@@ -2,7 +2,7 @@ import cv2
 import logging
 import math
 import numpy as np
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from scipy import ndimage
 from collections import defaultdict
 
@@ -114,6 +114,23 @@ class TemplateMatchPointExtractor(Task):
                 MAP_PT_LABELS_OUTPUT_KEY, task_input.data[MAP_PT_LABELS_OUTPUT_KEY]
             )
             return result
+
+        # --- check cache and re-use existing result if present
+        doc_key = f"{task_input.raster_id}_templatematch_points-{MODEL_VER}"
+        templatematch_point_labels = self._get_cached_data(doc_key, pt_features)
+        if templatematch_point_labels:
+            logger.info(
+                f"Using cached template-match point extraction results for raster: {task_input.raster_id}"
+            )
+            map_point_labels.labels.extend(templatematch_point_labels.labels)  # type: ignore
+            return TaskResult(
+                task_id=self._task_id,
+                output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
+            )
+
+        templatematch_point_labels = PointLabels(
+            path="", raster_id=task_input.raster_id, labels=[]
+        )
 
         # convert image from PIL to opencv (numpy) format --  assumed color channel order is RGB
         im_in = np.array(task_input.image)
@@ -329,8 +346,13 @@ class TemplateMatchPointExtractor(Task):
             )
             if len(matches_dedup) > 0:
                 preds = self._process_output(matches_dedup, feature_name, map_roi)
-                map_point_labels.labels.extend(preds)  # type: ignore
+                templatematch_point_labels.labels.extend(preds)  # type: ignore
 
+        # write to cache (note: only cache the template matched point extractions; not all of them)
+        self.write_result_to_cache(templatematch_point_labels.model_dump(), doc_key)
+
+        # append template-match extractions to main point extractions results
+        map_point_labels.labels.extend(templatematch_point_labels.labels)  # type: ignore
         return TaskResult(
             task_id=self._task_id,
             output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
@@ -488,3 +510,28 @@ class TemplateMatchPointExtractor(Task):
                 legend_items_unprocessed.append(legend_item)
 
         return legend_items_unprocessed
+
+    def _get_cached_data(
+        self, doc_key: str, legend_items: List[LegendPointItem]
+    ) -> Optional[PointLabels]:
+
+        try:
+            json_data = self.fetch_cached_result(doc_key)
+            if json_data:
+                templatematch_point_labels = PointLabels(**json_data)
+                # check that the expected set of point types are in cache
+                pt_types_legend = set()
+                for leg in legend_items:
+                    name = leg.class_name if leg.class_name else leg.name
+                    pt_types_legend.add(name)
+                pt_types_cache = set()
+                if templatematch_point_labels.labels:
+                    for pt_label in templatematch_point_labels.labels:
+                        pt_types_cache.add(pt_label.class_name)
+                if len(pt_types_legend - pt_types_cache) == 0:
+                    # pt type sets are the same; cached data is ok
+                    return templatematch_point_labels
+
+        except Exception as e:
+            logger.warning(f"Exception fetching cached data: {repr(e)}")
+        return None

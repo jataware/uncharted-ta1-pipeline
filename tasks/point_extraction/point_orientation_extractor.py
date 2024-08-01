@@ -412,8 +412,7 @@ class PointOrientationExtractor(Task):
                     return map_point_labels
 
         except Exception as e:
-            # legend_pt_items = LegendPointItems(items=[], provenance="")
-            logger.warning(f"Exception checking cached data: {repr(e)}")
+            logger.warning(f"Exception fetching cached data: {repr(e)}")
         return None
 
     @property

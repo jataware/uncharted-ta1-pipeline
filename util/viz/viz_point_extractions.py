@@ -43,6 +43,7 @@ class2colour = {
     "mine_quarry": "limegreen",
     "sink_hole": "goldenrod",
     "lineation": "violet",
+    "drill_hole": "cyan",
 }
 
 
