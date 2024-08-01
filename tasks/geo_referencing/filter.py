@@ -450,7 +450,7 @@ class ROIFilter(FilterCoordinates):
         coords_kept = []
         for c in coords_sorted:
             degree = c[1].get_parsed_degree()
-            if len(degrees) < 2 and degree not in degrees:
+            if c[0] >= 0.6 and len(degrees) < 2 and degree not in degrees:
                 degrees.add(degree)
                 coords_kept.append(c[1])
         return coords_kept
