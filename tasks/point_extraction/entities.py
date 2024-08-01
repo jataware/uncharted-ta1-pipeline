@@ -134,6 +134,12 @@ class ImageTiles(BaseModel):
         Append cached point predictions to ImageTiles
         """
         try:
+            if len(self.tiles) != len(cached_preds.tiles):
+                logger.warning(
+                    f"Number of tiles {len(self.tiles)} doesn't match cached tiles {len(cached_preds.tiles)}; disregarding cached results"
+                )
+                return False
+
             # re-format cached predictions with key as (x_offset, y_offset)
             cached_dict: Dict[Any, ImageTile] = {}
             for p in cached_preds.tiles:
@@ -148,7 +154,7 @@ class ImageTiles(BaseModel):
 
             return True
         except Exception as e:
-            print(f"Exception in join_with_cached_predictions: {str(e)}")
+            logger.warning(f"Exception in join_with_cached_predictions: {str(e)}")
             return False
 
 
