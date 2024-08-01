@@ -13,7 +13,7 @@ import logging
 import os
 from urllib.parse import urlparse
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import torch
 from tqdm import tqdm
@@ -191,9 +191,9 @@ class YOLOPointDetector(Task):
             else f"{raster_id}_points_{tile_type}-{self._model_id}"
         )
         # check cache and re-use existing file if present
-        json_data = self.fetch_cached_result(doc_key)
-        if json_data and image_tiles.join_with_cached_predictions(
-            ImageTiles(**json_data)
+        cached_image_tiles = self._get_cached_data(doc_key)
+        if cached_image_tiles and image_tiles.join_with_cached_predictions(
+            cached_image_tiles
         ):
             # cached point predictions loaded successfully
             logger.info(
@@ -235,6 +235,20 @@ class YOLOPointDetector(Task):
         state_dict_str = str(model.state_dict())
         hash_result = hashlib.md5(bytes(state_dict_str, encoding="utf-8"))
         return hash_result.hexdigest()
+
+    def _get_cached_data(self, doc_key: str) -> Optional[ImageTiles]:
+        try:
+            json_data = self.fetch_cached_result(doc_key)
+            if json_data:
+                cached_image_tiles = ImageTiles(**json_data)
+                # cached data is ok
+                return cached_image_tiles
+
+        except Exception as e:
+            logger.warning(
+                f"Exception fetching cached data: {repr(e)}; disregarding cached point extractions for this raster"
+            )
+        return None
 
     @property
     def version(self):

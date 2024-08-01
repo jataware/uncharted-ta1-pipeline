@@ -412,7 +412,9 @@ class PointOrientationExtractor(Task):
                     return map_point_labels
 
         except Exception as e:
-            logger.warning(f"Exception fetching cached data: {repr(e)}")
+            logger.warning(
+                f"Exception fetching cached data: {repr(e)}; disregarding cached point orientations for this raster"
+            )
         return None
 
     @property

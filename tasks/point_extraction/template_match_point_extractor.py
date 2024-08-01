@@ -533,5 +533,7 @@ class TemplateMatchPointExtractor(Task):
                     return templatematch_point_labels
 
         except Exception as e:
-            logger.warning(f"Exception fetching cached data: {repr(e)}")
+            logger.warning(
+                f"Exception fetching cached data: {repr(e)}; disregarding cached template-match extractions for this raster"
+            )
         return None
