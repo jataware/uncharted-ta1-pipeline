@@ -626,6 +626,7 @@ def create_geo_referencing_pipeline(
     )
     tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
+    tasks.append(ROIFilter("roiness"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
     tasks.append(
