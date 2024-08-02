@@ -89,6 +89,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_segmenter", type=str, default=None)
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
+    parser.add_argument("--fetch_legend_items", action="store_true")
     parser.add_argument("--rest", action="store_true")
     parser.add_argument("--rabbit_host", type=str, default="localhost")
     parser.add_argument("--request_queue", type=str, default=POINTS_REQUEST_QUEUE)
@@ -98,7 +99,11 @@ if __name__ == "__main__":
 
     # init point extraction pipeline
     point_extraction_pipeline = PointExtractionPipeline(
-        p.model_point_extractor, p.model_segmenter, p.workdir, gpu=not p.no_gpu
+        p.model_point_extractor,
+        p.model_segmenter,
+        p.workdir,
+        fetch_legend_items=p.fetch_legend_items,
+        gpu=not p.no_gpu,
     )
 
     result_key = (

@@ -1,6 +1,8 @@
-import logging
+import json, logging, os
 from collections import defaultdict
+import httpx
 from shapely import Polygon, distance
+from typing import Optional
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.point_extraction.entities import (
     LegendPointItems,
@@ -11,11 +13,16 @@ from tasks.point_extraction.entities import (
 )
 from tasks.point_extraction.legend_item_utils import (
     filter_labelme_annotations,
+    parse_legend_annotations,
     LEGEND_ANNOTATION_PROVENANCE,
 )
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 
 logger = logging.getLogger(__name__)
+
+CDR_API_TOKEN = os.environ.get("CDR_API_TOKEN", "")
+CDR_HOST = "https://api.cdr.land"
+CDR_LEGEND_SYSTEM_VERSION_DEFAULT = "polymer__0.0.1"
 
 
 class LegendPreprocessor(Task):
@@ -27,8 +34,10 @@ class LegendPreprocessor(Task):
         self,
         task_id: str,
         cache_path: str,
+        fetch_legend_items: bool = False,
     ):
 
+        self.fetch_legend_items = fetch_legend_items
         super().__init__(task_id, cache_path)
 
     def run(self, task_input: TaskInput) -> TaskResult:
@@ -49,6 +58,20 @@ class LegendPreprocessor(Task):
             legend_pt_items = LegendPointItems.model_validate(
                 task_input.request[LEGEND_ITEMS_OUTPUT_KEY]
             )
+
+        if self.fetch_legend_items:
+            # try to fetch legend annotations pre COG id from the CDR (via REST)
+            logger.info(
+                f"Trying to fetch legend annotations for raster {task_input.raster_id} from the CDR..."
+            )
+            cdr_legend_items = self.fetch_cdr_legend_items(task_input.raster_id)
+            if cdr_legend_items and cdr_legend_items.items:
+                # legend items sucessfully fetched from the CDR
+                # overwriting any pre-loaded legend items, if present
+                legend_pt_items = cdr_legend_items
+                logger.info(
+                    f"Sucessfully fetched {len(legend_pt_items.items)} legend annotations from the CDR"
+                )
 
         if legend_pt_items:
             if not legend_pt_items.provenance == LEGEND_ANNOTATION_PROVENANCE.LABELME:
@@ -81,6 +104,44 @@ class LegendPreprocessor(Task):
             )
 
         return self._create_result(task_input)
+
+    def fetch_cdr_legend_items(
+        self, raster_id: str, system_version: str = CDR_LEGEND_SYSTEM_VERSION_DEFAULT
+    ) -> Optional[LegendPointItems]:
+        """
+        fetch legend annotations from the CDR for a given COG id
+        """
+
+        if not CDR_API_TOKEN:
+            logger.warning("Unable to fetch legend items; CDR_API_TOKEN not set")
+            return None
+
+        try:
+            headers = {
+                "accept": "application/json",
+                "Authorization": f"Bearer {CDR_API_TOKEN}",
+            }
+            client = httpx.Client(follow_redirects=True)
+            url = f"{CDR_HOST}/v1/features/{raster_id}/legend_items"
+            if system_version:
+                url += f"?system_version={system_version}"
+
+            r = client.get(url, headers=headers)
+            if r.status_code != 200:
+                logger.warning(
+                    f"Unable to fetch legend items for raster {raster_id}; cdr response code {r.status_code}"
+                )
+                return None
+            legend_anns = json.loads(r.content)
+            legend_pt_items = parse_legend_annotations(legend_anns, raster_id)
+            if legend_pt_items.items:
+                return legend_pt_items
+
+        except Exception as e:
+            logger.warning(
+                f"Exception fetching legend items from the CDR for raster {raster_id}: {repr(e)}"
+            )
+        return None
 
 
 class LegendPostprocessor(Task):

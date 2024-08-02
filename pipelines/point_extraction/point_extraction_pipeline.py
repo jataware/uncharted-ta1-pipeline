@@ -57,6 +57,7 @@ class PointExtractionPipeline(Pipeline):
         model_path_segmenter: str,
         work_dir: str,
         verbose=False,
+        fetch_legend_items=False,
         include_cdr_output=True,
         include_bitmasks_output=False,
         gpu=True,
@@ -95,7 +96,7 @@ class PointExtractionPipeline(Pipeline):
             )
         tasks.extend(
             [
-                LegendPreprocessor("legend_preprocessor", ""),
+                LegendPreprocessor("legend_preprocessor", "", fetch_legend_items),
                 Tiler("tiling"),
                 yolo_point_extractor,
                 Untiler("untiling"),

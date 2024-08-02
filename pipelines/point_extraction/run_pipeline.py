@@ -34,6 +34,7 @@ def main():
     parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
+    fetch_legend_items = bool(p.legend_annotations_dir)
     # setup an input stream
     input = ImageFileInputIterator(p.input)
 
@@ -46,6 +47,7 @@ def main():
         p.model_point_extractor,
         p.model_segmenter,
         p.workdir,
+        fetch_legend_items=fetch_legend_items,
         include_cdr_output=p.cdr_schema,
         include_bitmasks_output=p.bitmasks,
         gpu=not p.no_gpu,
