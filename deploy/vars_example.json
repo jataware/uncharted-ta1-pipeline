@@ -4,8 +4,12 @@
     "georef_workdir": "",
     "point_extract_workdir": "",
     "segmentation_workdir": "",
-    "image_workdir": "",
+    "metadata_workdir": "",
+    "image_dir": "",
     "ngrok_authtoken": "",
     "openai_api_key": "",
-    "google_application_credentials": ""
+    "google_application_credentials": "",
+    "segmentation_model_weights": "",
+    "point_model_weights": "",
+    "tag": ""
 }

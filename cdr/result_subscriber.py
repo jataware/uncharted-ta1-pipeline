@@ -16,6 +16,7 @@ from pika import BlockingConnection, ConnectionParameters
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
 import pika.spec as spec
 from pydantic import BaseModel
+from regex import P
 from cdr.json_log import JSONLog
 from cdr.request_publisher import LaraRequestPublisher
 from schema.cdr_schemas.feature_results import FeatureResults
@@ -79,6 +80,14 @@ class LaraResultSubscriber:
         GEOREFERENCE_PIPELINE,
     ]
 
+    # map of pipeline name to system name
+    PIPELINE_SYSTEM_NAMES = {
+        SEGMENTATION_PIPELINE: "uncharted-area",
+        METADATA_PIPELINE: "uncharted-metadata",
+        POINTS_PIPELINE: "uncharted-points",
+        GEOREFERENCE_PIPELINE: "uncharted-georeference",
+    }
+
     def __init__(
         self,
         request_publisher: Optional[LaraRequestPublisher],
@@ -87,7 +96,6 @@ class LaraResultSubscriber:
         cdr_token: str,
         output: str,
         workdir: str,
-        system_name: str,
         system_version: str,
         json_log: JSONLog,
         host="localhost",
@@ -101,7 +109,6 @@ class LaraResultSubscriber:
         self._cdr_token = cdr_token
         self._workdir = workdir
         self._output = output
-        self._system_name = system_name
         self._system_version = system_version
         self._json_log = json_log
         self._host = host
@@ -330,7 +337,9 @@ class LaraResultSubscriber:
         try:
             lara_result = LARAGeoreferenceResult.model_validate(georef_result_raw)
             mapper = get_mapper(
-                lara_result, f"{self._system_name}-georeference", self._system_version
+                lara_result,
+                self.PIPELINE_SYSTEM_NAMES[self.GEOREFERENCE_PIPELINE],
+                self._system_version,
             )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
             assert cdr_result is not None
@@ -363,7 +372,7 @@ class LaraResultSubscriber:
                 cog_id=result.request.image_id,
                 georeference_results=[],
                 gcps=[],
-                system=f"{self._system_name}-georeference",
+                system=self.PIPELINE_SYSTEM_NAMES[self.GEOREFERENCE_PIPELINE],
                 system_version=self._system_version,
             )
 
@@ -428,7 +437,9 @@ class LaraResultSubscriber:
         try:
             lara_result = LARASegmentation.model_validate(segmentation_raw_result)
             mapper = get_mapper(
-                lara_result, f"{self._system_name}-area", self._system_version
+                lara_result,
+                self.PIPELINE_SYSTEM_NAMES[self.SEGMENTATION_PIPELINE],
+                self._system_version,
             )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except:
@@ -448,7 +459,9 @@ class LaraResultSubscriber:
         try:
             lara_result = LARAPoints.model_validate(points_raw_result)
             mapper = get_mapper(
-                lara_result, f"{self._system_name}-points", self._system_version
+                lara_result,
+                self.PIPELINE_SYSTEM_NAMES[self.POINTS_PIPELINE],
+                self._system_version,
             )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except:
@@ -469,7 +482,9 @@ class LaraResultSubscriber:
         try:
             lara_result = LARAMetadata.model_validate(metadata_result_raw)
             mapper = get_mapper(
-                lara_result, f"{self._system_name}-metadata", self._system_version
+                lara_result,
+                self.PIPELINE_SYSTEM_NAMES[self.METADATA_PIPELINE],
+                self._system_version,
             )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
