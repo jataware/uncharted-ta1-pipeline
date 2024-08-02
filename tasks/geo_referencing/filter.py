@@ -407,14 +407,14 @@ class ROIFilter(FilterCoordinates):
             logger.info(
                 f"only {lon_counts} lon coords after roi filtering so re-adding coordinates"
             )
-            lons_kept = self._adjust_filter(lon_coords, roi_xy)
+            lons_kept = self._adjust_filter(lon_coords, roi_xy, roi_inner_xy)
             for lk in lons_kept:
                 lon_pts[lk.to_deg_result()[0]] = lk
         if lat_counts < 2 and lat_counts < lat_counts_initial:
             logger.info(
                 f"only {lat_counts} lat coords after roi filtering so re-adding coordinates"
             )
-            lats_kept = self._adjust_filter(lat_coords, roi_xy)
+            lats_kept = self._adjust_filter(lat_coords, roi_xy, roi_inner_xy)
             for lk in lats_kept:
                 lat_pts[lk.to_deg_result()[0]] = lk
         lon_pts, lat_pts = self._validate_lonlat_extractions(
@@ -436,11 +436,14 @@ class ROIFilter(FilterCoordinates):
         self,
         coords: Dict[Tuple[float, float], Coordinate],
         roi_xy: List[Tuple[float, float]],
+        roi_inner_xy: List[Tuple[float, float]],
     ) -> List[Coordinate]:
         # get distance to roi for all coordinates
         coordinates = [x[1] for x in coords.items()]
         roi_poly = Polygon(roi_xy)
-        score_coordinates = [(self._get_roi_score(c, roi_poly), c) for c in coordinates]
+        score_coordinates = [
+            (self._get_roi_score(c, roi_poly, roi_inner_xy), c) for c in coordinates
+        ]
 
         # rank all coordinates by distance to roi
         coords_sorted = sorted(score_coordinates, key=lambda x: x[0], reverse=True)
@@ -615,7 +618,16 @@ class ROIFilter(FilterCoordinates):
 
         return (lon_results, lat_results)
 
-    def _get_roi_score(self, coordinate: Coordinate, roi_poly: Polygon) -> float:
+    def _get_roi_score(
+        self,
+        coordinate: Coordinate,
+        roi_poly: Polygon,
+        roi_inner_xy: List[Tuple[float, float]],
+    ) -> float:
+        # if inside inner polygon, then the score is 0
+        if self._in_polygon(coordinate.get_pixel_alignment(), roi_inner_xy):
+            return 0
+
         # combine distance and coordinate confidence for an initial scoring mechanism
         coord_dist = distance(Point(coordinate.get_pixel_alignment()), roi_poly)
         coord_conf = coordinate.get_confidence()
