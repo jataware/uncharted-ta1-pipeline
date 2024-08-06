@@ -26,11 +26,8 @@ class LEGEND_ANNOTATION_PROVENANCE(str, Enum):
 def parse_legend_annotations(
     legend_anns: list,
     raster_id: str,
-    system_filter=[
-        LEGEND_ANNOTATION_PROVENANCE.POLYMER,
-        LEGEND_ANNOTATION_PROVENANCE.LABELME,
-    ],
-    check_validated=False,
+    system_filter=[LEGEND_ANNOTATION_PROVENANCE.POLYMER],
+    check_validated=True,
 ) -> LegendPointItems:
     """
     parse legend annotations JSON data (CDR LegendItemResponse json format)
@@ -43,11 +40,9 @@ def parse_legend_annotations(
     for leg_ann in legend_anns:
         try:
             leg_resp = LegendItemResponse(**leg_ann)
-            if leg_resp.system in system_filter or (
-                check_validated and leg_resp.validated
-            ):
+            validated_ok = leg_resp.validated if check_validated else True
+            if leg_resp.system in system_filter and validated_ok:
                 # only keep legend item responses from desired systems
-                # or with validated=True
                 legend_item_resps[leg_resp.system].append(leg_resp)
                 count_leg_items += 1
         except Exception as e:
@@ -306,3 +301,24 @@ def legend_items_use_ontology(leg_point_items: LegendPointItems) -> bool:
                 f"*** Point ontology labels are available for ALL legend items. Skipping further legend item analysis."
             )
     return class_labels_ok
+
+
+def handle_duplicate_labels(leg_point_items: LegendPointItems):
+    """
+    De-duplicate legend item labels, if present
+    """
+
+    leg_labels = set()
+    for leg_item in leg_point_items.items:
+        if leg_item.name in leg_labels:
+            suffix = 1
+            while str(f"{leg_item.name}_{suffix}") in leg_labels and suffix < 99:
+                suffix += 1
+            dedup_name = f"{leg_item.name}_{suffix}"
+            logger.info(
+                f"Multiple legend items named {leg_item.name}; using {dedup_name} for duplicate item"
+            )
+            leg_item.name = dedup_name
+            leg_labels.add(dedup_name)
+        else:
+            leg_labels.add(leg_item.name)

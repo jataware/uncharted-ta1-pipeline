@@ -13,6 +13,7 @@ from tasks.point_extraction.entities import (
 )
 from tasks.point_extraction.legend_item_utils import (
     filter_labelme_annotations,
+    handle_duplicate_labels,
     parse_legend_annotations,
     LEGEND_ANNOTATION_PROVENANCE,
 )
@@ -60,7 +61,7 @@ class LegendPreprocessor(Task):
             )
 
         if self.fetch_legend_items:
-            # try to fetch legend annotations pre COG id from the CDR (via REST)
+            # try to fetch legend annotations for COG id from the CDR (via REST)
             logger.info(
                 f"Trying to fetch legend annotations for raster {task_input.raster_id} from the CDR..."
             )
@@ -74,30 +75,27 @@ class LegendPreprocessor(Task):
                 )
 
         if legend_pt_items:
-            if not legend_pt_items.provenance == LEGEND_ANNOTATION_PROVENANCE.LABELME:
-                # not "labelme" legend items, just output task result
-                return TaskResult(
-                    task_id=self._task_id,
-                    output={LEGEND_ITEMS_OUTPUT_KEY: legend_pt_items.model_dump()},
-                )
+            if legend_pt_items.provenance == LEGEND_ANNOTATION_PROVENANCE.LABELME:
+                # "labelme" legend items...
+                # use segmentation results to filter noisy "labelme" legend annotations
+                # (needed because all labelme annotations are set to type "polygon" regardless of feature type: polygons, lines or points)
+                if SEGMENTATION_OUTPUT_KEY in task_input.data:
+                    segmentation = MapSegmentation.model_validate(
+                        task_input.data[SEGMENTATION_OUTPUT_KEY]
+                    )
 
-            # "labelme" legend items...
-            # use segmentation results to filter noisy "labelme" legend annotations
-            # (needed because all labelme annotations are set to type "polygon" regardless of feature type: polygons, lines or points)
-            if SEGMENTATION_OUTPUT_KEY in task_input.data:
-                segmentation = MapSegmentation.model_validate(
-                    task_input.data[SEGMENTATION_OUTPUT_KEY]
-                )
+                    filter_labelme_annotations(legend_pt_items, segmentation)
+                    logger.info(
+                        f"Number of legend point annotations after filtering: {len(legend_pt_items.items)}"
+                    )
+                else:
+                    logger.warning(
+                        "No segmentation results available. Disregarding labelme legend annotations as noisy."
+                    )
+                    legend_pt_items.items = []
 
-                filter_labelme_annotations(legend_pt_items, segmentation)
-                logger.info(
-                    f"Number of legend point annotations after filtering: {len(legend_pt_items.items)}"
-                )
-            else:
-                logger.warning(
-                    "No segmentation results available. Disregarding labelme legend annotations as noisy."
-                )
-                legend_pt_items.items = []
+            handle_duplicate_labels(legend_pt_items)
+
             return TaskResult(
                 task_id=self._task_id,
                 output={LEGEND_ITEMS_OUTPUT_KEY: legend_pt_items.model_dump()},
@@ -106,7 +104,10 @@ class LegendPreprocessor(Task):
         return self._create_result(task_input)
 
     def fetch_cdr_legend_items(
-        self, raster_id: str, system_version: str = CDR_LEGEND_SYSTEM_VERSION_DEFAULT
+        self,
+        raster_id: str,
+        system_version: str = CDR_LEGEND_SYSTEM_VERSION_DEFAULT,
+        check_validated: bool = True,
     ) -> Optional[LegendPointItems]:
         """
         fetch legend annotations from the CDR for a given COG id
@@ -133,7 +134,9 @@ class LegendPreprocessor(Task):
                 )
                 return None
             legend_anns = json.loads(r.content)
-            legend_pt_items = parse_legend_annotations(legend_anns, raster_id)
+            legend_pt_items = parse_legend_annotations(
+                legend_anns, raster_id, check_validated=check_validated
+            )
             if legend_pt_items.items:
                 return legend_pt_items
 

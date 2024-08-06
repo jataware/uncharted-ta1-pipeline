@@ -29,12 +29,12 @@ def main():
     parser.add_argument("--model_segmenter", type=str, default=None)
     parser.add_argument("--cdr_schema", action="store_true")  # False by default
     parser.add_argument("--bitmasks", action="store_true")  # False by default
-    parser.add_argument("--legend_annotations_dir", type=str, default="")
+    parser.add_argument("--fetch_legend_items", action="store_true")
+    parser.add_argument("--legend_items_dir", type=str, default="")
     parser.add_argument("--legend_hints_dir", type=str, default="")
     parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
-    fetch_legend_items = bool(p.legend_annotations_dir)
     # setup an input stream
     input = ImageFileInputIterator(p.input)
 
@@ -47,7 +47,7 @@ def main():
         p.model_point_extractor,
         p.model_segmenter,
         p.workdir,
-        fetch_legend_items=fetch_legend_items,
+        fetch_legend_items=p.fetch_legend_items,
         include_cdr_output=p.cdr_schema,
         include_bitmasks_output=p.bitmasks,
         gpu=not p.no_gpu,
@@ -69,7 +69,7 @@ def main():
         logger.info(f"Processing {doc_id}")
         image_input = PipelineInput(image=image, raster_id=doc_id)
 
-        if p.legend_annotations_dir:
+        if p.legend_items_dir:
             # load JSON legend annotations file, if present, parse and add to PipelineInput
             # expected format is LegendItemResponse CDR pydantic objects
             try:
