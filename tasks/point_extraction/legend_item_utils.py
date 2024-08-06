@@ -229,6 +229,7 @@ def legend_ann_to_legend_items(
                 system=leg_ann.system,
                 system_version=leg_ann.system_version,
                 confidence=leg_ann.confidence,
+                cdr_legend_id=leg_ann.legend_id,
                 validated=leg_ann.validated,
             )
         )

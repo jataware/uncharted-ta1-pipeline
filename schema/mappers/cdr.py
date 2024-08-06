@@ -267,6 +267,7 @@ class PointsMapper(CDRMapper):
                 description=desc,
                 legend_bbox=leg_item.legend_bbox,
                 legend_contour=leg_item.legend_contour,
+                reference_id=leg_item.cdr_legend_id,
                 point_features=None,  # points are filled in below
             )
             legend_features[name] = legend_feature_result

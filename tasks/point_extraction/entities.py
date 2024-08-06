@@ -192,6 +192,10 @@ class LegendPointItem(BaseModel):
     system_version: str = Field(
         default="", description="System version that published this item"
     )
+    cdr_legend_id: str = Field(
+        default="",
+        description="CDR legend id; can be used to reference CDR LegendItemResponse objects",
+    )
     validated: bool = Field(default=False, description="Validated by human")
     confidence: Optional[float] = Field(
         default=None,

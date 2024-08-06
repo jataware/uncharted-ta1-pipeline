@@ -75,7 +75,7 @@ def main():
             try:
                 # check for legend annotations for this image
                 with open(
-                    os.path.join(p.legend_annotations_dir, doc_id + ".json"), "r"
+                    os.path.join(p.legend_items_dir, doc_id + ".json"), "r"
                 ) as fp:
                     legend_anns = json.load(fp)
                     legend_pt_items = parse_legend_annotations(legend_anns, doc_id)
@@ -109,9 +109,9 @@ def main():
         if p.bitmasks:
             bitmasks_out_dir = os.path.join(p.output, "bitmasks")
             os.makedirs(bitmasks_out_dir, exist_ok=True)
-            if not p.legend_hints_dir and not p.legend_annotations_dir:
+            if not p.legend_hints_dir and not p.legend_items_dir:
                 logger.warning(
-                    'Points pipeline is configured to create CMA contest bitmasks without using legend annotations! Setting "legend_hints_dir" or "legend_annotations_dir" param is recommended.'
+                    'Points pipeline is configured to create CMA contest bitmasks without using legend annotations! Setting "legend_hints_dir" or "legend_items_dir" param is recommended.'
                 )
 
         results = pipeline.run(image_input)
