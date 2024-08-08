@@ -4,14 +4,26 @@ from random import randint
 
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.georeference import QueryPoint
+from tasks.segmentation.entities import (
+    MapSegmentation,
+    SEGMENTATION_OUTPUT_KEY,
+    SEGMENT_MAP_CLASS,
+)
+from tasks.segmentation.segmenter_utils import get_segment_bounds
 
-from typing import List, Tuple
+from typing import List, Tuple, Dict
+from shapely import Point, Polygon, MultiPolygon, concave_hull
+from shapely.ops import nearest_points
+
+GEOCOORD_DIST_THRES = 30
+NUM_PTS = 10
 
 logger = logging.getLogger("ground_control_points")
 
 
 class CreateGroundControlPoints(Task):
-    def __init__(self, task_id: str):
+    def __init__(self, task_id: str, create_random_pts: bool = True):
+        self.create_random_pts = create_random_pts
         super().__init__(task_id)
 
     def run(self, input: TaskInput) -> TaskResult:
@@ -26,9 +38,41 @@ class CreateGroundControlPoints(Task):
             logger.info("ground control points already exist")
             return self._create_result(input)
 
-        # no query points exist, so create them
-        query_pts = self._create_query_points(input)
-        logger.info(f"created {len(query_pts)} ground control points")
+        # no query points exist, so create them...
+        # get map segmentation ROI as a shapely polygon (without any dilation buffering)
+        poly_map = []
+        if SEGMENTATION_OUTPUT_KEY in input.data:
+            segmentation = MapSegmentation.model_validate(
+                input.data[SEGMENTATION_OUTPUT_KEY]
+            )
+            poly_map = get_segment_bounds(segmentation, SEGMENT_MAP_CLASS)
+
+        if self.create_random_pts or not poly_map:
+            # create random GCPs...
+            query_pts = self._create_random_query_points(input, num_pts=NUM_PTS)
+            logger.info(f"created {len(query_pts)} random ground control points")
+        else:
+            # create GCPs based on geo-coord pixel locations...
+            # use 1st (highest ranked) map segment
+            poly_map = poly_map[0]
+            # get extracted lat and lon coords
+            lon_pts = input.get_data("lons", {})
+            lat_pts = input.get_data("lats", {})
+            query_pts = self._create_geo_coord_query_points(
+                input.raster_id, poly_map, lon_pts, lat_pts
+            )
+            logger.info(
+                f"created {len(query_pts)} geo-coord based ground control points"
+            )
+            if len(query_pts) < NUM_PTS:
+                logger.info(
+                    f"Also creating up to {NUM_PTS-len(query_pts)} inner ground control points"
+                )
+                query_pts.extend(
+                    self._create_inner_query_points(
+                        input.raster_id, poly_map, num_pts=NUM_PTS - len(query_pts)
+                    )
+                )
 
         # add them to the output
         result = self._create_result(input)
@@ -36,8 +80,12 @@ class CreateGroundControlPoints(Task):
 
         return result
 
-    def _create_query_points(self, input: TaskInput) -> List[QueryPoint]:
-        # create 10 ground control points roughly around the middle of the ROI (or failing that the middle of the image)
+    def _create_random_query_points(
+        self, input: TaskInput, num_pts=10
+    ) -> List[QueryPoint]:
+        """
+        create N random ground control points roughly around the middle of the ROI (or failing that the middle of the image)
+        """
         min_x = min_y = max_x = max_y = 0
         roi = input.get_data("roi")
         if roi and len(roi) > 0:
@@ -49,12 +97,105 @@ class CreateGroundControlPoints(Task):
         else:
             max_x, max_y = input.image.size
 
-        coords = self._create_random_coordinates(min_x, min_y, max_x, max_y)
+        coords = self._create_random_coordinates(min_x, min_y, max_x, max_y, n=num_pts)
         return [
             QueryPoint(
                 input.raster_id, (c[0], c[1]), None, properties={"label": "random"}
             )
             for c in coords
+        ]
+
+    def _create_geo_coord_query_points(
+        self, raster_id: str, poly_map: Polygon, lon_pts: Dict, lat_pts: Dict
+    ) -> List[QueryPoint]:
+        """
+        create ground control points at approximately the pixel locations where geo-coordinates have been extracted
+        """
+
+        # do polygon of roi
+        gcp_pts = []
+        # GCPs based on extracted longitude geo-coords
+        for coord in lon_pts.values():
+            pt = Point(coord.get_pixel_alignment())
+            if pt.intersects(poly_map):
+                if not self._do_pts_overlap(pt, gcp_pts):
+                    gcp_pts.append(pt)
+            else:
+                # pt doesn't intersect map ROI, adjust y pixel location
+                dist1 = poly_map.distance(pt)
+                pt_on_map = nearest_points(poly_map, pt)[0]
+                pt2 = Point(pt.x, pt_on_map.y)
+                dist2 = poly_map.distance(pt2)
+                # use adjusted pt if it's closer to map roi
+                if dist2 < dist1:
+                    pt = pt2
+                if not self._do_pts_overlap(pt, gcp_pts):
+                    gcp_pts.append(pt)
+        # GCPs based on extracted latitude geo-coords
+        for coord in lat_pts.values():
+            pt = Point(coord.get_pixel_alignment())
+            if pt.intersects(poly_map):
+                if not self._do_pts_overlap(pt, gcp_pts):
+                    gcp_pts.append(pt)
+            else:
+                # pt doesn't intersect map ROI, adjust x pixel location
+                dist1 = poly_map.distance(pt)
+                pt_on_map = nearest_points(poly_map, pt)[0]
+                pt2 = Point(pt_on_map.x, pt.y)
+                dist2 = poly_map.distance(pt2)
+                # use adjusted pt if it's closer to map roi
+                if dist2 < dist1:
+                    pt = pt2
+                if not self._do_pts_overlap(pt, gcp_pts):
+                    gcp_pts.append(pt)
+
+        return [
+            QueryPoint(raster_id, (pt.x, pt.y), None, properties={"label": "geo_coord"})
+            for pt in gcp_pts
+        ]
+
+    def _create_inner_query_points(
+        self, raster_id: str, poly_map: Polygon, buffer=0.33, num_pts=10
+    ) -> List[QueryPoint]:
+        """
+        create ground control points inside a map polygon with a given buffer
+        pts will be approx equally spaced
+        """
+
+        # calc buffer in pixels, using approx polygon radius
+        (minx, miny, maxx, maxy) = poly_map.bounds
+        p_radius = 0.5 * min(maxx - minx, maxy - miny)
+        buffer_pxl = p_radius * buffer
+
+        # apply negative buffer to map polygon so GCPs will be inside map roi
+        poly_buffer = poly_map.buffer(-buffer_pxl)
+        if isinstance(poly_buffer, Polygon):
+            poly_pts = list(poly_buffer.exterior.coords)
+            poly_pts.pop()  # remove last vertex (same as first)
+        else:
+            # unexpected shapely response, create 4 vertices around polygon centroid
+            c = poly_map.centroid
+            d = p_radius * (1 - buffer)
+            poly_pts = [
+                (c.x - d, c.y - d),
+                (c.x + d, c.y - d),
+                (c.x + d, c.y + d),
+                (c.x - d, c.y + d),
+            ]
+
+        # create approx equally spaced GCPs along inner polygon
+        gcp_pts = []
+        step = max(int(len(poly_pts) / num_pts), 1)
+        for i in range(0, len(poly_pts), step):
+            pt = poly_pts[i]
+            pt = Point(pt[0], pt[1])
+            if not self._do_pts_overlap(pt, gcp_pts):
+                gcp_pts.append(pt)
+            if len(gcp_pts) >= num_pts:
+                break
+        return [
+            QueryPoint(raster_id, (pt.x, pt.y), None, properties={"label": "map_inner"})
+            for pt in gcp_pts
         ]
 
     def _create_random_coordinates(
@@ -82,3 +223,17 @@ class CreateGroundControlPoints(Task):
             )
             for _ in range(n)
         ]
+
+    def _do_pts_overlap(
+        self,
+        input_pt: Point,
+        ref_pts: List[Point],
+        dist_thres: int = GEOCOORD_DIST_THRES,
+    ) -> bool:
+        """
+        Check if an input point overlaps with any of list of reference points, within a distance threshold
+        """
+        for pt in ref_pts:
+            if input_pt.dwithin(pt, distance=dist_thres):
+                return True
+        return False
