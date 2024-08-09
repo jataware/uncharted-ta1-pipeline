@@ -41,7 +41,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
-    parser.add_argument("--workdir", type=str, default=None)
+    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--clue_dir", type=str, default="")
     parser.add_argument("--query_dir", type=str, default="")
     parser.add_argument("--points_dir", type=str, default="")

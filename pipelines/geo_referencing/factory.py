@@ -302,7 +302,7 @@ def create_geo_referencing_pipelines(
         )
     tasks.append(InferenceCoordinateExtractor("coordinate-inference"))
     tasks.append(ScaleExtractor("scaler", ""))
-    tasks.append(CreateGroundControlPoints("seventh"))
+    tasks.append(CreateGroundControlPoints("seventh", create_random_pts=False))
     tasks.append(GeoReference("eighth", 1))
     p.append(
         Pipeline(
