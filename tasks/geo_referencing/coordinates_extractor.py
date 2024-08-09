@@ -39,7 +39,7 @@ logger = logging.getLogger("coordinates_extractor")
 # GeoCoordinates
 # pre-compiled regex patterns
 RE_DMS = re.compile(
-    r"^|\b[-+]?([0-9]{1,2}|1[0-7][0-9]|180)( |[o*°⁰˙˚•·º:]|( ?,?[o*°⁰˙˚•·º:]))( ?[0-6]?[0-9])['`′/]?( ?[0-6][0-9])?[\"″'`′/]?($|\b)"
+    r"^|\b[-+]?([0-9]{1,2}|1[0-7][0-9]|180)( |[o*°⁰˙˚•·º:]|( ?,?[o*°⁰˙˚•·º:]))( ?[0-6]?[0-9])['`′/:]?( ?[0-6][0-9])?[\"″'`′/:]?($|\b)"
 )  # match degrees with minutes (and optionally seconds)
 
 RE_DEG = re.compile(
