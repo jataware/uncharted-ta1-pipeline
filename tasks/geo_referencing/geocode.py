@@ -3,6 +3,8 @@ import uuid
 
 import numpy as np
 
+from statistics import median
+
 from copy import deepcopy
 
 from sklearn.cluster import DBSCAN
@@ -104,31 +106,35 @@ class Geocoder(CoordinatesExtractor):
 
         # create the coordinates for the clustered points (one for lon, one for lat)
         coordinates = []
+        pixels = {}
         for c in max_cluster:
-            coordinates.append(
-                Coordinate(
-                    "point derived lat",
-                    c[1][0].place_name,
-                    c[0][1],
-                    SOURCE_GEOCODE,
-                    True,
-                    pixel_alignment=(c[1][1], c[1][2]),
-                    confidence=COORDINATE_CONFIDENCE_GEOCODE,
-                    derivation="geocoded",
+            pixel_alignment = (c[1][1], c[1][2])
+            if pixel_alignment not in pixels:
+                coordinates.append(
+                    Coordinate(
+                        "point derived lat",
+                        c[1][0].place_name,
+                        c[0][1],
+                        SOURCE_GEOCODE,
+                        True,
+                        pixel_alignment=pixel_alignment,
+                        confidence=COORDINATE_CONFIDENCE_GEOCODE,
+                        derivation="geocoded",
+                    )
                 )
-            )
-            coordinates.append(
-                Coordinate(
-                    "point derived lon",
-                    c[1][0].place_name,
-                    c[0][0],
-                    SOURCE_GEOCODE,
-                    False,
-                    pixel_alignment=(c[1][1], c[1][2]),
-                    confidence=COORDINATE_CONFIDENCE_GEOCODE,
-                    derivation="geocoded",
+                coordinates.append(
+                    Coordinate(
+                        "point derived lon",
+                        c[1][0].place_name,
+                        c[0][0],
+                        SOURCE_GEOCODE,
+                        False,
+                        pixel_alignment=pixel_alignment,
+                        confidence=COORDINATE_CONFIDENCE_GEOCODE,
+                        derivation="geocoded",
+                    )
                 )
-            )
+                pixels[pixel_alignment] = 1
         return coordinates
 
     def _in_geofence(
@@ -295,20 +301,17 @@ class BoxGeocoder(Geocoder):
 
         # cluster to figure out which geocodings to consider
         coordinates = self._get_coordinates(places_filtered)
-        logger.info("got all geocoded coordinate for box geocoding")
+        logger.info(f"got {len(coordinates)} geocoded coordinates for box geocoding")
 
         # keep the middle 80% of each direction roughly
         # a point dropped for one direction cannot be used for the other direction
         # TODO: SHOULD PROBABLY BE MORE BOX AND WHISKER STYLE OUTLIER FILTERING
-        remove_count = max(int(len(coordinates) / 2 * 0.1), 1)
-        logger.info(f"removing {remove_count} coordinates from each end and direction")
-        coordinates_lons = self._remove_extreme(
-            remove_count,
+        logger.info(f"removing outlier coordinates via iqr from each end and direction")
+        coordinates_lons = self._remove_outliers(
             list(filter(lambda x: not x.is_lat(), coordinates)),
             lambda x: x.get_parsed_degree(),
         )
-        coordinates_lats = self._remove_extreme(
-            remove_count,
+        coordinates_lats = self._remove_outliers(
             list(filter(lambda x: x.is_lat(), coordinates)),
             lambda x: x.get_parsed_degree(),
         )
@@ -320,11 +323,13 @@ class BoxGeocoder(Geocoder):
         coordinates_count = {}
         for c in coordinates_lats:
             coordinates_count[c.get_pixel_alignment()] = 1
+        count = 0
         for c in coordinates_lons:
             pixels = c.get_pixel_alignment()
             if pixels not in coordinates_count:
                 coordinates_count[pixels] = 0
             coordinates_count[pixels] = coordinates_count[pixels] + 1
+            count = count + 1
 
         coordinates_lons: List[Coordinate] = []
         coordinates_lats: List[Coordinate] = []
@@ -377,17 +382,25 @@ class BoxGeocoder(Geocoder):
 
         return lon_pts, lat_pts
 
-    def _remove_extreme(
-        self, n: int, coordinates: List[Coordinate], mapper: Callable
+    def _remove_outliers(
+        self, coordinates: List[Coordinate], mapper: Callable
     ) -> List[Coordinate]:
         # map and sort the coordinates
-        coordinate_sorted = sorted(
-            [(mapper(c), c) for c in coordinates], key=lambda x: x[0]
-        )
+        values = sorted([(mapper(c), c) for c in coordinates], key=lambda x: x[0])
 
-        # remove the top and bottom N values
-        end_index = len(coordinate_sorted) - n
-        return [cf[1] for cf in coordinate_sorted[n:end_index]]
+        # find the iqr
+        lh_index = int(len(values) / 2)
+        if len(values) % 2 == 0:
+            lh_index = lh_index + 1
+        q1 = median([v[0] for v in values[:lh_index]])
+        q3 = median([v[0] for v in values[lh_index:]])
+        iqr = q3 - q1
+
+        # use usual iqr * 1.5 as basis for filtering
+        remaining_values = [
+            cf[1] for cf in values if q1 - (iqr * 1.5) <= cf[0] <= q3 + (iqr * 1.5)
+        ]
+        return remaining_values
 
     def _get_min_max(
         self, coordinates: List[Coordinate]

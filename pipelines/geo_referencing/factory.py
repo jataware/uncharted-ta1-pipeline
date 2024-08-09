@@ -23,6 +23,8 @@ from tasks.geo_referencing.filter import (
     OutlierFilter,
     ROIFilter,
     UTMStatePlaneFilter,
+    DistinctDegreeOutlierFilter,
+    HighQualityCoordinateFilter,
 )
 from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
@@ -241,6 +243,8 @@ def create_geo_referencing_pipelines(
         tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(ROIFilter("roiness"))
+    tasks.append(DistinctDegreeOutlierFilter("uniqueness"))
+    tasks.append(HighQualityCoordinateFilter("goodness"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
     if extract_metadata:
@@ -627,6 +631,7 @@ def create_geo_referencing_pipeline(
     tasks.append(GeoFencer("geofence"))
     tasks.append(GeoCoordinatesExtractor("third"))
     tasks.append(ROIFilter("roiness"))
+    tasks.append(DistinctDegreeOutlierFilter("uniqueness"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
     tasks.append(

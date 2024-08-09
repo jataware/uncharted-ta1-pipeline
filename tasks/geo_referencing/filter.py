@@ -214,6 +214,149 @@ class OutlierFilter(FilterAxisCoordinates):
         return sum([abs(degrees[i] - predictions[i]) for i in range(len(predictions))])
 
 
+class DistinctDegreeOutlierFilter(FilterAxisCoordinates):
+    def __init__(self, task_id: str):
+        super().__init__(task_id)
+
+    def _filter(
+        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[Tuple[float, float], Coordinate]:
+        # a more strict outlier filter focusing on coordinates with the same parsed degree
+        distincts = {}
+        to_process = False
+        for _, c in coords.items():
+            degree = c.get_parsed_degree()
+            if degree not in distincts:
+                distincts[degree] = []
+            distincts[degree].append(c)
+            if len(distincts) >= 3:
+                to_process = True
+
+        if not to_process:
+            logger.info(
+                "skipping distinct degree filtering since there are not enough duplicates"
+            )
+            return coords
+
+        # cycle through all distinct groups
+        remaining_coords = {}
+        for k, g in distincts.items():
+            to_keep = []
+            # if less than 3, simply add to output since filter will not be possible
+            if len(g) < 3:
+                to_keep = g
+            else:
+                logger.info(f"attempting to filter by distinct degree value for {k}")
+                # identical degree values should have one of x or y be fairly similar
+                # if one is misaligned then it is probably from some other context
+                x, y = input.image.size
+                size_relevant = (y if g[0].is_lat() else x) / 20
+                for c in g:
+                    c_d = c.get_constant_dimension()
+                    for c_i in g:
+                        if c_i.get_pixel_alignment() != c.get_pixel_alignment():
+                            c_i_d = c_i.get_constant_dimension()
+                            if abs(c_i_d - c_d) < size_relevant and c_i not in to_keep:
+                                to_keep.append(c_i)
+                if len(to_keep) == 0:
+                    to_keep = g
+                    logger.info(f"kept all coordinates parsed as {k}")
+                else:
+                    logger.info(f"kept only a subset of coordinates parsed as {k}")
+            for c in to_keep:
+                key = c.to_deg_result()[0]
+                remaining_coords[key] = c
+
+        return remaining_coords
+
+
+class HighQualityCoordinateFilter(FilterAxisCoordinates):
+    def __init__(self, task_id: str):
+        super().__init__(task_id)
+
+    def _filter(
+        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[Tuple[float, float], Coordinate]:
+        # if two points have the same degree parsed and are roughly aligned
+        # then throw out everything else that is within the same general area with a different degree
+        distincts = {}
+        coordinates = []
+        to_process = False
+        for _, c in coords.items():
+            degree = c.get_parsed_degree()
+            if degree not in distincts:
+                distincts[degree] = []
+            distincts[degree].append(c)
+            if len(distincts) >= 2:
+                to_process = True
+            coordinates.append(c)
+
+        if not to_process:
+            logger.info(
+                "skipping high quality coordinate filtering since there are not enough duplicates"
+            )
+            return coords
+        logger.info(
+            f"filtering parsed coordinates by excluding coordinates that clash with high quality coordinates"
+        )
+
+        remove_coords = {}
+        remaining_coords = {}
+        for degree, g in distincts.items():
+            if len(g) >= 2:
+                # check to make sure at least one other coordinate in the group falls within the expected range
+                x, y = input.image.size
+                size_relevant = (y if g[0].is_lat() else x) / 20
+                can_filter, pixel_range = self._can_filter(g, size_relevant)
+                if can_filter:
+                    _, rejected = self._filter_range(
+                        coordinates,
+                        degree,
+                        (pixel_range - size_relevant, pixel_range + size_relevant),
+                    )
+                    for c in rejected:
+                        logger.info(
+                            f"removing {c.get_parsed_degree()} since it falls within the pixel range of high confidence points"
+                        )
+                        remove_coords[c.get_pixel_alignment()] = c
+
+            for c in coordinates:
+                key = c.to_deg_result()[0]
+                if c.get_pixel_alignment() not in remove_coords:
+                    remaining_coords[key] = c
+        return remaining_coords
+
+    def _can_filter(
+        self, coordinates: List[Coordinate], pixel_range: float
+    ) -> Tuple[bool, float]:
+        for c in coordinates:
+            c_d = c.get_constant_dimension()
+            for c_i in coordinates:
+                if c_i.get_pixel_alignment() != c.get_pixel_alignment():
+                    c_i_d = c_i.get_constant_dimension()
+                    if abs(c_i_d - c_d) < pixel_range:
+                        return True, c_d
+        return False, -1
+
+    def _filter_range(
+        self,
+        coordinates: List[Coordinate],
+        degree: float,
+        pixel_range: Tuple[float, float],
+    ) -> Tuple[List[Coordinate], List[Coordinate]]:
+        # split coordinates found within the range to either be kept (degree matches) or removed (degree does not match)
+        to_keep = []
+        rejected = []
+        for c in coordinates:
+            pixel = c.get_constant_dimension()
+            if pixel_range[0] <= pixel <= pixel_range[1]:
+                if c.get_parsed_degree() == degree:
+                    to_keep.append(c)
+                else:
+                    rejected.append(c)
+        return to_keep, rejected
+
+
 class UTMStatePlaneFilter(FilterCoordinates):
     def __init__(self, task_id: str):
         super().__init__(task_id)
@@ -484,7 +627,7 @@ class ROIFilter(FilterCoordinates):
         # check number of unique lat and lon values
         num_lat_pts = len(set([x[0] for x in lat_results]))
         num_lon_pts = len(set([x[0] for x in lon_results]))
-        logger.info(f"distinct after outlier lat,lon: {num_lat_pts},{num_lon_pts}")
+        logger.info(f"distinct after roi lat,lon: {num_lat_pts},{num_lon_pts}")
 
         if num_lon_pts >= 2 and num_lat_pts == 1:
             # estimate additional lat pt (based on lon pxl resolution)
