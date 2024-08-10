@@ -244,7 +244,6 @@ def create_geo_referencing_pipelines(
     tasks.append(ROIFilter("roiness"))
     tasks.append(DistinctDegreeOutlierFilter("uniqueness"))
     tasks.append(HighQualityCoordinateFilter("goodness"))
-    tasks.append(CornerPointExtractor("corner_point_extractor"))
     tasks.append(OutlierFilter("fourth"))
     tasks.append(NaiveFilter("fun"))
     if extract_metadata:

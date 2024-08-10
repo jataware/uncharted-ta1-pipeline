@@ -316,6 +316,9 @@ class GeoReference(Task):
             f"derived hemispheres for georeferencing: {lon_multiplier},{lat_multiplier}"
         )
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
+        corner_points = self._update_hemispheres_corners(
+            corner_points, lon_multiplier, lat_multiplier
+        )
 
         crs = self._determine_crs(input)
         logger.info(f"extracted crs: {crs}")
@@ -339,6 +342,7 @@ class GeoReference(Task):
         result.output["rmse"] = rmse
         result.output["error_scale"] = scale_error
         result.output["crs"] = self.DEFAULT_DEST_CRS
+        result.output[CORNER_POINTS_OUTPUT_KEY] = corner_points
         return result
 
     def _count_keypoints(
@@ -567,10 +571,23 @@ class GeoReference(Task):
 
         return query_pts
 
+    def _update_hemispheres_corners(
+        self,
+        corner_points: List[GroundControlPoint],
+        lon_multiplier: float,
+        lat_multiplier: float,
+    ) -> List[GroundControlPoint]:
+        logger.info("updating corner point hemispheres for georeferencing")
+        for cp in corner_points:
+            cp.longitude = abs(cp.longitude) * lon_multiplier
+            cp.latitude = abs(cp.latitude) * lat_multiplier
+
+        return corner_points
+
     def _determine_crs(self, input: TaskInput) -> str:
         logger.info("determining CRS for georeferencing")
         # parse extracted metadata
-        metadata = input.parse_data(
+        metadata: MetadataExtraction = input.parse_data(
             METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
         )
 
@@ -582,9 +599,9 @@ class GeoReference(Task):
         # come up with a CRS
         datum = metadata.datum
         if datum is not None and datum != "NULL":
-            if datum.contains("NAD") and metadata.year >= "1985":
+            if "NAD" in datum and metadata.year >= "1985":
                 return "EPSG:4269"
-            if datum.contains("NAD") and metadata.year >= "1930":
+            if "NAD" in datum and metadata.year >= "1930":
                 return "EPSG:4267"
             # default to a WGS84 CRS
             return "EPSG:4326"

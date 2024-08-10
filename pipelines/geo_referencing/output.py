@@ -324,6 +324,7 @@ class LARAModelOutput(OutputCreator):
                 )
                 gcps.append(o)
 
+        result.gcps = gcps
         return BaseModelOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, result
         )
