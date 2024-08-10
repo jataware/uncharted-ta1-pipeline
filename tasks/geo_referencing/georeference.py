@@ -597,12 +597,17 @@ class GeoReference(Task):
 
         # we we assume geographic coordinates and combine that with the datum to
         # come up with a CRS
-        datum = metadata.datum
+        datum = metadata.datum.lower()
         if datum is not None and datum != "NULL":
-            if "NAD" in datum and metadata.year >= "1985":
-                return "EPSG:4269"
-            if "NAD" in datum and metadata.year >= "1930":
-                return "EPSG:4267"
+            if "nad" in datum or "north american" in datum:
+                if "27" or "1927" in datum:
+                    return "EPSG:4267"
+                if "83" or "1983" in datum:
+                    return "EPSG:4269"
+                if metadata.year >= "1985":
+                    return "EPSG:4269"
+                if metadata.year >= "1930":
+                    return "EPSG:4267"
             # default to a WGS84 CRS
             return "EPSG:4326"
 
