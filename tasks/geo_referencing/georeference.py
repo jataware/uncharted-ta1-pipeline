@@ -282,6 +282,8 @@ class GeoReference(Task):
         Returns:
             TaskResult: The result of the task.
         """
+
+        # get the corner points if they exist
         result = super()._create_result(input)
         corner_points: List[GroundControlPoint] = input.get_data(
             CORNER_POINTS_OUTPUT_KEY
@@ -290,6 +292,8 @@ class GeoReference(Task):
             logger.error("corner points not provided")
             return result
 
+        # convert the corner points into raster io GCP objects and create a transformation
+        # that we will use to transform the query points
         gcps: List[riot.GroundControlPoint] = []
         for cp in corner_points:
             gcp = riot.GroundControlPoint(
@@ -305,40 +309,45 @@ class GeoReference(Task):
             query_pts = input.get_request_info("query_pts")
 
         # transform the query pixel points into geo locations and write the result into
-        # the query point
+        # the query points
         for qp in query_pts:
             lonlat: Tuple[float, float] = riot.xy(transform, qp.xy[1], qp.xy[0])
             qp.lonlat = lonlat
 
-        # correct the hemisphere of the points
+        # correct the hemisphere of the resulting query points
         lon_multiplier, lat_multiplier = self._determine_hemispheres(input, query_pts)
         logger.info(
             f"derived hemispheres for georeferencing: {lon_multiplier},{lat_multiplier}"
         )
-        results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
+        proj_query_points = self._update_hemispheres(
+            query_pts, lon_multiplier, lat_multiplier
+        )
+
+        # correct the hemisphere of the corner points since it hasnt' been done before now
         corner_points = self._update_hemispheres_corners(
             corner_points, lon_multiplier, lat_multiplier
         )
 
+        # get the source CRS for corner points
         crs = self._determine_crs(input)
         logger.info(f"extracted crs: {crs}")
 
-        # transform to NAD83 when external query points are supplied
+        # perform a datum shift on the query points if the source CRS is not the default
         if crs != self.DEFAULT_DEST_CRS:
             proj = Transformer.from_crs(crs, self.DEFAULT_DEST_CRS, always_xy=True)
-            for pt in results:
+            for pt in proj_query_points:
                 x_proj, y_proj = proj.transform(*pt.lonlat)
                 pt.lonlat = (x_proj, y_proj)
 
+        # calculate the RMSE and scale error for the query points
         scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
         if not scale_value:
             scale_value = 0
-
         rmse, scale_error = self._score_query_points(query_pts, scale_value=scale_value)
         logger.info(f"rmse: {rmse} scale error: {scale_error}")
 
         result = super()._create_result(input)
-        result.output["query_pts"] = results
+        result.output["query_pts"] = proj_query_points
         result.output["rmse"] = rmse
         result.output["error_scale"] = scale_error
         result.output["crs"] = self.DEFAULT_DEST_CRS
@@ -587,7 +596,7 @@ class GeoReference(Task):
     def _determine_crs(self, input: TaskInput) -> str:
         logger.info("determining CRS for georeferencing")
         # parse extracted metadata
-        metadata: MetadataExtraction = input.parse_data(
+        metadata: Optional[MetadataExtraction] = input.parse_data(
             METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
         )
 
@@ -595,18 +604,24 @@ class GeoReference(Task):
         if not metadata:
             return self.DEFAULT_DEST_CRS
 
+        # grab the year from the metadata if present
+        try:
+            year = int(metadata.year)
+        except:
+            year = -1
+
         # we we assume geographic coordinates and combine that with the datum to
         # come up with a CRS
-        datum = metadata.datum.lower()
+        datum = metadata.datum.upper()
         if datum is not None and datum != "NULL":
-            if "nad" in datum or "north american" in datum:
+            if "NAD" in datum or "NORTH AMERICAN" in datum:
                 if "27" or "1927" in datum:
                     return "EPSG:4267"
                 if "83" or "1983" in datum:
                     return "EPSG:4269"
-                if metadata.year >= "1985":
+                if year >= 1985:
                     return "EPSG:4269"
-                if metadata.year >= "1930":
+                if year >= 1930:
                     return "EPSG:4267"
             # default to a WGS84 CRS
             return "EPSG:4326"
@@ -616,9 +631,9 @@ class GeoReference(Task):
             if metadata.country != "NULL" and (
                 metadata.country == "US" or metadata.country == "CA"
             ):
-                if metadata.year >= "1985":
+                if year >= 1985:
                     return "EPSG:4269"
-                if metadata.year >= "1930":
+                if year >= 1930:
                     return "EPSG:4267"
 
         # default to a WGS84 CRS when all else fails

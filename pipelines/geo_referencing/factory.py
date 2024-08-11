@@ -692,6 +692,6 @@ def create_geo_referencing_pipeline(
     tasks.append(CornerPointExtractor("corner_point_extractor"))
     tasks.append(InferenceCoordinateExtractor("coordinate-inference"))
     tasks.append(ScaleExtractor("scale_extractor", ""))
-    tasks.append(CreateGroundControlPoints("gcp_creator"))
+    tasks.append(CreateGroundControlPoints("gcp_creator", create_random_pts=False))
     tasks.append(GeoReference("geo_referencer", 1))
     return Pipeline("wally-finder", "wally-finder", outputs, tasks)
