@@ -158,6 +158,7 @@ def start_server():
         type=float,
         default=0.5,
     )
+    parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
     global georef_pipeline
@@ -170,6 +171,7 @@ def start_server():
         p.state_code_filename,
         p.country_code_filename,
         p.ocr_gamma_correction,
+        not p.no_gpu,
     )
 
     #### start flask server or startup up the message queue

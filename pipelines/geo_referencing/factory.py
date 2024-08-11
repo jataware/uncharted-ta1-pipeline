@@ -75,6 +75,7 @@ def create_geo_referencing_pipelines(
     state_code_filename: str,
     country_code_filename: str,
     ocr_gamma_correction: float,
+    gpu_enabled: bool,
 ) -> List[Pipeline]:
     geocoding_cache_bounds = os.path.join(working_dir, "geocoding_cache_bounds.json")
     geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
@@ -201,6 +202,7 @@ def create_geo_referencing_pipelines(
             segmentation_model_path,
             segmentation_cache,
             confidence_thres=0.25,
+            gpu=gpu_enabled,
         )
     )
     tasks.append(
@@ -554,6 +556,7 @@ def create_geo_referencing_pipeline(
     state_code_filename: str,
     country_code_filename: str,
     ocr_gamma_correction: float,
+    gpu_enabled: bool,
 ) -> Pipeline:
     geocoding_cache_bounds = os.path.join(working_dir, "geocoding_cache_bounds.json")
     geocoding_cache_points = os.path.join(working_dir, "geocoding_cache_points.json")
@@ -593,6 +596,7 @@ def create_geo_referencing_pipeline(
             segmentation_model_path,
             segmentation_cache,
             confidence_thres=0.25,
+            gpu=gpu_enabled,
         )
     )
     tasks.append(

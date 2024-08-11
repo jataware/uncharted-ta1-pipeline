@@ -72,6 +72,7 @@ def main():
         type=float,
         default=0.5,
     )
+    parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
     # setup an input stream
@@ -115,6 +116,7 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
         parsed.state_code_filename,
         parsed.country_code_filename,
         parsed.ocr_gamma_correction,
+        not parsed.no_gpu,
     )
 
     # get file paths
