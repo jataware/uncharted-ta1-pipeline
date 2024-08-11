@@ -1,4 +1,5 @@
 import logging
+from unittest.mock import DEFAULT
 
 from schema.cdr_schemas.georeference import (
     GeoreferenceResults as CDRGeoreferenceResults,
@@ -63,6 +64,9 @@ class CDRMapper:
 
 class GeoreferenceMapper(CDRMapper):
 
+    # output CRS to use for projected maps that are pushed to CDR
+    DEFAULT_OUTPUT_CRS = "EPSG:3857"
+
     def map_to_cdr(self, model: LARAGeoferenceResult) -> CDRGeoreferenceResults:
         gcps = []
         for gcp in model.gcps:
@@ -87,7 +91,7 @@ class GeoreferenceMapper(CDRMapper):
                     map_area=None,
                     projections=[
                         ProjectionResult(
-                            crs=model.crs,
+                            crs=self.DEFAULT_OUTPUT_CRS,
                             gcp_ids=[gcp.gcp_id for gcp in gcps],
                             file_name=f"lara-{model.map_id}.tif",
                         )

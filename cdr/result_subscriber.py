@@ -33,7 +33,7 @@ from tasks.common.queue import (
     Request,
     RequestResult,
 )
-from schema.mappers.cdr import get_mapper
+from schema.mappers.cdr import GeoreferenceMapper, get_mapper
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoreferenceResult
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
 from tasks.point_extraction.entities import PointLabels as LARAPoints
@@ -96,9 +96,6 @@ class LaraResultSubscriber:
         POINTS_PIPELINE: "0.0.4",
         GEOREFERENCE_PIPELINE: "0.0.5",
     }
-
-    # output CRS to use for projected maps that are pushed to CDR
-    DEFAULT_OUTPUT_CRS = "EPSG:3857"
 
     def __init__(
         self,
@@ -363,10 +360,13 @@ class LaraResultSubscriber:
             assert gcps is not None
 
             logger.info(
-                f"projecting image {result.image_path} to {output_file_name_full} using crs {projection.crs}"
+                f"projecting image {result.image_path} to {output_file_name_full} using crs {GeoreferenceMapper.DEFAULT_OUTPUT_CRS}"
             )
             self._project_georeference(
-                result.image_path, output_file_name_full, self.DEFAULT_OUTPUT_CRS, gcps
+                result.image_path,
+                output_file_name_full,
+                GeoreferenceMapper.DEFAULT_OUTPUT_CRS,
+                gcps,
             )
 
             files_.append(
