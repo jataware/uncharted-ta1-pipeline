@@ -89,6 +89,13 @@ class LaraResultSubscriber:
         GEOREFERENCE_PIPELINE: "uncharted-georeference",
     }
 
+    # map of pipeline name to system version
+    PIPELINE_SYSTEM_VERSIONS = {
+        SEGMENTATION_PIPELINE: "0.0.4",
+        METADATA_PIPELINE: "0.0.4",
+        POINTS_PIPELINE: "0.0.4",
+        GEOREFERENCE_PIPELINE: "0.0.5",
+    }
 
     # output CRS to use for projected maps that are pushed to CDR
     DEFAULT_OUTPUT_CRS = "EPSG:3857"
@@ -101,7 +108,6 @@ class LaraResultSubscriber:
         cdr_token: str,
         output: str,
         workdir: str,
-        system_version: str,
         json_log: JSONLog,
         host="localhost",
         pipeline_sequence: List[str] = DEFAULT_PIPELINE_SEQUENCE,
@@ -114,7 +120,6 @@ class LaraResultSubscriber:
         self._cdr_token = cdr_token
         self._workdir = workdir
         self._output = output
-        self._system_version = system_version
         self._json_log = json_log
         self._host = host
         self._pipeline_sequence = (
@@ -344,7 +349,7 @@ class LaraResultSubscriber:
             mapper = get_mapper(
                 lara_result,
                 self.PIPELINE_SYSTEM_NAMES[self.GEOREFERENCE_PIPELINE],
-                self._system_version,
+                self.PIPELINE_SYSTEM_VERSIONS[self.GEOREFERENCE_PIPELINE],
             )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
             assert cdr_result is not None
@@ -379,7 +384,9 @@ class LaraResultSubscriber:
                 georeference_results=[],
                 gcps=[],
                 system=self.PIPELINE_SYSTEM_NAMES[self.GEOREFERENCE_PIPELINE],
-                system_version=self._system_version,
+                system_version=self.PIPELINE_SYSTEM_VERSIONS[
+                    self.GEOREFERENCE_PIPELINE
+                ],
             )
 
         assert cdr_result is not None
@@ -445,7 +452,7 @@ class LaraResultSubscriber:
             mapper = get_mapper(
                 lara_result,
                 self.PIPELINE_SYSTEM_NAMES[self.SEGMENTATION_PIPELINE],
-                self._system_version,
+                self.PIPELINE_SYSTEM_VERSIONS[self.SEGMENTATION_PIPELINE],
             )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except:
@@ -467,7 +474,7 @@ class LaraResultSubscriber:
             mapper = get_mapper(
                 lara_result,
                 self.PIPELINE_SYSTEM_NAMES[self.POINTS_PIPELINE],
-                self._system_version,
+                self.PIPELINE_SYSTEM_VERSIONS[self.POINTS_PIPELINE],
             )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except:
@@ -490,7 +497,7 @@ class LaraResultSubscriber:
             mapper = get_mapper(
                 lara_result,
                 self.PIPELINE_SYSTEM_NAMES[self.METADATA_PIPELINE],
-                self._system_version,
+                self.PIPELINE_SYSTEM_VERSIONS[self.METADATA_PIPELINE],
             )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
