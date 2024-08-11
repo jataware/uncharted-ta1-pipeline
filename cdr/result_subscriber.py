@@ -89,6 +89,10 @@ class LaraResultSubscriber:
         GEOREFERENCE_PIPELINE: "uncharted-georeference",
     }
 
+
+    # output CRS to use for projected maps that are pushed to CDR
+    DEFAULT_OUTPUT_CRS = "EPSG:3857"
+
     def __init__(
         self,
         request_publisher: Optional[LaraRequestPublisher],
@@ -357,7 +361,7 @@ class LaraResultSubscriber:
                 f"projecting image {result.image_path} to {output_file_name_full} using crs {projection.crs}"
             )
             self._project_georeference(
-                result.image_path, output_file_name_full, projection.crs, gcps
+                result.image_path, output_file_name_full, self.DEFAULT_OUTPUT_CRS, gcps
             )
 
             files_.append(

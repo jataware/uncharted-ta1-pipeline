@@ -78,8 +78,8 @@ class PixelMapping:
 class GeoReference(Task):
     _poly_order = 1
 
-    # default destination datum for georeferencing output
-    DEFAULT_DEST_CRS = "EPSG:4269"
+    # externally supplied query points will be transformed to this CRS (NAD83 for contest data)
+    EXTERNAL_QUERY_POINT_CRS = "EPSG:4269"
 
     def __init__(self, task_id: str, poly_order: int = 1):
         super().__init__(task_id)
@@ -136,9 +136,11 @@ class GeoReference(Task):
             scale_value = 0
 
         query_pts = None
+        external_query_pts = False
         if "query_pts" in input.request:
             logger.info("reading query points from request")
             query_pts = input.request["query_pts"]
+            external_query_pts = True
         if not query_pts or len(query_pts) < 1:
             logger.info("reading query points from task input")
             query_pts = input.get_data("query_pts")
@@ -253,9 +255,16 @@ class GeoReference(Task):
         crs = self._determine_crs(input)
         logger.info(f"extracted CRS: {crs}")
 
-        if crs != self.DEFAULT_DEST_CRS:
+        # perform a datum shift if we're using externally supplied
+        # query points (ie. eval scenario where we are passed query points from a file)
+        if crs != self.EXTERNAL_QUERY_POINT_CRS and external_query_pts:
+            logger.info(
+                f"performing datum shift from {crs} to {self.EXTERNAL_QUERY_POINT_CRS}"
+            )
             for qp in query_pts:
-                proj = Transformer.from_crs(crs, self.DEFAULT_DEST_CRS, always_xy=True)
+                proj = Transformer.from_crs(
+                    crs, self.EXTERNAL_QUERY_POINT_CRS, always_xy=True
+                )
                 x_p, y_p = proj.transform(qp.lonlat[0], qp.lonlat[1])
                 qp.lonlat = (x_p, y_p)
 
@@ -266,7 +275,9 @@ class GeoReference(Task):
         result.output["query_pts"] = results
         result.output["rmse"] = rmse
         result.output["error_scale"] = scale_error
-        result.output["crs"] = self.DEFAULT_DEST_CRS
+        result.output["crs"] = (
+            self.EXTERNAL_QUERY_POINT_CRS if external_query_pts else crs
+        )
         result.output["keypoints"] = keypoint_stats
         return result
 
@@ -304,8 +315,10 @@ class GeoReference(Task):
 
         # get the generated query points, or use those that were passed into the pipeline
         # from an external source
+        external_points = False
         query_pts: List[QueryPoint] = input.get_data("query_pts")
         if not query_pts:
+            external_points = True
             query_pts = input.get_request_info("query_pts")
 
         # transform the query pixel points into geo locations and write the result into
@@ -332,9 +345,15 @@ class GeoReference(Task):
         crs = self._determine_crs(input)
         logger.info(f"extracted crs: {crs}")
 
-        # perform a datum shift on the query points if the source CRS is not the default
-        if crs != self.DEFAULT_DEST_CRS:
-            proj = Transformer.from_crs(crs, self.DEFAULT_DEST_CRS, always_xy=True)
+        # perform a datum shift on the query points if the we're using externally supplied
+        # query points (eval scenario where we are passed query points from a file)
+        if crs != self.EXTERNAL_QUERY_POINT_CRS and external_points:
+            logger.info(
+                f"performing datum shift from {crs} to {self.EXTERNAL_QUERY_POINT_CRS} on query points"
+            )
+            proj = Transformer.from_crs(
+                crs, self.EXTERNAL_QUERY_POINT_CRS, always_xy=True
+            )
             for pt in proj_query_points:
                 x_proj, y_proj = proj.transform(*pt.lonlat)
                 pt.lonlat = (x_proj, y_proj)
@@ -350,7 +369,7 @@ class GeoReference(Task):
         result.output["query_pts"] = proj_query_points
         result.output["rmse"] = rmse
         result.output["error_scale"] = scale_error
-        result.output["crs"] = self.DEFAULT_DEST_CRS
+        result.output["crs"] = self.EXTERNAL_QUERY_POINT_CRS if external_points else crs
         result.output[CORNER_POINTS_OUTPUT_KEY] = corner_points
         return result
 
@@ -602,7 +621,7 @@ class GeoReference(Task):
 
         # make sure there is metadata
         if not metadata:
-            return self.DEFAULT_DEST_CRS
+            return self.EXTERNAL_QUERY_POINT_CRS
 
         # grab the year from the metadata if present
         try:
