@@ -1,10 +1,19 @@
 import logging
 import math
+import pprint
+from unittest.mock import DEFAULT
 
 from geopy.distance import geodesic
+from regex import R
 
+from tasks.geo_referencing.entities import GroundControlPoint
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.geo_referencing.entities import Coordinate, DocGeoFence, GEOFENCE_OUTPUT_KEY
+from tasks.geo_referencing.entities import (
+    Coordinate,
+    DocGeoFence,
+    GEOFENCE_OUTPUT_KEY,
+    CORNER_POINTS_OUTPUT_KEY,
+)
 from tasks.geo_referencing.geo_projection import GeoProjection
 from tasks.geo_referencing.util import get_input_geofence
 from tasks.metadata_extraction.entities import (
@@ -14,6 +23,10 @@ from tasks.metadata_extraction.entities import (
 from tasks.metadata_extraction.scale import SCALE_VALUE_OUTPUT_KEY
 
 from typing import Any, Dict, List, Optional, Tuple
+
+import rasterio.transform as riot
+from pyproj import Transformer
+
 
 FALLBACK_RANGE_ADJUSTMENT_FACTOR = 0.05  # used to calculate how far from the edge of the fallback range to anchor points
 
@@ -65,18 +78,43 @@ class PixelMapping:
 class GeoReference(Task):
     _poly_order = 1
 
+    # externally supplied query points will be transformed to this CRS (NAD83 for contest data)
+    EXTERNAL_QUERY_POINT_CRS = "EPSG:4269"
+
     def __init__(self, task_id: str, poly_order: int = 1):
         super().__init__(task_id)
         self._poly_order = poly_order
 
     def run(self, input: TaskInput) -> TaskResult:
+        """
+        Creates a transformation from pixel coordinates to geographic coordinates
+        based on exracted map information.  The transformation is run against supplied
+        query points in pixel space to generate a final set of geographic coordinates.
+
+        These pixel/geo point tuples can be used downstream as control points.
+
+        Args:
+            input (TaskInput): The input data for the georeferencing task.
+
+        Returns:
+            TaskResult: The result of the georeferencing task.
+        """
         logger.info(f"running georeferencing task for image {input.raster_id}")
 
+        # check if the task should run label or corner point georeferencing
+        if input.get_data(CORNER_POINTS_OUTPUT_KEY):
+            logger.info(f"running corner point georeferencing")
+            return self._run_corner_georef(input)
+        logger.info(f"running label georeferencing")
+        return self._run_label_georef(input)
+
+    def _run_label_georef(self, input: TaskInput) -> TaskResult:
         lon_minmax = input.get_request_info("lon_minmax", [0, 180])
         lat_minmax = input.get_request_info("lat_minmax", [0, 90])
         logger.info(f"initial lon_minmax: {lon_minmax}")
         lon_pts = input.get_data("lons")
         lat_pts = input.get_data("lats")
+
         scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
 
@@ -98,9 +136,11 @@ class GeoReference(Task):
             scale_value = 0
 
         query_pts = None
+        external_query_pts = False
         if "query_pts" in input.request:
             logger.info("reading query points from request")
             query_pts = input.request["query_pts"]
+            external_query_pts = True
         if not query_pts or len(query_pts) < 1:
             logger.info("reading query points from task input")
             query_pts = input.get_data("query_pts")
@@ -212,17 +252,125 @@ class GeoReference(Task):
         # results = self._clip_query_pts(query_pts, lon_minmax, lat_minmax)
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
+        crs = self._determine_crs(input)
+        logger.info(f"extracted CRS: {crs}")
+
+        # perform a datum shift if we're using externally supplied
+        # query points (ie. eval scenario where we are passed query points from a file)
+        if crs != self.EXTERNAL_QUERY_POINT_CRS and external_query_pts:
+            logger.info(
+                f"performing datum shift from {crs} to {self.EXTERNAL_QUERY_POINT_CRS}"
+            )
+            for qp in query_pts:
+                proj = Transformer.from_crs(
+                    crs, self.EXTERNAL_QUERY_POINT_CRS, always_xy=True
+                )
+                x_p, y_p = proj.transform(qp.lonlat[0], qp.lonlat[1])
+                qp.lonlat = (x_p, y_p)
+
         rmse, scale_error = self._score_query_points(query_pts, scale_value)
-        datum, projection = self._determine_projection(input)
-        logger.info(f"extracted datum: {datum}\textracted projection: {projection}")
+        logger.info(f"rmse: {rmse} scale error: {scale_error}")
 
         result = super()._create_result(input)
         result.output["query_pts"] = results
         result.output["rmse"] = rmse
         result.output["error_scale"] = scale_error
-        result.output["datum"] = datum
-        result.output["projection"] = projection
+        result.output["crs"] = (
+            self.EXTERNAL_QUERY_POINT_CRS if external_query_pts else crs
+        )
         result.output["keypoints"] = keypoint_stats
+        return result
+
+    def _run_corner_georef(self, input: TaskInput) -> TaskResult:
+        """
+        Runs georeferencing on the input query points assuming using a projection
+        based on extracted corner points.
+
+        Args:
+            input (TaskInput): The input for the task - contains the corner points and
+            query points.
+
+        Returns:
+            TaskResult: The result of the task.
+        """
+
+        # get the corner points if they exist
+        result = super()._create_result(input)
+        corner_points: List[GroundControlPoint] = input.get_data(
+            CORNER_POINTS_OUTPUT_KEY
+        )
+        if not input.get_data(CORNER_POINTS_OUTPUT_KEY):
+            logger.error("corner points not provided")
+            return result
+
+        # convert the corner points into raster io GCP objects and create a transformation
+        # that we will use to transform the query points
+        gcps: List[riot.GroundControlPoint] = []
+        for cp in corner_points:
+            gcp = riot.GroundControlPoint(
+                row=cp.pixel_y, col=cp.pixel_x, x=cp.longitude, y=cp.latitude
+            )
+            gcps.append(gcp)
+        transform = riot.from_gcps(gcps)
+
+        # get the generated query points, or use those that were passed into the pipeline
+        # from an external source
+        external_points = False
+        query_pts: List[QueryPoint] = input.get_data("query_pts")
+        if not query_pts:
+            external_points = True
+            query_pts = input.get_request_info("query_pts")
+
+        # transform the query pixel points into geo locations and write the result into
+        # the query points
+        for qp in query_pts:
+            lonlat: Tuple[float, float] = riot.xy(transform, qp.xy[1], qp.xy[0])
+            qp.lonlat = lonlat
+
+        # correct the hemisphere of the resulting query points
+        lon_multiplier, lat_multiplier = self._determine_hemispheres(input, query_pts)
+        logger.info(
+            f"derived hemispheres for georeferencing: {lon_multiplier},{lat_multiplier}"
+        )
+        proj_query_points = self._update_hemispheres(
+            query_pts, lon_multiplier, lat_multiplier
+        )
+
+        # correct the hemisphere of the corner points since it hasnt' been done before now
+        corner_points = self._update_hemispheres_corners(
+            corner_points, lon_multiplier, lat_multiplier
+        )
+
+        # get the source CRS for corner points
+        crs = self._determine_crs(input)
+        logger.info(f"extracted crs: {crs}")
+
+        # perform a datum shift on the query points if the we're using externally supplied
+        # query points (eval scenario where we are passed query points from a file)
+        if crs != self.EXTERNAL_QUERY_POINT_CRS and external_points:
+            logger.info(
+                f"performing datum shift from {crs} to {self.EXTERNAL_QUERY_POINT_CRS} on query points"
+            )
+            proj = Transformer.from_crs(
+                crs, self.EXTERNAL_QUERY_POINT_CRS, always_xy=True
+            )
+            for pt in proj_query_points:
+                x_proj, y_proj = proj.transform(*pt.lonlat)
+                pt.lonlat = (x_proj, y_proj)
+
+        # calculate the RMSE and scale error for the query points
+        scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
+        if not scale_value:
+            scale_value = 0
+        rmse, scale_error = self._score_query_points(query_pts, scale_value=scale_value)
+        logger.info(f"rmse: {rmse} scale error: {scale_error}")
+
+        result = super()._create_result(input)
+        result.output["query_pts"] = proj_query_points
+        result.output["rmse"] = rmse
+        result.output["error_scale"] = scale_error
+        result.output["crs"] = self.EXTERNAL_QUERY_POINT_CRS if external_points else crs
+        result.output[CORNER_POINTS_OUTPUT_KEY] = corner_points
         return result
 
     def _count_keypoints(
@@ -438,38 +586,77 @@ class GeoReference(Task):
                 abs(qp.lonlat[0]) * lon_multiplier,
                 abs(qp.lonlat[1]) * lat_multiplier,
             )
-            qp.lonlat_xp = (
-                abs(qp.lonlat_xp[0]) * lon_multiplier,
-                abs(qp.lonlat_xp[1]) * lat_multiplier,
-            )
-            qp.lonlat_yp = (
-                abs(qp.lonlat_yp[0]) * lon_multiplier,
-                abs(qp.lonlat_yp[1]) * lat_multiplier,
-            )
+            if "lonlat_xp" in qp.properties:
+                qp.lonlat_xp = (
+                    abs(qp.lonlat_xp[0]) * lon_multiplier,
+                    abs(qp.lonlat_xp[1]) * lat_multiplier,
+                )
+            if "lonlat_yp" in qp.properties:
+                qp.lonlat_yp = (
+                    abs(qp.lonlat_yp[0]) * lon_multiplier,
+                    abs(qp.lonlat_yp[1]) * lat_multiplier,
+                )
 
         return query_pts
 
-    def _determine_projection(self, input: TaskInput) -> Tuple[str, str]:
-        logger.info("determining projection for georeferencing")
+    def _update_hemispheres_corners(
+        self,
+        corner_points: List[GroundControlPoint],
+        lon_multiplier: float,
+        lat_multiplier: float,
+    ) -> List[GroundControlPoint]:
+        logger.info("updating corner point hemispheres for georeferencing")
+        for cp in corner_points:
+            cp.longitude = abs(cp.longitude) * lon_multiplier
+            cp.latitude = abs(cp.latitude) * lat_multiplier
+
+        return corner_points
+
+    def _determine_crs(self, input: TaskInput) -> str:
+        logger.info("determining CRS for georeferencing")
         # parse extracted metadata
-        metadata = input.parse_data(
+        metadata: Optional[MetadataExtraction] = input.parse_data(
             METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
         )
 
         # make sure there is metadata
         if not metadata:
-            return "", ""
+            return self.EXTERNAL_QUERY_POINT_CRS
 
-        datum = metadata.datum
-        if not datum or len(datum) == 0:
-            year = metadata.year
-            if year >= "1985":
-                datum = "NAD83"
-            if year >= "1930":
-                datum = "NAD27"
+        # grab the year from the metadata if present
+        try:
+            year = int(metadata.year)
+        except:
+            year = -1
 
-        # return the datum and the projection
-        return datum, metadata.projection
+        # we we assume geographic coordinates and combine that with the datum to
+        # come up with a CRS
+        datum = metadata.datum.upper()
+        if datum is not None and datum != "NULL":
+            if "NAD" in datum or "NORTH AMERICAN" in datum:
+                if "27" or "1927" in datum:
+                    return "EPSG:4267"
+                if "83" or "1983" in datum:
+                    return "EPSG:4269"
+                if year >= 1985:
+                    return "EPSG:4269"
+                if year >= 1930:
+                    return "EPSG:4267"
+            # default to a WGS84 CRS
+            return "EPSG:4326"
+
+        # no datum info in the metadata so we will use the country and year
+        if not datum or datum == "NULL" or len(datum) == 0:
+            if metadata.country != "NULL" and (
+                metadata.country == "US" or metadata.country == "CA"
+            ):
+                if year >= 1985:
+                    return "EPSG:4269"
+                if year >= 1930:
+                    return "EPSG:4267"
+
+        # default to a WGS84 CRS when all else fails
+        return "EPSG:4326"
 
     def _build_fallback(
         self,
@@ -561,8 +748,14 @@ class GeoReference(Task):
                 latlon = (qp.lonlat[1], qp.lonlat[0])
                 err_dist = geodesic(latlon_gtruth, latlon).km
                 qp.error_km = err_dist
-                qp.dist_xp_km = geodesic(latlon, (qp.lonlat_xp[1], qp.lonlat_xp[0])).km
-                qp.dist_yp_km = geodesic(latlon, (qp.lonlat_yp[1], qp.lonlat_yp[0])).km
+                if "lonlat_xp" in qp.properties:
+                    qp.dist_xp_km = geodesic(
+                        latlon, (qp.lonlat_xp[1], qp.lonlat_xp[0])
+                    ).km
+                if "lonlat_yp" in qp.properties:
+                    qp.dist_yp_km = geodesic(
+                        latlon, (qp.lonlat_yp[1], qp.lonlat_yp[0])
+                    ).km
                 qp.error_lonlat = (
                     latlon[1] - latlon_gtruth[1],
                     latlon[0] - latlon_gtruth[0],

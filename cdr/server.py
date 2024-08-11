@@ -34,7 +34,6 @@ app = Flask(__name__)
 
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 CDR_HOST = "https://api.cdr.land"
-CDR_SYSTEM_VERSION = "0.0.4"
 CDR_CALLBACK_SECRET = "maps rock"
 APP_PORT = 5001
 CDR_EVENT_LOG = "events.log"
@@ -53,7 +52,6 @@ class Settings:
     workdir: str
     imagedir: str
     output: str
-    system_version: str
     callback_secret: str
     callback_url: str
     registration_id: Dict[str, str] = {}
@@ -213,6 +211,7 @@ def register_cdr_system():
 
     for i, pipeline in enumerate(settings.sequence):
         system_name = LaraResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]
+        system_version = LaraResultSubscriber.PIPELINE_SYSTEM_VERSIONS[pipeline]
         logger.info(f"registering system {system_name} with cdr")
         headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
 
@@ -221,7 +220,7 @@ def register_cdr_system():
 
         registration = {
             "name": system_name,
-            "version": settings.system_version,
+            "version": system_version,
             "callback_url": settings.callback_url,
             "webhook_secret": settings.callback_secret,
             # Leave blank if callback url has no auth requirement
@@ -333,7 +332,6 @@ def main():
     settings.workdir = p.workdir
     settings.imagedir = p.imagedir
     settings.output = p.output
-    settings.system_version = CDR_SYSTEM_VERSION
     settings.callback_secret = CDR_CALLBACK_SECRET
     settings.serial = True
     settings.sequence = p.sequence
@@ -372,7 +370,6 @@ def main():
         settings.cdr_api_token,
         settings.output,
         settings.workdir,
-        settings.system_version,
         settings.json_log,
         host=p.host,
         pipeline_sequence=settings.sequence,
