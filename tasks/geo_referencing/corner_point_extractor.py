@@ -99,7 +99,7 @@ class CornerPointExtractor(Task):
                         (Point(lon_key[0], lat_key[0]), intersection)
                     )
 
-        if len(intersection_points) >= 3:
+        if len(intersection_points) >= 4:
             logger.info(f"Found {len(intersection_points)} corner points")
 
             output: List[GroundControlPoint] = []
@@ -118,7 +118,7 @@ class CornerPointExtractor(Task):
                 output.append(gcp)
         else:
             logger.info(
-                f"Found {len(intersection_points)} corner points, require at least 3.  Corner point referencing not available."
+                f"Found {len(intersection_points)} corner points, require 4.  Corner point referencing not available."
             )
             output = []
 
