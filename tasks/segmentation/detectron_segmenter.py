@@ -2,13 +2,12 @@ import logging
 import cv2
 from cv2.typing import MatLike
 import numpy as np
-from sympy import LM
 import torch
 import hashlib
 from pathlib import Path
 import os
 from urllib.parse import urlparse
-from typing import List, Optional, Tuple, Sequence
+from typing import List, Tuple, Sequence
 
 from tasks.segmentation.ditod import add_vit_config
 from tasks.segmentation.entities import (
