@@ -6,7 +6,7 @@ This pipeline performs OCR-based text extraction on an image
 This module currently uses Google-Vision OCR API by default:
 https://cloud.google.com/vision/docs/ocr#vision_text_detection_gcs-python
 
-See more info on pipeline tasks here: [../../tasks/text_extraction/README.md](../../tasks/README.md)
+See more info on pipeline tasks here: [../../tasks/README.md](../../tasks/README.md)
 
 ### Installation
 
@@ -27,27 +27,29 @@ pip install -e .
 
 * Pipeline is defined in `text_extraction_pipeline.py` and is suitable for integration into other systems
 * Input is a image (ie binary image file buffer)
-* Output is the set of extracted text items materialized as a:
-  * `DocTextExtraction` JSON object
-  * List of `FeatureResults` objects as defined in the CMA TA1 CDR schema
+* Output is the set of extracted text items materialized as:
+  * `DocTextExtraction` JSON object (LARA's internal data schema) and/or
+  * `FeatureResults` JSON object (part of the CDR TA1 schema)
 
 ### Command Line Execution ###
-`run_pipeline.py` provides a command line wrapper around the map extraction pipeline, and allows for a directory map images to be processed serially.
+`run_pipeline.py` provides a command line wrapper around the text extraction pipeline, and allows for a directory map images to be processed serially.
 
 To run from the repository root directory:
 ```
-export GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_api_credentials.json
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google_api_credentials.json
 
 python3 -m pipelines.text_extraction.run_pipeline \
     --input /image/input/dir \
-    --output /model/output/dir \
-    --workdir /model/working/dir \
+    --output /results/output/dir \
+    --workdir /pipeline/working/dir (default is tmp/lara/workdir) \
+    --cdr_schema (if set, pipeline will also output CDR schema JSON objects) \
     --tile True \
-    --pixel_limit 1024
+    --pixel_limit 6000 \
+    --gamma_corr 1.0
 ```
 
-Where `tile` inidicates whether the image should be tiled or resized when it is larger than `pixel_limit`.
-
+* `tile` Indicates whether the image should be tiled or resized when it is larger than `pixel_limit`.
+* `gamma_corr` Controls optional image gamma correction as pre-processing. Must be <= 1.0; default value is 1.0 (ie gamma correction disabled)
 
 
 ### REST Service ###
@@ -57,12 +59,17 @@ Where `tile` inidicates whether the image should be tiled or resized when it is 
 
 To start the server:
 ```
-export GOOGLE_APPLICATION_CREDENTIALS=/credentinals/google_api_credentials.json
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google_api_credentials.json
 
-python3 -m pipelines.metadata_extraction.run_server \
-    --workdir /model/workingdir
+python3 -m pipelines.text_extraction.run_server \
+    --workdir /pipeline/working/dir (default is tmp/lara/workdir) \
+    --cdr_schema (if set, pipeline will also output CDR schema JSON objects) \
     --tile True \
-    --pixel_limit 1024
+    --pixel_limit 6000 \
+    --gamma_corr 1.0 \
+    --rest (if set, run the server in REST mode, instead of resquest-queue mode) \
+    --imagedir /pipline/images/working/dir (only needed for request-queue mode) \
+    --rabbit_host (rabbitmq host; only needed for request-queue mode) 
 ```
 
 ### Dockerized deployment
@@ -71,9 +78,9 @@ The `deploy/build.sh` script can be used to build the server above into a Docker
 ```
 cd deploy
 
-export GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_api_credentials.json
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google_api_credentials.json
 
-./run.sh /model/working/dir
+./run.sh /model/working/dir /pipline/images/working/dir
 ```
 
 
