@@ -2,11 +2,14 @@
 
 ![example workflow](https://github.com/uncharted-lara/lara-models/actions/workflows/build_test.yml/badge.svg)
 
+## LARA - Layered Atlas Reconstruction Analytics
+This repository contains Uncharted's TA1 contributions for DARPA's CriticalMAAS program. The main goals are automated feature extraction and georeferencing of geologic maps.
+
 This repository contains five pipelines:
 
-* [Map Segmentation](pipelines/segmentation/README.md) - detects and extracts the main map area, polygon legend, point/line legend and geologic cross section from maps
+* [Map Segmentation](pipelines/segmentation/README.md) - detects and extracts the main map area, polygon legend, point/line legend and geologic cross sections from maps
 * [Metadata Extraction](pipelines/metadata_extraction/README.md) - extracts metadata values such as title, author, year and scale from an input map image
-* [Point Extraction](pipelines/point_extraction/README.md) - detects and extracts geologic point symbols from an input map image
+* [Point Extraction](pipelines/point_extraction/README.md) - detects and extracts the location and orientation of geologic point symbols from an input map image
 * [Georeferencing](pipelines/geo_referencing/README.md) - computes an image space to geo space transform given an input map image
 * [Text Extraction](pipelines/text_extraction/README.md) - extracts text as individual words, lines or paragraphs/blocks from an input image
 
