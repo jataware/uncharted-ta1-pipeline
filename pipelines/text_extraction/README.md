@@ -57,6 +57,8 @@ python3 -m pipelines.text_extraction.run_pipeline \
 * ```POST:  /api/process_image``` - Sends an image (as binary file buffer) to the metadata extraction pipeline for analysis. Results are JSON string.
 * ```GET /healthcheck``` - Healthcheck endpoint
 
+The server can also be configured to run with a request queue, using RabbitMQ, if the `rest` flag is not set.
+
 To start the server:
 ```
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google_api_credentials.json
