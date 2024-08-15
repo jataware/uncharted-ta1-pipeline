@@ -85,5 +85,6 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google_api_credentials.json
 ./run.sh /model/working/dir /pipeline/images/working/dir
 ```
 
+Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers. 
 
 

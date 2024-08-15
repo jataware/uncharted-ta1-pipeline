@@ -119,3 +119,5 @@ export OPENAI_API_KEY=<OPEN API KEY>
 ```
 
 The `deploy/build.sh` script can also be used to build the Docker image from source.
+
+Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers. 

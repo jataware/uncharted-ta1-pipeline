@@ -120,4 +120,5 @@ export OPENAI_API_KEY=<OPEN API KEY>
 ./run.sh /pipeline/working/dir /pipeline/images/working/dir
 ```
 
+Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers. 
 

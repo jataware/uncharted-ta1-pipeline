@@ -157,4 +157,4 @@ export CDR_API_TOKEN=<SECRET TOKEN>
 
 The `deploy/build.sh` script can also be used to build the Docker image from source.
 
-
+Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers. 

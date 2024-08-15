@@ -15,5 +15,4 @@ This repository contains five pipelines:
 
 The `tasks` directory contains the `pip` installable library of tasks and supporting utilities, with each pipeline found in the `pipelines` directory being composed of these tasks.  Each pipeline is itself `pip` installable, and is accompanied by a wrapper to support command line execution (`run_pipeline.py`), and a server wrapper to support execution as a REST service (`run_server.py`).  Scripts to build the server wrapper into a Docker container are also included.
 
-
-
+A [Makefile](./Makefile) is also available to handle building and deploying Docker containers for the various LARA pipelines.

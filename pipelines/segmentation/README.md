@@ -107,3 +107,4 @@ export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
 ./run.sh /pipeline/working/dir /pipeline/images/working/dir
 ```
 
+Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers. 
