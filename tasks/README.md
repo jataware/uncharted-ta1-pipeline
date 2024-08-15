@@ -1,5 +1,7 @@
 ## LARA Tasks
 LARA Pipeline Tasks
+* In general, a `task` is considered a processing step in a given LARA `pipeline`.
+* All `tasks` are executed via their `run` method 
 
 
 ### Installation
@@ -33,7 +35,7 @@ https://cloud.google.com/vision/docs/ocr#vision_text_detection_gcs-python.
 
 * Text extraction is done via the `TextExtractor` child classes
 * To access the Google Vision API, the `GOOGLE_APPLICATION_CREDENTIALS` environment variable must be set to the google vision credentials json file
-* Input is a map raster as an OpenCV image
+* Input is a map raster image
 * Ouput is OCR results as a `DocTextExtraction` object
 
 A pipeline using this task, along with a CLI and sever wrapper are available at [../pipelines/text_extraction](../pipelines/text_extraction)
@@ -55,12 +57,12 @@ A pipeline using this task, along with a CLI and sever wrapper are available at 
 
 ### Image Segmentation Task
 
-**Goal:** to perform segmentation to isolate the map and legend regions on an image
+**Goal:** to perform segmentation to isolate the map, legend and cross-section regions on an image
 
 Segmentation is done using a fine-tuned version of the `LayoutLMv3` model:
 https://github.com/microsoft/unilm/tree/master/layoutlmv3
 
-See more info on pipeline deployment here: ../pipelines/segmentation](../pipelines/segmentation)
+See more info on pipeline deployment here: [../pipelines/segmentation](../pipelines/segmentation)
 
 #### Segmentation categories (classes)
 
@@ -79,12 +81,14 @@ A pipeline using this task, along with a CLI and sever wrapper are available at 
 
 ### Point Extraction Tasks ###
 
-**Goal:** Extracts point symbols from a map, along with their orientation and associated incline information
+**Goal:** Extracts point symbols from a map, along with their orientation and associated incline (dip) information
 
-The model leverages [YOLOv8](https://github.com/ultralytics/ultralytics) for the baseline object detection task
+The model leverages [YOLO](https://github.com/ultralytics/ultralytics) for extracting high priority / common point symbol types. In addition, a CV-based One-Shot algorithm can be used to extract less common point symbols.
 
-#### Extracted Point Types ####
-Initial efforts have focused on identifying and extracting the following 15 symbols:
+### Extracted Symbols
+
+#### Object Detection Model
+The YOLO object detection model has been trained to extract common geologic point symbols as follows:
 * Inclined Bedding (aka strike/dip)
 * Vertical Bedding
 * Horizontal Bedding
@@ -102,8 +106,11 @@ Initial efforts have focused on identifying and extracting the following 15 symb
 * Mine Tunnel
 * Mine Quarry
 
-#### Point Symbol Orientation ####
-Some point symbols also contain directional information.
+#### One-Shot Model
+The One-shot CV algorithm can be used to extract any "leftover" less common point symbols that may be present. This algorithm requires legend swatches to be available as a template (either via human-in-the-loop annotation or some other manner)
+
+### Point Symbol Orientation
+Many point symbols also contain directional information.
 Point orientation (ie "strike" direction) and the "dip" magnitude are also extracted for applicable symbol types:
 * Inclined Bedding (strike/dip)
 * Vertical Bedding
@@ -115,10 +122,13 @@ Point orientation (ie "strike" direction) and the "dip" magnitude are also extra
 * Lineation
 * Mine Tunnel
 
+
 #### Using the Point Extraction Tasks ####
-* The main point extraction is available in the `YOLOPointDetector` task
-* Ouput is a`PointLabels` JSON object, which contains a list of `PointLabel` capturing the point information.
-* Both dectector tasks take `ImageTiles` objects as inputs - `ImageTiles` are produced by the `Tiler` task
+* The main YOLO point extraction is available in the `YOLOPointDetector` task
+* The One-Shot point extraction is in the `TemplateMatchPointExtractor` task
+* Point orientation (strike/dip angle) detection is in the `PointOrientationExtractor` task
+* Output is a`PointLabels` JSON object, which contains a list of `PointLabel` capturing the point information.
+* Extraction tasks take `ImageTiles` objects as inputs - `ImageTiles` are produced by the `Tiler` task
 * `ImageTiles` can be re-assembled into a `PointLabels` using the `Untiler` task
 
 A pipeline using these task, along with a CLI and sever wrapper are available at [../pipelines/point_extraction](../pipelines/point_extraction)
@@ -139,4 +149,3 @@ This module relies on image segmentation to identify the map area, OCR output as
 
 A pipeline using this task, along with a CLI and sever wrapper are available at [../pipelines/geo_referencing](../pipelines/geo_referencing)
 
-...
