@@ -6,7 +6,7 @@ This pipeline georeferences an input raster map image. The georeferencing approa
 
 The georeferencing pipeline uses info from many other LARA tasks to improve its results:
 * Text extraction (OCR) is used to extract map geo-coord labels and other metadata
-* Metadata Extraction is used to help determine additional info about a map's general region and scale (eg state, county, UTM zone)
+* Metadata Extraction is used to help determine additional info about a map's general region and scale (e.g. state, county, UTM zone)
 * Segmentation is used to determine to the map's bounds within an image.
 
 See more info on pipeline tasks here: [../../tasks/README.md](../../tasks/README.md)
@@ -34,7 +34,7 @@ A list of georeferenced gcps output specifically for downstream integration cont
 ### Installation
 
 * python 3.10 or higher is required
-* Installation of Detectron2 requires `torch` already be present in the environment, so it must be installed manually.
+* Installation of Detectron2 requires `torch` to already be present in the environment, so it must be installed manually.
 * Note: for python virtual environments, `conda` is more reliable for installing torch==2.0.x than `venv`
 
 To install from the current directory:
@@ -99,7 +99,7 @@ python3 -m pipelines.geo_referencing.run_server \
     --model /path/to/segmentation/model/weights \
     --rest (if set, run the server in REST mode, instead of resquest-queue mode)
     --no_gpu (if set, pipeline will force CPU-only processing) \
-    --imagedir /pipline/images/working/dir (only needed for request-queue mode) \
+    --imagedir /pipeline/images/working/dir (only needed for request-queue mode) \
     --rabbit_host (rabbitmq host; only needed for request-queue mode) 
 ```
 
@@ -115,7 +115,7 @@ cd deploy
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google_api_credentials.json
 export OPENAI_API_KEY=<OPEN API KEY>
 
-./run.sh /path/to/workdir /pipline/images/working/dir
+./run.sh /path/to/workdir /pipeline/images/working/dir
 ```
 
 The `deploy/build.sh` script can also be used to build the Docker image from source.

@@ -104,7 +104,7 @@ python3 -m pipelines.metadata_extraction.run_server \
     --rest (if set, run the server in REST mode, instead of resquest-queue mode)
     --cdr_schema (if set, pipeline will also output CDR schema JSON objects) \
     --no_gpu (if set, pipeline will force CPU-only processing) \
-    --imagedir /pipline/images/working/dir (only needed for request-queue mode) \
+    --imagedir /pipeline/images/working/dir (only needed for request-queue mode) \
     --rabbit_host (rabbitmq host; only needed for request-queue mode) 
 ```
 
@@ -117,7 +117,7 @@ cd deploy
 export GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_api_credentials.json
 export OPENAI_API_KEY=<OPEN API KEY>
 
-./run.sh /pipeline/working/dir /pipline/images/working/dir
+./run.sh /pipeline/working/dir /pipeline/images/working/dir
 ```
 
 

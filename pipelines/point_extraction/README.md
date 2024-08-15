@@ -2,7 +2,7 @@
 ## LARA Point Extraction Pipeline
 
 
-This pipeline extracts bedding point symbols from a map, along with their orientation and associated incline (dip) information. The model leverages [YOLO](https://github.com/ultralytics/ultralytics) for extraction of high priority / common point symbol types. In addition, a CV-based One-Shot algorithm can be used to extract less common point symbols.
+This pipeline extracts point symbols from a map, along with their orientation and associated incline (dip) information. The model leverages [YOLO](https://github.com/ultralytics/ultralytics) for extracting high priority / common point symbol types. In addition, a CV-based One-Shot algorithm can be used to extract less common point symbols.
 
 See more info on pipeline tasks here: [../../tasks/README.md](../../tasks/README.md)
 
@@ -28,7 +28,7 @@ The YOLO object detection model has been trained to extract common geologic poin
 * Mine Quarry
 
 #### One-Shot Model
-The One-shot CV algorithm can be used to extract any leftover less common point symbols that may be present. This algorithm requires legend swatches to be available as a template (either via HITL annotation or some other manner)
+The One-shot CV algorithm can be used to extract any "leftover" less common point symbols that may be present. This algorithm requires legend swatches to be available as a template (either via human-in-the-loop annotation or some other manner)
 
 ### Point Symbol Orientation
 Many point symbols also contain directional information.
@@ -47,7 +47,7 @@ Point orientation (ie "strike" direction) and the "dip" magnitude are also extra
 ### Installation
 
 * python 3.10 or higher is required
-* Installation of Detectron2 requires `torch` already be present in the environment, so it must be installed manually.
+* Installation of Detectron2 requires `torch` to already be present in the environment, so it must be installed manually.
 * Note: for python virtual environments, `conda` is more reliable for installing torch==2.0.x than `venv`
 
 To install from the current directory:
@@ -137,7 +137,7 @@ python3 -m pipelines.point_extraction.run_server \
     --cdr_schema (if set, pipeline will also output CDR schema JSON objects) \
     --fetch_legend_items (if set, the pipeline will query the CDR for validated legend annotations for a given map input) \
     --no_gpu (if set, pipeline will force CPU-only processing) \
-    --imagedir /pipline/images/working/dir (only needed for request-queue mode) \
+    --imagedir /pipeline/images/working/dir (only needed for request-queue mode) \
     --rabbit_host (rabbitmq host; only needed for request-queue mode) 
 ```
 
@@ -152,7 +152,7 @@ cd deploy
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google_api_credentials.json
 export CDR_API_TOKEN=<SECRET TOKEN>
 
-./run.sh /path/to/workdir /pipline/images/working/dir
+./run.sh /path/to/workdir /pipeline/images/working/dir
 ```
 
 The `deploy/build.sh` script can also be used to build the Docker image from source.

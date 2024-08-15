@@ -90,7 +90,7 @@ python3 -m pipelines.segmentation.run_server \
     --rest (if set, run the server in REST mode, instead of resquest-queue mode)
     --cdr_schema (if set, pipeline will also output CDR schema JSON objects) \
     --no_gpu (if set, pipeline will force CPU-only processing) \
-    --imagedir /pipline/images/working/dir (only needed for request-queue mode) \
+    --imagedir /pipeline/images/working/dir (only needed for request-queue mode) \
     --rabbit_host (rabbitmq host; only needed for request-queue mode) 
 
 ```
@@ -104,6 +104,6 @@ cd deploy
 export AWS_ACCESS_KEY_ID=<KEY ID>
 export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
 
-./run.sh /pipeline/working/dir /pipline/images/working/dir
+./run.sh /pipeline/working/dir /pipeline/images/working/dir
 ```
 
