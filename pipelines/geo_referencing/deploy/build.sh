@@ -23,7 +23,7 @@ else
 fi
 
 # run the build
-docker build -t uncharted/lara-georef:latest .
+docker buildx build --platform linux/amd64,linux/arm64 -t uncharted/lara-georef:latest .
 
 # cleanup the temp files
 rm -rf pipelines
