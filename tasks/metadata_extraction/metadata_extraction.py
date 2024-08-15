@@ -367,7 +367,7 @@ class MetadataExtractor(Task):
                 metadata.utm_zone = str(self._extract_utm_zone(metadata))
 
             # compute map shape from the segmentation output
-            segments = input.data[SEGMENTATION_OUTPUT_KEY]
+            segments = input.data.get(SEGMENTATION_OUTPUT_KEY, None)
             metadata.map_shape = self._compute_shape(segments)
 
             # compute map chroma from the image
@@ -779,6 +779,7 @@ class MetadataExtractor(Task):
         Returns:
             MapShape: The shape of the map
         """
+        map_shape = MapShape.UNKNOWN
         if segments:
             map_segmentation = MapSegmentation.model_validate(segments)
             for segment in map_segmentation.segments:
