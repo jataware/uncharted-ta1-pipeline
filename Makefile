@@ -53,7 +53,7 @@ build_cdr:
 
 # Target: build
 # Description: Builds all components.
-build: build_segmentation build_metadata build_points build_georef build_cdr
+build: build_segmentation build_metadata build_points build_georef build_text build_cdr
 
 # Target: tag_dev
 # Description: Tags images with the dev tag.

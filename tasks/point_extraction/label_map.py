@@ -108,9 +108,9 @@ LABEL_MAPPING = {
     # --- MINE or QUARRY or OPEN PIT    (5_pt -- crossed pick-axes)
     "mine_quarry": ["mine_quarry", "geo_mosaic_5_pt"],
     # --- SINK HOLE
-    "sink_hole": ["sink_hole", "sinkhole_pt"],
+    "sink_hole": ["sink_hole", "sinkhole", "sinkhole_pt"],
     # --- LINEATION
     "lineation": ["lineation", "lineation_pt"],
     # --- DRILL HOLE
-    "drill_hole": ["drill_hole", "drillhole_pt"],
+    "drill_hole": ["drill_hole", "drillhole", "drillhole_pt"],
 }

@@ -3,14 +3,22 @@ import uuid
 
 import numpy as np
 
+from copy import deepcopy
 from sklearn.cluster import DBSCAN
+import matplotlib.path as mpltPath
+from shapely import distance, Polygon, Point
 
-from tasks.geo_referencing.entities import Coordinate, SOURCE_STATE_PLANE, SOURCE_UTM
+from tasks.geo_referencing.entities import (
+    Coordinate,
+    SOURCE_STATE_PLANE,
+    SOURCE_UTM,
+    SOURCE_LAT_LON,
+)
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.geo_projection import PolyRegression
 from tasks.geo_referencing.util import ocr_to_coordinates
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 logger = logging.getLogger("coordinates_filter")
 
@@ -206,6 +214,149 @@ class OutlierFilter(FilterAxisCoordinates):
         return sum([abs(degrees[i] - predictions[i]) for i in range(len(predictions))])
 
 
+class DistinctDegreeOutlierFilter(FilterAxisCoordinates):
+    def __init__(self, task_id: str):
+        super().__init__(task_id)
+
+    def _filter(
+        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[Tuple[float, float], Coordinate]:
+        # a more strict outlier filter focusing on coordinates with the same parsed degree
+        distincts = {}
+        to_process = False
+        for _, c in coords.items():
+            degree = c.get_parsed_degree()
+            if degree not in distincts:
+                distincts[degree] = []
+            distincts[degree].append(c)
+            if len(distincts) >= 3:
+                to_process = True
+
+        if not to_process:
+            logger.info(
+                "skipping distinct degree filtering since there are not enough duplicates"
+            )
+            return coords
+
+        # cycle through all distinct groups
+        remaining_coords = {}
+        for k, g in distincts.items():
+            to_keep = []
+            # if less than 3, simply add to output since filter will not be possible
+            if len(g) < 3:
+                to_keep = g
+            else:
+                logger.info(f"attempting to filter by distinct degree value for {k}")
+                # identical degree values should have one of x or y be fairly similar
+                # if one is misaligned then it is probably from some other context
+                x, y = input.image.size
+                size_relevant = (y if g[0].is_lat() else x) / 20
+                for c in g:
+                    c_d = c.get_constant_dimension()
+                    for c_i in g:
+                        if c_i.get_pixel_alignment() != c.get_pixel_alignment():
+                            c_i_d = c_i.get_constant_dimension()
+                            if abs(c_i_d - c_d) < size_relevant and c_i not in to_keep:
+                                to_keep.append(c_i)
+                if len(to_keep) == 0:
+                    to_keep = g
+                    logger.info(f"kept all coordinates parsed as {k}")
+                else:
+                    logger.info(f"kept only a subset of coordinates parsed as {k}")
+            for c in to_keep:
+                key = c.to_deg_result()[0]
+                remaining_coords[key] = c
+
+        return remaining_coords
+
+
+class HighQualityCoordinateFilter(FilterAxisCoordinates):
+    def __init__(self, task_id: str):
+        super().__init__(task_id)
+
+    def _filter(
+        self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
+    ) -> Dict[Tuple[float, float], Coordinate]:
+        # if two points have the same degree parsed and are roughly aligned
+        # then throw out everything else that is within the same general area with a different degree
+        distincts = {}
+        coordinates = []
+        to_process = False
+        for _, c in coords.items():
+            degree = c.get_parsed_degree()
+            if degree not in distincts:
+                distincts[degree] = []
+            distincts[degree].append(c)
+            if len(distincts) >= 2:
+                to_process = True
+            coordinates.append(c)
+
+        if not to_process:
+            logger.info(
+                "skipping high quality coordinate filtering since there are not enough duplicates"
+            )
+            return coords
+        logger.info(
+            f"filtering parsed coordinates by excluding coordinates that clash with high quality coordinates"
+        )
+
+        remove_coords = {}
+        remaining_coords = {}
+        for degree, g in distincts.items():
+            if len(g) >= 2:
+                # check to make sure at least one other coordinate in the group falls within the expected range
+                x, y = input.image.size
+                size_relevant = (y if g[0].is_lat() else x) / 20
+                can_filter, pixel_range = self._can_filter(g, size_relevant)
+                if can_filter:
+                    _, rejected = self._filter_range(
+                        coordinates,
+                        degree,
+                        (pixel_range - size_relevant, pixel_range + size_relevant),
+                    )
+                    for c in rejected:
+                        logger.info(
+                            f"removing {c.get_parsed_degree()} since it falls within the pixel range of high confidence points"
+                        )
+                        remove_coords[c.get_pixel_alignment()] = c
+
+            for c in coordinates:
+                key = c.to_deg_result()[0]
+                if c.get_pixel_alignment() not in remove_coords:
+                    remaining_coords[key] = c
+        return remaining_coords
+
+    def _can_filter(
+        self, coordinates: List[Coordinate], pixel_range: float
+    ) -> Tuple[bool, float]:
+        for c in coordinates:
+            c_d = c.get_constant_dimension()
+            for c_i in coordinates:
+                if c_i.get_pixel_alignment() != c.get_pixel_alignment():
+                    c_i_d = c_i.get_constant_dimension()
+                    if abs(c_i_d - c_d) < pixel_range:
+                        return True, c_d
+        return False, -1
+
+    def _filter_range(
+        self,
+        coordinates: List[Coordinate],
+        degree: float,
+        pixel_range: Tuple[float, float],
+    ) -> Tuple[List[Coordinate], List[Coordinate]]:
+        # split coordinates found within the range to either be kept (degree matches) or removed (degree does not match)
+        to_keep = []
+        rejected = []
+        for c in coordinates:
+            pixel = c.get_constant_dimension()
+            if pixel_range[0] <= pixel <= pixel_range[1]:
+                if c.get_parsed_degree() == degree:
+                    to_keep.append(c)
+                else:
+                    rejected.append(c)
+        return to_keep, rejected
+
+
 class UTMStatePlaneFilter(FilterCoordinates):
     def __init__(self, task_id: str):
         super().__init__(task_id)
@@ -353,3 +504,287 @@ class NaiveFilter(FilterAxisCoordinates):
                     "excluded due to naive outlier detection",
                 )
         return filtered_coords
+
+
+class ROIFilter(FilterCoordinates):
+    def __init__(self, task_id: str):
+        super().__init__(task_id)
+
+    def _filter(
+        self,
+        input: TaskInput,
+        lon_coords: Dict[Tuple[float, float], Coordinate],
+        lat_coords: Dict[Tuple[float, float], Coordinate],
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
+        logger.info(f"roi filter running against lon and lat coordinates")
+        roi_xy = input.get_data("roi")
+        self._add_param(input, str(uuid.uuid4()), "roi", {"bounds": roi_xy})
+        roi_inner_xy = input.get_data("roi_inner")
+        self._add_param(input, str(uuid.uuid4()), "roi_inner", {"bounds": roi_inner_xy})
+
+        lon_counts_initial, lat_counts_initial = self._get_distinct_degrees(
+            lon_coords, lat_coords
+        )
+        num_keypoints = min(lon_counts_initial, lat_counts_initial)
+        if num_keypoints < 2:
+            logger.info(
+                f"roi filter not filtering since {num_keypoints} coord exists along one axis"
+            )
+            return lon_coords, lat_coords
+        lon_inputs = deepcopy(lon_coords)
+        lat_inputs = deepcopy(lat_coords)
+        # ----- do Region-of-Interest analysis (automatic cropping)
+        lon_pts, lat_pts = self._filter_roi(
+            input, lon_inputs, lat_inputs, True, roi_inner_xy
+        )
+        lon_pts, lat_pts = self._filter_roi(input, lon_pts, lat_pts, False, roi_xy)
+        lon_counts, lat_counts = self._get_distinct_degrees(lon_pts, lat_pts)
+
+        # TODO: SHOULD PRIORITIZE CERTAIN COORDS
+        #   EX: DETECT CORNER COORDS, OR COORDS THAT LINE UP WITH COORDS WITHIN THE ROI
+
+        # adjust based on distance to roi if insufficient points
+        if lon_counts < 2 and lon_counts < lon_counts_initial:
+            logger.info(
+                f"only {lon_counts} lon coords after roi filtering so re-adding coordinates"
+            )
+            lons_kept = self._adjust_filter(lon_coords, roi_xy, roi_inner_xy)
+            for lk in lons_kept:
+                lon_pts[lk.to_deg_result()[0]] = lk
+        if lat_counts < 2 and lat_counts < lat_counts_initial:
+            logger.info(
+                f"only {lat_counts} lat coords after roi filtering so re-adding coordinates"
+            )
+            lats_kept = self._adjust_filter(lat_coords, roi_xy, roi_inner_xy)
+            for lk in lats_kept:
+                lat_pts[lk.to_deg_result()[0]] = lk
+        lon_pts, lat_pts = self._validate_lonlat_extractions(
+            lon_pts, lat_pts, input.image.size
+        )
+
+        # check if too many points were removed
+        lon_counts, lat_counts = self._get_distinct_degrees(lon_pts, lat_pts)
+        num_keypoints = min(lon_counts, lat_counts)
+        if num_keypoints < 2:
+            logger.info(f"not filtering using roi due to too many points being removed")
+            return lon_coords, lat_coords
+
+        # apply to the parsed coordinates
+        logger.info(f"done filtering coordinates using roi")
+        return lon_pts, lat_pts
+
+    def _adjust_filter(
+        self,
+        coords: Dict[Tuple[float, float], Coordinate],
+        roi_xy: List[Tuple[float, float]],
+        roi_inner_xy: List[Tuple[float, float]],
+    ) -> List[Coordinate]:
+        # get distance to roi for all coordinates
+        coordinates = [x[1] for x in coords.items()]
+        roi_poly = Polygon(roi_xy)
+        score_coordinates = [
+            (self._get_roi_score(c, roi_poly, roi_inner_xy), c) for c in coordinates
+        ]
+
+        # rank all coordinates by distance to roi
+        coords_sorted = sorted(score_coordinates, key=lambda x: x[0], reverse=True)
+
+        # include sufficient coordinates to still be able to georeference
+        degrees = set()
+        coords_kept = []
+        for c in coords_sorted:
+            degree = c[1].get_parsed_degree()
+            if c[0] >= 0.6 and len(degrees) < 2 and degree not in degrees:
+                degrees.add(degree)
+                coords_kept.append(c[1])
+        return coords_kept
+
+    def _get_distinct_degrees(
+        self,
+        lon_coords: Dict[Tuple[float, float], Coordinate],
+        lat_coords: Dict[Tuple[float, float], Coordinate],
+    ) -> Tuple[int, int]:
+        lats_distinct = set(map(lambda x: x[1].get_parsed_degree(), lat_coords.items()))
+        lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lon_coords.items()))
+        return len(lons_distinct), len(lats_distinct)
+
+    def _validate_lonlat_extractions(
+        self,
+        lon_results: Dict[Tuple[float, float], Coordinate],
+        lat_results: Dict[Tuple[float, float], Coordinate],
+        im_size: Tuple[float, float],
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
+        logger.info("validating lonlat")
+
+        num_lat_pts = len(lat_results)
+        num_lon_pts = len(lon_results)
+        logger.info(f"point count after exclusion lat,lon: {num_lat_pts},{num_lon_pts}")
+
+        # check number of unique lat and lon values
+        num_lat_pts = len(set([x[0] for x in lat_results]))
+        num_lon_pts = len(set([x[0] for x in lon_results]))
+        logger.info(f"distinct after roi lat,lon: {num_lat_pts},{num_lon_pts}")
+
+        if num_lon_pts >= 2 and num_lat_pts == 1:
+            # estimate additional lat pt (based on lon pxl resolution)
+            lst = [
+                (k[0], k[1], v.get_pixel_alignment()[1]) for k, v in lon_results.items()
+            ]
+            max_pt = max(lst, key=lambda p: p[1])
+            min_pt = min(lst, key=lambda p: p[1])
+            pxl_range = max_pt[1] - min_pt[1]
+            deg_range = max_pt[0] - min_pt[0]
+            if deg_range != 0 and pxl_range != 0:
+                deg_per_pxl = abs(
+                    deg_range / pxl_range
+                )  # TODO could use geodesic dist here?
+                lat_pt = list(lat_results.items())[0]
+                # new_y = im_size[1]-1
+                new_y = 0 if lat_pt[0][1] > im_size[1] / 2 else im_size[1] - 1
+                new_lat = -deg_per_pxl * (new_y - lat_pt[0][1]) + lat_pt[0][0]
+                coord = Coordinate(
+                    "lat keypoint",
+                    "",
+                    new_lat,
+                    SOURCE_LAT_LON,
+                    True,
+                    pixel_alignment=(lat_pt[1].to_deg_result()[1], new_y),
+                    confidence=0.6,
+                )
+                lat_results[(new_lat, new_y)] = coord
+
+        elif num_lat_pts >= 2 and num_lon_pts == 1:
+            # estimate additional lon pt (based on lat pxl resolution)
+            lst = [
+                (k[0], k[1], v.get_pixel_alignment()[0]) for k, v in lat_results.items()
+            ]
+            max_pt = max(lst, key=lambda p: p[1])
+            min_pt = min(lst, key=lambda p: p[1])
+            pxl_range = max_pt[1] - min_pt[1]
+            deg_range = max_pt[0] - min_pt[0]
+            if deg_range != 0 and pxl_range != 0:
+                deg_per_pxl = abs(
+                    deg_range / pxl_range
+                )  # TODO could use geodesic dist here?
+                lon_pt = list(lon_results.items())[0]
+                # new_x = im_size[0]-1
+                new_x = 0 if lon_pt[0][1] > im_size[0] / 2 else im_size[0] - 1
+                new_lon = -deg_per_pxl * (new_x - lon_pt[0][1]) + lon_pt[0][0]
+                coord = Coordinate(
+                    "lon keypoint",
+                    "",
+                    new_lon,
+                    SOURCE_LAT_LON,
+                    False,
+                    pixel_alignment=(new_x, lon_pt[1].to_deg_result()[1]),
+                    confidence=0.6,
+                )
+                lon_results[(new_lon, new_x)] = coord
+        logger.info("done validating coordinates")
+
+        return (lon_results, lat_results)
+
+    def _in_polygon(
+        self, point: Tuple[float, float], polygon: List[Tuple[float, float]]
+    ) -> bool:
+        path = mpltPath.Path(polygon)  # type: ignore
+        return path.contains_point(point)
+
+    def _filter_roi(
+        self,
+        input: TaskInput,
+        lon_results: Dict[Tuple[float, float], Coordinate],
+        lat_results: Dict[Tuple[float, float], Coordinate],
+        in_filter: bool,
+        roi_xy: List[Tuple[float, float]],
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
+        logger.info("filtering using roi")
+
+        num_lat_pts = len(lat_results)
+        num_lon_pts = len(lon_results)
+
+        if roi_xy and (num_lat_pts > 4 or num_lon_pts > 4):
+            for (deg, y), coord in list(lat_results.items()):
+                if (
+                    in_filter and self._in_polygon(coord.get_pixel_alignment(), roi_xy)
+                ) or (
+                    not in_filter
+                    and not self._in_polygon(coord.get_pixel_alignment(), roi_xy)
+                ):
+                    logger.info(
+                        f"removing out-of-bounds latitude point: {deg} ({coord.get_pixel_alignment()})"
+                    )
+                    del lat_results[(deg, y)]
+                    self._add_param(
+                        input,
+                        str(uuid.uuid4()),
+                        "coordinate-excluded",
+                        {
+                            "bounds": ocr_to_coordinates(coord.get_bounds()),
+                            "text": coord.get_text(),
+                            "type": "latitude" if coord.is_lat() else "longitude",
+                            "pixel_alignment": coord.get_pixel_alignment(),
+                            "confidence": coord.get_confidence(),
+                        },
+                        "excluded due to being outside roi",
+                    )
+            for (deg, x), coord in list(lon_results.items()):
+                if (
+                    in_filter and self._in_polygon(coord.get_pixel_alignment(), roi_xy)
+                ) or (
+                    not in_filter
+                    and not self._in_polygon(coord.get_pixel_alignment(), roi_xy)
+                ):
+                    logger.info(
+                        f"removing out-of-bounds longitude point: {deg} ({coord.get_pixel_alignment()})"
+                    )
+                    del lon_results[(deg, x)]
+                    self._add_param(
+                        input,
+                        str(uuid.uuid4()),
+                        "coordinate-excluded",
+                        {
+                            "bounds": ocr_to_coordinates(coord.get_bounds()),
+                            "text": coord.get_text(),
+                            "type": "latitude" if coord.is_lat() else "longitude",
+                            "pixel_alignment": coord.get_pixel_alignment(),
+                            "confidence": coord.get_confidence(),
+                        },
+                        "excluded due to being outside roi",
+                    )
+
+        return (lon_results, lat_results)
+
+    def _get_roi_score(
+        self,
+        coordinate: Coordinate,
+        roi_poly: Polygon,
+        roi_inner_xy: List[Tuple[float, float]],
+    ) -> float:
+        # if inside inner polygon, then the score is 0
+        if self._in_polygon(coordinate.get_pixel_alignment(), roi_inner_xy):
+            return 0
+
+        # combine distance and coordinate confidence for an initial scoring mechanism
+        coord_dist = distance(Point(coordinate.get_pixel_alignment()), roi_poly)
+        coord_conf = coordinate.get_confidence()
+
+        # penalize confidence based on ratio of distance and roi size
+        roi_bounds = roi_poly.bounds
+        min_dimension = min(
+            (roi_bounds[2] - roi_bounds[0]), (roi_bounds[3] - roi_bounds[1])
+        )
+        comparable_size = min_dimension / 10
+
+        conf_adjustment = max(1 - (coord_dist / comparable_size), 0)
+        score = coord_conf * conf_adjustment
+        logger.info(
+            f"adjusting confidence of point {coordinate.get_pixel_alignment()} by {conf_adjustment} to {score}"
+        )
+        return score

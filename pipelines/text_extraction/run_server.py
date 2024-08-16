@@ -83,13 +83,18 @@ if __name__ == "__main__":
     parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
+    parser.add_argument("--tile", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--pixel_limit", type=int, default=6000)
+    parser.add_argument("--gamma_corr", type=float, default=1.0)
     parser.add_argument("--rest", action="store_true")
     parser.add_argument("--rabbit_host", type=str, default="localhost")
     parser.add_argument("--request_queue", type=str, default=TEXT_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=TEXT_RESULT_QUEUE)
     p = parser.parse_args()
 
-    pipeline = TextExtractionPipeline(p.workdir, tile=True)
+    pipeline = TextExtractionPipeline(
+        p.workdir, p.tile, p.pixel_limit, p.gamma_corr, p.debug
+    )
 
     result_key = (
         "doc_text_extracction_output"

@@ -1,12 +1,10 @@
 from tasks.point_extraction.entities import (
-    MapTile,
-    MapTiles,
-    MapPointLabel,
-    LegendPointItem,
-    LegendPointItems,
-    LEGEND_ITEMS_OUTPUT_KEY,
+    ImageTile,
+    ImageTiles,
+    PointLabel,
+    MAP_TILES_OUTPUT_KEY,
+    LEGEND_TILES_OUTPUT_KEY,
 )
-from tasks.point_extraction.point_extractor_utils import find_legend_label_matches
 
 from tasks.common.s3_data_cache import S3DataCache
 from tasks.common.task import Task, TaskInput, TaskResult
@@ -15,7 +13,7 @@ import logging
 import os
 from urllib.parse import urlparse
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import torch
 from tqdm import tqdm
@@ -25,6 +23,8 @@ from ultralytics.engine.results import Results
 # YOLO inference hyperparameters, https://docs.ultralytics.com/modes/predict/#inference-arguments
 CONF_THRES = 0.20  # (0.25) minimum confidence threshold for detections
 IOU_THRES = 0.7  # IoU threshold for NMS
+
+MODEL_NAME = "uncharted_ml_point_extractor"
 
 logger = logging.getLogger(__name__)
 
@@ -107,12 +107,10 @@ class YOLOPointDetector(Task):
 
         return local_model_data_path
 
-    def process_output(
-        self, predictions: Results, point_legend_mapping: Dict[str, LegendPointItem]
-    ) -> List[MapPointLabel]:
+    def process_output(self, predictions: Results) -> List[PointLabel]:
         """
         Convert point detection inference results from YOLO model format
-        to a list of MapPointLabel objects
+        to a list of PointLabel objects
         """
         pt_labels = []
         for pred in predictions:
@@ -124,28 +122,19 @@ class YOLOPointDetector(Task):
                 continue
             for box in pred.boxes.data.detach().cpu().tolist():
                 x1, y1, x2, y2, score, class_id = box
-
-                # map YOLO class name to legend item name, if available
                 class_name = self.model.names[int(class_id)]
-                legend_name = class_name
-                legend_bbox = []
-                if class_name in point_legend_mapping:
-                    legend_name = point_legend_mapping[class_name].name
-                    legend_bbox = point_legend_mapping[class_name].legend_bbox
 
                 pt_labels.append(
-                    MapPointLabel(
-                        classifier_name="unchartNet_point_extractor",
+                    PointLabel(
+                        classifier_name=MODEL_NAME,
                         classifier_version=self._model_id,
                         class_id=int(class_id),
-                        class_name=self.model.names[int(class_id)],
+                        class_name=class_name,
                         x1=int(x1),
                         y1=int(y1),
                         x2=int(x2),
                         y2=int(y2),
                         score=score,
-                        legend_name=legend_name,
-                        legend_bbox=legend_bbox,
                     )
                 )
         return pt_labels
@@ -154,43 +143,69 @@ class YOLOPointDetector(Task):
         """
         run YOLO model inference for point symbol detection
         """
-        map_tiles = MapTiles.model_validate(task_input.data["map_tiles"])
-
-        point_legend_mapping: Dict[str, LegendPointItem] = {}
-        if LEGEND_ITEMS_OUTPUT_KEY in task_input.data:
-            legend_pt_items = LegendPointItems.model_validate(
-                task_input.data[LEGEND_ITEMS_OUTPUT_KEY]
-            )
-            # find mappings between legend item labels and YOLO model class names
-            point_legend_mapping = find_legend_label_matches(
-                legend_pt_items, task_input.raster_id
-            )
+        map_tiles = ImageTiles.model_validate(task_input.data[MAP_TILES_OUTPUT_KEY])
 
         if self.device == "auto":
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         if self.device not in ["cuda", "cpu"]:
             raise ValueError(f"Invalid device: {self.device}")
 
-        doc_key = f"{task_input.raster_id}_points-{self._model_id}"
+        # --- run point extraction model on map area tiles
+        logger.info(f"Running model inference on {len(map_tiles.tiles)} map tiles")
+        self._process_tiles(map_tiles, task_input.raster_id, "map")
+
+        if LEGEND_TILES_OUTPUT_KEY in task_input.data:
+            # --- also run point extraction model on legend area tiles, if available
+            legend_tiles = ImageTiles.model_validate(
+                task_input.data[LEGEND_TILES_OUTPUT_KEY]
+            )
+            logger.info(
+                f"Also running model inference on {len(legend_tiles.tiles)} legend tiles"
+            )
+            self._process_tiles(legend_tiles, task_input.raster_id, "legend")
+
+            return TaskResult(
+                task_id=self._task_id,
+                output={
+                    MAP_TILES_OUTPUT_KEY: map_tiles.model_dump(),
+                    LEGEND_TILES_OUTPUT_KEY: legend_tiles.model_dump(),
+                },
+            )
+
+        return TaskResult(
+            task_id=self._task_id, output={MAP_TILES_OUTPUT_KEY: map_tiles.model_dump()}
+        )
+
+    def _process_tiles(
+        self, image_tiles: ImageTiles, raster_id: str, tile_type: str = "map"
+    ):
+        """
+        do batch inference on image tiles
+        prediction results are appended in-place to the ImageTiles object
+        """
+
+        # get key for points' data cache
+        doc_key = (
+            f"{raster_id}_points-{self._model_id}"
+            if tile_type == "map"
+            else f"{raster_id}_points_{tile_type}-{self._model_id}"
+        )
         # check cache and re-use existing file if present
-        json_data = self.fetch_cached_result(doc_key)
-        if json_data and map_tiles.join_with_cached_predictions(
-            MapTiles(**json_data), point_legend_mapping
+        cached_image_tiles = self._get_cached_data(doc_key)
+        if cached_image_tiles and image_tiles.join_with_cached_predictions(
+            cached_image_tiles
         ):
             # cached point predictions loaded successfully
             logger.info(
-                f"Using cached point extractions for raster: {task_input.raster_id}"
+                f"Using cached point extractions for raster {raster_id} and tile type {tile_type}"
             )
-            return TaskResult(
-                task_id=self._task_id,
-                output={"map_tiles": map_tiles},
-            )
+            return
 
-        output: List[MapTile] = []
+        tiles_out: List[ImageTile] = []
         # run batch model inference...
-        for i in tqdm(range(0, len(map_tiles.tiles), self.bsz)):
+        for i in tqdm(range(0, len(image_tiles.tiles), self.bsz)):
             logger.info(f"Processing batch {i} to {i + self.bsz}")
-            batch = map_tiles.tiles[i : i + self.bsz]
+            batch = image_tiles.tiles[i : i + self.bsz]
             images = [tile.image for tile in batch]
             # note: ideally tile sizes used should be the same size as used during model training
             # tiles can be resized during inference pre-processing, if needed using 'imgsz' param
@@ -202,17 +217,14 @@ class YOLOPointDetector(Task):
                 iou=IOU_THRES,
             )
             for tile, preds in zip(batch, batch_preds):
-                tile.predictions = self.process_output(preds, point_legend_mapping)
-                output.append(tile)
-        result_map_tiles = MapTiles(raster_id=map_tiles.raster_id, tiles=output)
+                tile.predictions = self.process_output(preds)
+                tiles_out.append(tile)
+        # save tile results with point extraction predictions
+        image_tiles.tiles = tiles_out
 
         # write to cache
         self.write_result_to_cache(
-            result_map_tiles.format_for_caching().model_dump(), doc_key
-        )
-
-        return TaskResult(
-            task_id=self._task_id, output={"map_tiles": result_map_tiles.model_dump()}
+            image_tiles.format_for_caching().model_dump(), doc_key
         )
 
     def _get_model_id(self, model: YOLO) -> str:
@@ -224,14 +236,28 @@ class YOLOPointDetector(Task):
         hash_result = hashlib.md5(bytes(state_dict_str, encoding="utf-8"))
         return hash_result.hexdigest()
 
+    def _get_cached_data(self, doc_key: str) -> Optional[ImageTiles]:
+        try:
+            json_data = self.fetch_cached_result(doc_key)
+            if json_data:
+                cached_image_tiles = ImageTiles(**json_data)
+                # cached data is ok
+                return cached_image_tiles
+
+        except Exception as e:
+            logger.warning(
+                f"Exception fetching cached data: {repr(e)}; disregarding cached point extractions for this raster"
+            )
+        return None
+
     @property
     def version(self):
         return self._model_id
 
     @property
     def input_type(self):
-        return List[MapTile]
+        return List[ImageTile]
 
     @property
     def output_type(self):
-        return List[MapTile]
+        return List[ImageTile]

@@ -47,7 +47,9 @@ class TextFilter(Task):
         doc_text = DocTextExtraction.model_validate(text_data)
 
         # get map segments
-        segments = input.data[SEGMENTATION_OUTPUT_KEY]
+        segments = input.data.get(
+            SEGMENTATION_OUTPUT_KEY, {"doc_id": input.raster_id, "segments": []}
+        )
         map_segmentation = MapSegmentation.model_validate(segments)
 
         output_text: Dict[str, TextExtraction] = {}

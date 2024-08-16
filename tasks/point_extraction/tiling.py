@@ -1,17 +1,39 @@
 from PIL import Image
 import numpy as np
 from tqdm import tqdm
-from typing import List
+from typing import List, Tuple
 import logging
 import cv2
 
 from common.task import Task, TaskInput, TaskResult
 
-from tasks.point_extraction.entities import MapTile, MapTiles, MapImage, MapPointLabel
-from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
-from tasks.segmentation.segmenter_utils import get_segment_bounds, segments_to_mask
+from tasks.point_extraction.entities import (
+    ImageTile,
+    ImageTiles,
+    PointLabels,
+    PointLabel,
+)
+from tasks.segmentation.entities import (
+    MapSegmentation,
+    SEGMENTATION_OUTPUT_KEY,
+    SEGMENT_MAP_CLASS,
+    SEGMENT_POINT_LEGEND_CLASS,
+)
+from tasks.segmentation.segmenter_utils import (
+    get_segment_bounds,
+    segments_to_mask,
+    merge_overlapping_polygons,
+)
+from tasks.point_extraction.entities import (
+    LegendPointItems,
+    LEGEND_ITEMS_OUTPUT_KEY,
+    MAP_TILES_OUTPUT_KEY,
+    LEGEND_TILES_OUTPUT_KEY,
+    MAP_PT_LABELS_OUTPUT_KEY,
+    LEGEND_PT_LABELS_OUTPUT_KEY,
+)
+from tasks.point_extraction.legend_item_utils import legend_items_use_ontology
 
-SEGMENT_MAP_CLASS = "map"  # class label for map area segmentation
 TILE_OVERLAP_DEFAULT = (  # default tliing overlap = point bbox + 10%
     int(1.1 * 90),
     int(1.1 * 90),
@@ -50,14 +72,17 @@ class Tiler(Task):
         y_min = 0
         y_max, x_max, _ = image_array.shape
 
-        # use image segmentation to restrict point extraction to map area only
+        # ---- use image segmentation to restrict point extraction to map area only
+        poly_legend = []
         if SEGMENTATION_OUTPUT_KEY in task_input.data:
             segmentation = MapSegmentation.model_validate(
                 task_input.data[SEGMENTATION_OUTPUT_KEY]
             )
             # get a binary mask of the regions-of-interest and apply to the input image before tiling
             binary_mask = segments_to_mask(
-                segmentation, (x_max, y_max), roi_classes=[SEGMENT_MAP_CLASS]
+                segmentation,
+                (x_max, y_max),
+                roi_classes=[SEGMENT_MAP_CLASS, SEGMENT_POINT_LEGEND_CLASS],
             )
             if binary_mask.size != 0:
                 # apply binary mask to input image prior to tiling
@@ -65,58 +90,125 @@ class Tiler(Task):
                     image_array, image_array, mask=binary_mask
                 )
 
-            p_map = get_segment_bounds(segmentation, SEGMENT_MAP_CLASS)
-            if len(p_map) > 0:
+            poly_map = get_segment_bounds(segmentation, SEGMENT_MAP_CLASS)
+            poly_legend = get_segment_bounds(
+                segmentation, SEGMENT_POINT_LEGEND_CLASS, merge_overlapping=True
+            )
+            if len(poly_map) > 0:
                 # restrict tiling to use *only* the bounding rectangle of map area
-                p_map = p_map[0]  # use 1st (highest ranked) map segment
-                (x_min, y_min, x_max, y_max) = [int(b) for b in p_map.bounds]
+                poly_map = poly_map[0]  # use 1st (highest ranked) map segment
+                (x_min, y_min, x_max, y_max) = [int(b) for b in poly_map.bounds]
+        roi_bounds = (x_min, y_min, x_max, y_max)
 
+        # ---- create tiles for map area
+        logger.info("Creating map area tiles")
+        map_tiles = self._create_tiles(
+            task_input.raster_id, image_array, [roi_bounds], SEGMENT_MAP_CLASS
+        )
+
+        # --- load legend item annotations, if available
+        if LEGEND_ITEMS_OUTPUT_KEY in task_input.data:
+            legend_pt_items = LegendPointItems.model_validate(
+                task_input.data[LEGEND_ITEMS_OUTPUT_KEY]
+            )
+            if poly_legend and not legend_items_use_ontology(legend_pt_items):
+                # legend annotations don't all use the expected ontology
+                roi_bounds = []
+                for p_leg in poly_legend:
+                    roi_bounds.append([int(b) for b in p_leg.bounds])
+                logger.info("Also creating legend area tiles")
+                legend_tiles = self._create_tiles(
+                    task_input.raster_id,
+                    image_array,
+                    roi_bounds,
+                    SEGMENT_POINT_LEGEND_CLASS,
+                )
+
+                # prepare task result with both map and legend tiles
+                return TaskResult(
+                    task_id=self._task_id,
+                    output={
+                        MAP_TILES_OUTPUT_KEY: map_tiles.model_dump(),
+                        LEGEND_TILES_OUTPUT_KEY: legend_tiles.model_dump(),
+                    },
+                )
+
+        # prepare task result with only map tiles
+        return TaskResult(
+            task_id=self._task_id, output={MAP_TILES_OUTPUT_KEY: map_tiles.model_dump()}
+        )
+
+    def _create_tiles(
+        self,
+        raster_id: str,
+        image_array: np.ndarray,
+        roi_bounds: List[Tuple],
+        roi_label: str,
+    ) -> ImageTiles:
+        """
+        create tiles for an image regions-of-interest
+        """
         step_x = int(self.tile_size[0] - self.overlap[0])
         step_y = int(self.tile_size[1] - self.overlap[1])
+        tiles: List[ImageTile] = []
 
-        tiles: List[MapTile] = []
+        for bounds in roi_bounds:
+            (x_min, y_min, x_max, y_max) = bounds
 
-        for y in range(y_min, y_max, step_y):
-            for x in range(x_min, x_max, step_x):
-                width = min(self.tile_size[0], x_max - x)
-                height = min(self.tile_size[1], y_max - y)
+            for y in range(y_min, y_max, step_y):
+                for x in range(x_min, x_max, step_x):
+                    width = min(self.tile_size[0], x_max - x)
+                    height = min(self.tile_size[1], y_max - y)
 
-                tile_array = image_array[y : y + height, x : x + width]
+                    tile_array = image_array[y : y + height, x : x + width]  # type: ignore
 
-                if (
-                    tile_array.shape[0] < self.tile_size[1]
-                    or tile_array.shape[1] < self.tile_size[0]
-                ):
-                    padded_tile = np.zeros(
-                        (self.tile_size[1], self.tile_size[0], 3),
-                        dtype=tile_array.dtype,
+                    if (
+                        tile_array.shape[0] < self.tile_size[1]
+                        or tile_array.shape[1] < self.tile_size[0]
+                    ):
+                        padded_tile = np.zeros(
+                            (self.tile_size[1], self.tile_size[0], 3),
+                            dtype=tile_array.dtype,
+                        )
+
+                        padded_tile[:height, :width] = tile_array
+                        tile_array = padded_tile
+
+                    maptile = ImageTile(
+                        x_offset=x,
+                        y_offset=y,
+                        width=self.tile_size[0],
+                        height=self.tile_size[1],
+                        image=Image.fromarray(tile_array),
+                        image_path="",
                     )
+                    tiles.append(maptile)
+        # get global bounds, if multiple segments for this roi
+        bounds_global = []
+        if len(roi_bounds) > 0:
+            bounds_global = list(roi_bounds[0])
+            for bounds in roi_bounds:
+                bounds_global[0] = min(bounds_global[0], bounds[0])
+                bounds_global[1] = min(bounds_global[1], bounds[1])
+                bounds_global[2] = max(bounds_global[2], bounds[2])
+                bounds_global[3] = max(bounds_global[3], bounds[3])
 
-                    padded_tile[:height, :width] = tile_array
-                    tile_array = padded_tile
-
-                maptile = MapTile(
-                    x_offset=x,
-                    y_offset=y,
-                    width=self.tile_size[0],
-                    height=self.tile_size[1],
-                    map_bounds=(x_min, y_min, x_max, y_max),
-                    image=Image.fromarray(tile_array),
-                    map_path="",
-                )
-                tiles.append(maptile)
-        map_tiles = MapTiles(raster_id=task_input.raster_id, tiles=tiles)
-        return TaskResult(
-            task_id=self._task_id, output={"map_tiles": map_tiles.model_dump()}
+        image_tiles = ImageTiles(
+            raster_id=raster_id,
+            tiles=tiles,
+            roi_bounds=tuple(bounds_global),
+            roi_label=roi_label,
         )
+
+        return image_tiles
 
     @property
     def input_type(self):
-        return MapImage
+        return PointLabels
 
     @property
     def output_type(self):
-        return List[MapTile]
+        return List[ImageTile]
 
 
 class Untiler(Task):
@@ -130,31 +222,61 @@ class Untiler(Task):
     Note that new images aren't actually constructed here, we are just mapping predictions from tiles onto the original map.
     """
 
-    def run(self, input: TaskInput) -> TaskResult:
+    def run(self, task_input: TaskInput) -> TaskResult:
         """
         Reconstructs the original image from the tiles and maps back the bounding boxes and labels.
-        tile_predictions: List of MapPointLabel objects. Generated by the model. TILES MUST BE FROM ONLY ONE MAP.
-        returns: List of MapPointLabel objects. These can be mapped directly onto the original map.
+        tile_predictions: List of PointLabel objects. Generated by the model. TILES MUST BE FROM ONLY ONE MAP.
+        returns: List of PointLabel objects. These can be mapped directly onto the original map.
         """
 
-        map_tiles = MapTiles.model_validate(input.get_data("map_tiles"))
-        tiles = map_tiles.tiles
+        # run untiling on map tiles
+        logger.info("Untiling map tiles...")
+        map_tiles = ImageTiles.model_validate(task_input.data[MAP_TILES_OUTPUT_KEY])
+        map_point_labels = self._merge_tiles(map_tiles, task_input.raster_id)
+
+        if LEGEND_TILES_OUTPUT_KEY in task_input.data:
+            # --- also run untiling on legend area tiles, if available
+            logger.info("Also untiling legend area tiles...")
+            legend_tiles = ImageTiles.model_validate(
+                task_input.data[LEGEND_TILES_OUTPUT_KEY]
+            )
+            legend_point_labels = self._merge_tiles(legend_tiles, task_input.raster_id)
+
+            # store untiling results for both map and legend areas
+            return TaskResult(
+                task_id=self._task_id,
+                output={
+                    MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump(),
+                    LEGEND_PT_LABELS_OUTPUT_KEY: legend_point_labels.model_dump(),
+                },
+            )
+
+        # store untiling results for map area
+        return TaskResult(
+            task_id=self._task_id,
+            output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
+        )
+
+    def _merge_tiles(self, image_tiles: ImageTiles, raster_id: str) -> PointLabels:
+        """
+        Merge tile extractions by converting predictions results to global image pixel coordinates
+        """
 
         assert all(
-            i.predictions is not None for i in tiles
+            i.predictions is not None for i in image_tiles.tiles
         ), "Tiles must have predictions attached to them."
         all_predictions = []
         overlap_predictions = {}
         num_dedup = 0
-        map_path = tiles[0].map_path
-        for tile in tiles:
+        map_path = image_tiles.tiles[0].image_path
+        for tile in image_tiles.tiles:
 
             x_offset = tile.x_offset  # xmin of tile, absolute value in original map
             y_offset = tile.y_offset  # ymin of tile, absolute value in original map
 
             for pred in tqdm(
                 tile.predictions,
-                desc="Reconstructing original map with predictions on tiles",
+                desc="Reconstructing original image with predictions on tiles",
             ):
 
                 x1 = pred.x1
@@ -170,7 +292,7 @@ class Untiler(Task):
                 if self.overlap[0] > 0 or self.overlap[1] > 0:
                     pred_redundant, pred_in_overlap = self._is_prediction_redundant(
                         pred,
-                        tile.map_bounds,
+                        image_tiles.roi_bounds,
                         (tile.x_offset, tile.y_offset),
                         (tile.width, tile.height),
                     )
@@ -178,7 +300,7 @@ class Untiler(Task):
                 if pred_redundant:
                     continue
 
-                global_prediction = MapPointLabel(
+                global_prediction = PointLabel(
                     classifier_name=pred.classifier_name,
                     classifier_version=pred.classifier_version,
                     class_id=pred.class_id,
@@ -191,8 +313,6 @@ class Untiler(Task):
                     score=score,
                     direction=pred.direction,
                     dip=pred.dip,
-                    legend_name=pred.legend_name,
-                    legend_bbox=pred.legend_bbox,  # bbox coords assumed to be in global pixel coords
                 )
 
                 if pred_in_overlap:
@@ -215,17 +335,15 @@ class Untiler(Task):
         all_predictions.extend(list(overlap_predictions.values()))
 
         logger.info(
-            f"Total point predictions after re-constructing map tiles: {len(all_predictions)}, with {num_dedup} discarded as duplicates"
+            f"Total point predictions after re-constructing image tiles: {len(all_predictions)}, with {num_dedup} discarded as duplicates"
         )
-        map_image = MapImage(
-            path=map_path, raster_id=input.raster_id, labels=all_predictions
-        )
-        return TaskResult(task_id=self._task_id, output={"map_image": map_image})
+
+        return PointLabels(path=map_path, raster_id=raster_id, labels=all_predictions)
 
     def _is_prediction_redundant(
         self,
-        pred: MapPointLabel,
-        map_bbox,
+        pred: PointLabel,
+        roi_bbox,
         tile_offset: tuple,
         tile_wh: tuple,
         shape_thres=2,
@@ -239,7 +357,7 @@ class Untiler(Task):
         x2 = pred.x2
         y1 = pred.y1
         y2 = pred.y2
-        (map_xmin, map_ymin, map_xmax, map_ymax) = map_bbox
+        (roi_xmin, roi_ymin, roi_xmax, roi_ymax) = roi_bbox
         tile_w, tile_h = tile_wh
         x_offset, y_offset = tile_offset
 
@@ -263,10 +381,10 @@ class Untiler(Task):
             # pred bbox is at a tile edge and NOT square,
             # check if bbox edges correspond to global image bounds
             if (
-                x1 + x_offset > map_xmin
-                and x2 + x_offset < map_xmax
-                and y1 + y_offset > map_ymin
-                and y2 + y_offset < map_ymax
+                x1 + x_offset > roi_xmin
+                and x2 + x_offset < roi_xmax
+                and y1 + y_offset > roi_ymin
+                and y2 + y_offset < roi_ymax
             ):
                 # non-square point bbox not at map edges, assume this is a noisy prediction (due to tile overlap) and skip
                 pred_redundant = True
@@ -279,8 +397,8 @@ class Untiler(Task):
 
     @property
     def input_type(self):
-        return List[MapTile]
+        return List[ImageTile]
 
     @property
     def output_type(self):
-        return MapImage
+        return PointLabels

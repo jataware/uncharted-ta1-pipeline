@@ -15,6 +15,7 @@ from tasks.common.queue import (
     METADATA_RESULT_QUEUE,
 )
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
+from tasks.metadata_extraction.metadata_extraction import LLM
 from tasks.common import image_io
 from tasks.metadata_extraction.entities import METADATA_EXTRACTION_OUTPUT_KEY
 from util import logging as logging_util
@@ -92,6 +93,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Output results as TA1 json schema format",
     )
+    parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
     parser.add_argument("--rest", action="store_true")
     parser.add_argument("--rabbit_host", type=str, default="localhost")
     parser.add_argument("--request_queue", type=str, default=METADATA_REQUEST_QUEUE)
@@ -101,7 +103,7 @@ if __name__ == "__main__":
 
     # init segmenter
     metadata_extraction = MetadataExtractorPipeline(
-        p.workdir, p.model, cdr_schema=p.cdr_schema, gpu=not p.no_gpu
+        p.workdir, p.model, cdr_schema=p.cdr_schema, model=p.llm, gpu=not p.no_gpu
     )
 
     metadata_result_key = (

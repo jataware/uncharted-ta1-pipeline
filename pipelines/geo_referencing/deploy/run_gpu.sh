@@ -18,6 +18,6 @@ docker run \
     uncharted/lara-georef:latest \
         --workdir /workdir \
         --imagedir /imagedir \
-        --model pipelines/segmentation_weights/layoutlmv3_xsection_20231201 \
+        --model pipelines/segmentation_weights/layoutlmv3_20240531 \
         --rabbit_host rabbitmq
 

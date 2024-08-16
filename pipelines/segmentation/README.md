@@ -2,7 +2,7 @@
 ## LARA Image Segmentation Pipeline
 
 
-This pipeline performs segmentation to isolate the map and legend regions on an image
+This pipeline performs segmentation to isolate the map, legend and cross-section regions on an image
 
 Segmentation is done using a fine-tuned version of the `LayoutLMv3` model:
 https://github.com/microsoft/unilm/tree/master/layoutlmv3
@@ -21,6 +21,7 @@ The model currently supports 4 segmentation classes:
 
 * python 3.10 or higher is required
 * Installation of Detectron2 requires `torch` already be present in the environment, so it must be installed manually.
+* Note: for python virtual environments, `conda` is more reliable for installing torch==2.0.x than `venv`
 
 To install from the current directory:
 ```
@@ -42,12 +43,12 @@ pip install -e .[segmentation]
 * Pipeline is defined in `segmentation_pipeline.py` and is suitable for integration into other systems
 * Model weights can be input from S3 or local drive
 * Input is a image (ie binary image file buffer)
-* Ouput is the set of map polygons capturing the map region, legend areas and cross sections materialized as a:
-  * `SegmentationResults` JSON object
-  * `FeatureResults` JSON object (the latter being part of the CMA TA1 CDR schema)
+* Output is the set of map polygons capturing the map region, legend areas and cross sections materialized as:
+  * `MapSegmentation` JSON object (LARA's internal data schema) and/or
+  * `FeatureResults` JSON object (part of the CDR TA1 schema)
 
 ### Command Line Execution ###
-`run_pipeline.py` provides a command line wrapper around the segmentation pipeline, and allows for a directory map images to be processed serially.
+`run_pipeline.py` provides a command line wrapper around the segmentation pipeline, and allows for a directory of map images to be processed serially.
 
 To run from the repository root directory:
 ```
@@ -56,9 +57,12 @@ export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
 
 python3 -m pipelines.segmentation.run_pipeline \
     --input /image/input/dir \
-    --output /model/output/dir \
-    --workdir /model/working/dir \
-    --model https://s3/compatible/endpoint/layoutlmv3_20230
+    --output /results/output/dir \
+    --workdir /pipeline/working/dir (default is tmp/lara/workdir) \
+    --model /path/to/segmentation/model/weights \
+    --cdr_schema (if set, pipeline will also output CDR schema JSON objects) \
+    --no_gpu (if set, pipeline will force CPU-only processing)
+
 ```
 
 Note that when the `model` parameter can point to a folder in the local file system, or to a resource on an S3-compatible endpoint. The folder/resource must contain the following files:
@@ -73,14 +77,22 @@ In the S3 case, the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment 
 * ```POST:  /api/process_image``` - Sends an image (as binary file buffer) to the segmenter pipeline for analysis. Results are JSON string.
 * ```GET /healthcheck``` - Healthcheck endpoint
 
+The server can also be configured to run with a request queue, using RabbitMQ, if the `rest` flag is not set.
+
 To start the server:
 ```
 export AWS_ACCESS_KEY_ID=<KEY ID>
 export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
 
 python3 -m pipelines.segmentation.run_server \
-    --workdir /model/workingdir \
-    --model https://s3/compatible/endpoint/layoutlmv3_20230
+    --workdir /pipeline/working/dir (default is tmp/lara/workdir) \
+    --model /path/to/segmentation/model/weights \
+    --rest (if set, run the server in REST mode, instead of resquest-queue mode)
+    --cdr_schema (if set, pipeline will also output CDR schema JSON objects) \
+    --no_gpu (if set, pipeline will force CPU-only processing) \
+    --imagedir /pipeline/images/working/dir (only needed for request-queue mode) \
+    --rabbit_host (rabbitmq host; only needed for request-queue mode) 
+
 ```
 
 ### Dockerized deployment
@@ -92,6 +104,7 @@ cd deploy
 export AWS_ACCESS_KEY_ID=<KEY ID>
 export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
 
-./run.sh /model/workingdir https://s3/compatible/endpoint/layoutlmv3_20230
+./run.sh /pipeline/working/dir /pipeline/images/working/dir
 ```
 
+Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers. 

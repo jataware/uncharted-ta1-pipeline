@@ -41,7 +41,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
-    parser.add_argument("--workdir", type=str, default=None)
+    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--clue_dir", type=str, default="")
     parser.add_argument("--query_dir", type=str, default="")
     parser.add_argument("--points_dir", type=str, default="")
@@ -72,6 +72,7 @@ def main():
         type=float,
         default=0.5,
     )
+    parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
     # setup an input stream
@@ -115,6 +116,7 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
         parsed.state_code_filename,
         parsed.country_code_filename,
         parsed.ocr_gamma_correction,
+        not parsed.no_gpu,
     )
 
     # get file paths
@@ -152,11 +154,6 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
             results_summary[pipeline.id].append(output["summary"])
             results_levers[pipeline.id].append(output["levers"])
             results_gcps[pipeline.id].append(output["gcps"])
-            results_integration[pipeline.id].append(output["schema"])
-            schema_output_path = os.path.join(
-                parsed.output, "maps", f"{pipeline.id}", f"{raster_id}.json"
-            )
-            writer_json.output([output["schema"]], {"path": schema_output_path})  # type: ignore
             logger.info(f"done pipeline {pipeline.id}\n\n")
 
         for p in pipelines:

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import pprint
 import threading
 from time import sleep
 from typing import List, Optional
@@ -16,6 +17,7 @@ from pika import BlockingConnection, ConnectionParameters
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
 import pika.spec as spec
 from pydantic import BaseModel
+from regex import P
 from cdr.json_log import JSONLog
 from cdr.request_publisher import LaraRequestPublisher
 from schema.cdr_schemas.feature_results import FeatureResults
@@ -31,10 +33,10 @@ from tasks.common.queue import (
     Request,
     RequestResult,
 )
-from schema.mappers.cdr import get_mapper
+from schema.mappers.cdr import GeoreferenceMapper, get_mapper
 from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoreferenceResult
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
-from tasks.point_extraction.entities import MapImage as LARAPoints
+from tasks.point_extraction.entities import PointLabels as LARAPoints
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 import datetime
 
@@ -79,6 +81,22 @@ class LaraResultSubscriber:
         GEOREFERENCE_PIPELINE,
     ]
 
+    # map of pipeline name to system name
+    PIPELINE_SYSTEM_NAMES = {
+        SEGMENTATION_PIPELINE: "uncharted-area",
+        METADATA_PIPELINE: "uncharted-metadata",
+        POINTS_PIPELINE: "uncharted-points",
+        GEOREFERENCE_PIPELINE: "uncharted-georeference",
+    }
+
+    # map of pipeline name to system version
+    PIPELINE_SYSTEM_VERSIONS = {
+        SEGMENTATION_PIPELINE: "0.0.4",
+        METADATA_PIPELINE: "0.0.4",
+        POINTS_PIPELINE: "0.0.4",
+        GEOREFERENCE_PIPELINE: "0.0.5",
+    }
+
     def __init__(
         self,
         request_publisher: Optional[LaraRequestPublisher],
@@ -87,8 +105,6 @@ class LaraResultSubscriber:
         cdr_token: str,
         output: str,
         workdir: str,
-        system_name: str,
-        system_version: str,
         json_log: JSONLog,
         host="localhost",
         pipeline_sequence: List[str] = DEFAULT_PIPELINE_SEQUENCE,
@@ -101,8 +117,6 @@ class LaraResultSubscriber:
         self._cdr_token = cdr_token
         self._workdir = workdir
         self._output = output
-        self._system_name = system_name
-        self._system_version = system_version
         self._json_log = json_log
         self._host = host
         self._pipeline_sequence = (
@@ -329,7 +343,11 @@ class LaraResultSubscriber:
         files_ = []
         try:
             lara_result = LARAGeoreferenceResult.model_validate(georef_result_raw)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result,
+                self.PIPELINE_SYSTEM_NAMES[self.GEOREFERENCE_PIPELINE],
+                self.PIPELINE_SYSTEM_VERSIONS[self.GEOREFERENCE_PIPELINE],
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
             assert cdr_result is not None
             assert cdr_result.georeference_results is not None
@@ -342,18 +360,22 @@ class LaraResultSubscriber:
             assert gcps is not None
 
             logger.info(
-                f"projecting image {result.image_path} to {output_file_name_full} using crs {projection.crs}"
+                f"projecting image {result.image_path} to {output_file_name_full} using crs {GeoreferenceMapper.DEFAULT_OUTPUT_CRS}"
             )
             self._project_georeference(
-                result.image_path, output_file_name_full, projection.crs, gcps
+                result.image_path,
+                output_file_name_full,
+                GeoreferenceMapper.DEFAULT_OUTPUT_CRS,
+                gcps,
             )
 
             files_.append(
                 ("files", (output_file_name, open(output_file_name_full, "rb")))
             )
-        except:
-            logger.error(
-                "bad georeferencing result received so creating an empty result to send to cdr"
+        except Exception as e:
+            logger.exception(
+                "bad georeferencing result received so creating an empty result to send to cdr",
+                e,
             )
 
             # create an empty result to send to cdr
@@ -361,8 +383,10 @@ class LaraResultSubscriber:
                 cog_id=result.request.image_id,
                 georeference_results=[],
                 gcps=[],
-                system=self._system_name,
-                system_version=self._system_version,
+                system=self.PIPELINE_SYSTEM_NAMES[self.GEOREFERENCE_PIPELINE],
+                system_version=self.PIPELINE_SYSTEM_VERSIONS[
+                    self.GEOREFERENCE_PIPELINE
+                ],
             )
 
         assert cdr_result is not None
@@ -425,7 +449,11 @@ class LaraResultSubscriber:
         cdr_result: Optional[FeatureResults] = None
         try:
             lara_result = LARASegmentation.model_validate(segmentation_raw_result)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result,
+                self.PIPELINE_SYSTEM_NAMES[self.SEGMENTATION_PIPELINE],
+                self.PIPELINE_SYSTEM_VERSIONS[self.SEGMENTATION_PIPELINE],
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except:
             logger.error(
@@ -443,7 +471,11 @@ class LaraResultSubscriber:
         cdr_result: Optional[FeatureResults] = None
         try:
             lara_result = LARAPoints.model_validate(points_raw_result)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result,
+                self.PIPELINE_SYSTEM_NAMES[self.POINTS_PIPELINE],
+                self.PIPELINE_SYSTEM_VERSIONS[self.POINTS_PIPELINE],
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except:
             logger.error("bad points result received so unable to send results to cdr")
@@ -462,7 +494,11 @@ class LaraResultSubscriber:
         cdr_result: Optional[CogMetaData] = None
         try:
             lara_result = LARAMetadata.model_validate(metadata_result_raw)
-            mapper = get_mapper(lara_result, self._system_name, self._system_version)
+            mapper = get_mapper(
+                lara_result,
+                self.PIPELINE_SYSTEM_NAMES[self.METADATA_PIPELINE],
+                self.PIPELINE_SYSTEM_VERSIONS[self.METADATA_PIPELINE],
+            )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
             logger.exception(
@@ -553,10 +589,19 @@ class LaraResultSubscriber:
         ]
         cps_p = []
         for cp in cps:
-            proj = Transformer.from_crs(cp["crs"], to_crs, always_xy=True)
-            x_p, y_p = proj.transform(xx=cp["x"], yy=cp["y"])
-            cps_p.append(
-                riot.GroundControlPoint(row=cp["row"], col=cp["col"], x=x_p, y=y_p)
-            )
+            if cp["crs"] != to_crs:
+                proj = Transformer.from_crs(cp["crs"], to_crs, always_xy=True)
+                x_p, y_p = proj.transform(xx=cp["x"], yy=cp["y"])
+                cps_p.append(
+                    riot.GroundControlPoint(row=cp["row"], col=cp["col"], x=x_p, y=y_p)
+                )
+            else:
+                cps_p.append(
+                    riot.GroundControlPoint(
+                        row=cp["row"], col=cp["col"], x=cp["x"], y=cp["y"]
+                    )
+                )
+        print("cps_p:")
+        pprint.pprint(cps_p)
 
         return riot.from_gcps(cps_p)

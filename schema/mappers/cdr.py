@@ -1,4 +1,5 @@
 import logging
+from unittest.mock import DEFAULT
 
 from schema.cdr_schemas.georeference import (
     GeoreferenceResults as CDRGeoreferenceResults,
@@ -9,13 +10,15 @@ from schema.cdr_schemas.georeference import (
     ProjectionResult,
 )
 from schema.cdr_schemas.area_extraction import Area_Extraction, AreaType
-from schema.cdr_schemas.map import Map
 from schema.cdr_schemas.metadata import (
     MapColorSchemeTypes,
     MapMetaData,
     CogMetaData,
     MapShapeTypes,
 )
+
+from schema.cdr_schemas.common import ModelProvenance
+
 from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.features.point_features import (
     PointFeatureCollection,
@@ -31,8 +34,9 @@ from tasks.metadata_extraction.entities import (
     MapShape,
     MetadataExtraction as LARAMetadata,
 )
-from tasks.point_extraction.entities import MapImage as LARAPoints
-from tasks.point_extraction.label_map import YOLO_TO_CDR_LABEL
+from tasks.point_extraction.entities import PointLabels as LARAPoints
+from tasks.point_extraction.entities import LegendPointItems as LARALegendItems
+from tasks.point_extraction.point_extractor_utils import get_cdr_point_name
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 
 from pydantic import BaseModel
@@ -60,6 +64,9 @@ class CDRMapper:
 
 class GeoreferenceMapper(CDRMapper):
 
+    # output CRS to use for projected maps that are pushed to CDR
+    DEFAULT_OUTPUT_CRS = "EPSG:3857"
+
     def map_to_cdr(self, model: LARAGeoferenceResult) -> CDRGeoreferenceResults:
         gcps = []
         for gcp in model.gcps:
@@ -72,7 +79,7 @@ class GeoreferenceMapper(CDRMapper):
                 confidence=gcp.confidence,
                 model=MODEL_NAME,
                 model_version=MODEL_VERSION,
-                crs=model.projection,
+                crs=model.crs,
             )
             gcps.append(cdr_gcp)
 
@@ -80,11 +87,11 @@ class GeoreferenceMapper(CDRMapper):
             cog_id=model.map_id,
             georeference_results=[
                 GeoreferenceResult(
-                    likely_CRSs=[model.projection],
+                    likely_CRSs=[model.crs],
                     map_area=None,
                     projections=[
                         ProjectionResult(
-                            crs=model.projection,
+                            crs=self.DEFAULT_OUTPUT_CRS,
                             gcp_ids=[gcp.gcp_id for gcp in gcps],
                             file_name=f"lara-{model.map_id}.tif",
                         )
@@ -233,40 +240,66 @@ class SegmentationMapper(CDRMapper):
 
 class PointsMapper(CDRMapper):
 
-    def map_to_cdr(self, model: LARAPoints) -> FeatureResults:
-        point_features: List[PointLegendAndFeaturesResult] = []
+    def map_to_cdr(
+        self, model: LARAPoints, legend_items: LARALegendItems
+    ) -> FeatureResults:
+        """
+        Convert LARA point extractions to CDR output format
+        """
+        legend_features: Dict[str, PointLegendAndFeaturesResult] = {}
+        for leg_item in legend_items.items:
+            # fill in point name, abbreviation and description fields
+            name = get_cdr_point_name(leg_item.class_name, leg_item.name)
+            abbr = leg_item.abbreviation if leg_item.abbreviation else name
+            desc = leg_item.description
+            if not desc:
+                desc = leg_item.name if leg_item.name else name
+                desc = desc.replace("_", " ").strip().lower()
 
-        # create seperate lists for each point class since they are groupded by class
+            legend_provenance = None
+            if leg_item.system:
+                legend_provenance = ModelProvenance(
+                    model=leg_item.system, model_version=leg_item.system_version
+                )
+
+            legend_feature_result = PointLegendAndFeaturesResult(
+                id=name,
+                legend_provenance=legend_provenance,
+                crs="CRITICALMAAS:pixel",
+                name=name,
+                abbreviation=abbr,
+                description=desc,
+                legend_bbox=leg_item.legend_bbox,
+                legend_contour=leg_item.legend_contour,
+                reference_id=leg_item.cdr_legend_id,
+                point_features=None,  # points are filled in below
+            )
+            legend_features[name] = legend_feature_result
+
+        # create seperate lists for each point class since they are grouped by class
         # in the results
-        point_features_by_class: Dict[str, List[PointFeature]] = {}
+        point_features: Dict[str, List[PointFeature]] = {}
         point_id = 0
         if model.labels:
             for map_pt_label in model.labels:
-                # point label
-                pt_label = (
-                    map_pt_label.legend_name
-                    if map_pt_label.legend_name
-                    else map_pt_label.class_name
-                )
 
-                if pt_label in YOLO_TO_CDR_LABEL:
-                    # map from YOLO point class to CDR point label
-                    pt_label = YOLO_TO_CDR_LABEL[pt_label]
+                name = get_cdr_point_name(map_pt_label.class_name, "")
 
-                if pt_label not in point_features_by_class:
-                    # init result object for this point type...
-                    # TODO -- fill in legend item info if available in future
-                    point_features_by_class[pt_label] = []
-                    point_features_result = PointLegendAndFeaturesResult(
-                        id="id",
+                if name not in legend_features:
+                    # init new legend result object...
+                    legend_feature_result = PointLegendAndFeaturesResult(
+                        id=name,
                         crs="CRITICALMAAS:pixel",
-                        name=pt_label,
-                        abbreviation=pt_label,
-                        description=pt_label.replace("_", " ").strip().lower(),
-                        legend_bbox=map_pt_label.legend_bbox,
+                        name=name,
+                        abbreviation=name,
+                        description=name.replace("_", " ").strip().lower(),
                         point_features=None,  # points are filled in below
                     )
-                    point_features.append(point_features_result)
+                    legend_features[name] = legend_feature_result
+
+                if name not in point_features:
+                    # init result object for this point type...
+                    point_features[name] = []
 
                 # create the point geometry
                 point = Point(
@@ -297,27 +330,36 @@ class PointsMapper(CDRMapper):
 
                 # add the point geometry and properties to the point feature
                 point_feature = PointFeature(
-                    id=f"{pt_label}.{point_id}",
+                    id=f"{name}.{point_id}",
                     geometry=point,
                     properties=properties,
                 )
                 point_id += 1
 
                 # add to the list of point features for the class
-                point_features_by_class[pt_label].append(point_feature)
+                point_features[name].append(point_feature)
 
         # append our final list of feature results and create the output
-        for pt_feat in point_features:
-            if pt_feat.name not in point_features_by_class:
-                logger.warning(f"Point type {pt_feat.name} not found in results!")
+        point_legend_features = list(legend_features.values())
+        for pt_leg_feat in point_legend_features:
+            if (
+                pt_leg_feat.name not in point_features
+                or len(point_features[pt_leg_feat.name]) == 0
+            ):
+                logger.warning(f"Point type {pt_leg_feat.name} has no extractions!")
             else:
-                pt_feat.point_features = PointFeatureCollection(
-                    features=point_features_by_class[pt_feat.name]
+                pt_leg_feat.point_features = PointFeatureCollection(
+                    features=point_features[pt_leg_feat.name]
                 )
+
+        # filter point types with no extractions
+        point_legend_features = list(
+            filter(lambda x: x.point_features is not None, point_legend_features)
+        )
 
         return FeatureResults(
             cog_id=model.raster_id,
-            point_feature_results=point_features,
+            point_feature_results=point_legend_features,
             system=self._system_name,
             system_version=self._system_version,
         )

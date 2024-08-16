@@ -72,13 +72,13 @@ class MetdataLLM(BaseModel):
         description="The scale of the map.  Example: '1:24000'", default="NULL"
     )
     datum: str = Field(
-        description="The datum of the map."
-        + "Examples: 'North American Datum of 1927', 'NAD83', 'WGS 84'",
+        description="The geoditic datum of the map. If this is not present, it can often be inferred from the map's country and year."
+        + "Examples of geodetic datums: 'North American Datum of 1927', 'NAD83', 'WGS 84'",
         default="NULL",
     )
     vertical_datum: str = Field(
         description="The vertical datum of the map."
-        + "Examples: 'mean sea level', 'vertical datum of 1901', 'national vertical geoditic datum of 1929'",
+        + "Examples: 'mean sea level', 'vertical datum of 1901', 'national vertical geodetic datum of 1929'",
         default="NULL",
     )
     projection: str = Field(
@@ -299,6 +299,7 @@ class MetadataExtractor(Task):
         logger.info(f"Running metadata extraction task for '{input.raster_id}'")
 
         if self._should_run and not self._should_run(input):
+            logging.info("Skipping metadata extraction task")
             return self._create_result(input)
 
         task_result = TaskResult(self._task_id)
@@ -308,7 +309,9 @@ class MetadataExtractor(Task):
             self._create_empty_extraction,
         )
         if not doc_text:
-            logger.info("returning empty metadata extraction result")
+            logger.info(
+                "OCR output not available - returning empty metadata extraction result"
+            )
             return task_result
 
         doc_id = self._generate_doc_key(input, doc_text)
@@ -364,7 +367,7 @@ class MetadataExtractor(Task):
                 metadata.utm_zone = str(self._extract_utm_zone(metadata))
 
             # compute map shape from the segmentation output
-            segments = input.data[SEGMENTATION_OUTPUT_KEY]
+            segments = input.data.get(SEGMENTATION_OUTPUT_KEY, None)
             metadata.map_shape = self._compute_shape(segments)
 
             # compute map chroma from the image
@@ -776,6 +779,7 @@ class MetadataExtractor(Task):
         Returns:
             MapShape: The shape of the map
         """
+        map_shape = MapShape.UNKNOWN
         if segments:
             map_segmentation = MapSegmentation.model_validate(segments)
             for segment in map_segmentation.segments:

@@ -1,4 +1,4 @@
-from tasks.point_extraction.entities import MapTile
+from tasks.point_extraction.entities import ImageTile
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -14,7 +14,7 @@ class PointInferenceDataset(Dataset):
 
     def __init__(
         self,
-        tiles: List[MapTile],
+        tiles: List[ImageTile],
     ) -> None:
         self.tiles = tiles
         super().__init__()
