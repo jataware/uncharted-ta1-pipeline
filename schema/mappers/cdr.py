@@ -216,10 +216,13 @@ class SegmentationMapper(CDRMapper):
                 segment.bbox[1] + segment.bbox[3],
             ]
 
+            text = segment.text if segment.text else ""
+
             area_extraction = Area_Extraction(
                 coordinates=[coordinates],
                 bbox=bbox,
                 category=area_type,
+                text=text,
                 confidence=segment.confidence,
                 model=MODEL_NAME,
                 model_version=MODEL_VERSION,

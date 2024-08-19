@@ -9,9 +9,9 @@ from tasks.common.pipeline import (
     OutputCreator,
     BaseModelOutput,
 )
+from tasks.text_extraction.text_extractor import ResizeTextExtractor
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
-from schema.cdr_schemas.area_extraction import Area_Extraction, AreaType
-from schema.cdr_schemas.feature_results import FeatureResults
+from tasks.segmentation.text_with_segments import TextWithSegments
 from schema.mappers.cdr import SegmentationMapper
 
 logger = logging.getLogger("segmentation_pipeline")
@@ -44,6 +44,14 @@ class SegmentationPipeline(Pipeline):
         """
 
         tasks = [
+            ResizeTextExtractor(
+                "resize_text",
+                Path(model_data_cache_path).joinpath("text"),
+                False,
+                True,
+                6000,
+                0.5,
+            ),
             DetectronSegmenter(
                 "segmenter",
                 model_data_path,
@@ -54,7 +62,8 @@ class SegmentationPipeline(Pipeline):
                 ),
                 confidence_thres=confidence_thres,
                 gpu=gpu,
-            )
+            ),
+            TextWithSegments("text_with_segments"),
         ]
 
         outputs = [
