@@ -176,15 +176,15 @@ class CDROutput(OutputCreator):
         map_point_labels = PointLabels.model_validate(
             pipeline_result.data[MAP_PT_LABELS_OUTPUT_KEY]
         )
-        legend_pt_items = LegendPointItems(items=[])
-        if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
-            legend_pt_items = LegendPointItems.model_validate(
-                pipeline_result.data[LEGEND_ITEMS_OUTPUT_KEY]
-            )
+        # legend_pt_items = LegendPointItems(items=[])
+        # if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
+        #     legend_pt_items = LegendPointItems.model_validate(
+        #         pipeline_result.data[LEGEND_ITEMS_OUTPUT_KEY]
+        #     )
 
         mapper = PointsMapper(MODEL_NAME, MODEL_VERSION)
 
-        cdr_points = mapper.map_to_cdr(map_point_labels, legend_pt_items)
+        cdr_points = mapper.map_to_cdr(map_point_labels)
         return BaseModelOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, cdr_points
         )
