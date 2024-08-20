@@ -22,7 +22,7 @@ else
 fi
 
 # run the build
-docker buildx build --platform linux/amd64,linux/arm64 -t uncharted/lara-segmentation:latest . --push
+docker build -t uncharted/lara-segmentation:latest .
 
 # cleanup the temp files
 rm -rf pipelines
