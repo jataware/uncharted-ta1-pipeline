@@ -69,7 +69,10 @@ services:
     image: uncharted/lara-segmentation:{{ tag }}
     command: [
       "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", {{ segmentation_model_weights }}, "--result_queue", "lara_result_queue"]
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
+      - {{ google_application_credentials }}:/credentials.json
       - {{ segmentation_workdir }}:/workdir
       - {{ image_dir }}:/imagedir
     depends_on:
