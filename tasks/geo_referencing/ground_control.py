@@ -66,11 +66,11 @@ class CreateGroundControlPoints(Task):
             )
             if len(query_pts) < NUM_PTS:
                 logger.info(
-                    f"Also creating up to {NUM_PTS-len(query_pts)} inner ground control points"
+                    f"Also creating {NUM_PTS-len(query_pts)} random ground control points"
                 )
                 query_pts.extend(
-                    self._create_inner_query_points(
-                        input.raster_id, poly_map, num_pts=NUM_PTS - len(query_pts)
+                    self._create_random_query_points(
+                        input, num_pts=NUM_PTS - len(query_pts)
                     )
                 )
 

@@ -59,8 +59,8 @@ class CornerPointExtractor(Task):
                 continue
 
             lon_label_width = 2 * (lon_bounds[1].x - lon_bounds[0].x)
-            lon_center_x = lon_bounds[0].x + (lon_bounds[1].x - lon_bounds[0].x) / 2.0
-            lon_center_y = lon_bounds[0].y + (lon_bounds[2].y - lon_bounds[0].y) / 2.0
+            # get pixel centre xy for this longitude extraction
+            lon_center_x, lon_center_y = lon_coord.get_pixel_alignment()
             lon_line = LineString(
                 [
                     (
@@ -77,12 +77,8 @@ class CornerPointExtractor(Task):
                     continue
 
                 lat_label_width = 2 * (lat_bounds[1].x - lat_bounds[0].x)
-                lat_center_x = (
-                    lat_bounds[0].x + (lat_bounds[1].x - lat_bounds[0].x) / 2.0
-                )
-                lat_center_y = (
-                    lat_bounds[0].y + (lat_bounds[2].y - lat_bounds[0].y) / 2.0
-                )
+                # get pixel centre xy for this latitude extraction
+                lat_center_x, lat_center_y = lat_coord.get_pixel_alignment()
                 lat_line = LineString(
                     [
                         (
