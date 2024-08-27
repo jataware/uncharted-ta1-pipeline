@@ -1,9 +1,9 @@
 {
-    "work_dir": "",
-    "image_dir": "",
-    "cdr_api_token": "",
-    "ngrok_authtoken": "",
-    "openai_api_key": "",
-    "google_application_credentials": "",
-    "tag": ""
+    "work_dir": "~/lara/working",
+    "image_dir": "~/lara/images",
+    "cdr_api_token": "3b8df2be0b494c50ab3562b0c429bb58",
+    "ngrok_authtoken": "585d02d615e74454833baa5533c6ed33",
+    "openai_api_key": "fee7e90ea27b49ef9b9fcb49c3ee4ceb",
+    "google_application_credentials": "~/lara/credentials/google_vision_api_key.json",
+    "tag": "latest"
 }
