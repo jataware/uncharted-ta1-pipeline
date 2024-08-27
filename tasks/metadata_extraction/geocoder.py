@@ -252,7 +252,7 @@ class Geocoder(Task):
 
         new_places = self._geocode_list(input, to_geocode)
         logger.info(f"geocoded {len(new_places)} places")
-        if metadata.country.lower() == "united states":
+        if metadata.country.lower() == "us":
             narrow_geofence = self._narrow_geofence(input, new_places)
             logger.info(f"narrowed geofence determined to be '{narrow_geofence}'")
             if narrow_geofence is not None and len(narrow_geofence) > 0:

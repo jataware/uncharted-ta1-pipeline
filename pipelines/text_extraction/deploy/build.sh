@@ -10,7 +10,7 @@ cp -r ../../../util .
 cp -r ../../../tasks .
 
 # run the build
-docker buildx build --platform linux/amd64,linux/arm64 -t uncharted/lara-text-extract:latest . --push
+docker build -t uncharted/lara-text-extract:latest .
 
 # cleanup the temp files
 rm -rf pipelines

@@ -23,7 +23,7 @@ else
 fi
 
 # run the build
-docker buildx build --platform linux/amd64,linux/arm64  -t uncharted/lara-metadata-extract:latest .  --push
+docker build -t uncharted/lara-metadata-extract:latest .
 
 # cleanup the temp files
 rm -rf pipelines

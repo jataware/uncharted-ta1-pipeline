@@ -99,6 +99,9 @@ class TemplateMatchPointExtractor(Task):
                 path="", raster_id=task_input.raster_id, labels=[]
             )
 
+        # TEMP also append legend items to point extraction output (for easier conversion to CDR)
+        map_point_labels.legend_items = legend_pt_items.items
+
         # --- check which legend points still need to be processed, if any?
         pt_features = self._which_points_need_processing(
             map_point_labels.labels, legend_pt_items.items, min_predictions=MIN_MATCHES  # type: ignore
@@ -109,11 +112,10 @@ class TemplateMatchPointExtractor(Task):
             logger.info(
                 "No legend items need further processing. Skipping Template-Match Point Extractor"
             )
-            result = self._create_result(task_input)
-            result.add_output(
-                MAP_PT_LABELS_OUTPUT_KEY, task_input.data[MAP_PT_LABELS_OUTPUT_KEY]
+            return TaskResult(
+                task_id=self._task_id,
+                output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
             )
-            return result
 
         # --- check cache and re-use existing result if present
         doc_key = f"{task_input.raster_id}_templatematch_points-{MODEL_VER}"

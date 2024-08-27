@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from turtle import color
 from typing import List
 from PIL import ImageDraw
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
@@ -161,19 +162,20 @@ class FilteredOCROutput(OutputCreator):
                 draw.polygon(
                     points,
                     outline="#ff497b",
-                    width=1,
+                    width=4,
                 )
         # draw in the map region bounds
+        colors = ["#5ec04a", "#4a90e2"]
         if SEGMENTATION_OUTPUT_KEY in pipeline_result.data:
             map_segmentation = MapSegmentation.model_validate(
                 pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
             )
-            for segment in map_segmentation.segments:
+            for idx, segment in enumerate(map_segmentation.segments):
                 points = [(point[0], point[1]) for point in segment.poly_bounds]
                 draw.polygon(
                     points,
-                    outline="#5ec04a",
-                    width=1,
+                    outline=colors[idx % len(colors)],
+                    width=8,
                 )
         return ImageOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, text_image
