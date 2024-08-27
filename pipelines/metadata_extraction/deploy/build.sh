@@ -22,8 +22,14 @@ else
     cp -r $segment_model pipelines/segmentation_weights
 fi
 
-# run the build
-docker build -t uncharted/lara-metadata-extract:latest .
+# run the build with the platform argument if provided, otherwise build for the host architecture
+platform=${2:-}
+if [[ -n "$platform" ]]; then
+    echo "Platform: $platform"
+    docker buildx build --platform "$platform" -t uncharted/lara-metadata-extract:latest . --load
+else
+    docker build -t uncharted/lara-metadata-extract:latest .
+fi
 
 # cleanup the temp files
 rm -rf pipelines
