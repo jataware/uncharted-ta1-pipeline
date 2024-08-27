@@ -20,7 +20,7 @@ then
 else
     point_model=$1
     echo "Point model weights file: $point_model"
-    cp $point_model pipelines/point_extraction_weights
+    cp $point_model pipelines/point_extraction_weights/points.pt
 fi
 
 mkdir -p pipelines/segmentation_weights
@@ -32,7 +32,7 @@ then
 else
     segment_model=$2
     echo "Segment model weights dir: $segment_model"
-    cp -r $segment_model pipelines/segmentation_weights
+    cp -r $segment_model/* pipelines/segmentation_weights
 fi
 
 

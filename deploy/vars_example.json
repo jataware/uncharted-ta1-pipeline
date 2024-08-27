@@ -1,15 +1,9 @@
 {
-    "cdr_api_token": "",
-    "cdr_workdir": "",
-    "georef_workdir": "",
-    "point_extract_workdir": "",
-    "segmentation_workdir": "",
-    "metadata_workdir": "",
+    "work_dir": "",
     "image_dir": "",
+    "cdr_api_token": "",
     "ngrok_authtoken": "",
     "openai_api_key": "",
     "google_application_credentials": "",
-    "segmentation_model_weights": "",
-    "point_model_weights": "",
     "tag": ""
 }
