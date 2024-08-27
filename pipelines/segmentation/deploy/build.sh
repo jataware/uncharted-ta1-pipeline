@@ -18,7 +18,7 @@ then
 else
     segment_model=$1
     echo "Segment model weights dir: $segment_model"
-    cp -r $segment_model pipelines/segmentation_weights
+    cp -r $segment_model/* pipelines/segmentation_weights
 fi
 
 # run the build with the platform argument if provided, otherwise build for the host architecture

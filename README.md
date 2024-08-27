@@ -13,6 +13,12 @@ This repository contains five pipelines:
 * [Georeferencing](pipelines/geo_referencing/README.md) - computes an image space to geo space transform given an input map image
 * [Text Extraction](pipelines/text_extraction/README.md) - extracts text as individual words, lines or paragraphs/blocks from an input image
 
+### Development 
+
 The `tasks` directory contains the `pip` installable library of tasks and supporting utilities, with each pipeline found in the `pipelines` directory being composed of these tasks.  Each pipeline is itself `pip` installable, and is accompanied by a wrapper to support command line execution (`run_pipeline.py`), and a server wrapper to support execution as a REST service (`run_server.py`).  Scripts to build the server wrapper into a Docker container are also included.
 
 A [Makefile](./Makefile) is also available to handle building and deploying Docker containers for the various LARA pipelines.
+
+### Deployment
+
+The full LARA stack that supports integration with the CriticalMAAS CDR can be deployed via `docker compose`.  See [instructions](deploy/README.md).  

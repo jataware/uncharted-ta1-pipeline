@@ -22,7 +22,7 @@ services:
       - CDR_API_TOKEN={{ cdr_api_token }}
       - NGROK_AUTHTOKEN={{ ngrok_authtoken }}
     volumes:
-      - {{ cdr_workdir }}:/workdir
+      - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     depends_on:
       rabbitmq:
@@ -33,13 +33,13 @@ services:
 
   georef:
     image: uncharted/lara-georef:{{ tag }}
-    command: ["--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", {{ segmentation_model_weights }}, "--result_queue", "lara_result_queue"]
+    command: ["--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights", "--result_queue", "lara_result_queue"]
     environment:
       - OPENAI_API_KEY={{ openai_api_key }}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
       - {{ google_application_credentials }}:/credentials.json
-      - {{ georef_workdir }}:/workdir
+      - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     depends_on:
       rabbitmq:
@@ -51,12 +51,12 @@ services:
   points:
     image: uncharted/lara-point-extract:{{ tag }}
     command: [
-      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq","--model_point_extractor", {{ point_model_weights }}, "--model_segmenter", {{ segmentation_model_weights }}, "--result_queue", "lara_result_queue"]
+      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq","--model_point_extractor", "pipelines/point_extraction_weights/points.pt", "--model_segmenter", "pipelines/segmentation_weights", "--result_queue", "lara_result_queue"]
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
       - {{ google_application_credentials }}:/credentials.json
-      - {{ point_extract_workdir }}:/workdir
+      - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     depends_on:
       rabbitmq:
@@ -68,12 +68,12 @@ services:
   segmentation:
     image: uncharted/lara-segmentation:{{ tag }}
     command: [
-      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", {{ segmentation_model_weights }}, "--result_queue", "lara_result_queue"]
+      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights", "--result_queue", "lara_result_queue"]
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
       - {{ google_application_credentials }}:/credentials.json
-      - {{ segmentation_workdir }}:/workdir
+      - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     depends_on:
       rabbitmq:
@@ -85,13 +85,13 @@ services:
   metadata:
     image: uncharted/lara-metadata-extract:{{ tag }}
     command: [
-      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", {{ segmentation_model_weights }}, "--result_queue", "lara_result_queue"]
+      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights", "--result_queue", "lara_result_queue"]
     environment:
       - OPENAI_API_KEY={{ openai_api_key }}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
       - {{ google_application_credentials }}:/credentials.json
-      - {{ metadata_workdir }}:/workdir
+      - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     depends_on:
       rabbitmq:
