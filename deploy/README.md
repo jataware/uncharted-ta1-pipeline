@@ -2,7 +2,7 @@
 
 ## Pre-requisites
 1. A Python 3.10 environment
-1. An activated NGROK account and token (see (https://ngrok.com/docs/getting-started/)[https://ngrok.com/docs/getting-started/])
+1. An activated NGROK account and token (see [https://ngrok.com/docs/getting-started/])
 1. An OpenAI API key
 1. A Google Cloud Vision API JSON key *file*
 1. A CriticalMAAS CDR API key (contact Jataware)
@@ -10,13 +10,13 @@
 ## Setup
 
 Install Jinja-2 CLI:
-```
+```console
 pip install jinja2-cli
 ```
 
 Make a copy of the `vars_example.json` file found in this directory and update it with the information specific to your environment.  
 
-```
+```console
 cp vars_example.json deploy_vars.json
 ```
 
@@ -31,23 +31,23 @@ The fields are:
 * `tag`: The docker tag of the LARA images to deploy (ie. `latest`)
 
 Generate a docker compose file from your variables:
-```
-./gen_compose deploy_vars.json
+```console
+./gen_compose.sh deploy_vars.json
 ```
 
-This should create a new `docker-compose.yml` files with values dervied from the `deploy_var.json` file.  LARA containers can now be pulled by running:
-```
+This should create a new `docker-compose.yml` files with values derived from the `deploy_var.json` file.  LARA containers can now be pulled by running:
+```console
 docker compose pull
 ```
 
 The system can be started by running:
-```
+```console
 docker compose up
 ```
 
 and stopped by running:
+```console
+docker compose stop
 ```
-docker compose stop```
-
 
 Once running, the system will respond to maps by being added to the CDR by executing the LARA pipelines and uploading results.

@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from turtle import color
 from typing import List
 from PIL import ImageDraw
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
