@@ -12,9 +12,9 @@ cp -r ../../util .
 platform=${1:-}
 if [[ -n "$platform" ]]; then
     echo "Platform: $platform"
-    docker buildx build --platform "$platform" -t uncharted/lara-cdr:latest .
+    docker buildx build --platform "$platform" -t uncharted/lara-cdr:latest . --load
 else
-    docker buildx build -t uncharted/lara-cdr:latest .
+    docker build -t uncharted/lara-cdr:latest .
 fi
 
 # cleanup the temp files

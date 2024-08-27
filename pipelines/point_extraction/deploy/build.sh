@@ -40,9 +40,9 @@ fi
 platform=${3:-}
 if [[ -n "$platform" ]]; then
     echo "Platform: $platform"
-    docker buildx build --platform "$platform" -t uncharted/lara-point-extract:latest .
+    docker buildx build --platform "$platform" -t uncharted/lara-point-extract:latest . --load
 else
-    docker buildx build -t uncharted/lara-point-extract:latest .
+    docker build -t uncharted/lara-point-extract:latest .
 fi
 
 # cleanup the temp files

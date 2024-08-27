@@ -26,9 +26,9 @@ fi
 platform=${2:-}
 if [[ -n "$platform" ]]; then
     echo "Platform: $platform"
-    docker buildx build --platform "$platform" -t uncharted/lara-metadata-extract:latest .
+    docker buildx build --platform "$platform" -t uncharted/lara-metadata-extract:latest . --load
 else
-    docker buildx build -t uncharted/lara-metadata-extract:latest .
+    docker build -t uncharted/lara-metadata-extract:latest .
 fi
 
 # cleanup the temp files

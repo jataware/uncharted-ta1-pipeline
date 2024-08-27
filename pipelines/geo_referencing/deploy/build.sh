@@ -26,9 +26,9 @@ fi
 platform=${2:-}
 if [[ -n "$platform" ]]; then
     echo "Platform: $platform"
-    docker buildx build --platform "$platform" -t uncharted/lara-georef:latest .
+    docker buildx build --platform "$platform" -t uncharted/lara-georef:latest . --load
 else
-    docker buildx build -t uncharted/lara-georef:latest .
+    docker build -t uncharted/lara-georef:latest .
 fi
 
 # cleanup the temp files

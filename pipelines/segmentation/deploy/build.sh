@@ -25,9 +25,9 @@ fi
 platform=${2:-}
 if [[ -n "$platform" ]]; then
     echo "Platform: $platform"
-    docker buildx build --platform "$platform" -t uncharted/lara-segmentation:latest .
+    docker buildx build --platform "$platform" -t uncharted/lara-segmentation:latest . --load
 else
-    docker buildx build -t uncharted/lara-segmentation:latest .
+    docker build -t uncharted/lara-segmentation:latest .
 fi
 
 # cleanup the temp files
