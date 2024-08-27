@@ -6,6 +6,7 @@ SEGMENTATION_OUTPUT_KEY = "segmentation"
 # class labels for map and points legend areas
 SEGMENT_MAP_CLASS = "map"
 SEGMENT_POINT_LEGEND_CLASS = "legend_points_lines"
+SEGMENT_POLYGON_LEGEND_CLASS = "legend_polygons"
 
 
 class SegmentationResult(BaseModel):
@@ -21,6 +22,7 @@ class SegmentationResult(BaseModel):
     class_label: str  # predicted segmentation class label
     confidence: float  # prediction score
     id_model: str  # model ID (model_id not used due to pydantic reserved word)
+    text: str | None = ""  # text associated with this segment (optional)
 
 
 class MapSegmentation(BaseModel):

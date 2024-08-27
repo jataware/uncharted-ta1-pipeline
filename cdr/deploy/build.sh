@@ -8,8 +8,14 @@ cp -r ../../schema .
 cp -r ../../tasks .
 cp -r ../../util .
 
-# run the build
-docker build -t uncharted/lara-cdr:latest .
+# run the build with the platform argument if provided, otherwise build for the host architecture
+platform=${1:-}
+if [[ -n "$platform" ]]; then
+    echo "Platform: $platform"
+    docker buildx build --platform "$platform" -t uncharted/lara-cdr:latest . --load
+else
+    docker build -t uncharted/lara-cdr:latest .
+fi
 
 # cleanup the temp files
 rm -rf cdr

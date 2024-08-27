@@ -20,7 +20,7 @@ then
 else
     point_model=$1
     echo "Point model weights file: $point_model"
-    cp $point_model pipelines/point_extraction_weights
+    cp $point_model pipelines/point_extraction_weights/points.pt
 fi
 
 mkdir -p pipelines/segmentation_weights
@@ -32,12 +32,18 @@ then
 else
     segment_model=$2
     echo "Segment model weights dir: $segment_model"
-    cp -r $segment_model pipelines/segmentation_weights
+    cp -r $segment_model/* pipelines/segmentation_weights
 fi
 
 
-# run the build
-docker buildx build --platform linux/amd64,linux/arm64 -t uncharted/lara-point-extract:latest . --push
+# run the build with the platform argument if provided, otherwise build for the host architecture
+platform=${3:-}
+if [[ -n "$platform" ]]; then
+    echo "Platform: $platform"
+    docker buildx build --platform "$platform" -t uncharted/lara-point-extract:latest . --load
+else
+    docker build -t uncharted/lara-point-extract:latest .
+fi
 
 # cleanup the temp files
 rm -rf pipelines

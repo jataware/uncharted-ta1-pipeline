@@ -216,10 +216,13 @@ class SegmentationMapper(CDRMapper):
                 segment.bbox[1] + segment.bbox[3],
             ]
 
+            text = segment.text if segment.text else ""
+
             area_extraction = Area_Extraction(
                 coordinates=[coordinates],
                 bbox=bbox,
                 category=area_type,
+                text=text,
                 confidence=segment.confidence,
                 model=MODEL_NAME,
                 model_version=MODEL_VERSION,
@@ -240,14 +243,14 @@ class SegmentationMapper(CDRMapper):
 
 class PointsMapper(CDRMapper):
 
-    def map_to_cdr(
-        self, model: LARAPoints, legend_items: LARALegendItems
-    ) -> FeatureResults:
+    def map_to_cdr(self, model: LARAPoints) -> FeatureResults:
         """
         Convert LARA point extractions to CDR output format
         """
+        leg_items = model.legend_items if model.legend_items else []
+
         legend_features: Dict[str, PointLegendAndFeaturesResult] = {}
-        for leg_item in legend_items.items:
+        for leg_item in leg_items:
             # fill in point name, abbreviation and description fields
             name = get_cdr_point_name(leg_item.class_name, leg_item.name)
             abbr = leg_item.abbreviation if leg_item.abbreviation else name

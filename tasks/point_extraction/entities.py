@@ -46,6 +46,7 @@ class PointLabels(BaseModel):
     raster_id: str
     roi_label: str = ""  # roi (segment) area label for these tiles
     labels: Optional[List[PointLabel]] = None
+    legend_items: List[LegendPointItem] | None = []
 
     _cached_image = None
 

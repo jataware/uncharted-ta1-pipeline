@@ -83,6 +83,9 @@ class Coordinate:
             )
 
     def get_pixel_alignment(self) -> Tuple[float, float]:
+        """
+        Get pixel center xy for this co-ordinate extraction
+        """
         return self._pixel_alignment
 
     def get_type(self) -> str:

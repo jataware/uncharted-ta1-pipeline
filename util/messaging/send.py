@@ -1,14 +1,16 @@
-from enum import auto
+from ast import arg
+import json
 from time import sleep
 import pika
 
-from tasks.common.queue import Request
 import argparse
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--queue_name", type=str, help="Name of the queue")
+    parser.add_argument("--cog_id", type=str, help="ID of the COG")
+    parser.add_argument("--input", type=str, help="Input file")
     args = parser.parse_args()
 
     connection = pika.BlockingConnection(pika.ConnectionParameters(host="localhost"))
@@ -19,17 +21,27 @@ def main():
         arguments={"x-queue-type": "quorum", "x-delivery-limit": 3},
     )
 
-    for i in range(5):
-        request = Request(
-            id=str(i),
-            task=str(i),
-            image_id="c0089400862e476e4f66863283bb934d974d9b4d9a060d164b1e0b3685a6a127",
-            image_url="https://s3.amazonaws.com/public.cdr.land/cogs/c0089400862e476e4f66863283bb934d974d9b4d9a060d164b1e0b3685a6a127.cog.tif",
-            output_format="5",
-        )
+    # load the list of cogs from the input file if present into an array, otherwise add the
+    # single cog specified by the cog_id argument to the array
+    cogs = []
+    if args.input:
+        with open(args.input, "r") as f:
+            cogs = f.readlines()
+    elif arg:
+        cogs.append(args.cog_id)
+
+    # send a request for each cog in the array
+    for i, cog in enumerate(cogs):
+        request = {
+            "id": str(i),
+            "task": str(i),
+            "image_id": cog,
+            "image_url": f"https://s3.amazonaws.com/public.cdr.land/cogs/{cog}.cog.tif",
+            "output_format": "5",
+        }
 
         channel.basic_publish(
-            exchange="", routing_key=args.queue_name, body=request.model_dump_json()
+            exchange="", routing_key=args.queue_name, body=json.dumps(request)
         )
         sleep(1)
     connection.close()
