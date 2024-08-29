@@ -1,20 +1,18 @@
-from curses import meta
 import logging
-import pprint
 from unittest.mock import DEFAULT
 
-from shapely import LineString, Point
+from shapely import LineString, Point, Polygon
 
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.geo_referencing.entities import (
-    Coordinate,
-    GroundControlPoint,
-    CORNER_POINTS_OUTPUT_KEY,
-)
+from tasks.geo_referencing.entities import Coordinate
 
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 logger = logging.getLogger("corner_point_extractor")
+
+# multiplier for the length of centerlines from lat/lon labels
+# controls the effective search distance for map corners
+CENTERLINE_LEN_MULTIPLIER = 2.0
 
 
 class CornerPointExtractor(Task):
@@ -47,78 +45,114 @@ class CornerPointExtractor(Task):
             TaskResult: The result object updated with the corner points if present.
 
         """
-        lon_pts: Dict[Tuple[float, float], Coordinate] = input.get_data("lons")
-        lat_pts: Dict[Tuple[float, float], Coordinate] = input.get_data("lats")
 
-        intersection_points: List[Tuple[Point, Point]] = []
+        lon_pts: Dict[Tuple[float, float], Coordinate] = input.get_data("lons", {})
+        lat_pts: Dict[Tuple[float, float], Coordinate] = input.get_data("lats", {})
 
-        for lon_key, lon_coord in lon_pts.items():
-            # generate a vertical segment through the center of the lon label
-            lon_bounds = lon_coord.get_bounds()
-            if len(lon_bounds) < 4:
-                continue
+        lon_pts_modified = []
+        lat_pts_modified = []
 
-            lon_label_width = 2 * (lon_bounds[1].x - lon_bounds[0].x)
-            # get pixel centre xy for this longitude extraction
-            lon_center_x, lon_center_y = lon_coord.get_pixel_alignment()
-            lon_line = LineString(
-                [
-                    (
-                        lon_center_x,
-                        lon_center_y + lon_label_width,
-                    ),
-                    (lon_center_x, lon_center_y - lon_label_width),
-                ]
-            )
-            for lat_key, lat_coord in lat_pts.items():
-                # generate a horizontal segment through the center of the lat label
-                lat_bounds = lat_coord.get_bounds()
-                if len(lat_bounds) < 4:
+        lon_pts_out: Dict[Tuple[float, float], Coordinate] = {}
+        lat_pts_out: Dict[Tuple[float, float], Coordinate] = {}
+
+        # loop over lon coords...
+        num_corners = 0
+        for i_lon, (lon_key, lon_coord) in enumerate(lon_pts.items()):
+
+            try:
+                if i_lon in lon_pts_modified:
+                    # this longitude pt has already been fine-tuned; skip
                     continue
 
-                lat_label_width = 2 * (lat_bounds[1].x - lat_bounds[0].x)
-                # get pixel centre xy for this latitude extraction
-                lat_center_x, lat_center_y = lat_coord.get_pixel_alignment()
-                lat_line = LineString(
+                # generate a vertical segment through the center of the lon label
+                lon_label_poly = Polygon([(i.x, i.y) for i in lon_coord.get_bounds()])
+                lon_label_width = CENTERLINE_LEN_MULTIPLIER * (
+                    lon_label_poly.bounds[2] - lon_label_poly.bounds[0]
+                )
+                # get pixel centre xy for this longitude extraction
+                lon_center_x, lon_center_y = lon_coord.get_pixel_alignment()
+                lon_line = LineString(
                     [
                         (
-                            lat_center_x + lat_label_width,
-                            lat_center_y,
+                            lon_center_x,
+                            lon_center_y + lon_label_width,
                         ),
-                        (lat_center_x - lat_label_width, lat_center_y),
+                        (lon_center_x, lon_center_y - lon_label_width),
                     ]
                 )
-                # find the intersection of the two lines
-                intersection = lon_line.intersection(lat_line)
-                if isinstance(intersection, Point):
-                    intersection_points.append(
-                        (Point(lon_key[0], lat_key[0]), intersection)
-                    )
+                # inner loop over lat coords...
+                for i_lat, (lat_key, lat_coord) in enumerate(lat_pts.items()):
+                    try:
+                        if i_lat in lat_pts_modified:
+                            # this latitude pt has already been fine-tuned; skip
+                            continue
 
-        if len(intersection_points) >= 4:
-            logger.info(f"Found {len(intersection_points)} corner points")
+                        # generate a horizontal segment through the center of the lat label
+                        lat_label_poly = Polygon(
+                            [(i.x, i.y) for i in lat_coord.get_bounds()]
+                        )
+                        lat_label_width = CENTERLINE_LEN_MULTIPLIER * (
+                            lat_label_poly.bounds[2] - lat_label_poly.bounds[0]
+                        )
+                        # get pixel centre xy for this latitude extraction
+                        lat_center_x, lat_center_y = lat_coord.get_pixel_alignment()
+                        lat_line = LineString(
+                            [
+                                (
+                                    lat_center_x + lat_label_width,
+                                    lat_center_y,
+                                ),
+                                (lat_center_x - lat_label_width, lat_center_y),
+                            ]
+                        )
+                        # find the intersection of the two lines
+                        intersection = lon_line.intersection(lat_line)
+                        if isinstance(intersection, Point):
+                            # corner-point detected!
+                            num_corners += 1
+                            # fine-tune the pixel locations for the corresponding lat and lon pts
+                            # and save results
+                            lon_key_mod = (lon_key[0], intersection.x)
+                            lon_coord.set_pixel_alignment(
+                                (intersection.x, intersection.y)
+                            )
+                            lon_coord._is_corner = True
+                            lon_pts_out[lon_key_mod] = lon_coord
+                            lon_pts_modified.append(i_lon)
 
-            output: List[GroundControlPoint] = []
-            # write out as gcps
-            for i, point in enumerate(intersection_points):
-                geo_point = point[0]
-                pixel_point = point[1]
-                gcp = GroundControlPoint(
-                    id=f"corner_point.{str(i)}",
-                    longitude=geo_point.x,
-                    latitude=geo_point.y,
-                    pixel_x=pixel_point.x,
-                    pixel_y=pixel_point.y,
-                    confidence=1.0,
-                )
-                output.append(gcp)
-        else:
-            logger.info(
-                f"Found {len(intersection_points)} corner points, require 4.  Corner point referencing not available."
-            )
-            output = []
+                            lat_key_mod = (lat_key[0], intersection.y)
+                            lat_coord.set_pixel_alignment(
+                                (intersection.x, intersection.y)
+                            )
+                            lat_coord._is_corner = True
+                            lat_pts_out[lat_key_mod] = lat_coord
+                            lat_pts_modified.append(i_lat)
 
+                    except Exception as e:
+                        logger.warning(
+                            f"Exception analyzing latitude coords: {repr(e)}"
+                        )
+                        continue
+
+            except Exception as e:
+                logger.warning(f"Exception analyzing longitude coords: {repr(e)}")
+                continue
+
+        logger.info(f"Number of corner points detected: {num_corners}")
+        # finished corner-point detection,
+        # append any remaining unmodified lat and lon pts to the output dicts
+        for i_lon, (lon_key, lon_coord) in enumerate(lon_pts.items()):
+
+            if i_lon not in lon_pts_modified and lon_key not in lon_pts_out:
+                lon_pts_out[lon_key] = lon_coord
+
+        for i_lat, (lat_key, lat_coord) in enumerate(lat_pts.items()):
+
+            if i_lat not in lat_pts_modified and lat_key not in lat_pts_out:
+                lat_pts_out[lat_key] = lat_coord
+
+        # save lons and lats task results
         result = self._create_result(input)
-        result.output[CORNER_POINTS_OUTPUT_KEY] = output
-
+        result.output["lons"] = lon_pts_out
+        result.output["lats"] = lat_pts_out
         return result

@@ -5,7 +5,6 @@ from pydantic import BaseModel, ConfigDict
 
 
 GEOFENCE_OUTPUT_KEY = "geofence_output"
-CORNER_POINTS_OUTPUT_KEY = "corner_points"
 SOURCE_LAT_LON = "lat-lon parser"
 SOURCE_STATE_PLANE = "state plane parser"
 SOURCE_UTM = "utm parser"
@@ -51,6 +50,7 @@ class Coordinate:
     _pixel_alignment: Tuple[float, float] = (0, 0)
     _confidence: float = 0
     _derivation: str = "parsed"
+    _is_corner: bool = False
 
     def __init__(
         self,
@@ -105,6 +105,9 @@ class Coordinate:
 
     def is_lat(self) -> bool:
         return self._is_lat
+
+    def is_corner(self) -> bool:
+        return self._is_corner
 
     def get_source(self) -> str:
         return self._source
