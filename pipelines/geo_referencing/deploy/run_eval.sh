@@ -48,7 +48,7 @@ docker run \
         --query_dir /query \
         --clue_dir /hints \
         --workdir /workdir \
-        --model pipelines/segmentation_weights/layoutlmv3_20240531 \
+        --model pipelines/segmentation_weights \
         --state_plane_lookup_filename data/state_plane_reference.csv \
         --state_plane_zone_filename data/USA_State_Plane_Zones_NAD27.geojson \
         --state_code_filename data/state_codes.csv \

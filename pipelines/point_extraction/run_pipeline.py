@@ -33,6 +33,7 @@ def main():
     parser.add_argument("--legend_items_dir", type=str, default="")
     parser.add_argument("--legend_hints_dir", type=str, default="")
     parser.add_argument("--no_gpu", action="store_true")
+    parser.add_argument("--batch_size", type=int, default=20)
     p = parser.parse_args()
 
     # setup an input stream
@@ -51,6 +52,7 @@ def main():
         include_cdr_output=p.cdr_schema,
         include_bitmasks_output=p.bitmasks,
         gpu=not p.no_gpu,
+        batch_size=p.batch_size,
     )
 
     # run the extraction pipeline

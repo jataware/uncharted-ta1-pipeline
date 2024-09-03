@@ -95,6 +95,7 @@ if __name__ == "__main__":
     parser.add_argument("--request_queue", type=str, default=POINTS_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=POINTS_RESULT_QUEUE)
     parser.add_argument("--no_gpu", action="store_true")
+    parser.add_argument("--batch_size", type=int, default=20)
     p = parser.parse_args()
 
     # init point extraction pipeline
@@ -104,6 +105,7 @@ if __name__ == "__main__":
         p.workdir,
         fetch_legend_items=p.fetch_legend_items,
         gpu=not p.no_gpu,
+        batch_size=p.batch_size,
     )
 
     result_key = (
