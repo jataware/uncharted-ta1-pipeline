@@ -47,6 +47,15 @@ services:
     networks:
       - lara
     restart: on-failure
+    {% if gpu -%}
+    deploy:
+      resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: 1
+                capabilities: [gpu]
+    {%- endif %}
 
   points:
     image: uncharted/lara-point-extract:{{ tag }}
@@ -64,6 +73,15 @@ services:
     networks:
       - lara
     restart:  on-failure
+    {% if gpu -%}
+    deploy:
+      resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: 1
+                capabilities: [gpu]
+    {%- endif %}
 
   segmentation:
     image: uncharted/lara-segmentation:{{ tag }}
@@ -81,6 +99,15 @@ services:
     networks:
       - lara
     restart:  on-failure
+    {% if gpu -%}
+    deploy:
+      resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: 1
+                capabilities: [gpu]
+    {%- endif %}
 
   metadata:
     image: uncharted/lara-metadata-extract:{{ tag }}
@@ -99,6 +126,15 @@ services:
     networks:
       - lara
     restart:  on-failure
+    {% if gpu -%}
+    deploy:
+      resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: 1
+                capabilities: [gpu]
+    {%- endif %}
 
 networks:
   lara:
