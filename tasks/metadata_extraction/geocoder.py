@@ -74,10 +74,17 @@ class NominatimGeocoder(GeocodingService):
         cache = {}
 
         # assume the cache is just a json file
-        if os.path.isfile(cache_location):
-            with open(cache_location, "rb") as f:
-                cache = json.load(f)
-        return cache
+        try:
+            if os.path.isfile(cache_location):
+                with open(cache_location, "rb") as f:
+                    cache = json.load(f)
+            return cache
+        except Exception as e:
+            logger.error(
+                f"EXCEPTION loading geocoder cache at {cache_location}; reverting cache to empty dict"
+            )
+            logger.error(e)
+            return {}
 
     def _cache_doc(self, key: str, doc: Any):
         self._cache[key] = doc
