@@ -68,8 +68,13 @@ class GeoProjection:
         # a sparse number of keypoints)
         lon_results = self._map_coordinates(lon_coords)
         lat_results = self._map_coordinates(lat_coords)
-        lon_results = self.finalize_keypoints(lon_results, im_size[0], im_size[1])
-        lat_results = self.finalize_keypoints(lat_results, im_size[1], im_size[0])
+
+        # get number of corners (only need to iterate over lats or lons, since a corner includes a lat/lon pair)
+        num_corners = sum([1 if x._is_corner else 0 for x in lon_coords])
+        if num_corners < 3:
+            # only do the 'finalize_keypoints' if a few corners found
+            lon_results = self.finalize_keypoints(lon_results, im_size[0], im_size[1])
+            lat_results = self.finalize_keypoints(lat_results, im_size[1], im_size[0])
 
         lon_xy = []
         lon_pts = []
@@ -126,7 +131,7 @@ class GeoProjection:
 
         if num_deg_vals < 2:
             return deg_results
-        if num_deg_vals == 2:
+        if num_deg_vals == 2 and len(deg_results) < 3:
             # lon = (deg, x) y
             # lat = (deg, y) x
             # only 2 unique keypoints; not enough to reliably handle rotation in geo-projection,

@@ -14,7 +14,6 @@ from tasks.common.pipeline import (
     PipelineResult,
 )
 from tasks.geo_referencing.entities import (
-    CORNER_POINTS_OUTPUT_KEY,
     GeoreferenceResult,
     GroundControlPoint as LARAGroundControlPoint,
     SOURCE_GEOCODE,
@@ -232,9 +231,6 @@ class GCPOutput(OutputCreator):
         assert pipeline_result.image is not None
         crs = pipeline_result.data["crs"]
         query_points: List[QueryPoint] = pipeline_result.data["query_pts"]
-        corner_points: List[LARAGroundControlPoint] = pipeline_result.data[
-            CORNER_POINTS_OUTPUT_KEY
-        ]
 
         res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
 
@@ -247,30 +243,18 @@ class GCPOutput(OutputCreator):
             "levers": [],
         }
 
-        if corner_points:
-            for cp in corner_points:
-                o = {
-                    "crs": crs,
-                    "gcp_id": cp.id,
-                    "rowb": cp.pixel_y,
-                    "coll": cp.pixel_x,
-                    "x": cp.longitude,
-                    "y": cp.latitude,
-                }
-                res.data["gcps"].append(o)
-        else:
-            for qp in query_points:
-                o = {
-                    "crs": crs,
-                    "gcp_id": uuid.uuid4(),
-                    "rowb": qp.xy[1],
-                    "coll": qp.xy[0],
-                    "x": qp.lonlat[0],
-                    "y": qp.lonlat[1],
-                }
-                if qp.properties and len(qp.properties) > 0:
-                    o["properties"] = qp.properties
-                res.data["gcps"].append(o)
+        for qp in query_points:
+            o = {
+                "crs": crs,
+                "gcp_id": uuid.uuid4(),
+                "rowb": qp.xy[1],
+                "coll": qp.xy[0],
+                "x": qp.lonlat[0],
+                "y": qp.lonlat[1],
+            }
+            if qp.properties and len(qp.properties) > 0:
+                o["properties"] = qp.properties
+            res.data["gcps"].append(o)
 
         # extract the levers available via params
         for p in pipeline_result.params:
@@ -286,9 +270,6 @@ class LARAModelOutput(OutputCreator):
         # capture query points as output
         query_points = pipeline_result.data["query_pts"]
         crs = pipeline_result.data["crs"]
-        corner_points: List[LARAGroundControlPoint] = pipeline_result.data[
-            CORNER_POINTS_OUTPUT_KEY
-        ]
         confidence = 0
 
         gcps: List[LARAGroundControlPoint] = []
@@ -301,28 +282,16 @@ class LARAModelOutput(OutputCreator):
             confidence=confidence,
         )
 
-        if corner_points:
-            for i, cp in enumerate(corner_points):
-                o = LARAGroundControlPoint(
-                    id=f"gpc.{i}",
-                    pixel_x=cp.pixel_x,
-                    pixel_y=cp.pixel_y,
-                    latitude=cp.latitude,
-                    longitude=cp.longitude,
-                    confidence=cp.confidence,
-                )
-                gcps.append(o)
-        else:
-            for i, qp in enumerate(query_points):
-                o = LARAGroundControlPoint(
-                    id=f"gcp.{i}",
-                    pixel_x=qp.xy[0],
-                    pixel_y=qp.xy[1],
-                    latitude=qp.lonlat[1],
-                    longitude=qp.lonlat[0],
-                    confidence=qp.confidence,
-                )
-                gcps.append(o)
+        for i, qp in enumerate(query_points):
+            o = LARAGroundControlPoint(
+                id=f"gcp.{i}",
+                pixel_x=qp.xy[0],
+                pixel_y=qp.xy[1],
+                latitude=qp.lonlat[1],
+                longitude=qp.lonlat[0],
+                confidence=qp.confidence,
+            )
+            gcps.append(o)
 
         result.gcps = gcps
         return BaseModelOutput(

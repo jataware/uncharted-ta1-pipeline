@@ -12,7 +12,6 @@ from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
     GEOFENCE_OUTPUT_KEY,
-    CORNER_POINTS_OUTPUT_KEY,
 )
 from tasks.geo_referencing.geo_projection import GeoProjection
 from tasks.geo_referencing.util import get_input_geofence
@@ -100,12 +99,6 @@ class GeoReference(Task):
             TaskResult: The result of the georeferencing task.
         """
         logger.info(f"running georeferencing task for image {input.raster_id}")
-
-        # check if the task should run label or corner point georeferencing
-        if input.get_data(CORNER_POINTS_OUTPUT_KEY):
-            logger.info(f"running corner point georeferencing")
-            return self._run_corner_georef(input)
-        logger.info(f"running label georeferencing")
         return self._run_label_georef(input)
 
     def _run_label_georef(self, input: TaskInput) -> TaskResult:
@@ -279,98 +272,6 @@ class GeoReference(Task):
             self.EXTERNAL_QUERY_POINT_CRS if external_query_pts else crs
         )
         result.output["keypoints"] = keypoint_stats
-        return result
-
-    def _run_corner_georef(self, input: TaskInput) -> TaskResult:
-        """
-        Runs georeferencing on the input query points assuming using a projection
-        based on extracted corner points.
-
-        Args:
-            input (TaskInput): The input for the task - contains the corner points and
-            query points.
-
-        Returns:
-            TaskResult: The result of the task.
-        """
-
-        # get the corner points if they exist
-        result = super()._create_result(input)
-        corner_points: List[GroundControlPoint] = input.get_data(
-            CORNER_POINTS_OUTPUT_KEY
-        )
-        if not input.get_data(CORNER_POINTS_OUTPUT_KEY):
-            logger.error("corner points not provided")
-            return result
-
-        # convert the corner points into raster io GCP objects and create a transformation
-        # that we will use to transform the query points
-        gcps: List[riot.GroundControlPoint] = []
-        for cp in corner_points:
-            gcp = riot.GroundControlPoint(
-                row=cp.pixel_y, col=cp.pixel_x, x=cp.longitude, y=cp.latitude
-            )
-            gcps.append(gcp)
-        transform = riot.from_gcps(gcps)
-
-        # get the generated query points, or use those that were passed into the pipeline
-        # from an external source
-        external_points = False
-        query_pts: List[QueryPoint] = input.get_data("query_pts")
-        if not query_pts:
-            external_points = True
-            query_pts = input.get_request_info("query_pts")
-
-        # transform the query pixel points into geo locations and write the result into
-        # the query points
-        for qp in query_pts:
-            lonlat: Tuple[float, float] = riot.xy(transform, qp.xy[1], qp.xy[0])
-            qp.lonlat = lonlat
-
-        # correct the hemisphere of the resulting query points
-        lon_multiplier, lat_multiplier = self._determine_hemispheres(input, query_pts)
-        logger.info(
-            f"derived hemispheres for georeferencing: {lon_multiplier},{lat_multiplier}"
-        )
-        proj_query_points = self._update_hemispheres(
-            query_pts, lon_multiplier, lat_multiplier
-        )
-
-        # correct the hemisphere of the corner points since it hasnt' been done before now
-        corner_points = self._update_hemispheres_corners(
-            corner_points, lon_multiplier, lat_multiplier
-        )
-
-        # get the source CRS for corner points
-        crs = self._determine_crs(input)
-        logger.info(f"extracted crs: {crs}")
-
-        # perform a datum shift on the query points if the we're using externally supplied
-        # query points (eval scenario where we are passed query points from a file)
-        if crs != self.EXTERNAL_QUERY_POINT_CRS and external_points:
-            logger.info(
-                f"performing datum shift from {crs} to {self.EXTERNAL_QUERY_POINT_CRS} on query points"
-            )
-            proj = Transformer.from_crs(
-                crs, self.EXTERNAL_QUERY_POINT_CRS, always_xy=True
-            )
-            for pt in proj_query_points:
-                x_proj, y_proj = proj.transform(*pt.lonlat)
-                pt.lonlat = (x_proj, y_proj)
-
-        # calculate the RMSE and scale error for the query points
-        scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
-        if not scale_value:
-            scale_value = 0
-        rmse, scale_error = self._score_query_points(query_pts, scale_value=scale_value)
-        logger.info(f"rmse: {rmse} scale error: {scale_error}")
-
-        result = super()._create_result(input)
-        result.output["query_pts"] = proj_query_points
-        result.output["rmse"] = rmse
-        result.output["error_scale"] = scale_error
-        result.output["crs"] = self.EXTERNAL_QUERY_POINT_CRS if external_points else crs
-        result.output[CORNER_POINTS_OUTPUT_KEY] = corner_points
         return result
 
     def _count_keypoints(
