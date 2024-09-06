@@ -15,7 +15,11 @@ services:
 
   cdr:
     image: uncharted/lara-cdr:{{ tag }}
-    command: ["--mode", "host", "--workdir", "/workdir", "--imagedir", "/imagedir", "--host", "rabbitmq"]
+    command: [
+      "--mode", "host",
+      "--workdir", "/workdir",
+      "--imagedir", "/imagedir",
+      "--host", "rabbitmq"]
     ports:
       - 5000:5000
     environment:
@@ -33,7 +37,12 @@ services:
 
   georef:
     image: uncharted/lara-georef:{{ tag }}
-    command: ["--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights", "--result_queue", "lara_result_queue"]
+    command: [
+      "--workdir", "/workdir",
+      "--imagedir", "/imagedir",
+      "--rabbit_host", "rabbitmq",
+      "--model", "pipelines/segmentation_weights",
+      "--result_queue", "lara_result_queue"]
     environment:
       - OPENAI_API_KEY={{ openai_api_key }}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
@@ -51,7 +60,12 @@ services:
   points:
     image: uncharted/lara-point-extract:{{ tag }}
     command: [
-      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq","--model_point_extractor", "pipelines/point_extraction_weights/points.pt", "--model_segmenter", "pipelines/segmentation_weights", "--result_queue", "lara_result_queue"]
+      "--workdir", "/workdir",
+      "--imagedir", "/imagedir",
+      "--rabbit_host", "rabbitmq",
+      "--model_point_extractor", "pipelines/point_extraction_weights/points.pt",
+      "--model_segmenter", "pipelines/segmentation_weights",
+      "--result_queue", "lara_result_queue"]
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
@@ -64,11 +78,24 @@ services:
     networks:
       - lara
     restart:  on-failure
+    {% if gpu -%}
+    deploy:
+      resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: all
+                capabilities: [gpu]
+    {%- endif %}
 
   segmentation:
     image: uncharted/lara-segmentation:{{ tag }}
     command: [
-      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights", "--result_queue", "lara_result_queue"]
+      "--workdir", "/workdir",
+      "--imagedir", "/imagedir",
+      "--rabbit_host", "rabbitmq",
+      "--model", "pipelines/segmentation_weights",
+      "--result_queue", "lara_result_queue"]
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json
     volumes:
@@ -85,7 +112,11 @@ services:
   metadata:
     image: uncharted/lara-metadata-extract:{{ tag }}
     command: [
-      "--workdir", "/workdir", "--imagedir", "/imagedir", "--rabbit_host", "rabbitmq", "--model", "pipelines/segmentation_weights", "--result_queue", "lara_result_queue"]
+      "--workdir", "/workdir",
+      "--imagedir", "/imagedir",
+      "--rabbit_host", "rabbitmq",
+      "--model", "pipelines/segmentation_weights",
+      "--result_queue", "lara_result_queue"]
     environment:
       - OPENAI_API_KEY={{ openai_api_key }}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials.json

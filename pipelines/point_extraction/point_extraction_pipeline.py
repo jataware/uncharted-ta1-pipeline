@@ -61,6 +61,7 @@ class PointExtractionPipeline(Pipeline):
         include_cdr_output=True,
         include_bitmasks_output=False,
         gpu=True,
+        batch_size=20,
     ):
         # extract text from image, segmentation to only keep the map area,
         # tile, extract points, untile, predict direction
@@ -69,7 +70,8 @@ class PointExtractionPipeline(Pipeline):
             "point_detection",
             model_path,
             str(Path(work_dir).joinpath("points")),
-            batch_size=20,
+            batch_size=batch_size,
+            device="auto" if gpu else "cpu",
         )
 
         tasks = []
