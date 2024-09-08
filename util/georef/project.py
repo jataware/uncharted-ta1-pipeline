@@ -8,6 +8,24 @@ import rasterio.transform as riot
 from schema.cdr_schemas.georeference import GroundControlPoint
 import json
 import argparse
+from tasks.geo_referencing.entities import GroundControlPoint as LARAGroundControlPoint
+
+
+def project_georeference_output(
+    source_image_path: str,
+    target_image_path: str,
+    target_crs: str,
+    gcps: List[GroundControlPoint],
+):
+    # open the image
+    img = Image.open(source_image_path)
+    _, height = img.size
+
+    # create the transform
+    geo_transform = _cps_to_transform(gcps, height=height, to_crs=target_crs)
+
+    # use the transform to project the image
+    _project_image(source_image_path, target_image_path, geo_transform, target_crs)
 
 
 def project_georeference(
@@ -71,7 +89,7 @@ def _project_image(
 
 
 def _cps_to_transform(
-    gcps: List[GroundControlPoint], height: int, to_crs: str
+    gcps: List[LARAGroundControlPoint], height: int, to_crs: str
 ) -> Affine:
     cps = [
         {
@@ -94,7 +112,7 @@ def _cps_to_transform(
     return riot.from_gcps(cps_p)
 
 
-def _load_gcps(gcps_path: str) -> List[GroundControlPoint]:
+def _load_gcps(gcps_path: str) -> List[LARAGroundControlPoint]:
     with open(gcps_path, "r") as f:
         gcps = json.load(f)
         gcps_list = gcps["gcps"]

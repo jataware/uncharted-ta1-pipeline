@@ -110,7 +110,7 @@ def get_points(
     coordinates: Dict[Tuple[float, float], Coordinate], sources: List[str] = []
 ) -> Dict[Tuple[float, float], Coordinate]:
 
-    if len(coordinates) == 0:
+    if coordinates is None or len(coordinates) == 0:
         return {}
 
     coords = list(

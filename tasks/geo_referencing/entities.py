@@ -1,10 +1,14 @@
 from tasks.text_extraction.entities import Point
 
 from typing import List, Optional, Tuple
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
-
+# keys for the pipeline result dictionary
 GEOFENCE_OUTPUT_KEY = "geofence_output"
+CORNER_POINTS_OUTPUT_KEY = "corner_points"
+CRS_OUTPUT_KEY = "crs"
+QUERY_POINTS_OUTPUT_KEY = "query_pts"
+
 SOURCE_LAT_LON = "lat-lon parser"
 SOURCE_STATE_PLANE = "state plane parser"
 SOURCE_UTM = "utm parser"
