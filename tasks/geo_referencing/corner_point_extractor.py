@@ -140,16 +140,17 @@ class CornerPointExtractor(Task):
 
         logger.info(f"Number of corner points detected: {num_corners}")
         # finished corner-point detection,
-        # append any remaining unmodified lat and lon pts to the output dicts
-        for i_lon, (lon_key, lon_coord) in enumerate(lon_pts.items()):
+        # if < 4 corners, then append any remaining unmodified lat and lon pts to the output dicts
+        if num_corners < 4:
+            for i_lon, (lon_key, lon_coord) in enumerate(lon_pts.items()):
 
-            if i_lon not in lon_pts_modified and lon_key not in lon_pts_out:
-                lon_pts_out[lon_key] = lon_coord
+                if i_lon not in lon_pts_modified and lon_key not in lon_pts_out:
+                    lon_pts_out[lon_key] = lon_coord
 
-        for i_lat, (lat_key, lat_coord) in enumerate(lat_pts.items()):
+            for i_lat, (lat_key, lat_coord) in enumerate(lat_pts.items()):
 
-            if i_lat not in lat_pts_modified and lat_key not in lat_pts_out:
-                lat_pts_out[lat_key] = lat_coord
+                if i_lat not in lat_pts_modified and lat_key not in lat_pts_out:
+                    lat_pts_out[lat_key] = lat_coord
 
         # save lons and lats task results
         result = self._create_result(input)
