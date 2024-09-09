@@ -60,7 +60,7 @@ class GeoProjection:
         im_size: Tuple[int, int],
     ):
         # Use polynomial regression to
-        # estimate x-pxl -> longitude and y-pxl -> latitude mapping, independantly
+        # estimate x-pxl -> longitude and y-pxl -> latitude mapping, independently
         # BUT each mapping may depend on both x,y values for a given lon or lat value, respectively
         # (due to possible map rotation, or geo-projection warping, etc.)
         #

@@ -1,6 +1,5 @@
 import logging
 import math
-import pprint
 from unittest.mock import DEFAULT
 
 from geopy.distance import geodesic
@@ -198,7 +197,7 @@ class GeoReference(Task):
                         f"fallback {a.geo_coord}",
                         a.geo_coord,
                         "anchor",
-                        True,
+                        False,
                         pixel_alignment=(
                             a.pixel_coord,
                             (roi_xy_minmax[1][0] + roi_xy_minmax[1][1]) / 2,
