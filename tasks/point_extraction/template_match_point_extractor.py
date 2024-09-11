@@ -99,9 +99,6 @@ class TemplateMatchPointExtractor(Task):
                 path="", raster_id=task_input.raster_id, labels=[]
             )
 
-        # TEMP also append legend items to point extraction output (for easier conversion to CDR)
-        map_point_labels.legend_items = legend_pt_items.items
-
         # --- check which legend points still need to be processed, if any?
         pt_features = self._which_points_need_processing(
             map_point_labels.labels, legend_pt_items.items, min_predictions=MIN_MATCHES  # type: ignore
