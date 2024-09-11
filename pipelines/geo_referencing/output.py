@@ -1,21 +1,12 @@
-import io
 import logging
-from cv2 import log
 import jsons
 import os
 import uuid
-from rasterio.transform import Affine
-from rasterio.transform import Affine
-from rasterio.warp import Resampling, calculate_default_transform, reproject
-import rasterio as rio
-import rasterio.transform as riot
-import rasterio.io as rioi
-from pyproj import Transformer
-from PIL import Image
-from PIL.Image import Image as PILImage
+from typing import Any, Dict, List
+
 from tasks.common.pipeline import (
     BaseModelOutput,
-    ImageOutput,
+    BytesOutput,
     ObjectOutput,
     Output,
     TabularOutput,
@@ -24,7 +15,6 @@ from tasks.common.pipeline import (
 )
 from tasks.geo_referencing.georeference import QueryPoint
 from tasks.geo_referencing.entities import (
-    CORNER_POINTS_OUTPUT_KEY,
     CRS_OUTPUT_KEY,
     QUERY_POINTS_OUTPUT_KEY,
     GeoreferenceResult,
@@ -35,7 +25,7 @@ from tasks.geo_referencing.entities import (
     SOURCE_UTM,
     SOURCE_INFERENCE,
 )
-from typing import Any, Dict, List
+from tasks.geo_referencing.util import cps_to_transform, project_image
 
 logger = logging.getLogger(__name__)
 
@@ -376,102 +366,32 @@ class ProjectedMapOutput(OutputCreator):
 
         # get the ground control points and source CRS
         crs = pipeline_result.data[CRS_OUTPUT_KEY]
-        query_points: List[LARAGroundControlPoint] = pipeline_result.data.get(
+        query_points: List[QueryPoint] = pipeline_result.data.get(
             QUERY_POINTS_OUTPUT_KEY, []
         )
+        # convert the query points to gcps
+        gcps = [
+            LARAGroundControlPoint(
+                id=f"gcp.{i}",
+                pixel_x=qp.xy[0],
+                pixel_y=qp.xy[1],
+                latitude=qp.lonlat[1],
+                longitude=qp.lonlat[0],
+                confidence=qp.confidence,
+            )
+            for i, qp in enumerate(query_points)
+        ]
 
-        transform = self._cps_to_transform(query_points, crs, "EPSG:4326")
+        # create the affine transformation matrix from the gcps
+        transform = cps_to_transform(gcps, crs, "EPSG:4326")
 
         if pipeline_result.image is None:
             raise ValueError("No image found in pipeline result - cannot project")
 
-        projected_map = self._project_image(
-            pipeline_result.image, transform, "EPSG:4326"
-        )
+        # project the image using the tansformation matrix - results are returned
+        # as a geotiff in memory (pillow doesn't support geotiffs)
+        projected_map = project_image(pipeline_result.image, transform, "EPSG:4326")
 
-        return ImageOutput(
+        return BytesOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, projected_map
         )
-
-    def _cps_to_transform(
-        self,
-        gcps: List[LARAGroundControlPoint],
-        source_crs: str,
-        dest_crs: str,
-    ) -> Affine:
-        """
-        Transforms ground control points from one coordinate reference system (CRS) to another.
-        Args:
-            gcps (List[LARAGroundControlPoint]): List of ground control points.
-            source_crs (str): Source CRS of the ground control points.
-            dest_crs (str): Destination CRS to transform the ground control points to.
-        Returns:
-            Affine: Affine transformation matrix.
-        """
-        proj = Transformer.from_crs(source_crs, dest_crs, always_xy=True)
-        proj_gcps = [
-            riot.GroundControlPoint(
-                row=gcp.pixel_x,
-                col=gcp.pixel_y,
-                x=proj.transform(xx=gcp.longitude, yy=gcp.latitude)[0],
-                y=proj.transform(xx=gcp.longitude, yy=gcp.latitude)[1],
-            )
-            for gcp in gcps
-        ]
-        return riot.from_gcps(proj_gcps)
-
-    def _project_image(
-        self,
-        image: PILImage,
-        geo_transform: Affine,
-        dest_crs: str,
-    ) -> PILImage:
-
-        # convert the PILImage into a raw TIFF image in memory
-        img_byte_arr = io.BytesIO()
-        image.save(img_byte_arr, format="tiff")
-        img_byte_arr = img_byte_arr.getvalue()
-
-        # load the tiff image into a rasterio dataset
-        with rioi.MemoryFile(img_byte_arr) as input_memfile:
-            with input_memfile.open() as input_dataset:
-                # create the profile for the projected image
-                bounds = riot.array_bounds(
-                    input_dataset.height, input_dataset.width, geo_transform
-                )
-                projected_transform, projected_width, projected_height = (
-                    calculate_default_transform(
-                        dest_crs,
-                        dest_crs,
-                        input_dataset.width,
-                        input_dataset.height,
-                        *tuple(bounds),
-                    )
-                )
-                projected_kwargs = input_dataset.profile.copy()
-                projected_kwargs.update(
-                    {
-                        "driver": "COG",
-                        "crs": {"init": dest_crs},
-                        "transform": projected_transform,
-                        "width": projected_width,
-                        "height": projected_height,
-                    }
-                )
-                # reproject the raw data into a new in-memory rasterio dataset
-                input_data = input_dataset.read()
-                with rioi.MemoryFile() as out_memfile:
-                    with out_memfile.open(**projected_kwargs) as projected_dataset:
-                        for i in range(input_dataset.count):
-                            _ = reproject(
-                                source=input_data[i],
-                                destination=rio.band(projected_dataset, i + 1),
-                                src_transform=geo_transform,
-                                src_crs=dest_crs,
-                                dst_transform=projected_transform,
-                                dst_crs=dest_crs,
-                                resampling=Resampling.bilinear,
-                                num_threads=8,
-                                warp_mem_limit=256,
-                            )
-                    return Image.open(io.BytesIO(out_memfile.read()))

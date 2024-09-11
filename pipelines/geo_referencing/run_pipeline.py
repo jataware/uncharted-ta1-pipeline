@@ -5,11 +5,13 @@ import os
 from geopy.distance import distance as geo_distance
 from PIL.Image import Image as PILIMAGE
 from PIL import Image
+from numpy import isin
 
 from pipelines.geo_referencing.factory import create_geo_referencing_pipelines
 from pipelines.geo_referencing.output import CSVWriter, JSONWriter
-from tasks.common.io import ImageFileInputIterator
-from tasks.common.pipeline import PipelineInput
+from tasks.common.io import BytesIOFileWriter, ImageFileInputIterator
+from tasks.common.pipeline import BytesOutput, PipelineInput
+from tasks.geo_referencing.entities import PROJECTED_MAP_OUTPUT_KEY
 from tasks.geo_referencing.georeference import QueryPoint
 from util.coordinate import absolute_minmax
 from util.json import read_json_file
@@ -45,7 +47,7 @@ def main():
     parser.add_argument("--clue_dir", type=str, default="")
     parser.add_argument("--query_dir", type=str, default="")
     parser.add_argument("--points_dir", type=str, default="")
-    parser.add_argument("--extract_metadata", type=bool, default=False)
+    parser.add_argument("--extract_metadata", action="store_true")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument(
         "--state_plane_lookup_filename",
@@ -73,6 +75,7 @@ def main():
         default=0.5,
     )
     parser.add_argument("--no_gpu", action="store_true")
+    parser.add_argument("--project", action="store_true")
     p = parser.parse_args()
 
     # setup an input stream
@@ -107,7 +110,6 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
 
     # get the pipelines
     pipelines = create_geo_referencing_pipelines(
-        parsed.output,
         parsed.workdir,
         parsed.model,
         parsed.state_plane_lookup_filename,
@@ -130,6 +132,7 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
     results_integration = {}
     writer_csv = CSVWriter()
     writer_json = JSONWriter()
+    writer_bytes = BytesIOFileWriter()
     for p in pipelines:
         results[p.id] = []
         results_summary[p.id] = []
@@ -154,6 +157,20 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
             results_levers[pipeline.id].append(output["levers"])
             results_gcps[pipeline.id].append(output["gcps"])
             logger.info(f"done pipeline {pipeline.id}\n\n")
+
+            # immediately write projected map to file - these are large so we don't want to accumulate them
+            # in memory like the other results
+            if parsed.project and PROJECTED_MAP_OUTPUT_KEY in output:
+                map_output = output[PROJECTED_MAP_OUTPUT_KEY]
+                if isinstance(map_output, BytesOutput):
+                    output_path = os.path.join(
+                        parsed.output, f"{raster_id}_projected_map.tif"
+                    )
+                    logger.info(f"writing projected map to {output_path}")
+                    writer_bytes.process(
+                        output_path,
+                        map_output.data,
+                    )
 
         for p in pipelines:
             writer_csv.output(

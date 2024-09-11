@@ -7,6 +7,7 @@ from pipelines.geo_referencing.output import (
     OutputCreator,
     GCPOutput,
     GeoReferencingOutput,
+    ProjectedMapOutput,
     UserLeverOutput,
     SummaryOutput,
 )
@@ -16,6 +17,7 @@ from tasks.geo_referencing.coordinates_extractor import (
     GeoCoordinatesExtractor,
 )
 from tasks.geo_referencing.corner_point_extractor import CornerPointExtractor
+from tasks.geo_referencing.entities import PROJECTED_MAP_OUTPUT_KEY
 from tasks.geo_referencing.state_plane_extractor import StatePlaneExtractor
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
 from tasks.geo_referencing.filter import (
@@ -63,7 +65,6 @@ def run_step(input: TaskInput) -> bool:
 
 
 def create_geo_referencing_pipelines(
-    output_dir: str,
     working_dir: str,
     segmentation_model_path: str,
     state_plane_lookup_filename: str,
@@ -216,6 +217,7 @@ def create_geo_referencing_pipelines(
                 SummaryOutput("summary"),
                 UserLeverOutput("levers"),
                 GCPOutput("gcps"),
+                ProjectedMapOutput(PROJECTED_MAP_OUTPUT_KEY),
             ],
             tasks,
         )

@@ -1,3 +1,4 @@
+import io
 from .task import Task, TaskInput, TaskResult
 from typing import Optional, List, Dict, Any, Sequence
 from PIL.Image import Image as PILImage
@@ -91,6 +92,14 @@ class ListOutput(Output):
     def __init__(self, pipeline_id: str, pipeline_name: str):
         super().__init__(pipeline_id, pipeline_name)
         self.data = []
+
+
+class BytesOutput(Output):
+    data: io.BytesIO
+
+    def __init__(self, pipeline_id: str, pipeline_name: str, data: io.BytesIO):
+        super().__init__(pipeline_id, pipeline_name)
+        self.data = data
 
 
 class BaseModelOutput(Output):

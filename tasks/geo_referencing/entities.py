@@ -8,6 +8,7 @@ GEOFENCE_OUTPUT_KEY = "geofence_output"
 CORNER_POINTS_OUTPUT_KEY = "corner_points"
 CRS_OUTPUT_KEY = "crs"
 QUERY_POINTS_OUTPUT_KEY = "query_pts"
+PROJECTED_MAP_OUTPUT_KEY = "projected_map"
 
 SOURCE_LAT_LON = "lat-lon parser"
 SOURCE_STATE_PLANE = "state plane parser"

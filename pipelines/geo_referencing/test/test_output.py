@@ -1,6 +1,7 @@
+import io
 import pytest
 from PIL import Image
-from tasks.common.pipeline import ImageOutput, PipelineResult
+from tasks.common.pipeline import BytesOutput, ImageOutput, PipelineResult
 from tasks.geo_referencing.entities import (
     CORNER_POINTS_OUTPUT_KEY,
     CRS_OUTPUT_KEY,
@@ -71,28 +72,7 @@ def test_projected_map_output_creation(pipeline_result: PipelineResult):
     # Test if the ProjectedMapOutput is created successfully
     output = ProjectedMapOutput("output_id")
     result = output.create_output(pipeline_result)
-    assert isinstance(result, ImageOutput)
-    result.data.save("test.tif")
+    assert isinstance(result, BytesOutput)
     assert result.pipeline_id == "pipeline_id"
     assert result.pipeline_name == "pipeline_name"
-    assert isinstance(result.data, Image.Image)
-
-
-def test_projected_map_output_transform(pipeline_result: PipelineResult):
-    # Test if the ground control points are transformed correctly
-    output = ProjectedMapOutput("output_id")
-    result = output.create_output(pipeline_result)
-    assert isinstance(result, ImageOutput)
-    assert result.data.size != (100, 100)  # Image size should change after projection
-
-
-def test_projected_map_output_projection(pipeline_result: PipelineResult):
-    # Test if the image is projected correctly
-    output = ProjectedMapOutput("output_id")
-    result = output.create_output(pipeline_result)
-    assert isinstance(result, ImageOutput)
-    assert result.data.mode == "RGB"  # Image mode should remain the same
-    assert result.data.size != (
-        100,
-        100,
-    )  # Image size should change after projection
+    assert isinstance(result.data, io.BytesIO)
