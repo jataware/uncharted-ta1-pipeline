@@ -22,7 +22,7 @@ from tasks.metadata_extraction.entities import (
 )
 from tasks.text_extraction.entities import TextExtraction
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("geocoder")
 
@@ -237,17 +237,16 @@ class Geocoder(Task):
         run_bounds: bool = True,
         run_points: bool = True,
         run_centres: bool = True,
+        should_run: Optional[Callable] = None,
     ):
         super().__init__(task_id)
         self._geocoding_service = geocoding_service
         self._run_bounds = run_bounds
         self._run_points = run_points
         self._run_centres = run_centres
+        self._should_run = should_run
 
     def run(self, input: TaskInput) -> TaskResult:
-        logger.info(f"running geocoding task with id {self._task_id}")
-        to_geocode = self._get_places(input)
-
         metadata: MetadataExtraction = input.parse_data(
             METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
         )
@@ -256,6 +255,13 @@ class Geocoder(Task):
         )
         if geocoded_output is None:
             geocoded_output = DocGeocodedPlaces(map_id=input.raster_id, places=[])
+
+        if self._should_run and not self._should_run(input):
+            logging.info("Skipping geocoding task")
+            return self._create_result(input, geocoded_output)
+
+        logger.info(f"running geocoding task with id {self._task_id}")
+        to_geocode = self._get_places(input)
 
         new_places = self._geocode_list(input, to_geocode)
         logger.info(f"geocoded {len(new_places)} places")
