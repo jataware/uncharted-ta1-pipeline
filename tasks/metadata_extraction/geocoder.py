@@ -257,7 +257,7 @@ class Geocoder(Task):
             geocoded_output = DocGeocodedPlaces(map_id=input.raster_id, places=[])
 
         if self._should_run and not self._should_run(input):
-            logging.info("Skipping metadata extraction task")
+            logging.info("Skipping geocoding task")
             return self._create_result(input, geocoded_output)
 
         logger.info(f"running geocoding task with id {self._task_id}")
