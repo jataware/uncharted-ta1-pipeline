@@ -40,7 +40,7 @@ class LegendItemResponse(BaseModel):
     model_id: str = Field(
         default="", description="Model id for the model used to generate this item"
     )
-    validated: bool = Field(default=False, description="Validated by human")
+    validated: Optional[bool] = Field(default=None, description="Validated by human")
     confidence: Optional[float] = None
     map_unit_age_text: str = Field(default="", description="Age of map unit")
     map_unit_lithology: str = Field(default="", description="Map unit lithology")

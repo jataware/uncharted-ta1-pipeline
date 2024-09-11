@@ -37,7 +37,7 @@ class PolygonProperty(BaseModel):
             aiding in tracking provenance.
         """,
     )
-    validated: bool = Field(default=False, description="Validated by human")
+    validated: Optional[bool] = Field(default=None, description="Validated by human")
 
     confidence: Optional[float | int] = Field(
         default=None, description="The prediction confidence of the model"
@@ -133,7 +133,7 @@ class PolygonLegendAndFeaturesResult(BaseModel):
             aiding in tracking provenance.
         """,
     )
-    validated: bool = Field(default=False, description="Validated by human")
+    validated: Optional[bool] = Field(default=None, description="Validated by human")
 
     # Segmentation Fields
     crs: str = Field(

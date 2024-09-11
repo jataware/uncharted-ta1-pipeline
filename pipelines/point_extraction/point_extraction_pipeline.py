@@ -13,6 +13,7 @@ from tasks.point_extraction.point_extractor_utils import convert_preds_to_bitmas
 from tasks.point_extraction.template_match_point_extractor import (
     TemplateMatchPointExtractor,
 )
+from tasks.point_extraction.finalize_point_extractions import FinalizePointExtractions
 from tasks.point_extraction.tiling import Tiler, Untiler
 from tasks.point_extraction.entities import (
     PointLabels,
@@ -112,6 +113,7 @@ class PointExtractionPipeline(Pipeline):
                     "template_match_point_extraction",
                     str(Path(work_dir).joinpath("template_match_points")),
                 ),
+                FinalizePointExtractions("finalize_points"),
             ]
         )
 
@@ -178,11 +180,6 @@ class CDROutput(OutputCreator):
         map_point_labels = PointLabels.model_validate(
             pipeline_result.data[MAP_PT_LABELS_OUTPUT_KEY]
         )
-        # legend_pt_items = LegendPointItems(items=[])
-        # if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
-        #     legend_pt_items = LegendPointItems.model_validate(
-        #         pipeline_result.data[LEGEND_ITEMS_OUTPUT_KEY]
-        #     )
 
         mapper = PointsMapper(MODEL_NAME, MODEL_VERSION)
 

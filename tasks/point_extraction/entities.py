@@ -197,7 +197,7 @@ class LegendPointItem(BaseModel):
         default="",
         description="CDR legend id; can be used to reference CDR LegendItemResponse objects",
     )
-    validated: bool = Field(default=False, description="Validated by human")
+    validated: Optional[bool] = Field(default=None, description="Validated by human")
     confidence: Optional[float] = Field(
         default=None,
         description="Confidence for this legend item (whether extracted by a model or human annotated)",

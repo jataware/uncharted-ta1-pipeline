@@ -288,7 +288,6 @@ class LegendPostprocessor(Task):
                                 legend_bbox=bbox,
                                 legend_contour=xy_pts,
                                 confidence=confidence,
-                                validated=False,
                             )
                         )
             else:
@@ -302,7 +301,6 @@ class LegendPostprocessor(Task):
                         legend_bbox=bbox,
                         legend_contour=xy_pts,
                         confidence=confidence,
-                        validated=False,
                     )
                 )
 
