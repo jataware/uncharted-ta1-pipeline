@@ -107,7 +107,6 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
 
     # get the pipelines
     pipelines = create_geo_referencing_pipelines(
-        parsed.extract_metadata,
         parsed.output,
         parsed.workdir,
         parsed.model,
