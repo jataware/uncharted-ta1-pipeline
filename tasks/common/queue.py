@@ -105,6 +105,10 @@ class RequestQueue:
         workdir: Path,
         imagedir: Path,
         host="localhost",
+        port=5672,
+        vhost="/",
+        uid="",
+        pwd="",
         heartbeat=900,
         blocked_connection_timeout=600,
     ) -> None:
@@ -113,6 +117,10 @@ class RequestQueue:
         """
         self._pipeline = pipeline
         self._host = host
+        self._port = port
+        self._vhost = vhost
+        self._uid = uid
+        self._pwd = pwd
         self._request_queue = request_queue
         self._result_queue = result_queue
         self._output_key = output_key
@@ -166,13 +174,26 @@ class RequestQueue:
         Setup the connection, channel and queue to service incoming requests.
         """
         logger.info("connecting to request queue")
-        self._request_connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                self._host,
-                heartbeat=self._heartbeat,
-                blocked_connection_timeout=self._blocked_connection_timeout,
+        if self._uid != "":
+            credentials = pika.PlainCredentials(self._uid, self._pwd)
+            self._request_connection = pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    self._host,
+                    self._port,
+                    self._vhost,
+                    credentials,
+                    heartbeat=self._heartbeat,
+                    blocked_connection_timeout=self._blocked_connection_timeout,
+                )
             )
-        )
+        else :
+            self._request_connection = pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    self._host,
+                    heartbeat=self._heartbeat,
+                    blocked_connection_timeout=self._blocked_connection_timeout,
+                )
+            )
         self._input_channel = self._request_connection.channel()
         # use quorum queues with a delivery limit to prevent infinite requeueing of a bad map
         self._input_channel.queue_declare(
@@ -187,13 +208,26 @@ class RequestQueue:
         Setup the connection, channel and queue to service outgoing results.
         """
         logger.info("connecting to result queue")
-        self._result_connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                self._host,
-                heartbeat=self._heartbeat,
-                blocked_connection_timeout=self._blocked_connection_timeout,
+        if self._uid != "":
+            credentials = pika.PlainCredentials(self._uid, self._pwd)
+            self._request_connection = pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    self._host,
+                    self._port,
+                    self._vhost,
+                    credentials,
+                    heartbeat=self._heartbeat,
+                    blocked_connection_timeout=self._blocked_connection_timeout,
+                )
             )
-        )
+        else :
+            self._result_connection = pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    self._host,
+                    heartbeat=self._heartbeat,
+                    blocked_connection_timeout=self._blocked_connection_timeout,
+                )
+            )
         self._output_channel = self._result_connection.channel()
         self._output_channel.queue_declare(
             queue=self._result_queue,
