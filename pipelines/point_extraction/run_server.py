@@ -92,6 +92,10 @@ if __name__ == "__main__":
     parser.add_argument("--fetch_legend_items", action="store_true")
     parser.add_argument("--rest", action="store_true")
     parser.add_argument("--rabbit_host", type=str, default="localhost")
+    parser.add_argument("--rabbit_port", type=int, default=5672)
+    parser.add_argument("--rabbit_vhost", type=str, default="/")
+    parser.add_argument("--rabbit_uid", type=str, default="")
+    parser.add_argument("--rabbit_pwd", type=str, default="")
     parser.add_argument("--request_queue", type=str, default=POINTS_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=POINTS_RESULT_QUEUE)
     parser.add_argument("--no_gpu", action="store_true")
@@ -127,6 +131,10 @@ if __name__ == "__main__":
             p.workdir,
             p.imagedir,
             host=p.rabbit_host,
+            port=p.rabbit_port,
+            vhost=p.rabbit_vhost,
+            uid=p.rabbit_uid,
+            pwd=p.rabbit_pwd,
         )
         queue.start_request_queue()
         queue.start_result_queue()
