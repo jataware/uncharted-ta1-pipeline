@@ -208,9 +208,19 @@ class RequestQueue:
         Setup the connection, channel and queue to service outgoing results.
         """
         logger.info("connecting to result queue")
+        self._request_connection = getPikaConnection()
+
+        self._output_channel = self._result_connection.channel()
+        self._output_channel.queue_declare(
+            queue=self._result_queue,
+            durable=True,
+            arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
+        )
+
+    def getPikaConnection():
         if self._uid != "":
             credentials = pika.PlainCredentials(self._uid, self._pwd)
-            self._request_connection = pika.BlockingConnection(
+            return pika.BlockingConnection(
                 pika.ConnectionParameters(
                     self._host,
                     self._port,
@@ -220,19 +230,13 @@ class RequestQueue:
                     blocked_connection_timeout=self._blocked_connection_timeout,
                 )
             )
-        else:
-            self._result_connection = pika.BlockingConnection(
-                pika.ConnectionParameters(
-                    self._host,
-                    heartbeat=self._heartbeat,
-                    blocked_connection_timeout=self._blocked_connection_timeout,
-                )
+
+        return pika.BlockingConnection(
+            pika.ConnectionParameters(
+                self._host,
+                heartbeat=self._heartbeat,
+                blocked_connection_timeout=self._blocked_connection_timeout,
             )
-        self._output_channel = self._result_connection.channel()
-        self._output_channel.queue_declare(
-            queue=self._result_queue,
-            durable=True,
-            arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
         )
 
     def start_result_queue(self):
