@@ -186,7 +186,7 @@ class RequestQueue:
                     blocked_connection_timeout=self._blocked_connection_timeout,
                 )
             )
-        else :
+        else:
             self._request_connection = pika.BlockingConnection(
                 pika.ConnectionParameters(
                     self._host,
@@ -220,7 +220,7 @@ class RequestQueue:
                     blocked_connection_timeout=self._blocked_connection_timeout,
                 )
             )
-        else :
+        else:
             self._result_connection = pika.BlockingConnection(
                 pika.ConnectionParameters(
                     self._host,
