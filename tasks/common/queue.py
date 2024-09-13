@@ -203,21 +203,7 @@ class RequestQueue:
         )
         self._input_channel.basic_qos(prefetch_count=1)
 
-    def _connect_to_result(self):
-        """
-        Setup the connection, channel and queue to service outgoing results.
-        """
-        logger.info("connecting to result queue")
-        self._request_connection = getPikaConnection()
-
-        self._output_channel = self._result_connection.channel()
-        self._output_channel.queue_declare(
-            queue=self._result_queue,
-            durable=True,
-            arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
-        )
-
-    def getPikaConnection():
+    def _getPikaConnection():
         if self._uid != "":
             credentials = pika.PlainCredentials(self._uid, self._pwd)
             return pika.BlockingConnection(
@@ -237,6 +223,20 @@ class RequestQueue:
                 heartbeat=self._heartbeat,
                 blocked_connection_timeout=self._blocked_connection_timeout,
             )
+        )
+
+    def _connect_to_result(self):
+        """
+        Setup the connection, channel and queue to service outgoing results.
+        """
+        logger.info("connecting to result queue")
+        self._request_connection = self._getPikaConnection()
+
+        self._output_channel = self._result_connection.channel()
+        self._output_channel.queue_declare(
+            queue=self._result_queue,
+            durable=True,
+            arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
         )
 
     def start_result_queue(self):
