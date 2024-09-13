@@ -203,26 +203,22 @@ class RequestQueue:
         )
         self._input_channel.basic_qos(prefetch_count=1)
 
-    def _getPikaConnection():
+    def _getConnectionParameters(self):
         if self._uid != "":
             credentials = pika.PlainCredentials(self._uid, self._pwd)
-            return pika.BlockingConnection(
-                pika.ConnectionParameters(
-                    self._host,
-                    self._port,
-                    self._vhost,
-                    credentials,
-                    heartbeat=self._heartbeat,
-                    blocked_connection_timeout=self._blocked_connection_timeout,
-                )
-            )
-
-        return pika.BlockingConnection(
-            pika.ConnectionParameters(
+            return pika.ConnectionParameters(
                 self._host,
+                self._port,
+                self._vhost,
+                credentials,
                 heartbeat=self._heartbeat,
                 blocked_connection_timeout=self._blocked_connection_timeout,
             )
+
+        return pika.ConnectionParameters(
+            self._host,
+            heartbeat=self._heartbeat,
+            blocked_connection_timeout=self._blocked_connection_timeout,
         )
 
     def _connect_to_result(self):
@@ -230,14 +226,16 @@ class RequestQueue:
         Setup the connection, channel and queue to service outgoing results.
         """
         logger.info("connecting to result queue")
-        self._request_connection = self._getPikaConnection()
+        connectionParameters = self._getConnectionParameters()
+        self._request_connection = pika.BlockingConnection(connectionParameters)
 
-        self._output_channel = self._result_connection.channel()
-        self._output_channel.queue_declare(
-            queue=self._result_queue,
-            durable=True,
-            arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
-        )
+        if self._result_connection is not None:
+            self._output_channel = self._result_connection.channel()
+            self._output_channel.queue_declare(
+                queue=self._result_queue,
+                durable=True,
+                arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
+            )
 
     def start_result_queue(self):
         """Start the result publishing thread."""
