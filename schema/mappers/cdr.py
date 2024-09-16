@@ -35,7 +35,6 @@ from tasks.metadata_extraction.entities import (
     MetadataExtraction as LARAMetadata,
 )
 from tasks.point_extraction.entities import PointLabels as LARAPoints
-from tasks.point_extraction.entities import LegendPointItems as LARALegendItems
 from tasks.point_extraction.point_extractor_utils import get_cdr_point_name
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
 

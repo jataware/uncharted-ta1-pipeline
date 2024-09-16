@@ -1,9 +1,11 @@
 import logging
+from h11 import ERROR
 import jsons
 import os
 import uuid
 from typing import Any, Dict, List
 
+from schema.mappers.cdr import GeoreferenceMapper
 from tasks.common.pipeline import (
     BaseModelOutput,
     BytesOutput,
@@ -16,7 +18,11 @@ from tasks.common.pipeline import (
 from tasks.geo_referencing.georeference import QueryPoint
 from tasks.geo_referencing.entities import (
     CRS_OUTPUT_KEY,
+    ERROR_SCALE_OUTPUT_KEY,
+    KEYPOINTS_OUTPUT_KEY,
+    LEVERS_OUTPUT_KEY,
     QUERY_POINTS_OUTPUT_KEY,
+    RMSE_OUTPUT_KEY,
     GeoreferenceResult,
     GroundControlPoint as LARAGroundControlPoint,
     SOURCE_GEOCODE,
@@ -30,7 +36,59 @@ from tasks.geo_referencing.util import cps_to_transform, project_image
 logger = logging.getLogger(__name__)
 
 
-class GeoReferencingOutput(OutputCreator):
+class CSVWriter:
+    def __init__(self):
+        pass
+
+    def output(self, output: List[TabularOutput], params: Dict[Any, Any] = {}):
+        if len(output) == 0:
+            return
+
+        try:
+            with open(params["path"], "w") as f_out:
+                # write header line
+                line_str = ",".join(output[0].fields)
+                f_out.write(line_str + "\n")
+                for r in output:
+                    for d in r.data:
+                        row = []
+                        for f in r.fields:
+                            if f in d:
+                                row.append(f"{d[f]}")
+                            else:
+                                row.append("")
+                        f_out.write(f'{",".join(row)}\n')
+
+        except Exception as e:
+            logger.error(f"Error writing CSV file: {e}", exc_info=True)
+
+
+class JSONWriter:
+    def __init__(self):
+        pass
+
+    def output(self, output: List[ObjectOutput], params: Dict[Any, Any] = {}) -> str:
+        try:
+            output_target = []
+            for o in output:
+                output_target.append(o.data)
+            json_raw = jsons.dumps(output_target, indent=4)
+
+            # Writing to output file if path specified
+            if "path" in params:
+                file_path = params["path"]
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                with open(file_path, "w") as f_out:
+                    f_out.write(json_raw)
+
+            # return the raw json
+            return json_raw
+        except Exception as e:
+            logger.error(f"Error writing JSON file {e}", exc_info=True)
+            return ""
+
+
+class ScoringOutput(OutputCreator):
     def __init__(self, id: str, extended: bool = False):
         super().__init__(id)
         self._extended = extended
@@ -62,10 +120,10 @@ class GeoReferencingOutput(OutputCreator):
                 "confidence",
             ]
 
-        if "query_pts" not in pipeline_result.data:
+        if QUERY_POINTS_OUTPUT_KEY not in pipeline_result.data:
             return res
 
-        query_points = pipeline_result.data["query_pts"]
+        query_points = pipeline_result.data[QUERY_POINTS_OUTPUT_KEY]
         for qp in query_points:
             o = {
                 "raster_id": pipeline_result.raster_id,
@@ -119,8 +177,8 @@ class SummaryOutput(OutputCreator):
 
         # reduce the keypoint counts to the correct numbers
         stats = [0] * 12
-        if "keypoints" in pipeline_result.data:
-            keypoints = pipeline_result.data["keypoints"]
+        if KEYPOINTS_OUTPUT_KEY in pipeline_result.data:
+            keypoints = pipeline_result.data[KEYPOINTS_OUTPUT_KEY]
             if "lats" in keypoints:
                 lats = keypoints["lats"]
                 stats[0] = lats[SOURCE_LAT_LON] if SOURCE_LAT_LON in lats else 0
@@ -154,9 +212,11 @@ class SummaryOutput(OutputCreator):
                 "lon - geocode": stats[9],
                 "lon - infer": stats[10],
                 "lon - anchor": stats[11],
-                "rmse": pipeline_result.data["rmse"],
-                "error_scale": pipeline_result.data["error_scale"],
-                "confidence": pipeline_result.data["query_pts"][0].confidence,
+                "rmse": pipeline_result.data[RMSE_OUTPUT_KEY],
+                "error_scale": pipeline_result.data[ERROR_SCALE_OUTPUT_KEY],
+                "confidence": pipeline_result.data[QUERY_POINTS_OUTPUT_KEY][
+                    0
+                ].confidence,
             }
         ]
         return res
@@ -170,59 +230,10 @@ class UserLeverOutput(OutputCreator):
         res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
 
         # extract the levers available via params
-        res.data = {"raster_id": pipeline_result.raster_id, "levers": []}
+        res.data = {"raster_id": pipeline_result.raster_id, LEVERS_OUTPUT_KEY: []}
         for p in pipeline_result.params:
-            res.data["levers"].append(p)
+            res.data[LEVERS_OUTPUT_KEY].append(p)
         return res
-
-
-class CSVWriter:
-    def __init__(self):
-        pass
-
-    def output(self, output: List[TabularOutput], params: Dict[Any, Any] = {}):
-        if len(output) == 0:
-            return
-
-        try:
-            with open(params["path"], "w") as f_out:
-                # write header line
-                line_str = ",".join(output[0].fields)
-                f_out.write(line_str + "\n")
-                for r in output:
-                    for d in r.data:
-                        row = []
-                        for f in r.fields:
-                            if f in d:
-                                row.append(f"{d[f]}")
-                            else:
-                                row.append("")
-                        f_out.write(f'{",".join(row)}\n')
-
-        except Exception as e:
-            print("EXCEPTION saving results to CSV")
-            print(repr(e))
-
-
-class JSONWriter:
-    def __init__(self):
-        pass
-
-    def output(self, output: List[ObjectOutput], params: Dict[Any, Any] = {}) -> str:
-        output_target = []
-        for o in output:
-            output_target.append(o.data)
-        json_raw = jsons.dumps(output_target, indent=4)
-
-        # Writing to output file if path specified
-        if "path" in params:
-            file_path = params["path"]
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, "w") as f_out:
-                f_out.write(json_raw)
-
-        # return the raw json
-        return json_raw
 
 
 class GCPOutput(OutputCreator):
@@ -231,8 +242,8 @@ class GCPOutput(OutputCreator):
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         assert pipeline_result.image is not None
-        crs = pipeline_result.data["crs"]
-        query_points: List[QueryPoint] = pipeline_result.data["query_pts"]
+        crs = pipeline_result.data[CRS_OUTPUT_KEY]
+        query_points: List[QueryPoint] = pipeline_result.data[QUERY_POINTS_OUTPUT_KEY]
 
         res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
 
@@ -242,7 +253,7 @@ class GCPOutput(OutputCreator):
             "image_height": pipeline_result.image.size[1],
             "image_width": pipeline_result.image.size[0],
             "gcps": [],
-            "levers": [],
+            LEVERS_OUTPUT_KEY: [],
         }
 
         for qp in query_points:
@@ -260,22 +271,34 @@ class GCPOutput(OutputCreator):
 
         # extract the levers available via params
         for p in pipeline_result.params:
-            res.data["levers"].append(p)
+            res.data[LEVERS_OUTPUT_KEY].append(p)
         return res
 
 
-class LARAModelOutput(OutputCreator):
+class GeoreferencingOutput(OutputCreator):
     def __init__(self, id: str):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         # capture query points as output
-        query_points = pipeline_result.data["query_pts"]
-        crs = pipeline_result.data["crs"]
+        query_points = pipeline_result.data[QUERY_POINTS_OUTPUT_KEY]
+        crs = pipeline_result.data[CRS_OUTPUT_KEY]
         confidence = 0
 
-        gcps: List[LARAGroundControlPoint] = []
+        # create ground control points from query point output data
+        gcps = [
+            LARAGroundControlPoint(
+                id=f"gcp.{i}",
+                pixel_x=qp.xy[0],
+                pixel_y=qp.xy[1],
+                latitude=qp.lonlat[1],
+                longitude=qp.lonlat[0],
+                confidence=qp.confidence,
+            )
+            for i, qp in enumerate(query_points)
+        ]
 
+        # create the final georeference result
         result = GeoreferenceResult(
             map_id=pipeline_result.raster_id,
             gcps=gcps,
@@ -284,68 +307,33 @@ class LARAModelOutput(OutputCreator):
             confidence=confidence,
         )
 
-        for i, qp in enumerate(query_points):
-            o = LARAGroundControlPoint(
-                id=f"gcp.{i}",
-                pixel_x=qp.xy[0],
-                pixel_y=qp.xy[1],
-                latitude=qp.lonlat[1],
-                longitude=qp.lonlat[0],
-                confidence=qp.confidence,
-            )
-            gcps.append(o)
-
         result.gcps = gcps
         return BaseModelOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, result
         )
 
 
-class CDROutput(OutputCreator):
+class CDROutput(GeoreferencingOutput):
     def __init__(self, id: str):
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         assert pipeline_result.image is not None
-        query_points = pipeline_result.data["query_pts"]
-        crs = pipeline_result.data["crs"]
 
-        res = ObjectOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
+        results = super().create_output(pipeline_result)
+        if not isinstance(results, BaseModelOutput) or not isinstance(
+            results.data, GeoreferenceResult
+        ):
+            logger.error("Failed to create georeferencing cdr output")
+            return results
 
-        gcps = []
-        for qp in query_points:
-            o = {
-                "gcp_id": f"{len(gcps) + 1}",
-                "map_geom": {"latitude": qp.lonlat[1], "longitude": qp.lonlat[0]},
-                "px_geom": {"columns_from_left": qp.xy[0], "rows_from_top": qp.xy[1]},
-                "confidence": qp.confidence,
-                "model": "uncharted",
-                "model_version": "0.0.1",
-                "crs": crs,
-            }
-            gcps.append(o)
-
-        res.data = {
-            "cog_id": pipeline_result.raster_id,
-            "georeference_results": [
-                {
-                    "likely_CRSs": [crs],
-                    "map_area": None,
-                    "projections": [
-                        {
-                            "crs": crs,
-                            "gcp_ids": [gcp["gcp_id"] for gcp in gcps],
-                            "file_name": f"lara-{pipeline_result.raster_id}.tif",
-                        }
-                    ],
-                }
-            ],
-            "gcps": gcps,
-            "system": "uncharted",
-            "system_version": "0.0.1",
-        }
-
-        return res
+        mapper = GeoreferenceMapper("georeferencing", "0.0.1")
+        cdr_georeferencing = mapper.map_to_cdr(results.data)
+        return BaseModelOutput(
+            pipeline_result.pipeline_id,
+            pipeline_result.pipeline_name,
+            cdr_georeferencing,
+        )
 
 
 class ProjectedMapOutput(OutputCreator):
@@ -369,7 +357,8 @@ class ProjectedMapOutput(OutputCreator):
         query_points: List[QueryPoint] = pipeline_result.data.get(
             QUERY_POINTS_OUTPUT_KEY, []
         )
-        # convert the query points to gcps
+
+        # create ground control points from query point output data
         gcps = [
             LARAGroundControlPoint(
                 id=f"gcp.{i}",

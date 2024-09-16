@@ -363,14 +363,14 @@ class LaraResultSubscriber:
             output_file_name_full = os.path.join(self._workdir, output_file_name)
 
             assert gcps is not None
-            lara_gcps: List[LARAGroundControlPoint] = [
+            lara_gcps = [
                 LARAGroundControlPoint(
                     id=f"gcp.{i}",
-                    pixel_x=gcp.px_geom[0]
-                    pixel_y=gcp.px_geom[1],
-                    latitude=gcp.map_geom[1],
-                    longitude=gcp.map_geom[0],
-                    confidence=gcp.confidence,
+                    pixel_x=gcp.px_geom.columns_from_left,
+                    pixel_y=gcp.px_geom.rows_from_top,
+                    latitude=gcp.map_geom.latitude if gcp.map_geom.latitude else 0,
+                    longitude=gcp.map_geom.longitude if gcp.map_geom.longitude else 0,
+                    confidence=gcp.confidence if gcp.confidence else 0,
                 )
                 for i, gcp in enumerate(gcps)
             ]

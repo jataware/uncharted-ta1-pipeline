@@ -36,6 +36,7 @@ def main():
     pipeline = SegmentationPipeline(
         p.model,
         p.workdir,
+        p.cdr_schema,
         p.min_confidence,
         not p.no_gpu,
     )

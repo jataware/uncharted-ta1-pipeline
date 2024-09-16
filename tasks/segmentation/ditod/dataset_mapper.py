@@ -11,6 +11,7 @@ import torch
 from detectron2.data import detection_utils as utils
 from detectron2.data import transforms as T
 
+from tasks.geo_referencing.entities import KEYPOINTS_OUTPUT_KEY
 from tasks.segmentation.layoutlmft import Layout_LMv3Tokenizer
 
 __all__ = ["DetrDatasetMapper"]
@@ -129,7 +130,7 @@ class DetrDatasetMapper:
             for anno in dataset_dict["annotations"]:
                 if not self.mask_on:
                     anno.pop("segmentation", None)
-                anno.pop("keypoints", None)
+                anno.pop(KEYPOINTS_OUTPUT_KEY, None)
 
             # USER: Implement additional transformations if you have other types of data
             annos = [

@@ -383,7 +383,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                     if n.lower() in list(
                         map(lambda x: x.lower(), metadata.coordinate_systems)
                     ):
-                        return c, "crs"
+                        return c, CRS_OUTPUT_KEY
 
         # use the centre of the geofence or parsed coordinates to pick the code
         if count_lon != 0:

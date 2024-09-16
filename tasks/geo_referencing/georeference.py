@@ -5,7 +5,14 @@ from unittest.mock import DEFAULT
 from geopy.distance import geodesic
 from regex import R
 
-from tasks.geo_referencing.entities import GroundControlPoint
+from tasks.geo_referencing.entities import (
+    CRS_OUTPUT_KEY,
+    ERROR_SCALE_OUTPUT_KEY,
+    KEYPOINTS_OUTPUT_KEY,
+    QUERY_POINTS_OUTPUT_KEY,
+    RMSE_OUTPUT_KEY,
+    GroundControlPoint,
+)
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.entities import (
     Coordinate,
@@ -129,13 +136,13 @@ class GeoReference(Task):
 
         query_pts = None
         external_query_pts = False
-        if "query_pts" in input.request:
+        if QUERY_POINTS_OUTPUT_KEY in input.request:
             logger.info("reading query points from request")
-            query_pts = input.request["query_pts"]
+            query_pts = input.request[QUERY_POINTS_OUTPUT_KEY]
             external_query_pts = True
         if not query_pts or len(query_pts) < 1:
             logger.info("reading query points from task input")
-            query_pts = input.get_data("query_pts")
+            query_pts = input.get_data(QUERY_POINTS_OUTPUT_KEY)
 
         # if no clue point provided, build projections with fallbacks
         clue_point = input.get_request_info("clue_point")
@@ -264,13 +271,13 @@ class GeoReference(Task):
         logger.info(f"rmse: {rmse} scale error: {scale_error}")
 
         result = super()._create_result(input)
-        result.output["query_pts"] = results
-        result.output["rmse"] = rmse
-        result.output["error_scale"] = scale_error
-        result.output["crs"] = (
+        result.output[QUERY_POINTS_OUTPUT_KEY] = results
+        result.output[RMSE_OUTPUT_KEY] = rmse
+        result.output[ERROR_SCALE_OUTPUT_KEY] = scale_error
+        result.output[CRS_OUTPUT_KEY] = (
             self.EXTERNAL_QUERY_POINT_CRS if external_query_pts else crs
         )
-        result.output["keypoints"] = keypoint_stats
+        result.output[KEYPOINTS_OUTPUT_KEY] = keypoint_stats
         return result
 
     def _count_keypoints(

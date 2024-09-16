@@ -5,17 +5,21 @@ import os
 from geopy.distance import distance as geo_distance
 from PIL.Image import Image as PILIMAGE
 from PIL import Image
-from numpy import isin
 
-from pipelines.geo_referencing.factory import create_geo_referencing_pipelines
+from pipelines.geo_referencing.georeferencing_pipeline import GeoreferencingPipeline
 from pipelines.geo_referencing.output import CSVWriter, JSONWriter
-from tasks.common.io import BytesIOFileWriter, ImageFileInputIterator
+from tasks.common.io import BytesIOFileWriter, ImageFileInputIterator, JSONFileWriter
 from tasks.common.pipeline import BytesOutput, PipelineInput
-from tasks.geo_referencing.entities import PROJECTED_MAP_OUTPUT_KEY
+from tasks.geo_referencing.entities import (
+    LEVERS_OUTPUT_KEY,
+    PROJECTED_MAP_OUTPUT_KEY,
+    QUERY_POINTS_OUTPUT_KEY,
+    SCORING_OUTPUT_KEY,
+    SUMMARY_OUTPUT_KEY,
+    GEOREFERENCING_OUTPUT_KEY,
+)
 from tasks.geo_referencing.georeference import QueryPoint
-from util.coordinate import absolute_minmax
 from util.json import read_json_file
-from util import logging as logging_util
 
 from typing import List, Optional, Tuple
 
@@ -31,13 +35,10 @@ CLUE_FILEN_SUFFIX = "_clue"
 Image.MAX_IMAGE_PIXELS = 400000000
 GEOCODE_CACHE = "temp/geocode/"
 
-logger: Optional[logging.Logger] = None
+logger = logging.getLogger("georeferencing_pipeline")
 
 
 def main():
-    global logger
-    logger = logging.getLogger("georeferencing_pipeline")
-    logging_util.config_logger(logger)
 
     # parse command line args
     parser = argparse.ArgumentParser()
@@ -81,7 +82,7 @@ def main():
     # setup an input stream
     input = ImageFileInputIterator(p.input)
 
-    run_pipelines(p, input)
+    run_pipeline(p, input)
 
 
 def create_input(
@@ -100,16 +101,15 @@ def create_input(
     query_pts = query_points_from_points(raster_id, points_path)
     if not query_pts:
         query_pts = parse_query_file(query_path, input.image.size)
-    input.params["query_pts"] = query_pts
+    input.params[QUERY_POINTS_OUTPUT_KEY] = query_pts
 
     return input
 
 
-def run_pipelines(parsed, input_data: ImageFileInputIterator):
+def run_pipeline(parsed, input_data: ImageFileInputIterator):
     assert logger is not None
 
-    # get the pipelines
-    pipelines = create_geo_referencing_pipelines(
+    pipeline = GeoreferencingPipeline(
         parsed.workdir,
         parsed.model,
         parsed.state_plane_lookup_filename,
@@ -125,20 +125,16 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
     query_dir = parsed.query_dir
     points_dir = parsed.points_dir
 
-    results = {}
-    results_summary = {}
-    results_levers = {}
-    results_gcps = {}
-    results_integration = {}
     writer_csv = CSVWriter()
     writer_json = JSONWriter()
+    writer_base_obj_json = JSONFileWriter()
     writer_bytes = BytesIOFileWriter()
-    for p in pipelines:
-        results[p.id] = []
-        results_summary[p.id] = []
-        results_levers[p.id] = []
-        results_gcps[p.id] = []
-        results_integration[p.id] = []
+
+    results_scoring = []
+    results_summary = []
+    results_levers = []
+    results_gcps = []
+    results_integration = []
 
     for raster_id, image in input_data:
         logger.info(f"processing {raster_id}")
@@ -149,70 +145,45 @@ def run_pipelines(parsed, input_data: ImageFileInputIterator):
 
         input = create_input(raster_id, image, points_path, query_path, clue_path)
 
-        for pipeline in pipelines:
-            logger.info(f"running pipeline {pipeline.id}")
-            output = pipeline.run(input)
-            results[pipeline.id].append(output["geo"])
-            results_summary[pipeline.id].append(output["summary"])
-            results_levers[pipeline.id].append(output["levers"])
-            results_gcps[pipeline.id].append(output["gcps"])
-            logger.info(f"done pipeline {pipeline.id}\n\n")
+        logger.info(f"running pipeline {pipeline.id}")
+        output = pipeline.run(input)
+        results_scoring.append(output[SCORING_OUTPUT_KEY])
+        results_integration.append(output[GEOREFERENCING_OUTPUT_KEY])
+        results_summary.append(output[SUMMARY_OUTPUT_KEY])
+        results_levers.append(output[LEVERS_OUTPUT_KEY])
+        results_gcps.append(output[QUERY_POINTS_OUTPUT_KEY])
+        logger.info(f"done pipeline {pipeline.id}\n\n")
 
-            # immediately write projected map to file - these are large so we don't want to accumulate them
-            # in memory like the other results
-            if parsed.project and PROJECTED_MAP_OUTPUT_KEY in output:
-                map_output = output[PROJECTED_MAP_OUTPUT_KEY]
-                if isinstance(map_output, BytesOutput):
-                    output_path = os.path.join(
-                        parsed.output, f"{raster_id}_projected_map.tif"
-                    )
-                    logger.info(f"writing projected map to {output_path}")
-                    writer_bytes.process(
-                        output_path,
-                        map_output.data,
-                    )
+        # immediately write projected map to file - these are large so we don't want to accumulate them
+        # in memory like the other results
+        if parsed.project and PROJECTED_MAP_OUTPUT_KEY in output:
+            map_output = output[PROJECTED_MAP_OUTPUT_KEY]
+            if isinstance(map_output, BytesOutput):
+                output_path = os.path.join(
+                    parsed.output, f"{raster_id}_projected_map.tif"
+                )
+                logger.info(f"writing projected map to {output_path}")
+                writer_bytes.process(
+                    output_path,
+                    map_output.data,
+                )
 
-        for p in pipelines:
-            writer_csv.output(
-                results[p.id], {"path": os.path.join(parsed.output, f"test-{p.id}.csv")}
-            )
-            writer_csv.output(
-                results_summary[p.id],
-                {"path": os.path.join(parsed.output, f"test_summary-{p.id}.csv")},
-            )
-            writer_json.output(
-                results_levers[p.id],
-                {"path": os.path.join(parsed.output, f"test_levers-{p.id}.json")},
-            )
-            writer_json.output(
-                results_gcps[p.id],
-                {"path": os.path.join(parsed.output, f"test_gcps-{p.id}.json")},
-            )
-            writer_json.output(
-                results_integration[p.id],
-                {"path": os.path.join(parsed.output, f"test_schema-{p.id}.json")},
-            )
-
-    for p in pipelines:
-        writer_csv.output(
-            results[p.id], {"path": os.path.join(parsed.output, f"test-{p.id}.csv")}
-        )
-        writer_csv.output(
-            results_summary[p.id],
-            {"path": os.path.join(parsed.output, f"test_summary-{p.id}.csv")},
-        )
-        writer_json.output(
-            results_levers[p.id],
-            {"path": os.path.join(parsed.output, f"test_levers-{p.id}.json")},
-        )
-        writer_json.output(
-            results_gcps[p.id],
-            {"path": os.path.join(parsed.output, f"test_gcps-{p.id}.json")},
-        )
-        writer_json.output(
-            results_integration[p.id],
-            {"path": os.path.join(parsed.output, f"test_schema-{p.id}.json")},
-        )
+    writer_csv.output(
+        results_scoring,
+        {"path": os.path.join(parsed.output, f"score_{pipeline.id}.csv")},
+    )
+    writer_csv.output(
+        results_summary,
+        {"path": os.path.join(parsed.output, f"summary_{pipeline.id}.csv")},
+    )
+    writer_json.output(
+        results_levers,
+        {"path": os.path.join(parsed.output, f"levers_{pipeline.id}.json")},
+    )
+    writer_json.output(
+        results_gcps,
+        {"path": os.path.join(parsed.output, f"gcps_{pipeline.id}.json")},
+    )
 
 
 def get_geofence(
@@ -309,10 +280,7 @@ def parse_query_file(
                 query_pts.append(QueryPoint(raster_id, (x, y), lonlat_gt))
 
     except Exception as e:
-        print("EXCEPTION parsing query file: {}".format(csv_query_file))
-        print(e)
-
-    # print('Num query points parsed: {}'.format(len(query_pts)))
+        logger.exception(f"EXCEPTION parsing query file: {str(e)}", exc_info=True)
 
     return query_pts
 

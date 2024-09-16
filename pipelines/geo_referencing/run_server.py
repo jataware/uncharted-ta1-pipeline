@@ -12,16 +12,15 @@ from PIL.Image import Image as PILImage
 from PIL import Image
 from pyproj import Proj
 
-from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
+from pipelines.geo_referencing.georeferencing_pipeline import GeoreferencingPipeline
 from pipelines.geo_referencing.output import (
-    LARAModelOutput,
+    GeoreferencingOutput,
     ProjectedMapOutput,
 )
 from tasks.common.pipeline import (
     BaseModelOutput,
     BytesOutput,
     OutputCreator,
-    Pipeline,
     PipelineInput,
 )
 from tasks.common.queue import (
@@ -32,8 +31,7 @@ from tasks.common.queue import (
 )
 from typing import List, Tuple
 from tasks.geo_referencing.entities import (
-    GEOFENCE_OUTPUT_KEY,
-    GEOREFERENCE_OUTPUT_KEY,
+    GEOREFERENCING_OUTPUT_KEY,
     PROJECTED_MAP_OUTPUT_KEY,
 )
 from util import logging as logging_util
@@ -42,7 +40,7 @@ Image.MAX_IMAGE_PIXELS = 400000000
 
 app = Flask(__name__)
 
-georef_pipeline: Pipeline
+georef_pipeline: GeoreferencingPipeline
 
 
 def get_geofence(
@@ -104,7 +102,7 @@ def process_image():
             return (msg, 500)
 
         result_json = ""
-        result = outputs[GEOREFERENCE_OUTPUT_KEY]
+        result = outputs[GEOREFERENCING_OUTPUT_KEY]
         if isinstance(result, BaseModelOutput):
             result_dict = result.data.model_dump()
 
@@ -190,7 +188,7 @@ def start_server():
     parser.add_argument("--project", action="store_true")
     p = parser.parse_args()
 
-    outputs: List[OutputCreator] = [LARAModelOutput(GEOREFERENCE_OUTPUT_KEY)]
+    outputs: List[OutputCreator] = [GeoreferencingOutput("georeferencing")]
     if p.project:
         if not p.rest:
             raise ValueError(
@@ -199,10 +197,9 @@ def start_server():
         outputs.append(ProjectedMapOutput(PROJECTED_MAP_OUTPUT_KEY))
 
     global georef_pipeline
-    georef_pipeline = create_geo_referencing_pipeline(
-        p.model,
-        outputs,
+    georef_pipeline = GeoreferencingPipeline(
         p.workdir,
+        p.model,
         p.state_plane_lookup_filename,
         p.state_plane_zone_filename,
         p.state_code_filename,
@@ -222,7 +219,7 @@ def start_server():
             georef_pipeline,
             p.request_queue,
             p.result_queue,
-            GEOREFERENCE_OUTPUT_KEY,
+            GEOREFERENCING_OUTPUT_KEY,
             OutputType.GEOREFERENCING,
             p.workdir,
             p.imagedir,
