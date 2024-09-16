@@ -5,7 +5,7 @@ from time import sleep
 from typing import List, Optional
 
 from pika.adapters.blocking_connection import BlockingChannel as Channel
-from pika import BlockingConnection, ConnectionParameters
+from pika import BlockingConnection, ConnectionParameters, PlainCredentials
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
 from tasks.common.queue import Request
 
@@ -23,10 +23,22 @@ class LaraRequestPublisher:
     HEARTBEAT_INTERVAL = 900
     BLOCKED_CONNECTION_TIMEOUT = 600
 
-    def __init__(self, request_queues: List[str], host="localhost") -> None:
+    def __init__(
+        self,
+        request_queues: List[str],
+        host="localhost",
+        port=5672,
+        vhost="/",
+        uid="",
+        pwd="",
+    ) -> None:
         self._request_connection: Optional[BlockingConnection] = None
         self._request_channel: Optional[Channel] = None
         self._host = host
+        self._port = port
+        self._vhost = vhost
+        self._uid = uid
+        self._pwd = pwd
         self._request_queues = request_queues
 
     def start_lara_request_queue(self):
@@ -77,13 +89,26 @@ class LaraRequestPublisher:
             The created channel.
         """
         logger.info(f"creating channel on host {self._host}")
-        connection = BlockingConnection(
-            ConnectionParameters(
-                self._host,
-                heartbeat=self.HEARTBEAT_INTERVAL,
-                blocked_connection_timeout=self.BLOCKED_CONNECTION_TIMEOUT,
+        if self._uid != "":
+            credentials = PlainCredentials(self._uid, self._pwd)
+            connection = BlockingConnection(
+                ConnectionParameters(
+                    self._host,
+                    self._port,
+                    self._vhost,
+                    credentials,
+                    heartbeat=self.HEARTBEAT_INTERVAL,
+                    blocked_connection_timeout=self.BLOCKED_CONNECTION_TIMEOUT,
+                )
             )
-        )
+        else:
+            connection = BlockingConnection(
+                ConnectionParameters(
+                    self._host,
+                    heartbeat=self.HEARTBEAT_INTERVAL,
+                    blocked_connection_timeout=self.BLOCKED_CONNECTION_TIMEOUT,
+                )
+            )
         channel = connection.channel()
         for queue in self._request_queues:
             channel.queue_declare(
