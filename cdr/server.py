@@ -317,6 +317,10 @@ def main():
     parser.add_argument("--imagedir", type=str, required=True)
     parser.add_argument("--cog_id", type=str, required=False)
     parser.add_argument("--host", type=str, default="localhost")
+    parser.add_argument("--rabbit_port", type=int, default=5672)
+    parser.add_argument("--rabbit_vhost", type=str, default="/")
+    parser.add_argument("--rabbit_uid", type=str, default="")
+    parser.add_argument("--rabbit_pwd", type=str, default="")
     parser.add_argument("--cdr_event_log", type=str, default=CDR_EVENT_LOG)
     parser.add_argument("--input", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
@@ -358,6 +362,10 @@ def main():
             METADATA_REQUEST_QUEUE,
         ],
         host=p.host,
+        port=p.rabbit_port,
+        vhost=p.rabbit_vhost,
+        uid=p.rabbit_uid,
+        pwd=p.rabbit_pwd,
     )
     request_publisher.start_lara_request_queue()
 
