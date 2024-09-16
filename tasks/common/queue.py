@@ -203,7 +203,7 @@ class RequestQueue:
         )
         self._input_channel.basic_qos(prefetch_count=1)
 
-    def _getConnectionParameters(self):
+    def _get_connection_parameters(self):
         if self._uid != "":
             credentials = pika.PlainCredentials(self._uid, self._pwd)
             return pika.ConnectionParameters(
@@ -226,8 +226,8 @@ class RequestQueue:
         Setup the connection, channel and queue to service outgoing results.
         """
         logger.info("connecting to result queue")
-        connectionParameters = self._getConnectionParameters()
-        self._request_connection = pika.BlockingConnection(connectionParameters)
+        connectionParameters = self._get_connection_parameters()
+        self._result_connection = pika.BlockingConnection(connectionParameters)
 
         if self._result_connection is not None:
             self._output_channel = self._result_connection.channel()
