@@ -3,6 +3,7 @@ import logging
 from random import randint
 
 from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.geo_referencing.entities import QUERY_POINTS_OUTPUT_KEY
 from tasks.geo_referencing.georeference import QueryPoint
 from tasks.segmentation.entities import (
     MapSegmentation,
@@ -32,8 +33,8 @@ class CreateGroundControlPoints(Task):
         )
         # check if query points already defined
         query_pts = None
-        if "query_pts" in input.request:
-            query_pts = input.request["query_pts"]
+        if QUERY_POINTS_OUTPUT_KEY in input.request:
+            query_pts = input.request[QUERY_POINTS_OUTPUT_KEY]
         if query_pts and len(query_pts) > 0:
             logger.info("ground control points already exist")
             return self._create_result(input)
@@ -76,7 +77,7 @@ class CreateGroundControlPoints(Task):
 
         # add them to the output
         result = self._create_result(input)
-        result.output["query_pts"] = query_pts
+        result.output[QUERY_POINTS_OUTPUT_KEY] = query_pts
 
         return result
 

@@ -1,4 +1,5 @@
 import argparse
+import base64
 import json
 import logging
 import os
@@ -9,26 +10,37 @@ from hashlib import sha1
 from io import BytesIO
 from PIL.Image import Image as PILImage
 from PIL import Image
+from pyproj import Proj
 
-from pipelines.geo_referencing.factory import create_geo_referencing_pipeline
+from pipelines.geo_referencing.georeferencing_pipeline import GeoreferencingPipeline
 from pipelines.geo_referencing.output import (
-    LARAModelOutput,
+    GeoreferencingOutput,
+    ProjectedMapOutput,
 )
-from tasks.common.pipeline import BaseModelOutput, Pipeline, PipelineInput
+from tasks.common.pipeline import (
+    BaseModelOutput,
+    BytesOutput,
+    OutputCreator,
+    PipelineInput,
+)
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
     GEO_REFERENCE_RESULT_QUEUE,
     RequestQueue,
     OutputType,
 )
-from typing import Tuple
+from typing import List, Tuple
+from tasks.geo_referencing.entities import (
+    GEOREFERENCING_OUTPUT_KEY,
+    PROJECTED_MAP_OUTPUT_KEY,
+)
 from util import logging as logging_util
 
 Image.MAX_IMAGE_PIXELS = 400000000
 
 app = Flask(__name__)
 
-georef_pipeline: Pipeline
+georef_pipeline: GeoreferencingPipeline
 
 
 def get_geofence(
@@ -89,9 +101,19 @@ def process_image():
             logging.warning(msg)
             return (msg, 500)
 
-        result = outputs["georef_output"]
+        result_json = ""
+        result = outputs[GEOREFERENCING_OUTPUT_KEY]
         if isinstance(result, BaseModelOutput):
-            result_json = json.dumps(result.data.model_dump())
+            result_dict = result.data.model_dump()
+
+            # get the projected map if its present and convert to base64
+            map = outputs[PROJECTED_MAP_OUTPUT_KEY]
+            if isinstance(map, BytesOutput):
+                map_str = base64.b64encode(map.data.getvalue()).decode()
+                result_dict["projected_map"] = map_str
+
+            result_json = json.dumps(result_dict)
+
         else:
             msg = "No point extraction results"
             logging.warning(msg)
@@ -163,13 +185,21 @@ def start_server():
         default=0.5,
     )
     parser.add_argument("--no_gpu", action="store_true")
+    parser.add_argument("--project", action="store_true")
     p = parser.parse_args()
 
+    outputs: List[OutputCreator] = [GeoreferencingOutput("georeferencing")]
+    if p.project:
+        if not p.rest:
+            raise ValueError(
+                "Projecting the map is only supported in REST mode, not in queue mode"
+            )
+        outputs.append(ProjectedMapOutput(PROJECTED_MAP_OUTPUT_KEY))
+
     global georef_pipeline
-    georef_pipeline = create_geo_referencing_pipeline(
-        p.model,
-        [LARAModelOutput("georef_output")],
+    georef_pipeline = GeoreferencingPipeline(
         p.workdir,
+        p.model,
         p.state_plane_lookup_filename,
         p.state_plane_zone_filename,
         p.state_code_filename,
@@ -189,7 +219,7 @@ def start_server():
             georef_pipeline,
             p.request_queue,
             p.result_queue,
-            "georef_output",
+            GEOREFERENCING_OUTPUT_KEY,
             OutputType.GEOREFERENCING,
             p.workdir,
             p.imagedir,

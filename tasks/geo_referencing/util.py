@@ -1,10 +1,23 @@
+from typing import List, Tuple, Dict
+import io
+
 from tasks.text_extraction.entities import Point
 from tasks.common.task import TaskInput
 from tasks.geo_referencing.entities import DocGeoFence, GEOFENCE_OUTPUT_KEY, Coordinate
 from tasks.metadata_extraction.entities import MetadataExtraction
+from tasks.geo_referencing.entities import GroundControlPoint as LARAGroundControlPoint
+
 from util.coordinate import absolute_minmax
 
-from typing import List, Tuple, Dict
+from rasterio.transform import Affine
+from rasterio.warp import Resampling, calculate_default_transform, reproject
+import rasterio as rio
+import rasterio.transform as riot
+import rasterio.io as rioi
+
+from pyproj import Transformer
+
+from PIL.Image import Image as PILImage
 
 
 def ocr_to_coordinates(bounds: List[Point]) -> List[List[int]]:
@@ -110,7 +123,7 @@ def get_points(
     coordinates: Dict[Tuple[float, float], Coordinate], sources: List[str] = []
 ) -> Dict[Tuple[float, float], Coordinate]:
 
-    if len(coordinates) == 0:
+    if coordinates is None or len(coordinates) == 0:
         return {}
 
     coords = list(
@@ -124,3 +137,93 @@ def get_points(
     for c in coords:
         filtered[c[0]] = c[1]
     return filtered
+
+
+def cps_to_transform(
+    gcps: List[LARAGroundControlPoint],
+    source_crs: str,
+    dest_crs: str,
+) -> Affine:
+    """
+    Transforms ground control points from one coordinate reference system (CRS) to another.
+    Args:
+        gcps (List[LARAGroundControlPoint]): List of ground control points.
+        source_crs (str): Source CRS of the ground control points.
+        dest_crs (str): Destination CRS to transform the ground control points to.
+    Returns:
+        Affine: Affine transformation matrix.
+    """
+    proj = Transformer.from_crs(source_crs, dest_crs, always_xy=True)
+    proj_gcps = [
+        riot.GroundControlPoint(
+            row=gcp.pixel_y,
+            col=gcp.pixel_x,
+            x=proj.transform(xx=gcp.longitude, yy=gcp.latitude)[0],
+            y=proj.transform(xx=gcp.longitude, yy=gcp.latitude)[1],
+        )
+        for gcp in gcps
+    ]
+    return riot.from_gcps(proj_gcps)
+
+
+def project_image(
+    image: PILImage,
+    geo_transform: Affine,
+    dest_crs: str,
+) -> io.BytesIO:
+    """
+    Projects an image from one coordinate reference system (CRS) to another.
+    Args:
+        image (PILImage): Image to project.
+        geo_transform (Affine): Affine transformation matrix.
+        dest_crs (str): Destination CRS to project the image to.
+    """
+    # convert the PILImage into a raw TIFF image in memory
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format="tiff")
+    img_byte_arr = img_byte_arr.getvalue()
+
+    # load the tiff image into a rasterio dataset
+    with rioi.MemoryFile(img_byte_arr) as input_memfile:
+        with input_memfile.open() as input_dataset:
+            # create the profile for the projected image
+            bounds = riot.array_bounds(
+                input_dataset.height, input_dataset.width, geo_transform
+            )
+            projected_transform, projected_width, projected_height = (
+                calculate_default_transform(
+                    dest_crs,
+                    dest_crs,
+                    input_dataset.width,
+                    input_dataset.height,
+                    *tuple(bounds),
+                )
+            )
+            projected_kwargs = input_dataset.profile.copy()
+            projected_kwargs.update(
+                {
+                    "driver": "COG",
+                    "crs": {"init": dest_crs},
+                    "transform": projected_transform,
+                    "width": projected_width,
+                    "height": projected_height,
+                }
+            )
+            # reproject the raw data into a new in-memory rasterio dataset
+            input_data = input_dataset.read()
+            with rioi.MemoryFile() as out_memfile:
+                with out_memfile.open(**projected_kwargs) as projected_dataset:
+                    for i in range(input_dataset.count):
+                        _ = reproject(
+                            source=input_data[i],
+                            destination=rio.band(projected_dataset, i + 1),
+                            src_transform=geo_transform,
+                            src_crs=dest_crs,
+                            dst_transform=projected_transform,
+                            dst_crs=dest_crs,
+                            resampling=Resampling.bilinear,
+                            num_threads=8,
+                            warp_mem_limit=256,
+                        )
+                # write the raw geotiff into a BytesIO object for downstream processing
+                return io.BytesIO(out_memfile.read())

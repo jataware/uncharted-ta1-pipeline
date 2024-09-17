@@ -34,7 +34,11 @@ from tasks.common.queue import (
     RequestResult,
 )
 from schema.mappers.cdr import GeoreferenceMapper, get_mapper
-from tasks.geo_referencing.entities import GeoreferenceResult as LARAGeoreferenceResult
+from tasks.geo_referencing.entities import (
+    GeoreferenceResult as LARAGeoreferenceResult,
+    GroundControlPoint as LARAGroundControlPoint,
+)
+from tasks.geo_referencing.util import cps_to_transform, project_image
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
 from tasks.point_extraction.entities import PointLabels as LARAPoints
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
@@ -357,7 +361,19 @@ class LaraResultSubscriber:
             gcps = cdr_result.gcps
             output_file_name = projection.file_name
             output_file_name_full = os.path.join(self._workdir, output_file_name)
+
             assert gcps is not None
+            lara_gcps = [
+                LARAGroundControlPoint(
+                    id=f"gcp.{i}",
+                    pixel_x=gcp.px_geom.columns_from_left,
+                    pixel_y=gcp.px_geom.rows_from_top,
+                    latitude=gcp.map_geom.latitude if gcp.map_geom.latitude else 0,
+                    longitude=gcp.map_geom.longitude if gcp.map_geom.longitude else 0,
+                    confidence=gcp.confidence if gcp.confidence else 0,
+                )
+                for i, gcp in enumerate(gcps)
+            ]
 
             logger.info(
                 f"projecting image {result.image_path} to {output_file_name_full} using crs {GeoreferenceMapper.DEFAULT_OUTPUT_CRS}"
@@ -365,8 +381,9 @@ class LaraResultSubscriber:
             self._project_georeference(
                 result.image_path,
                 output_file_name_full,
+                projection.crs,
                 GeoreferenceMapper.DEFAULT_OUTPUT_CRS,
-                gcps,
+                lara_gcps,
             )
 
             files_.append(
@@ -414,6 +431,35 @@ class LaraResultSubscriber:
             )
         except:
             logger.info("error when attempting to submit georeferencing results")
+
+    def _project_georeference(
+        self,
+        source_image_path: str,
+        target_image_path: str,
+        source_crs: str,
+        target_crs: str,
+        gcps: List[LARAGroundControlPoint],
+    ):
+        """
+        Projects an image to a new coordinate reference system using ground control points.
+
+        Args:
+            source_image_path (str): The path to the source image.
+            target_image_path (str): The path to the target image.
+            target_crs (str): The target coordinate reference system.
+            gcps (List[GroundControlPoint]): The ground control points.
+        """
+        # open the image
+        img = Image.open(source_image_path)
+
+        # create the transform and use it to project the image
+        geo_transform = cps_to_transform(gcps, source_crs, target_crs)
+        image_bytes = project_image(img, geo_transform, target_crs)
+
+        # write the projected image to disk, creating the directory if it doesn't exist
+        os.makedirs(os.path.dirname(target_image_path), exist_ok=True)
+        with open(target_image_path, "wb") as f:
+            f.write(image_bytes.getvalue())
 
     def _push_features(self, result: RequestResult, model: FeatureResults):
         """
@@ -517,91 +563,3 @@ class LaraResultSubscriber:
         )
 
         self._push_features(result, final_result)
-
-    def _project_georeference(
-        self,
-        source_image_path: str,
-        target_image_path: str,
-        target_crs: str,
-        gcps: List[GroundControlPoint],
-    ):
-        # open the image
-        img = Image.open(source_image_path)
-        _, height = img.size
-
-        # create the transform
-        geo_transform = self._cps_to_transform(gcps, height=height, to_crs=target_crs)
-
-        # use the transform to project the image
-        self._project_image(
-            source_image_path, target_image_path, geo_transform, target_crs
-        )
-
-    def _project_image(
-        self,
-        source_image_path: str,
-        target_image_path: str,
-        geo_transform: Affine,
-        crs: str,
-    ):
-        with rio.open(source_image_path) as raw:
-            bounds = riot.array_bounds(raw.height, raw.width, geo_transform)
-            pro_transform, pro_width, pro_height = calculate_default_transform(
-                crs, crs, raw.width, raw.height, *tuple(bounds)
-            )
-            pro_kwargs = raw.profile.copy()
-            pro_kwargs.update(
-                {
-                    "driver": "COG",
-                    "crs": {"init": crs},
-                    "transform": pro_transform,
-                    "width": pro_width,
-                    "height": pro_height,
-                }
-            )
-            _raw_data = raw.read()
-            with rio.open(target_image_path, "w", **pro_kwargs) as pro:
-                for i in range(raw.count):
-                    _ = reproject(
-                        source=_raw_data[i],
-                        destination=rio.band(pro, i + 1),
-                        src_transform=geo_transform,
-                        src_crs=crs,
-                        dst_transform=pro_transform,
-                        dst_crs=crs,
-                        resampling=Resampling.bilinear,
-                        num_threads=8,
-                        warp_mem_limit=256,
-                    )
-
-    def _cps_to_transform(
-        self, gcps: List[GroundControlPoint], height: int, to_crs: str
-    ) -> Affine:
-        cps = [
-            {
-                "row": float(gcp.px_geom.rows_from_top),
-                "col": float(gcp.px_geom.columns_from_left),
-                "x": float(gcp.map_geom.longitude),  #   type: ignore
-                "y": float(gcp.map_geom.latitude),  #   type: ignore
-                "crs": gcp.crs,
-            }
-            for gcp in gcps
-        ]
-        cps_p = []
-        for cp in cps:
-            if cp["crs"] != to_crs:
-                proj = Transformer.from_crs(cp["crs"], to_crs, always_xy=True)
-                x_p, y_p = proj.transform(xx=cp["x"], yy=cp["y"])
-                cps_p.append(
-                    riot.GroundControlPoint(row=cp["row"], col=cp["col"], x=x_p, y=y_p)
-                )
-            else:
-                cps_p.append(
-                    riot.GroundControlPoint(
-                        row=cp["row"], col=cp["col"], x=cp["x"], y=cp["y"]
-                    )
-                )
-        print("cps_p:")
-        pprint.pprint(cps_p)
-
-        return riot.from_gcps(cps_p)

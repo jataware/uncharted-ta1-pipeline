@@ -31,6 +31,7 @@ class SegmentationPipeline(Pipeline):
         self,
         model_data_path: str,
         model_data_cache_path: str = "",
+        cdr_schema=False,
         confidence_thres=0.25,
         gpu=True,
     ):
@@ -66,10 +67,12 @@ class SegmentationPipeline(Pipeline):
             TextWithSegments("text_with_segments"),
         ]
 
-        outputs = [
-            MapSegmentationOutput("map_segmentation_output"),
-            CDROutput("map_segmentation_cdr_output"),
+        outputs: List[OutputCreator] = [
+            MapSegmentationOutput("map_segmentation_output")
         ]
+        if cdr_schema:
+            outputs.append(CDROutput("map_segmentation_cdr_output"))
+
         super().__init__("map-segmentation", "Map Segmentation", outputs, tasks)
 
 

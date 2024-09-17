@@ -229,22 +229,22 @@ class JSONFileWriter:
             )
 
 
-class ImageFileWriter:
-    """Writes a PIL image to either the local file system or an s3 bucket"""
+class BytesIOFileWriter:
+    """Write bytes to a file on the local file system or an s3 bucket"""
 
-    def process(self, output_location: str, image: PILImage) -> None:
-        """Writes an image to a file on the local file system or to an s3 bucket based
+    def process(self, output_location: str, data: io.BytesIO) -> None:
+        """Writes bytes to a file on the local file system or to an s3 bucket based
         on the output location format"""
 
         # check to see if path is an s3 uri - otherwise treat it as a file path
         if S3_URI_MATCHER.match(output_location):
-            self._write_to_s3(image, output_location)
+            self._write_to_s3(data, output_location)
         else:
-            self._write_to_file(image, Path(output_location))
+            self._write_to_file(data, Path(output_location))
 
     @staticmethod
-    def _write_to_file(image: PILImage, output_location: Path) -> None:
-        """Writes an image to a file"""
+    def _write_to_file(data: io.BytesIO, output_location: Path) -> None:
+        """Writes bytes to a file"""
 
         # get the director of the file
         if output_location.is_dir():
@@ -255,11 +255,12 @@ class ImageFileWriter:
             os.makedirs(output_dir)
 
         # write the data to the output file
-        image.save(output_location)
+        with open(output_location, "wb") as outfile:
+            outfile.write(data.getvalue())
 
     @staticmethod
-    def _write_to_s3(image: PILImage, output_uri: str) -> None:
-        """Writes an image to an s3 bucket"""
+    def _write_to_s3(data: io.BytesIO, output_uri: str) -> None:
+        """Writes bytes to an s3 bucket"""
 
         # create s3 client
         client = boto3.client("s3")  # type: ignore
@@ -269,9 +270,24 @@ class ImageFileWriter:
         key = "/".join(output_uri.split("/")[3:])
 
         # write data to the bucket
-        with io.BytesIO() as output:
-            image.save(output, format="PNG")
-            client.put_object(Body=output.getvalue(), Bucket=bucket, Key=key)
+        client.put_object(Body=data.getvalue(), Bucket=bucket, Key=key)
+
+
+class ImageFileWriter(BytesIOFileWriter):
+    """Writes a PIL image to either the local file system or an s3 bucket"""
+
+    def process(self, output_location: str, image: PILImage) -> None:
+        """Writes an image to a file on the local file system or to an s3 bucket based
+        on the output location format"""
+
+        buf = io.BytesIO()
+        image.save(buf, format="PNG")
+
+        # check to see if path is an s3 uri - otherwise treat it as a file path
+        if S3_URI_MATCHER.match(output_location):
+            self._write_to_s3(buf, output_location)
+        else:
+            self._write_to_file(buf, Path(output_location))
 
 
 def download_file(image_url: str) -> bytes:
