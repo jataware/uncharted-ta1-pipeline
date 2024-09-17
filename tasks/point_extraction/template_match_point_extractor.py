@@ -193,14 +193,18 @@ class TemplateMatchPointExtractor(Task):
             matches_dedup = []
 
             # --- pre-process the main image and template image, before template matching
-            im, im_templ = pe_utils.image_pre_processing(
-                im_in.copy(), im_template_and_masks[i][0], im_template_and_masks[i][1]
+            im_templ, foregnd_colour_lab = pe_utils.template_pre_processing(
+                im_template_and_masks[i][0], im_template_and_masks[i][1]
             )
+            im, im_templ = pe_utils.image_pre_processing(
+                im_in.copy(), foregnd_colour_lab
+            )
+
             # note: im and im_templ are in RGB colour-space
 
             # convert to gray and get foregnd mask for template
             # TODO could also just crop/re-size the fore mask here too?
-            templ_thres, fore_mask = cv2.threshold(
+            _, fore_mask = cv2.threshold(
                 cv2.cvtColor(im_templ, cv2.COLOR_RGB2GRAY),
                 0,
                 255,

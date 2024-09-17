@@ -26,7 +26,9 @@ from scipy import ndimage
 logger = logging.getLogger(__name__)
 
 RE_NONNUMERIC = re.compile(r"[^0-9]")  # matches non-numeric chars
-CODE_VER = "0.0.1"
+CODE_VER = "0.0.2"
+
+FOREGND_COLOR_LAB = [0, 128, 128]  # template default foregnd color (in LAB space)
 
 
 class PointOrientationExtractor(Task):
@@ -215,7 +217,7 @@ class PointOrientationExtractor(Task):
                 output={MAP_PT_LABELS_OUTPUT_KEY: cached_point_labels.model_dump()},
             )
 
-        # get OCR output
+        # --- get OCR output
         img_text = (
             DocTextExtraction.model_validate(
                 task_input.data[TEXT_EXTRACTION_OUTPUT_KEY]
@@ -229,17 +231,22 @@ class PointOrientationExtractor(Task):
                 "Skipping extraction of dip magnitudes - no OCR data available."
             )
 
-        # build OCR tree index
+        # --- build OCR tree index
         ocr_polygon_index = point_extractor_utils.build_ocr_index(img_text.extractions)
 
-        # group point extractions by class label
+        # --- group point extractions by class label
+        supported_classes = list(self.POINT_TEMPLATES.keys())
         match_candidates = defaultdict(list)  # class name -> list of tuples
         for i, p in enumerate(map_point_labels.labels):
             # tuple of (original extraction id, pt extraction object)
             match_candidates[p.class_name].append((i, p))
 
+        # --- image pre-processing
+        im_preproc = point_extractor_utils.image_pre_processing(
+            np.array(task_input.image), FOREGND_COLOR_LAB
+        )
+
         # --- perform symbol orientation analysis for each point class...
-        supported_classes = list(self.POINT_TEMPLATES.keys())
         for c in supported_classes:
             if c not in match_candidates:
                 # no points found for this class
@@ -266,15 +273,13 @@ class PointOrientationExtractor(Task):
                     map_point_labels.labels[idx].dip = dip_angle
 
             # --- 2. estimate symbol orientation (using template matching)
-            # --- pre-process the main image and template image, before template matching
-            im, im_templ = point_extractor_utils.image_pre_processing(
-                np.array(task_input.image),
-                self.templates[c],
-                np.array([]),
+            # pre-process template image before template matching
+            im_templ, _ = point_extractor_utils.template_pre_processing(
+                self.templates[c], np.array([])
             )
 
             # convert to gray and get foregnd mask for template
-            templ_thres, fore_mask = cv2.threshold(
+            _, fore_mask = cv2.threshold(
                 cv2.cvtColor(im_templ, cv2.COLOR_RGB2GRAY),
                 0,
                 255,
@@ -319,7 +324,7 @@ class PointOrientationExtractor(Task):
                     # get thumbnail image around predicted point symbol
                     xc = int((map_pt_label.x2 + map_pt_label.x1) / 2)
                     yc = int((map_pt_label.y2 + map_pt_label.y1) / 2)
-                    im_thumbnail = im[
+                    im_thumbnail = im_preproc[
                         yc - bbox_half : yc + bbox_half, xc - bbox_half : xc + bbox_half
                     ]
 
