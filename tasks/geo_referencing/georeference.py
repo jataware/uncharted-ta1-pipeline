@@ -1,9 +1,7 @@
 import logging
 import math
-from unittest.mock import DEFAULT
 
 from geopy.distance import geodesic
-from regex import R
 
 from tasks.geo_referencing.entities import (
     CRS_OUTPUT_KEY,

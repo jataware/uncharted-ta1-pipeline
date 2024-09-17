@@ -9,6 +9,7 @@ from tasks.geo_referencing.entities import (
     GroundControlPoint as LARAGroundControlPoint,
 )
 from pipelines.geo_referencing.output import ProjectedMapOutput
+from tasks.geo_referencing.georeference import QueryPoint
 
 
 @pytest.fixture
@@ -22,39 +23,36 @@ def pipeline_result():
             image.putpixel((i, j), (i, j, 0))
 
     gcps = [
-        LARAGroundControlPoint(
+        QueryPoint(
             id="gcp1",
-            pixel_x=10,
-            pixel_y=10,
-            latitude=40,
-            longitude=-120,
+            xy=(10, 10),
+            lonlat_gtruth=None,
             confidence=1.0,
         ),
-        LARAGroundControlPoint(
+        QueryPoint(
             id="gcp2",
-            pixel_x=90,
-            pixel_y=10,
-            latitude=40,
-            longitude=-110,
+            xy=(90, 10),
+            lonlat_gtruth=None,
             confidence=1.0,
         ),
-        LARAGroundControlPoint(
+        QueryPoint(
             id="gcp3",
-            pixel_x=90,
-            pixel_y=50,
-            latitude=30,
-            longitude=-110,
+            xy=(90, 50),
+            lonlat_gtruth=None,
             confidence=1.0,
         ),
-        LARAGroundControlPoint(
+        QueryPoint(
             id="gcp4",
-            pixel_x=10,
-            pixel_y=50,
-            latitude=30,
-            longitude=-120,
+            xy=(10, 50),
+            lonlat_gtruth=None,
             confidence=1.0,
         ),
     ]
+    gcps[0].lonlat = (40, -120)
+    gcps[1].lonlat = (40, -110)
+    gcps[2].lonlat = (30, -110)
+    gcps[3].lonlat = (30, -120)
+
     crs = "EPSG:4267"
     result = PipelineResult()
     result.pipeline_id = "pipeline_id"
