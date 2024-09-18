@@ -88,7 +88,7 @@ def main():
                     )
 
             except Exception as e:
-                logger.error("EXCEPTION loading legend hints json: " + repr(e))
+                logger.error("EXCEPTION loading legend items json: " + repr(e))
 
         elif p.legend_hints_dir:
             # load JSON legend hints file, if present, parse and add to PipelineInput

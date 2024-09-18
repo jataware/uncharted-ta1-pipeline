@@ -227,7 +227,7 @@ class PointOrientationExtractor(Task):
         )
 
         if len(img_text.extractions) == 0:
-            logger.warn(
+            logger.warning(
                 "Skipping extraction of dip magnitudes - no OCR data available."
             )
 

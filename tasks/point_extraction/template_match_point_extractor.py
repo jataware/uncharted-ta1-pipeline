@@ -255,7 +255,7 @@ class TemplateMatchPointExtractor(Task):
             # loop through rotational intervals...
             im_xcorr_all = np.zeros((im.shape[0], im.shape[1]), dtype=np.uint8)
             for rot_deg in range(0, 360, ROTATE_INTERVAL):
-                logger.info("template rotation: {}".format(rot_deg))
+                logger.debug("template rotation: {}".format(rot_deg))
 
                 # get rotated template
                 if rot_deg > 0:
@@ -291,7 +291,7 @@ class TemplateMatchPointExtractor(Task):
                 im_xcorr = np.nan_to_num(
                     im_xcorr, copy=False, nan=0.0, posinf=0.0, neginf=0.0
                 )
-                logger.info("max x-corr: {}".format(im_xcorr.max()))
+                logger.debug("max x-corr: {}".format(im_xcorr.max()))
 
                 im_xcorr = np.clip((im_xcorr * 255), 0, 255).astype(np.uint8)  # type: ignore
                 tx_half = int(template.shape[1] * 0.5)
@@ -316,7 +316,7 @@ class TemplateMatchPointExtractor(Task):
                 )
                 * 255
             )
-            logger.info("x-corr threshold {}".format(xcorr_thres / 255))
+            logger.debug("x-corr threshold {}".format(xcorr_thres / 255))
 
             templ_hw = (im_templ.shape[0], im_templ.shape[1])
             matches = self._find_match_candidates(im_xcorr_all, xcorr_thres, templ_hw)
