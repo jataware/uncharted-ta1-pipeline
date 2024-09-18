@@ -196,9 +196,7 @@ class TemplateMatchPointExtractor(Task):
             im_templ, foregnd_colour_lab = pe_utils.template_pre_processing(
                 im_template_and_masks[i][0], im_template_and_masks[i][1]
             )
-            im, im_templ = pe_utils.image_pre_processing(
-                im_in.copy(), foregnd_colour_lab
-            )
+            im = pe_utils.image_pre_processing(im_in.copy(), foregnd_colour_lab)
 
             # note: im and im_templ are in RGB colour-space
 
