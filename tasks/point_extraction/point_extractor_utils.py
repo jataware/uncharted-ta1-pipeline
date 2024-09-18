@@ -219,7 +219,6 @@ def image_pre_processing(
     im[idx] = np.clip(im[idx] + WHITE_SHIFT, 0, 255)
     im = im.astype(np.uint8)
 
-
     return im
 
 
