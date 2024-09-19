@@ -1,13 +1,9 @@
-from ast import Mod
-from functools import cache
 import copy, json, logging, os
-from urllib.parse import urlparse
 from PIL.Image import Image as PILImage
 
 from typing import Callable, List, Any, Dict, Optional
 
 from pydantic import BaseModel
-from sqlalchemy import JSON
 
 from tasks.common.io import (
     JSONFileReader,
@@ -15,7 +11,6 @@ from tasks.common.io import (
     Mode,
     append_to_cache_location,
     bucket_exists,
-    parse_s3_reference,
     get_file_source,
 )
 
