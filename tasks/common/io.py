@@ -293,3 +293,49 @@ class ImageFileWriter(BytesIOFileWriter):
 def download_file(image_url: str) -> bytes:
     r = httpx.get(image_url, timeout=1000)
     return r.content
+
+
+class JSONFileReader:
+    """Reads a JSON file and returns a list of BaseModel objects"""
+
+    def process(self, input_location: str) -> List[BaseModel]:
+        """Reads a JSON file and returns a list of BaseModel objects"""
+
+        # check to see if path is an s3 uri - otherwise treat it as a file path
+        if S3_URI_MATCHER.match(input_location):
+            return self._read_from_s3(input_location)
+        else:
+            return self._read_from_file(Path(input_location))
+
+    @staticmethod
+    def _read_from_file(input_location: Path) -> List[BaseModel]:
+        """Reads a JSON file and returns a list of BaseModel objects"""
+
+        # get the director of the file
+        if input_location.is_dir():
+            raise ValueError(f"Input location {input_location} is not a file.")
+
+        # read the data from the input file
+        data = []
+        with open(input_location, "r") as infile:
+            for line in infile:
+                data.append(json.loads(line))
+        return data
+
+    @staticmethod
+    def _read_from_s3(input_uri: str) -> List[BaseModel]:
+        """Reads a JSON file from an s3 bucket and returns a list of BaseModel objects"""
+
+        # create s3 client
+        client = boto3.client("s3")  # type: ignore
+
+        # extract bucket from s3 uri
+        bucket = input_uri.split("/")[2]
+        key = "/".join(input_uri.split("/")[3:])
+
+        # read data from the bucket
+        response = client.get_object(Bucket=bucket, Key=key)
+        data = []
+        for line in response["Body"].iter_lines():
+            data.append(json.loads(line))
+        return data
