@@ -517,7 +517,7 @@ class TemplateMatchPointExtractor(Task):
         try:
             cached_data = self.fetch_cached_result(doc_key)
             if cached_data:
-                templatematch_point_labels = PointLabels(**cached_data.model_dump())
+                templatematch_point_labels = PointLabels(**cached_data)
                 # check that the expected set of point types are in cache
                 pt_types_legend = set()
                 for leg in legend_items:

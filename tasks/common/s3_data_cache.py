@@ -5,7 +5,8 @@ from pathlib import Path
 
 from typing import Optional
 
-from boto3_stubs import ServiceResource, Bucket
+from mypy_boto3_s3 import ServiceResource
+from mypy_boto3_s3.service_resource import Bucket
 
 logger = logging.getLogger(__name__)
 

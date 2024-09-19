@@ -319,8 +319,9 @@ class MetadataExtractor(Task):
         # use the cached result if available
         result = self.fetch_cached_result(doc_id)
         if result:
+            metadata = MetadataExtraction.model_validate(result)
             logger.info(f"Using cached metadata extraction result for key {doc_id}")
-            task_result.add_output(METADATA_EXTRACTION_OUTPUT_KEY, result.model_dump())
+            task_result.add_output(METADATA_EXTRACTION_OUTPUT_KEY, result)
             return task_result
 
         logger.info(f"No cached metadata extraction result found for {doc_id}")

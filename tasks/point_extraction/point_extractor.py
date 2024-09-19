@@ -238,7 +238,7 @@ class YOLOPointDetector(Task):
         try:
             cached_data = self.fetch_cached_result(doc_key)
             if cached_data:
-                cached_image_tiles = ImageTiles(**cached_data.model_dump())
+                cached_image_tiles = ImageTiles.model_validate(cached_data)
                 # cached data is ok
                 return cached_image_tiles
 

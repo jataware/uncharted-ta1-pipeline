@@ -137,25 +137,6 @@ def test_json_file_writer_filesystem():
 
     os.remove(output_location)
 
-    # Test writing a list of BaseModel instances
-    test_data = [
-        TestData(name="test1", color="red"),
-        TestData(name="test2", color="blue"),
-    ]
-    output_location = "tasks/common/test/data/test.json"
-    writer.process(output_location, test_data)
-
-    data: List[Dict[str, str]] = []
-    with open(output_location, "r") as f:
-        for line in f:
-            data.append(json.loads(line))
-        assert data == [
-            {"name": "test1", "color": "red"},
-            {"name": "test2", "color": "blue"},
-        ]
-
-    os.remove(output_location)
-
 
 @mock_aws
 def test_json_file_writer_s3():
@@ -173,22 +154,6 @@ def test_json_file_writer_s3():
     obj = bucket.Object("data/test.json")
     data = json.loads(obj.get()["Body"].read())
     assert data == {"name": "test", "color": "red"}
-
-    # Test writing a list of BaseModel instances
-    test_data = [
-        TestData(name="test1", color="red"),
-        TestData(name="test2", color="blue"),
-    ]
-    writer.process(output_location, test_data)
-
-    obj = bucket.Object("data/test.json")
-    data = []
-    for line in obj.get()["Body"].read().decode("utf-8").splitlines():
-        data.append(json.loads(line))
-    assert data == [
-        {"name": "test1", "color": "red"},
-        {"name": "test2", "color": "blue"},
-    ]
 
 
 @mock_aws

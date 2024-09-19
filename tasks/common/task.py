@@ -10,12 +10,12 @@ from pydantic import BaseModel
 from sqlalchemy import JSON
 
 from tasks.common.io import (
-    S3_URI_MATCHER,
     JSONFileReader,
     JSONFileWriter,
     Mode,
+    append_to_cache_location,
     bucket_exists,
-    get_bucket_key,
+    parse_s3_reference,
     get_file_source,
 )
 
@@ -171,14 +171,9 @@ class Task:
         """
         Generate the full local path for cached json result
         """
-        mode = get_file_source(self._cache_location)
-        if mode == Mode.S3_URI or Mode.URL:
-            parsed_url = urlparse(self._cache_location)
-            return f"{parsed_url.scheme}://{parsed_url.netloc}/{doc_key}.json"
-        else:
-            return f"{self._cache_location}/{doc_key}.json"
+        return append_to_cache_location(self._cache_location, f"{doc_key}.json")
 
-    def fetch_cached_result(self, doc_key: str) -> Optional[BaseModel]:
+    def fetch_cached_result(self, doc_key: str) -> Optional[Dict[Any, Any]]:
         """
         Check if task result is available in the local cache
         """
@@ -186,8 +181,7 @@ class Task:
             return None
         try:
             return self._json_file_reader.process(self._get_cache_doc_path(doc_key))
-        except Exception as e:
-            logger.error(f"Error fetching cached result from local: {e}")
+        except Exception:
             return None
 
     def write_result_to_cache(self, json_model: BaseModel, doc_key: str):
@@ -197,4 +191,4 @@ class Task:
         if not self._cache_location:
             return
         doc_path = self._get_cache_doc_path(doc_key)
-        self._json_file_writer.process(doc_path, [json_model])
+        self._json_file_writer.process(doc_path, json_model)

@@ -9,6 +9,7 @@ import os
 from urllib.parse import urlparse
 from typing import List, Tuple, Sequence
 
+from tasks.common.io import Mode, get_file_source
 from tasks.segmentation.ditod import add_vit_config
 from tasks.segmentation.entities import (
     SegmentationResult,
@@ -66,6 +67,17 @@ class DetectronSegmenter(Task):
         gpu: bool = True,
     ):
         super().__init__(task_id, model_data_cache_path)
+
+        # check for conflicting paths - can't have model weights and cache both in S3
+        # because S3 model weights are downloaded and stored on the local filesystem
+        model_source = get_file_source(model_data_path)
+        cache_source = get_file_source(model_data_cache_path)
+        if (
+            model_source == Mode.S3_URI or model_source == Mode.URL
+        ) and cache_source == Mode.S3_URI:
+            raise ValueError(
+                "Model data path and cache path cannot both be S3 locations"
+            )
 
         model_paths = self._prep_config_data(model_data_path, model_data_cache_path)
 
@@ -137,7 +149,7 @@ class DetectronSegmenter(Task):
             result = self._create_result(input)
 
             # load and post-process the cached segmentation result
-            map_segmentation = MapSegmentation(**cached_data.model_dump())
+            map_segmentation = MapSegmentation.model_validate(cached_data)
             rank_segments(map_segmentation, self.class_labels)
 
             result.add_output(

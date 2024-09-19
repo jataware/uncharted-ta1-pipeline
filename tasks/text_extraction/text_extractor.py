@@ -36,13 +36,13 @@ class TextExtractor(Task):
     def __init__(
         self,
         task_id: str,
-        cache_dir: Path,
+        cache_location: str,
         to_blocks: bool = True,
         document_ocr: bool = False,
         gamma_correction: float = GAMMA_CORR_DEFAULT,
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
     ):
-        super().__init__(task_id, str(cache_dir))
+        super().__init__(task_id, str(cache_location))
         self._ocr = GoogleVisionOCR()
         self._model_id = "google-cloud-vision"
         self._to_blocks = to_blocks
@@ -107,7 +107,7 @@ class ResizeTextExtractor(TextExtractor):
     def __init__(
         self,
         task_id: str,
-        cache_dir: Path,
+        cache_location: str,
         to_blocks=True,
         document_ocr=False,
         pixel_lim: int = PIXEL_LIM_DEFAULT,
@@ -115,7 +115,12 @@ class ResizeTextExtractor(TextExtractor):
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
     ):
         super().__init__(
-            task_id, cache_dir, to_blocks, document_ocr, gamma_correction, output_key
+            task_id,
+            cache_location,
+            to_blocks,
+            document_ocr,
+            gamma_correction,
+            output_key,
         )
         self._pixel_lim = pixel_lim
         self._model_id += f"_resize-{pixel_lim}"
@@ -131,7 +136,7 @@ class ResizeTextExtractor(TextExtractor):
         cached_data = self.fetch_cached_result(doc_key)
         if cached_data:
             # validate the cached data
-            doc_extract = DocTextExtraction(**cached_data.model_dump())
+            doc_extract = DocTextExtraction.model_validate(cached_data)
             result = self._create_result(input)
             result.add_output(self._output_key, doc_extract.model_dump())
             return result
@@ -198,13 +203,16 @@ class TileTextExtractor(TextExtractor):
     def __init__(
         self,
         task_id: str,
-        cache_dir: Path,
+        cache_location: str,
         split_lim: int = PIXEL_LIM_DEFAULT,
         gamma_correction: float = GAMMA_CORR_DEFAULT,
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
     ):
         super().__init__(
-            task_id, cache_dir, gamma_correction=gamma_correction, output_key=output_key
+            task_id,
+            cache_location,
+            gamma_correction=gamma_correction,
+            output_key=output_key,
         )
         self.split_lim = split_lim
         self._model_id += f"_tile-{split_lim}"
@@ -231,7 +239,7 @@ class TileTextExtractor(TextExtractor):
         cached_data = self.fetch_cached_result(doc_key)
         if cached_data:
             logger.info(f"Using cached OCR results for raster: {input.raster_id}")
-            doc_text = DocTextExtraction(**cached_data.model_dump())
+            doc_text = DocTextExtraction.model_validate(cached_data)
             result = self._create_result(input)
             result.add_output(
                 self._output_key,

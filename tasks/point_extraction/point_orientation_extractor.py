@@ -402,7 +402,7 @@ class PointOrientationExtractor(Task):
         try:
             cached_data = self.fetch_cached_result(doc_key)
             if cached_data:
-                map_point_labels = PointLabels(**cached_data.model_dump())
+                map_point_labels = PointLabels(**cached_data)
                 if (
                     map_point_labels.labels
                     and len(map_point_labels.labels) == num_predictions
