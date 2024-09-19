@@ -1,13 +1,15 @@
 import io
+import logging
 import os
 import re
 import json
 from urllib.parse import urlparse
 from enum import Enum
 from pathlib import Path
+from venv import logger
 import httpx
 from pydantic import BaseModel
-from typing import Iterator, List, Tuple, Sequence, Union
+from typing import Iterator, List, Optional, Tuple, Sequence, Union
 from PIL.Image import Image as PILImage
 from PIL import Image
 from tasks.common.image_io import normalize_image_format
@@ -18,6 +20,8 @@ Image.MAX_IMAGE_PIXELS = 400000000  # to allow PIL to load large images
 
 # regex for matching s3 uris
 S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.\-_]{1,255}/.*$")
+
+logger = logging.getLogger(__name__)
 
 
 class Mode(Enum):
@@ -37,7 +41,7 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
 
         # check if the string is an s3 uri or a file path and collect up the
         # locations of the files to be loaded
-        mode = self._get_file_source(image_path)
+        mode = get_file_source(image_path)
         if mode == Mode.S3_URI or mode == Mode.URL:
             self._s3_init(image_path)
         else:
@@ -52,7 +56,7 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
             image_path = self._image_files[self._index]
             self._index += 1
 
-            mode = self._get_file_source(image_path)
+            mode = get_file_source(image_path)
             if mode == Mode.S3_URI or mode == Mode.URL:
                 # process the image from s3
                 image = self._load_s3(image_path, mode)
@@ -76,34 +80,13 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
     def _load_s3(self, path: str, mode: Mode) -> PILImage:
         """Loads an image file from s3 into memory as a PIL image object"""
         # extract bucket and prefix string from path
-        bucket, key = self._get_bucket_key(path, mode)
+        bucket, key = get_bucket_key(path, mode)
         # load image from s3
         s3 = boto3.resource("s3")
         obj = s3.Object(bucket, key)
         img_bytes_io = io.BytesIO(obj.get()["Body"].read())
         image = Image.open(img_bytes_io)
         return image
-
-    def _get_bucket_key(self, path: str, mode: Mode) -> Tuple[str, str]:
-        """Extracts the bucket and key from an s3 uri"""
-        if mode == Mode.S3_URI:
-            bucket = path.split("/")[2]
-            key = "/".join(path.split("/")[3:])
-        elif mode == Mode.URL:
-            bucket = path.split("/")[3]
-            key = "/".join(path.split("/")[4:])
-        else:
-            raise ValueError(f"Invalid mode {mode}")
-        return (bucket, key)
-
-    def _get_file_source(self, path: str) -> Mode:
-        """Checks if the path is a file, s3 uri, or url"""
-        if S3_URI_MATCHER.match(path):
-            return Mode.S3_URI
-        elif urlparse(path).scheme == "http" or urlparse(path).scheme == "https":
-            return Mode.URL
-        else:
-            return Mode.FILE
 
     def _file_init(self, path: str):
         """Initializes the iterator with a list of local image files"""
@@ -126,7 +109,7 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
         client = boto3.client("s3")  # type: ignore
         # extract bucket and prefix string from path
         split_path = path.split("/")
-        if self._get_file_source(path) == Mode.URL:
+        if get_file_source(path) == Mode.URL:
             parsed_url = urlparse(path)
             source = parsed_url.scheme + "://" + parsed_url.netloc
             bucket = split_path[3]
@@ -298,7 +281,7 @@ def download_file(image_url: str) -> bytes:
 class JSONFileReader:
     """Reads a JSON file and returns a list of BaseModel objects"""
 
-    def process(self, input_location: str) -> List[BaseModel]:
+    def process(self, input_location: str) -> BaseModel:
         """Reads a JSON file and returns a list of BaseModel objects"""
 
         # check to see if path is an s3 uri - otherwise treat it as a file path
@@ -308,7 +291,7 @@ class JSONFileReader:
             return self._read_from_file(Path(input_location))
 
     @staticmethod
-    def _read_from_file(input_location: Path) -> List[BaseModel]:
+    def _read_from_file(input_location: Path) -> BaseModel:
         """Reads a JSON file and returns a list of BaseModel objects"""
 
         # get the director of the file
@@ -316,26 +299,62 @@ class JSONFileReader:
             raise ValueError(f"Input location {input_location} is not a file.")
 
         # read the data from the input file
-        data = []
         with open(input_location, "r") as infile:
-            for line in infile:
-                data.append(json.loads(line))
+            data = json.load(infile)
         return data
 
     @staticmethod
-    def _read_from_s3(input_uri: str) -> List[BaseModel]:
+    def _read_from_s3(input_uri: str) -> BaseModel:
         """Reads a JSON file from an s3 bucket and returns a list of BaseModel objects"""
 
         # create s3 client
         client = boto3.client("s3")  # type: ignore
 
         # extract bucket from s3 uri
-        bucket = input_uri.split("/")[2]
-        key = "/".join(input_uri.split("/")[3:])
+        bucket, key = get_bucket_key(input_uri, Mode.S3_URI)
 
         # read data from the bucket
         response = client.get_object(Bucket=bucket, Key=key)
-        data = []
-        for line in response["Body"].iter_lines():
-            data.append(json.loads(line))
+        if response["ResponseMetadata"]["HTTPStatusCode"] != 200:
+            raise Exception(f"Failed to read from s3 bucket {bucket} with key {key}.")
+
+        data = json.loads(response["Body"].read().decode("utf-8"))
         return data
+
+
+def get_bucket_key(path: str, mode: Mode) -> Tuple[str, str]:
+    """Extracts the bucket and key from an s3 uri"""
+    if mode == Mode.S3_URI:
+        bucket = path.split("/")[2]
+        key = "/".join(path.split("/")[3:])
+    elif mode == Mode.URL:
+        bucket = path.split("/")[3]
+        key = "/".join(path.split("/")[4:])
+    else:
+        raise ValueError(f"Invalid mode {mode}")
+    return (bucket, key)
+
+
+def get_file_source(path: str) -> Mode:
+    """Checks if the path is a file, s3 uri, or url"""
+    if S3_URI_MATCHER.match(path):
+        return Mode.S3_URI
+    elif urlparse(path).scheme == "http" or urlparse(path).scheme == "https":
+        return Mode.URL
+    else:
+        return Mode.FILE
+
+
+def bucket_exists(uri: str) -> bool:
+    client = boto3.client("s3")
+    bucket = uri.split("/")[2]
+    try:
+        client.head_bucket(Bucket=bucket)
+        return True
+    except client.exceptions.NoSuchBucket:
+        return False
+    except client.exceptions.ClientError as e:
+        error_code = int(e.response["Error"]["Code"])
+        if error_code == 404:
+            return False
+        raise

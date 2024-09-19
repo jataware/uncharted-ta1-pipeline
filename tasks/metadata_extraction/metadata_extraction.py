@@ -273,7 +273,7 @@ class MetadataExtractor(Task):
         cache_dir: str = "",
         include_place_bounds: bool = True,
     ):
-        super().__init__(id, cache_dir=cache_dir)
+        super().__init__(id, cache_location=cache_dir)
 
         self._chat_model = ChatOpenAI(
             model=model, temperature=0.1
@@ -320,7 +320,7 @@ class MetadataExtractor(Task):
         result = self.fetch_cached_result(doc_id)
         if result:
             logger.info(f"Using cached metadata extraction result for key {doc_id}")
-            task_result.add_output(METADATA_EXTRACTION_OUTPUT_KEY, result)
+            task_result.add_output(METADATA_EXTRACTION_OUTPUT_KEY, result.model_dump())
             return task_result
 
         logger.info(f"No cached metadata extraction result found for {doc_id}")
@@ -374,7 +374,7 @@ class MetadataExtractor(Task):
             metadata.map_color = self._compute_color_level(input.image)
 
             # update the cache
-            self.write_result_to_cache(metadata.model_dump(), doc_id)
+            self.write_result_to_cache(metadata, doc_id)
 
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()

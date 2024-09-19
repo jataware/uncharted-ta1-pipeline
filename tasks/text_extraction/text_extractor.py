@@ -1,7 +1,5 @@
 import numpy as np
-import os
 import logging
-import json
 from math import ceil
 from typing import Tuple, List, Dict, Any
 from pathlib import Path
@@ -130,13 +128,12 @@ class ResizeTextExtractor(TextExtractor):
         doc_key = f"{input.raster_id}_{self._model_id}_{self._gamma_correction}"
 
         # check cache and re-use existing file if present
-        cached_json = self.fetch_cached_result(doc_key)
-        if cached_json:
+        cached_data = self.fetch_cached_result(doc_key)
+        if cached_data:
+            # validate the cached data
+            doc_extract = DocTextExtraction(**cached_data.model_dump())
             result = self._create_result(input)
-            result.add_output(
-                self._output_key,
-                DocTextExtraction(**cached_json).model_dump(),
-            )
+            result.add_output(self._output_key, doc_extract.model_dump())
             return result
 
         # pre-processing: apply gamma correction and re-size image, as needed
@@ -167,7 +164,7 @@ class ResizeTextExtractor(TextExtractor):
         doc_text_extraction = DocTextExtraction(doc_id=doc_key, extractions=texts)
 
         # write to cache
-        self.write_result_to_cache(doc_text_extraction.model_dump(), doc_key)
+        self.write_result_to_cache(doc_text_extraction, doc_key)
 
         result = self._create_result(input)
         result.add_output(self._output_key, doc_text_extraction.model_dump())
@@ -231,13 +228,14 @@ class TileTextExtractor(TextExtractor):
         doc_key = f"{input.raster_id}_{self._model_id}_{self._gamma_correction}"
 
         # check cache and re-use existing file if present
-        json_data = self.fetch_cached_result(doc_key)
-        if json_data:
+        cached_data = self.fetch_cached_result(doc_key)
+        if cached_data:
             logger.info(f"Using cached OCR results for raster: {input.raster_id}")
+            doc_text = DocTextExtraction(**cached_data.model_dump())
             result = self._create_result(input)
             result.add_output(
                 self._output_key,
-                DocTextExtraction(**json_data).model_dump(),
+                doc_text.model_dump(),
             )
             return result
 
@@ -274,13 +272,12 @@ class TileTextExtractor(TextExtractor):
             texts.append(ocr_result)
 
         doc_text_extraction = DocTextExtraction(doc_id=doc_key, extractions=texts)
-        json_data = doc_text_extraction.model_dump()
 
         # write to cache
-        self.write_result_to_cache(json_data, doc_key)
+        self.write_result_to_cache(doc_text_extraction, doc_key)
 
         result = self._create_result(input)
-        result.add_output(self._output_key, json_data)
+        result.add_output(self._output_key, doc_text_extraction.model_dump())
         return result
 
     def _split_image(self, image: PILImage, size_limit: int) -> List[Tile]:

@@ -374,13 +374,12 @@ class PointOrientationExtractor(Task):
                 )
             logger.info(f"Finished point orientation analysis for class {c}")
 
-        json_data = map_point_labels.model_dump()
         # write to cache
-        self.write_result_to_cache(json_data, doc_key)
+        self.write_result_to_cache(map_point_labels, doc_key)
 
         return TaskResult(
             task_id=self._task_id,
-            output={MAP_PT_LABELS_OUTPUT_KEY: json_data},
+            output={MAP_PT_LABELS_OUTPUT_KEY: map_point_labels.model_dump()},
         )
 
     def _trig_to_compass_angle(self, angle_deg: int, rotate_max: int) -> int:
@@ -401,9 +400,9 @@ class PointOrientationExtractor(Task):
     ) -> Optional[PointLabels]:
 
         try:
-            json_data = self.fetch_cached_result(doc_key)
-            if json_data:
-                map_point_labels = PointLabels(**json_data)
+            cached_data = self.fetch_cached_result(doc_key)
+            if cached_data:
+                map_point_labels = PointLabels(**cached_data.model_dump())
                 if (
                     map_point_labels.labels
                     and len(map_point_labels.labels) == num_predictions

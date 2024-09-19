@@ -246,49 +246,21 @@ def test_json_file_reader_s3():
 
     reader = JSONFileReader()
     data = reader.process(output_location)
-    assert data == [test_data]
-
-    # Test reading a list of BaseModel instances
-    test_data = [
-        {"name": "test1", "color": "red"},
-        {"name": "test2", "color": "blue"},
-    ]
-    output_location = "s3://test-bucket/data/test_list.json"
-    bucket.put_object(
-        Body="\n".join(json.dumps(d) for d in test_data).encode("utf-8"),
-        Key="data/test_list.json",
-    )
-
-    data = reader.process(output_location)
     assert data == test_data
 
 
 def test_json_file_reader_filesystem():
     # Test reading a single BaseModel instance
     test_data = {"name": "test", "color": "red"}
+    # create the test dir if it doesn't exist
+    test_dir = Path("tasks/common/test/data")
+    test_dir.mkdir(parents=True, exist_ok=True)
     output_location = "tasks/common/test/data/test.json"
-    os.makedirs(output_location[: output_location.rfind("/")], exist_ok=True)
     with open(output_location, "w") as f:
         json.dump(test_data, f)
 
     reader = JSONFileReader()
     data = reader.process(output_location)
-    assert data == [test_data]
-
-    os.remove(output_location)
-
-    # Test reading a list of BaseModel instances
-    test_data = [
-        {"name": "test1", "color": "red"},
-        {"name": "test2", "color": "blue"},
-    ]
-    output_location = "tasks/common/test/data/test_list.json"
-    with open(output_location, "w") as f:
-        for d in test_data:
-            f.write(json.dumps(d) + "\n")
-
-    data = reader.process(output_location)
     assert data == test_data
 
     os.remove(output_location)
-    os.rmdir("tasks/common/test/data")

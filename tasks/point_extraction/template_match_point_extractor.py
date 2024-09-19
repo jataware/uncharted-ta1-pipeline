@@ -348,7 +348,7 @@ class TemplateMatchPointExtractor(Task):
                 templatematch_point_labels.labels.extend(preds)  # type: ignore
 
         # write to cache (note: only cache the template matched point extractions; not all of them)
-        self.write_result_to_cache(templatematch_point_labels.model_dump(), doc_key)
+        self.write_result_to_cache(templatematch_point_labels, doc_key)
 
         # append template-match extractions to main point extractions results
         map_point_labels.labels.extend(templatematch_point_labels.labels)  # type: ignore
@@ -515,9 +515,9 @@ class TemplateMatchPointExtractor(Task):
     ) -> Optional[PointLabels]:
 
         try:
-            json_data = self.fetch_cached_result(doc_key)
-            if json_data:
-                templatematch_point_labels = PointLabels(**json_data)
+            cached_data = self.fetch_cached_result(doc_key)
+            if cached_data:
+                templatematch_point_labels = PointLabels(**cached_data.model_dump())
                 # check that the expected set of point types are in cache
                 pt_types_legend = set()
                 for leg in legend_items:
