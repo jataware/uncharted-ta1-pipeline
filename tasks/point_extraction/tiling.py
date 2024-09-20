@@ -45,7 +45,10 @@ logger = logging.getLogger(__name__)
 
 class Tiler(Task):
     """
-    Decomposes a full image into smaller tiles
+    Decomposes a full image into smaller tiles.
+    Segmentation model output is used to tile only the map ROI, if present.
+    If no map segment is found, then either no tiles are created (if skip_if_no_map=True),
+    or the whole image is tiled.
 
     NOTE: for point extractor inference, for best results it is recommended
     to use the same size tiles that were used during model training
@@ -58,9 +61,11 @@ class Tiler(Task):
         task_id="",
         tile_size: tuple = (1024, 1024),
         overlap: tuple = TILE_OVERLAP_DEFAULT,
+        skip_if_no_map: bool = True,
     ):
         self.tile_size = tile_size
         self.overlap = overlap
+        self.skip_if_no_map = skip_if_no_map
         super().__init__(task_id)
 
     def run(
@@ -71,6 +76,8 @@ class Tiler(Task):
         x_min = 0
         y_min = 0
         y_max, x_max, _ = image_array.shape
+        # init ROI as full image bounds
+        roi_bounds: List[int] = [x_min, y_min, x_max, y_max]
 
         # ---- use image segmentation to restrict point extraction to map area only
         poly_legend = []
@@ -98,7 +105,12 @@ class Tiler(Task):
                 # restrict tiling to use *only* the bounding rectangle of map area
                 poly_map = poly_map[0]  # use 1st (highest ranked) map segment
                 (x_min, y_min, x_max, y_max) = [int(b) for b in poly_map.bounds]
-        roi_bounds = (x_min, y_min, x_max, y_max)
+                roi_bounds = [x_min, y_min, x_max, y_max]
+            elif self.skip_if_no_map:
+                logger.info(
+                    "No map segment found; forcing tiler to create 0 map tiles for point extraction."
+                )
+                roi_bounds = []
 
         # ---- create tiles for map area
         logger.info("Creating map area tiles")
@@ -113,14 +125,14 @@ class Tiler(Task):
             )
             if poly_legend and not legend_items_use_ontology(legend_pt_items):
                 # legend annotations don't all use the expected ontology
-                roi_bounds = []
+                roi_bounds_leg = []
                 for p_leg in poly_legend:
-                    roi_bounds.append([int(b) for b in p_leg.bounds])
+                    roi_bounds_leg.append([int(b) for b in p_leg.bounds])
                 logger.info("Also creating legend area tiles")
                 legend_tiles = self._create_tiles(
                     task_input.raster_id,
                     image_array,
-                    roi_bounds,
+                    roi_bounds_leg,
                     SEGMENT_POINT_LEGEND_CLASS,
                 )
 
@@ -142,7 +154,7 @@ class Tiler(Task):
         self,
         raster_id: str,
         image_array: np.ndarray,
-        roi_bounds: List[Tuple],
+        roi_bounds: List[List],
         roi_label: str,
     ) -> ImageTiles:
         """
@@ -153,6 +165,9 @@ class Tiler(Task):
         tiles: List[ImageTile] = []
 
         for bounds in roi_bounds:
+            if len(bounds) < 4:
+                # empty or invalid ROI bounds
+                continue
             (x_min, y_min, x_max, y_max) = bounds
 
             for y in range(y_min, y_max, step_y):
@@ -188,6 +203,8 @@ class Tiler(Task):
         if len(roi_bounds) > 0:
             bounds_global = list(roi_bounds[0])
             for bounds in roi_bounds:
+                if len(bounds) < 4:
+                    continue
                 bounds_global[0] = min(bounds_global[0], bounds[0])
                 bounds_global[1] = min(bounds_global[1], bounds[1])
                 bounds_global[2] = max(bounds_global[2], bounds[2])
@@ -268,7 +285,7 @@ class Untiler(Task):
         all_predictions = []
         overlap_predictions = {}
         num_dedup = 0
-        map_path = image_tiles.tiles[0].image_path
+        map_path = image_tiles.tiles[0].image_path if len(image_tiles.tiles) > 0 else ""
         for tile in image_tiles.tiles:
 
             x_offset = tile.x_offset  # xmin of tile, absolute value in original map
