@@ -58,7 +58,7 @@ from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextEx
 
 from typing import List
 
-logger = logging.getLogger("factory")
+logger = logging.getLogger(__name__)
 
 
 class GeoreferencingPipeline(Pipeline):

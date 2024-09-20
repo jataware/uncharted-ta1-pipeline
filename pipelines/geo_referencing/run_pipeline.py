@@ -2,7 +2,6 @@ import argparse
 import logging
 import os
 
-from geopy.distance import distance as geo_distance
 from PIL.Image import Image as PILIMAGE
 from PIL import Image
 
@@ -19,23 +18,16 @@ from tasks.geo_referencing.entities import (
     GEOREFERENCING_OUTPUT_KEY,
 )
 from tasks.geo_referencing.georeference import QueryPoint
-from util.json import read_json_file
-
+from util import logging as logging_util
 from typing import List, Optional, Tuple
 
-FOV_RANGE_KM = (
-    700  # [km] max range of a image's field-of-view (around the clue coord pt)
-)
-LON_MINMAX = [-66.0, -180.0]  # fallback geo-fence (ALL of USA + Alaska)
-LAT_MINMAX = [24.0, 73.0]
-
 IMG_FILE_EXT = "tif"
-CLUE_FILEN_SUFFIX = "_clue"
 
 Image.MAX_IMAGE_PIXELS = 400000000
 GEOCODE_CACHE = "temp/geocode/"
 
 logger = logging.getLogger("georeferencing_pipeline")
+logging_util.config_logger(logger)
 
 
 def main():
@@ -45,9 +37,7 @@ def main():
     parser.add_argument("--input", type=str, required=True)
     parser.add_argument("--output", type=str, required=True)
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--clue_dir", type=str, default="")
     parser.add_argument("--query_dir", type=str, default="")
-    parser.add_argument("--points_dir", type=str, default="")
     parser.add_argument("--extract_metadata", action="store_true")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument(
@@ -85,23 +75,16 @@ def main():
     run_pipeline(p, input)
 
 
-def create_input(
-    raster_id: str, image: PILIMAGE, points_path: str, query_path: str, clue_path: str
-) -> PipelineInput:
+def create_input(raster_id: str, image: PILIMAGE, query_path: str) -> PipelineInput:
     input = PipelineInput()
     input.image = image
     input.raster_id = raster_id
 
-    lon_minmax, lat_minmax, lon_sign_factor, clue_point = get_params(clue_path)
-    input.params["lon_minmax"] = lon_minmax
-    input.params["lat_minmax"] = lat_minmax
-    input.params["lon_sign_factor"] = lon_sign_factor
-    input.params["clue_point"] = clue_point
-
-    query_pts = query_points_from_points(raster_id, points_path)
-    if not query_pts:
+    # if a query path is specified, parse the query file and the contents to the
+    # query points output key for consumption within the pipeline
+    if query_path != "":
         query_pts = parse_query_file(query_path, input.image.size)
-    input.params[QUERY_POINTS_OUTPUT_KEY] = query_pts
+        input.params[QUERY_POINTS_OUTPUT_KEY] = query_pts
 
     return input
 
@@ -121,9 +104,7 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
     )
 
     # get file paths
-    clue_dir = parsed.clue_dir
     query_dir = parsed.query_dir
-    points_dir = parsed.points_dir
 
     writer_csv = CSVWriter()
     writer_json = JSONWriter()
@@ -139,11 +120,11 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
     for raster_id, image in input_data:
         logger.info(f"processing {raster_id}")
 
-        clue_path = os.path.join(clue_dir, raster_id + CLUE_FILEN_SUFFIX + ".csv")
-        query_path = os.path.join(query_dir, raster_id + ".csv")
-        points_path = os.path.join(points_dir, f"pipeline_output_{raster_id}.json")
+        query_path = (
+            os.path.join(query_dir, raster_id + ".csv") if query_dir != "" else ""
+        )
 
-        input = create_input(raster_id, image, points_path, query_path, clue_path)
+        input = create_input(raster_id, image, query_path)
 
         logger.info(f"running pipeline {pipeline.id}")
         output = pipeline.run(input)
@@ -183,50 +164,6 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
     writer_json.output(
         results_gcps,
         {"path": os.path.join(parsed.output, f"gcps_{pipeline.id}.json")},
-    )
-
-
-def get_geofence(
-    csv_clue_file: str,
-    fov_range_km: float,
-    lon_limits: List[float] = [-66.0, -180.0],
-    lat_limits: List[float] = [24.0, 73.0],
-) -> Tuple[List[float], List[float], float, Optional[Tuple[float, float]]]:
-    # parse clue CSV file
-    assert logger is not None
-    (clue_lon, clue_lat, clue_ok) = parse_clue_file(csv_clue_file)
-    clue_point = None
-    if clue_ok:
-        # if False:
-        logger.info("using lon/lat clue {}, {}".format(clue_lon, clue_lat))
-        dist_km = (
-            fov_range_km / 2.0
-        )  # distance from clue pt in all directions (N,E,S,W)
-        fov_pt_north = geo_distance(kilometers=dist_km).destination(
-            (clue_lat, clue_lon), bearing=0
-        )
-        fov_pt_east = geo_distance(kilometers=dist_km).destination(
-            (clue_lat, clue_lon), bearing=90
-        )
-        fov_degrange_lon = abs(fov_pt_east[1] - clue_lon)
-        fov_degrange_lat = abs(fov_pt_north[0] - clue_lat)
-        lon_minmax = [clue_lon - fov_degrange_lon, clue_lon + fov_degrange_lon]
-        lat_minmax = [clue_lat - fov_degrange_lat, clue_lat + fov_degrange_lat]
-        clue_point = (clue_lon, clue_lat)
-
-    else:
-        # if no lat/lon clue, fall-back to full geo-fence of USA + Alaska
-        logger.info("no lon/lat clue found so using full geo-fence for USA + Alaska")
-        lon_minmax = lon_limits
-        lat_minmax = lat_limits
-
-    lon_sign_factor = 1.0
-
-    return (
-        lon_minmax,
-        lat_minmax,
-        lon_sign_factor,
-        clue_point,
     )
 
 
@@ -283,83 +220,6 @@ def parse_query_file(
         logger.exception(f"EXCEPTION parsing query file: {str(e)}", exc_info=True)
 
     return query_pts
-
-
-def query_points_from_points(
-    raster_id: str, points_file: str
-) -> Optional[List[QueryPoint]]:
-    return None
-    if not os.path.isfile(points_file):
-        return None
-
-    query_points = []
-    points_raw = read_json_file(points_file)
-    for pt in points_raw["labels"]:
-        x = int((pt["x1"] + pt["x2"]) / 2)
-        y = int((pt["y1"] + pt["y2"]) / 2)
-        query_points.append(
-            QueryPoint(raster_id, (x, y), None, properties={"label": pt["class_name"]})
-        )
-
-    return query_points
-
-
-def get_params(
-    clue_path: str,
-) -> Tuple[List[float], List[float], float, Optional[Tuple[float, float]]]:
-    return get_geofence(
-        clue_path,
-        fov_range_km=FOV_RANGE_KM,
-        lon_limits=LON_MINMAX,
-        lat_limits=LAT_MINMAX,
-    )
-
-
-def parse_clue_file(csv_clue_file: str) -> Tuple[float, float, bool]:
-    """
-    Expected schema is of the form:
-    raster_ID,NAD83_x,NAD83_y
-    GEO_0004,-105.72065081057087,43.40255034572461
-
-    Or possibly
-    raster_ID,row,col,NAD83_x,NAD83_y
-    GEO_0004,,,-105.72065081057087,43.40255034572461
-    """
-
-    first_line = True
-    got_clue = False
-    lon = 0.0
-    lat = 0.0
-    if not os.path.isfile(csv_clue_file):
-        assert logger is not None
-        logger.info(f"clue file not found when looking for {csv_clue_file}")
-        return (lon, lat, got_clue)
-
-    try:
-        with open(csv_clue_file) as f_in:
-            for line in f_in:
-                if line.startswith("raster_") or first_line:
-                    first_line = False
-                    continue  # header line, skip
-
-                if got_clue:
-                    break
-
-                rec = line.split(",")
-                if len(rec) < 3:
-                    continue
-                if len(rec) < 5:
-                    lon = float(rec[1])
-                    lat = float(rec[2])
-                else:
-                    lon = round(float(rec[3]), 1)  # round to 1 decimal place
-                    lat = round(float(rec[4]), 1)
-                got_clue = True
-    except Exception as e:
-        print("EXCEPTION parsing clue file!")
-        print(e)
-
-    return (lon, lat, got_clue)
 
 
 if __name__ == "__main__":
