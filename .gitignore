@@ -168,3 +168,4 @@ pipelines/metadata_extraction/working/
 pipelines/metadata_extraction/deploy/**/
 docker-compose.yml
 **/results_viz/*.tif
+results_*/
