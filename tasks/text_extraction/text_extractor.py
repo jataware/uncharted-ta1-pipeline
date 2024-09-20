@@ -42,7 +42,7 @@ class TextExtractor(Task):
         gamma_correction: float = GAMMA_CORR_DEFAULT,
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
     ):
-        super().__init__(task_id, str(cache_location))
+        super().__init__(task_id, cache_location)
         self._ocr = GoogleVisionOCR()
         self._model_id = "google-cloud-vision"
         self._to_blocks = to_blocks

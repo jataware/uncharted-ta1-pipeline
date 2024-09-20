@@ -2,7 +2,10 @@ import logging
 from pathlib import Path
 from typing import List
 
+from flask import app
+
 from schema.mappers.cdr import PointsMapper
+from tasks.common.io import append_to_cache_location
 from tasks.point_extraction.legend_analyzer import (
     LegendPreprocessor,
     LegendPostprocessor,
@@ -56,7 +59,7 @@ class PointExtractionPipeline(Pipeline):
         self,
         model_path: str,
         model_path_segmenter: str,
-        work_dir: str,
+        cache_location: str,
         verbose=False,
         fetch_legend_items=False,
         include_cdr_output=True,
@@ -70,7 +73,7 @@ class PointExtractionPipeline(Pipeline):
         yolo_point_extractor = YOLOPointDetector(
             "point_detection",
             model_path,
-            str(Path(work_dir).joinpath("points")),
+            append_to_cache_location(cache_location, "points"),
             batch_size=batch_size,
             device="auto" if gpu else "cpu",
         )
@@ -78,7 +81,9 @@ class PointExtractionPipeline(Pipeline):
         tasks = []
         tasks.append(
             TileTextExtractor(
-                "tile_text", Path(work_dir).joinpath("text"), gamma_correction=0.5
+                "tile_text",
+                append_to_cache_location(cache_location, "text"),
+                gamma_correction=0.5,
             )
         )
         if model_path_segmenter:
@@ -87,7 +92,7 @@ class PointExtractionPipeline(Pipeline):
                     DetectronSegmenter(
                         "segmenter",
                         model_path_segmenter,
-                        str(Path(work_dir).joinpath("segmentation")),
+                        append_to_cache_location(cache_location, "segmentation"),
                         gpu=gpu,
                     ),
                     DenoiseSegments("segment_denoising"),
@@ -106,12 +111,12 @@ class PointExtractionPipeline(Pipeline):
                 PointOrientationExtractor(
                     "point_orientation_extraction",
                     yolo_point_extractor._model_id,
-                    str(Path(work_dir).joinpath("point_orientations")),
+                    append_to_cache_location(cache_location, "point_orientations"),
                 ),
                 LegendPostprocessor("legend_postprocessor", ""),
                 TemplateMatchPointExtractor(
                     "template_match_point_extraction",
-                    str(Path(work_dir).joinpath("template_match_points")),
+                    append_to_cache_location(cache_location, "template_match_points"),
                 ),
                 FinalizePointExtractions("finalize_points"),
             ]

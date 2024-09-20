@@ -1,3 +1,4 @@
+from tasks.common.io import Mode, get_file_source
 from tasks.point_extraction.entities import (
     ImageTile,
     ImageTiles,
@@ -42,6 +43,14 @@ class YOLOPointDetector(Task):
         batch_size: int = 20,
         device: str = "auto",
     ):
+
+        cache_source = get_file_source(cache_path)
+        model_source = get_file_source(model_data_path)
+        if cache_source == Mode.S3_URI and model_source == Mode.URL:
+            raise ValueError(
+                "Cannot fetch model data from URL when cache is in S3. Please download the model data to a local file."
+            )
+
         local_data_path = self._prep_model_data(model_data_path, cache_path)
         self.model = YOLO(local_data_path)
         self.bsz = batch_size
