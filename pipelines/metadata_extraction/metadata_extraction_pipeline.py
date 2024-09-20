@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import List
 from PIL import ImageDraw
+from tasks.common.io import append_to_cache_location
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.text_filter import TextFilter, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.metadata_extraction.entities import (
@@ -35,7 +36,7 @@ MODEL_VERSION = importlib.metadata.version(MODEL_NAME)
 class MetadataExtractorPipeline(Pipeline):
     def __init__(
         self,
-        work_dir: str,
+        cache_location: str,
         model_data_path: str,
         debug_images=False,
         cdr_schema=False,
@@ -45,12 +46,17 @@ class MetadataExtractorPipeline(Pipeline):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
             ResizeTextExtractor(
-                "resize_text", Path(work_dir).joinpath("text"), False, True, 6000, 0.5
+                "resize_text",
+                append_to_cache_location(cache_location, "text"),
+                False,
+                True,
+                6000,
+                0.5,
             ),
             DetectronSegmenter(
                 "segmenter",
                 model_data_path,
-                str(Path(work_dir).joinpath("segmentation")),
+                append_to_cache_location(cache_location, "segmentation"),
                 gpu=gpu,
             ),
             TextFilter(
@@ -64,7 +70,7 @@ class MetadataExtractorPipeline(Pipeline):
             MetadataExtractor(
                 "metadata_extractor",
                 model=model,
-                cache_dir=os.path.join(work_dir, "metadata"),
+                cache_location=append_to_cache_location(cache_location, "metadata"),
             ),
         ]
 
@@ -79,8 +85,6 @@ class MetadataExtractorPipeline(Pipeline):
             outputs.append(FilteredOCROutput("filtered_ocr_output"))
 
         super().__init__("metadata_extraction", "Metadata Extraction", outputs, tasks)
-
-        self._ocr_output = Path(os.path.join(work_dir, "ocr_output"))
 
 
 class MetadataExtractionOutput(OutputCreator):

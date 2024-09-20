@@ -270,10 +270,10 @@ class MetadataExtractor(Task):
         model=LLM.GPT_4_O,
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
-        cache_dir: str = "",
+        cache_location: str = "",
         include_place_bounds: bool = True,
     ):
-        super().__init__(id, cache_location=cache_dir)
+        super().__init__(id, cache_location)
 
         self._chat_model = ChatOpenAI(
             model=model, temperature=0.1
