@@ -11,6 +11,7 @@ from pipelines.geo_referencing.output import (
     UserLeverOutput,
     SummaryOutput,
 )
+from tasks.common.io import append_to_cache_location
 from tasks.common.pipeline import Pipeline
 from tasks.common.task import Task, TaskInput
 from tasks.geo_referencing.coordinates_extractor import (
@@ -79,24 +80,31 @@ class GeoreferencingPipeline(Pipeline):
         geocoding_cache_points = os.path.join(
             working_dir, "geocoding_cache_points.json"
         )
-        geocoder_bounds = NominatimGeocoder(
+
+        # Nominatim geocoder service for bounds
+        bounds_geocoder = NominatimGeocoder(
             10, geocoding_cache_bounds, 1, country_code_filename=country_code_filename
         )
-        geocoder_points = NominatimGeocoder(
+
+        # Nominatim geocoder service for points
+        points_geocoder = NominatimGeocoder(
             10, geocoding_cache_points, 5, country_code_filename=country_code_filename
         )
 
-        segmentation_cache = os.path.join(working_dir, "segmentation")
-        text_cache = os.path.join(working_dir, "text")
-        metadata_cache = os.path.join(
-            working_dir, f"metadata-gamma-{ocr_gamma_correction}"
-        )
+        segmentation_cache = append_to_cache_location(working_dir, "segmentation")
+        text_cache = append_to_cache_location(working_dir, "text")
+        metadata_cache = append_to_cache_location(working_dir, "metadata")
         geocoder_thresh = 10
 
         tasks: List[Task] = [
+            # Extracts text from the tiled image
             TileTextExtractor(
-                "first", Path(text_cache), 6000, gamma_correction=ocr_gamma_correction
+                "tiled text extractor",
+                text_cache,
+                6000,
+                gamma_correction=ocr_gamma_correction,
             ),
+            # Segments the image into map,legend and cross section
             DetectronSegmenter(
                 "segmenter",
                 segmentation_model_path,
@@ -104,13 +112,16 @@ class GeoreferencingPipeline(Pipeline):
                 confidence_thres=0.25,
                 gpu=gpu_enabled,
             ),
+            # Defines an allowed region for cooredinates to occupy by buffering
+            # the extracted map area polyline by a fixed amount
             ModelROIExtractor(
-                "model roi",
+                "fixed region of interest extractor",
                 buffer_fixed,
             ),
+            # Filters out any text that is in the cross section or the legend areas of the
+            # map
             TextFilter(
-                "text_filter",
-                # input_key="metadata_ocr",
+                "metadata text filter",
                 output_key="filtered_ocr_text",
                 classes=[
                     "cross_section",
@@ -118,74 +129,104 @@ class GeoreferencingPipeline(Pipeline):
                     "legend_polygons",
                 ],
             ),
+            # Runs metadata extraction on the text remaining after the text filter above
+            # is applied
             MetadataExtractor(
                 "metadata_extractor",
                 LLM.GPT_4_O,
                 "filtered_ocr_text",
-                cache_dir=metadata_cache,
+                cache_location=metadata_cache,
             ),
+            # Creates geo locations for country and state of the map area based on the metadata
             Geocoder(
-                "geocoded_geobounds",
-                geocoder_bounds,
+                "country / state geocoder",
+                bounds_geocoder,
                 run_bounds=True,
                 run_points=False,
                 run_centres=False,
             ),
-            GeoFencer("geofence"),
-            GeoCoordinatesExtractor("geo_coordinates_extractor"),
-            ROIFilter("roi_filter"),
-            DistinctDegreeOutlierFilter("uniqueness_filter"),
-            HighQualityCoordinateFilter("quality_filter"),
-            OutlierFilter("outlier filter"),
-            NaiveFilter("naive_filter"),
+            # Creates a geofence based on the country and state geocoded locations
+            GeoFencer("country / state geofence"),
+            # Extracts all the possible geo coordinates from the UNFILTERED text
+            GeoCoordinatesExtractor("geo coordinates extractor"),
+            # Filters out any coordinates that are not in the buffered region of interest (ie. around the outside of the map poly)
+            ROIFilter("region of interest coord filter"),
+            # Remove coordinates that are duplicates but don't appear to be part of the main map area (ie. from an inset map)
+            DistinctDegreeOutlierFilter("uniqueness coord filter"),
+            # Remove low confidence coordinates if there are high confidence coordinates nearby (in pixel space)
+            HighQualityCoordinateFilter("quality coord filter"),
+            # Test for outliers in each of the X and Y directions independently using linear regression
+            OutlierFilter("regression outlier coord filter"),
+            # Cluster based on geo locations and remove those that are outliers
+            NaiveFilter("naive geo-space coord filter"),
+            # Filter out any of the original text that is not inside the map area
             TextFilter(
-                "map_area_filter",
+                "map area text retainer",
                 FilterMode.INCLUDE,
                 TEXT_EXTRACTION_OUTPUT_KEY,
                 "map_area_filter",
                 ["map"],
                 self._run_step,
             ),
+            # Run metadata extraction on the map area text only
             MetadataExtractor(
-                "metadata_map_area_extractor",
+                "metadata map area extractor",
                 LLM.GPT_4_O,
                 "map_area_filter",
                 self._run_step,
                 include_place_bounds=True,
             ),
+            # Geocode the places extracted from the map area
             Geocoder(
-                "geo-places",
-                geocoder_points,
+                "place geocoder",
+                points_geocoder,
                 run_bounds=False,
                 run_points=True,
                 run_centres=False,
                 should_run=self._run_step,
             ),
+            # Geo code the population centres extracted from the map area
             Geocoder(
-                "geo-centres",
-                geocoder_bounds,
+                "population center geocoder",
+                bounds_geocoder,
                 run_bounds=False,
                 run_points=False,
                 run_centres=True,
                 should_run=self._run_step,
             ),
-            UTMCoordinatesExtractor("utm-_coordinates"),
+            # Exract any UTM coordinates that are present - UTM zone will be inferred
+            UTMCoordinatesExtractor("utm coordinates extractor"),
+            # Extract any state plane coordinates that are present
             StatePlaneExtractor(
-                "state_plane_coordinates",
+                "state plane coordinate extractor",
                 state_plane_lookup_filename,
                 state_plane_zone_filename,
                 state_code_filename,
             ),
-            OutlierFilter("utm-outliers"),
-            UTMStatePlaneFilter("utm-state-plane"),
+            # Test UTM coords for outliers in each of the X and Y directions independently using linear regression
+            OutlierFilter("UTM outlier filter"),
+            # Filter out UTM or state plane coords if sufficient lat/lon coords are present
+            UTMStatePlaneFilter("UTM / state plane coordinate filter"),
+            # Generate georeferencing points from the full set of place and population centre geo coordinates
             PointGeocoder(
-                "geocoded-georeferencing", ["point", "population"], geocoder_thresh
+                "geocoded point transformation",
+                ["point", "population"],
+                geocoder_thresh,
             ),
-            BoxGeocoder("geocoded-box", ["point", "population"], geocoder_thresh),
-            CornerPointExtractor("corner_point_extractor"),
-            InferenceCoordinateExtractor("coordinate-inference"),
-            ScaleExtractor("scaler", ""),
-            CreateGroundControlPoints("gcp_creation", create_random_pts=False),
+            # Generate georeferencing points from the extent of the place and population centre geo coordinates
+            BoxGeocoder(
+                "geocoded box transformation", ["point", "population"], geocoder_thresh
+            ),
+            # Extract corner points from the map area
+            CornerPointExtractor("corner point extractor"),
+            # Infer addtional points in a given direction if there are insufficient points in that direction
+            InferenceCoordinateExtractor("coordinate inference"),
+            # This step doesn't seem to be doing anything given a lack of scale file being supplied
+            # ScaleExtractor("scaler", ""),
+            # Create ground control points for use in downstream tasks
+            CreateGroundControlPoints("gcp  creation", create_random_pts=False),
+            # Run the final georeferencing step using either the regression-based inference method, or the corner point
+            # methood if there are sufficient corner points
             GeoReference("georeference", 1),
         ]
 
