@@ -7,8 +7,12 @@ from PIL import Image
 
 from pipelines.geo_referencing.georeferencing_pipeline import GeoreferencingPipeline
 from pipelines.geo_referencing.output import CSVWriter, JSONWriter
-from tasks.common.io import BytesIOFileWriter, ImageFileInputIterator, JSONFileWriter
-from tasks.common.pipeline import BytesOutput, PipelineInput
+from tasks.common.io import (
+    BytesIOFileWriter,
+    ImageFileInputIterator,
+    JSONFileWriter,
+)
+from tasks.common.pipeline import BaseModelOutput, BytesOutput, PipelineInput
 from tasks.geo_referencing.entities import (
     LEVERS_OUTPUT_KEY,
     PROJECTED_MAP_OUTPUT_KEY,
@@ -38,7 +42,6 @@ def main():
     parser.add_argument("--output", type=str, required=True)
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--query_dir", type=str, default="")
-    parser.add_argument("--extract_metadata", action="store_true")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument(
         "--state_plane_lookup_filename",
@@ -67,6 +70,7 @@ def main():
     )
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--project", action="store_true")
+    parser.add_argument("--diagnostics", action="store_true")
     p = parser.parse_args()
 
     # setup an input stream
@@ -100,6 +104,8 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
         parsed.state_code_filename,
         parsed.country_code_filename,
         parsed.ocr_gamma_correction,
+        parsed.project,
+        parsed.diagnostics,
         not parsed.no_gpu,
     )
 
@@ -108,14 +114,13 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
 
     writer_csv = CSVWriter()
     writer_json = JSONWriter()
-    writer_base_obj_json = JSONFileWriter()
     writer_bytes = BytesIOFileWriter()
+    writer_json_file = JSONFileWriter()
 
     results_scoring = []
     results_summary = []
     results_levers = []
     results_gcps = []
-    results_integration = []
 
     for raster_id, image in input_data:
         logger.info(f"processing {raster_id}")
@@ -128,18 +133,24 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
 
         logger.info(f"running pipeline {pipeline.id}")
         output = pipeline.run(input)
-        results_scoring.append(output[SCORING_OUTPUT_KEY])
-        results_integration.append(output[GEOREFERENCING_OUTPUT_KEY])
-        results_summary.append(output[SUMMARY_OUTPUT_KEY])
-        results_levers.append(output[LEVERS_OUTPUT_KEY])
-        results_gcps.append(output[QUERY_POINTS_OUTPUT_KEY])
         logger.info(f"done pipeline {pipeline.id}\n\n")
+
+        # store the baseline georeferencing results
+        output_data = output[GEOREFERENCING_OUTPUT_KEY]
+        if isinstance(output_data, BaseModelOutput):
+            path = os.path.join(parsed.output, f"{raster_id}_georeferencing.json")
+            writer_json_file.process(path, output_data.data)
 
         # immediately write projected map to file - these are large so we don't want to accumulate them
         # in memory like the other results
         if parsed.project and PROJECTED_MAP_OUTPUT_KEY in output:
             map_output = output[PROJECTED_MAP_OUTPUT_KEY]
             if isinstance(map_output, BytesOutput):
+                if len(map_output.data.getbuffer()) == 0:
+                    logger.warning(
+                        f"projected map for {raster_id} is empty, skipping writing to file"
+                    )
+                    continue
                 output_path = os.path.join(
                     parsed.output, f"{raster_id}_projected_map.tif"
                 )
@@ -149,6 +160,17 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
                     map_output.data,
                 )
 
+        # store the diagnostic info if present
+        if SCORING_OUTPUT_KEY in output:
+            results_scoring.append(output[SCORING_OUTPUT_KEY])
+        if SUMMARY_OUTPUT_KEY in output:
+            results_summary.append(output[SUMMARY_OUTPUT_KEY])
+        if LEVERS_OUTPUT_KEY in output:
+            results_levers.append(output[LEVERS_OUTPUT_KEY])
+        if QUERY_POINTS_OUTPUT_KEY in output:
+            results_gcps.append(output[QUERY_POINTS_OUTPUT_KEY])
+
+    # write out the diagnostic info if present
     writer_csv.output(
         results_scoring,
         {"path": os.path.join(parsed.output, f"score_{pipeline.id}.csv")},

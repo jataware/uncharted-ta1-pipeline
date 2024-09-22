@@ -12,7 +12,7 @@ from pipelines.geo_referencing.output import (
     SummaryOutput,
 )
 from tasks.common.io import append_to_cache_location
-from tasks.common.pipeline import Pipeline
+from tasks.common.pipeline import OutputCreator, Pipeline
 from tasks.common.task import Task, TaskInput
 from tasks.geo_referencing.coordinates_extractor import (
     GeoCoordinatesExtractor,
@@ -71,6 +71,8 @@ class GeoreferencingPipeline(Pipeline):
         state_code_filename: str,
         country_code_filename: str,
         ocr_gamma_correction: float,
+        projected: bool,
+        diagnostics: bool,
         gpu_enabled: bool,
     ):
         geocoding_cache_bounds = os.path.join(
@@ -230,14 +232,22 @@ class GeoreferencingPipeline(Pipeline):
             GeoReference("georeference", 1),
         ]
 
-        outputs = [
-            ScoringOutput(SCORING_OUTPUT_KEY),
-            SummaryOutput(SUMMARY_OUTPUT_KEY),
-            UserLeverOutput(LEVERS_OUTPUT_KEY),
-            GCPOutput(QUERY_POINTS_OUTPUT_KEY),
-            ProjectedMapOutput(PROJECTED_MAP_OUTPUT_KEY),
-            GeoreferencingOutput(GEOREFERENCING_OUTPUT_KEY),
-        ]
+        # assign the baseline georeferencing output
+        outputs: List[OutputCreator] = [GeoreferencingOutput(GEOREFERENCING_OUTPUT_KEY)]
+
+        # assign additional diagnostics outputs if requested
+        if diagnostics:
+            outputs.extend(
+                [
+                    ScoringOutput(SCORING_OUTPUT_KEY),
+                    SummaryOutput(SUMMARY_OUTPUT_KEY),
+                    UserLeverOutput(LEVERS_OUTPUT_KEY),
+                    GCPOutput(QUERY_POINTS_OUTPUT_KEY),
+                ]
+            )
+        # create the projected map output if requested
+        if projected:
+            outputs.append(ProjectedMapOutput(PROJECTED_MAP_OUTPUT_KEY))
 
         super().__init__(
             "georeferencing_roi_poly_fixed", "Georeferencing", outputs, tasks

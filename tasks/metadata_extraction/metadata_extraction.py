@@ -254,6 +254,9 @@ class MetadataExtractor(Task):
 
     STATE_COUNTRY_TEMPLATE = (
         "The following information was extracted from a map using an OCR process:\n"
+        + "projection: {projection}\n"
+        + "datum: {datum}\n"
+        + "coordinate systems: {coordinate_systems}\n"
         + "population centers: {population_centers}\n"
         + "places: {places}\n"
         + "counties: {counties}\n"
@@ -553,6 +556,9 @@ class MetadataExtractor(Task):
                     for s in metadata.population_centres
                 ),
                 "counties": metadata.counties,
+                "projection": metadata.projection,
+                "datum": metadata.datum,
+                "coordinate_systems": ", ".join(metadata.coordinate_systems),
             }
         )
         return (response.states, response.country)
