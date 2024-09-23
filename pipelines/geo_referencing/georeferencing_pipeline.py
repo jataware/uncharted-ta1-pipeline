@@ -71,6 +71,7 @@ class GeoreferencingPipeline(Pipeline):
         state_code_filename: str,
         country_code_filename: str,
         ocr_gamma_correction: float,
+        model: LLM,
         projected: bool,
         diagnostics: bool,
         gpu_enabled: bool,
@@ -135,7 +136,7 @@ class GeoreferencingPipeline(Pipeline):
             # is applied
             MetadataExtractor(
                 "metadata_extractor",
-                LLM.GPT_4_O,
+                model,
                 "filtered_ocr_text",
                 cache_location=metadata_cache,
             ),
@@ -173,7 +174,7 @@ class GeoreferencingPipeline(Pipeline):
             # Run metadata extraction on the map area text only
             MetadataExtractor(
                 "metadata map area extractor",
-                LLM.GPT_4_O,
+                model,
                 "map_area_filter",
                 self._run_step,
                 include_place_bounds=True,
