@@ -84,7 +84,7 @@ if __name__ == "__main__":
     logger.info("*** Starting map metadata app ***")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--workdir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--debug", action="store_true")

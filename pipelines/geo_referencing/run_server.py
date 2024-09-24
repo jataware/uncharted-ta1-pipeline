@@ -144,7 +144,7 @@ def start_server():
     logger.info("*** Starting geo referencing app ***")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--workdir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--min_confidence", type=float, default=0.25)

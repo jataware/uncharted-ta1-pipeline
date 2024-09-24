@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     # parse command line args
     parser = argparse.ArgumentParser()
-    parser.add_argument("--workdir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
     parser.add_argument("--model_point_extractor", type=str, required=True)
     parser.add_argument("--model_segmenter", type=str, default=None)

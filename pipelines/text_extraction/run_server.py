@@ -79,7 +79,7 @@ if __name__ == "__main__":
     logger.info("*** Starting Text Extractor App ***")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--workdir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
