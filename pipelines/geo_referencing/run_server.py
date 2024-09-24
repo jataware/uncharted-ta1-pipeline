@@ -154,6 +154,7 @@ def start_server():
     parser.add_argument("--rabbit_vhost", type=str, default="/")
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
+    parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument(
         "--request_queue", type=str, default=GEO_REFERENCE_REQUEST_QUEUE
     )
@@ -228,6 +229,8 @@ def start_server():
             vhost=p.rabbit_vhost,
             uid=p.rabbit_uid,
             pwd=p.rabbit_pwd,
+            metrics_url=p.metrics_url,
+            metrics_type="georef",
         )
         queue.start_request_queue()
         queue.start_result_queue()
