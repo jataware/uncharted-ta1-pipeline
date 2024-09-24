@@ -124,8 +124,8 @@ class RequestQueue:
         self._vhost = vhost
         self._uid = uid
         self._pwd = pwd
-        self._metrics_url= metrics_url
-        self._metrics_type= metrics_type
+        self._metrics_url = metrics_url
+        self._metrics_type = metrics_type
         self._request_queue = request_queue
         self._result_queue = result_queue
         self._output_key = output_key
@@ -320,7 +320,12 @@ class RequestQueue:
 
             # add metric of job starting
             if self._metrics_url != "":
-                requests.post(self._metrics_url + "/counter/" + self._metrics_type + "_started?step=1")
+                requests.post(
+                    self._metrics_url
+                    + "/counter/"
+                    + self._metrics_type
+                    + "_started?step=1"
+                )
 
             # run the pipeline
             outputs = self._pipeline.run(input)
@@ -337,11 +342,21 @@ class RequestQueue:
             self._publish_result(result)
             logger.info("result written to output queue")
             if self._metrics_url != "":
-                requests.post(self._metrics_url + "/counter/" + self._metrics_type + "_completed?step=1")
+                requests.post(
+                    self._metrics_url
+                    + "/counter/"
+                    + self._metrics_type
+                    + "_completed?step=1"
+                )
         except Exception as e:
             logger.exception(e)
             if self._metrics_url != "":
-                requests.post(self._metrics_url + "/counter/" + self._metrics_type + "_errored?step=1")
+                requests.post(
+                    self._metrics_url
+                    + "/counter/"
+                    + self._metrics_type
+                    + "_errored?step=1"
+                )
 
     def _create_pipeline_input(
         self, request: Request, image: PILImage
