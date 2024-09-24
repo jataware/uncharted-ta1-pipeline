@@ -3,6 +3,17 @@ from PIL.Image import Image as PILImage
 
 from typing import Callable, List, Any, Dict, Optional
 
+from pydantic import BaseModel
+
+from tasks.common.io import (
+    JSONFileReader,
+    JSONFileWriter,
+    Mode,
+    append_to_cache_location,
+    bucket_exists,
+    get_file_source,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -92,13 +103,16 @@ class TaskResult:
 class Task:
     _task_id = ""
 
-    def __init__(self, task_id: str, cache_dir: str = ""):
+    def __init__(self, task_id: str, cache_location: str = ""):
         self._task_id = task_id
-        self._cache_dir = cache_dir
+        self._cache_location = cache_location
 
-        if self._cache_dir:
+        self._json_file_reader = JSONFileReader()
+        self._json_file_writer = JSONFileWriter()
+
+        if self._cache_location:
             logger.info(
-                f"Initializing task {self._task_id} with cache dir {self._cache_dir}"
+                f"Initializing task {self._task_id} with cache location {self._cache_location}"
             )
             self._init_cache()
         else:
@@ -133,36 +147,43 @@ class Task:
 
     def _init_cache(self):
         """
-        Create local cache dir, if it doesn't exist
+        If working with the file system, create local cache dir if it doesn't exist.  If working with S3,
+        ensure the bucket exists and is accessible.
         """
-        if self._cache_dir and not os.path.exists(self._cache_dir):
-            os.makedirs(self._cache_dir)
+        cache_mode = get_file_source(self._cache_location)
+        if cache_mode == Mode.FILE:
+            if not os.path.exists(self._cache_location):
+                os.makedirs(self._cache_location)
+        elif cache_mode == Mode.S3_URI or Mode.URL:
+            if not bucket_exists(self._cache_location):
+                raise Exception(
+                    f"S3 cache bucket {self._cache_location} does not exist"
+                )
+        else:
+            raise Exception(f"Invalid cache location {self._cache_location}")
 
     def _get_cache_doc_path(self, doc_key: str) -> str:
         """
         Generate the full local path for cached json result
         """
-        return os.path.join(self._cache_dir, f"{doc_key}.json")
+        return append_to_cache_location(self._cache_location, f"{doc_key}.json")
 
     def fetch_cached_result(self, doc_key: str) -> Optional[Dict[Any, Any]]:
         """
         Check if task result is available in the local cache
         """
-        if not self._cache_dir:
+        if not self._cache_location:
             return None
-        doc_path = self._get_cache_doc_path(doc_key)
-        if os.path.isfile(doc_path):
-            with open(doc_path, "rb") as f:
-                return json.load(f)
-        else:
+        try:
+            return self._json_file_reader.process(self._get_cache_doc_path(doc_key))
+        except Exception:
             return None
 
-    def write_result_to_cache(self, json_model: Dict[Any, Any], doc_key: str):
+    def write_result_to_cache(self, json_model: BaseModel, doc_key: str):
         """
         Write task result to local cache
         """
-        if not self._cache_dir:
+        if not self._cache_location:
             return
         doc_path = self._get_cache_doc_path(doc_key)
-        with open(doc_path, "w") as f:
-            json.dump(json_model, f)
+        self._json_file_writer.process(doc_path, json_model)

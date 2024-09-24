@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from typing import Dict, List
+from tasks.common.io import append_to_cache_location, get_file_source
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.common.pipeline import (
     Pipeline,
@@ -43,11 +44,10 @@ class SegmentationPipeline(Pipeline):
             model_weights_path (str): The path to the Detectron2 model weights file.
             confidence_thres (float): The confidence threshold for the segmentation.
         """
-
         tasks = [
             ResizeTextExtractor(
                 "resize_text",
-                Path(model_data_cache_path).joinpath("text"),
+                append_to_cache_location(model_data_cache_path, "text"),
                 False,
                 True,
                 6000,
@@ -56,11 +56,7 @@ class SegmentationPipeline(Pipeline):
             DetectronSegmenter(
                 "segmenter",
                 model_data_path,
-                str(
-                    Path(
-                        model_data_cache_path,
-                    ).joinpath("segmentation")
-                ),
+                append_to_cache_location(model_data_cache_path, "segmentation"),
                 confidence_thres=confidence_thres,
                 gpu=gpu,
             ),

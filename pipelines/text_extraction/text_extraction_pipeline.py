@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.area_extraction import Area_Extraction, AreaType
+from tasks.common.io import append_to_cache_location
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.common.pipeline import (
@@ -38,18 +39,30 @@ class TextExtractionPipeline(Pipeline):
 
     def __init__(
         self,
-        work_dir: Path,
+        cache_location: str,
         tile=True,
         pixel_limit=6000,
         gamma_corr=1.0,
         debug_images=False,
     ):
         if tile:
-            tasks = [TileTextExtractor("tile_text", work_dir, pixel_limit, gamma_corr)]
+            tasks = [
+                TileTextExtractor(
+                    "tile_text",
+                    append_to_cache_location(cache_location, "text"),
+                    pixel_limit,
+                    gamma_corr,
+                )
+            ]
         else:
             tasks = [
                 ResizeTextExtractor(
-                    "resize_text", work_dir, False, True, pixel_limit, gamma_corr
+                    "resize_text",
+                    append_to_cache_location(cache_location, "text"),
+                    False,
+                    True,
+                    pixel_limit,
+                    gamma_corr,
                 )
             ]
 

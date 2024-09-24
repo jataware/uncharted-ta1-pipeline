@@ -1,3 +1,4 @@
+from tasks.common.io import Mode, get_file_source
 from tasks.point_extraction.entities import (
     ImageTile,
     ImageTiles,
@@ -42,6 +43,14 @@ class YOLOPointDetector(Task):
         batch_size: int = 20,
         device: str = "auto",
     ):
+
+        cache_source = get_file_source(cache_path)
+        model_source = get_file_source(model_data_path)
+        if cache_source == Mode.S3_URI and model_source == Mode.URL:
+            raise ValueError(
+                "Cannot fetch model data from URL when cache is in S3. Please download the model data to a local file."
+            )
+
         local_data_path = self._prep_model_data(model_data_path, cache_path)
         self.model = YOLO(local_data_path)
         self.bsz = batch_size
@@ -223,9 +232,7 @@ class YOLOPointDetector(Task):
         image_tiles.tiles = tiles_out
 
         # write to cache
-        self.write_result_to_cache(
-            image_tiles.format_for_caching().model_dump(), doc_key
-        )
+        self.write_result_to_cache(image_tiles.format_for_caching(), doc_key)
 
     def _get_model_id(self, model: YOLO) -> str:
         """
@@ -238,9 +245,9 @@ class YOLOPointDetector(Task):
 
     def _get_cached_data(self, doc_key: str) -> Optional[ImageTiles]:
         try:
-            json_data = self.fetch_cached_result(doc_key)
-            if json_data:
-                cached_image_tiles = ImageTiles(**json_data)
+            cached_data = self.fetch_cached_result(doc_key)
+            if cached_data:
+                cached_image_tiles = ImageTiles.model_validate(cached_data)
                 # cached data is ok
                 return cached_image_tiles
 

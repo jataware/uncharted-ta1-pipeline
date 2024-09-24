@@ -2,8 +2,11 @@ import logging, os
 import boto3
 from botocore.exceptions import ClientError
 from pathlib import Path
-from mypy_boto3_s3 import S3ServiceResource
+
 from typing import Optional
+
+from mypy_boto3_s3 import ServiceResource
+from mypy_boto3_s3.service_resource import Bucket
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +32,7 @@ class S3DataCache:
         self.aws_region_name = aws_region_name
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
-        self.s3_resource: Optional[S3ServiceResource] = None
+        self.s3_resource: Optional[ServiceResource] = None
 
         if not local_cache_path:
             raise Exception("local_cache_path not given for S3ModelCache")
@@ -39,7 +42,7 @@ class S3DataCache:
         if not os.path.exists(self.local_cache_path):
             os.makedirs(self.local_cache_path)
 
-    def _s3_resource(self) -> S3ServiceResource:
+    def _s3_resource(self) -> ServiceResource:
         """lazily initialize the s3 resource"""
         if not self.s3_resource:
             self._init_s3(
@@ -118,7 +121,7 @@ class S3DataCache:
         return [obj["Key"] for obj in resp.get("Contents", []) if "Key" in obj]
 
     @staticmethod
-    def bucket_exists(s3_resource: S3ServiceResource, bucket_name: str) -> bool:
+    def bucket_exists(s3_resource: ServiceResource, bucket_name: str) -> bool:
         """
         Check if an s3 bucket exists
         """
@@ -138,7 +141,7 @@ class S3DataCache:
         return exists
 
     @staticmethod
-    def get_s3_object_to_file(bucket, object_key: str, filename: str):
+    def get_s3_object_to_file(bucket: Bucket, object_key: str, filename: str):
         """
         Download an object from an s3 bucket and save to local file
         """

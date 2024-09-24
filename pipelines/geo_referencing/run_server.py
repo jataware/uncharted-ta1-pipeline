@@ -186,6 +186,7 @@ def start_server():
     )
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--project", action="store_true")
+    parser.add_argument("--diagnostics", action="store_true")
     p = parser.parse_args()
 
     outputs: List[OutputCreator] = [GeoreferencingOutput("georeferencing")]
@@ -205,6 +206,8 @@ def start_server():
         p.state_code_filename,
         p.country_code_filename,
         p.ocr_gamma_correction,
+        p.project,
+        p.diagnostics,
         not p.no_gpu,
     )
 

@@ -18,6 +18,7 @@ import rasterio.io as rioi
 from pyproj import Transformer
 
 from PIL.Image import Image as PILImage
+import logging
 
 
 def ocr_to_coordinates(bounds: List[Point]) -> List[List[int]]:
@@ -178,52 +179,58 @@ def project_image(
         geo_transform (Affine): Affine transformation matrix.
         dest_crs (str): Destination CRS to project the image to.
     """
-    # convert the PILImage into a raw TIFF image in memory
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format="tiff")
-    img_byte_arr = img_byte_arr.getvalue()
 
-    # load the tiff image into a rasterio dataset
-    with rioi.MemoryFile(img_byte_arr) as input_memfile:
-        with input_memfile.open() as input_dataset:
-            # create the profile for the projected image
-            bounds = riot.array_bounds(
-                input_dataset.height, input_dataset.width, geo_transform
-            )
-            projected_transform, projected_width, projected_height = (
-                calculate_default_transform(
-                    dest_crs,
-                    dest_crs,
-                    input_dataset.width,
-                    input_dataset.height,
-                    *tuple(bounds),
+    try:
+        # convert the PILImage into a raw TIFF image in memory
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format="tiff")
+        img_byte_arr = img_byte_arr.getvalue()
+
+        # load the tiff image into a rasterio dataset
+        with rioi.MemoryFile(img_byte_arr) as input_memfile:
+            with input_memfile.open() as input_dataset:
+                # create the profile for the projected image
+                bounds = riot.array_bounds(
+                    input_dataset.height, input_dataset.width, geo_transform
                 )
-            )
-            projected_kwargs = input_dataset.profile.copy()
-            projected_kwargs.update(
-                {
-                    "driver": "COG",
-                    "crs": {"init": dest_crs},
-                    "transform": projected_transform,
-                    "width": projected_width,
-                    "height": projected_height,
-                }
-            )
-            # reproject the raw data into a new in-memory rasterio dataset
-            input_data = input_dataset.read()
-            with rioi.MemoryFile() as out_memfile:
-                with out_memfile.open(**projected_kwargs) as projected_dataset:
-                    for i in range(input_dataset.count):
-                        _ = reproject(
-                            source=input_data[i],
-                            destination=rio.band(projected_dataset, i + 1),
-                            src_transform=geo_transform,
-                            src_crs=dest_crs,
-                            dst_transform=projected_transform,
-                            dst_crs=dest_crs,
-                            resampling=Resampling.bilinear,
-                            num_threads=8,
-                            warp_mem_limit=256,
-                        )
-                # write the raw geotiff into a BytesIO object for downstream processing
-                return io.BytesIO(out_memfile.read())
+                projected_transform, projected_width, projected_height = (
+                    calculate_default_transform(
+                        dest_crs,
+                        dest_crs,
+                        input_dataset.width,
+                        input_dataset.height,
+                        *tuple(bounds),
+                    )
+                )
+                projected_kwargs = input_dataset.profile.copy()
+                projected_kwargs.update(
+                    {
+                        "driver": "COG",
+                        "crs": {"init": dest_crs},
+                        "transform": projected_transform,
+                        "width": projected_width,
+                        "height": projected_height,
+                    }
+                )
+                # reproject the raw data into a new in-memory rasterio dataset
+                input_data = input_dataset.read()
+                with rioi.MemoryFile() as out_memfile:
+                    with out_memfile.open(**projected_kwargs) as projected_dataset:
+                        for i in range(input_dataset.count):
+                            _ = reproject(
+                                source=input_data[i],
+                                destination=rio.band(projected_dataset, i + 1),
+                                src_transform=geo_transform,
+                                src_crs=dest_crs,
+                                dst_transform=projected_transform,
+                                dst_crs=dest_crs,
+                                resampling=Resampling.bilinear,
+                                num_threads=8,
+                                warp_mem_limit=256,
+                            )
+                    # write the raw geotiff into a BytesIO object for downstream processing
+                    return io.BytesIO(out_memfile.read())
+    except Exception as e:
+        # Log the exception
+        logging.exception(f"An error occurred: {e}", exc_info=True)
+        return io.BytesIO()

@@ -254,6 +254,9 @@ class MetadataExtractor(Task):
 
     STATE_COUNTRY_TEMPLATE = (
         "The following information was extracted from a map using an OCR process:\n"
+        + "projection: {projection}\n"
+        + "datum: {datum}\n"
+        + "coordinate systems: {coordinate_systems}\n"
         + "population centers: {population_centers}\n"
         + "places: {places}\n"
         + "counties: {counties}\n"
@@ -270,10 +273,10 @@ class MetadataExtractor(Task):
         model=LLM.GPT_4_O,
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
-        cache_dir: str = "",
+        cache_location: str = "",
         include_place_bounds: bool = True,
     ):
-        super().__init__(id, cache_dir=cache_dir)
+        super().__init__(id, cache_location)
 
         self._chat_model = ChatOpenAI(
             model=model, temperature=0.1
@@ -319,6 +322,7 @@ class MetadataExtractor(Task):
         # use the cached result if available
         result = self.fetch_cached_result(doc_id)
         if result:
+            metadata = MetadataExtraction.model_validate(result)
             logger.info(f"Using cached metadata extraction result for key {doc_id}")
             task_result.add_output(METADATA_EXTRACTION_OUTPUT_KEY, result)
             return task_result
@@ -374,7 +378,7 @@ class MetadataExtractor(Task):
             metadata.map_color = self._compute_color_level(input.image)
 
             # update the cache
-            self.write_result_to_cache(metadata.model_dump(), doc_id)
+            self.write_result_to_cache(metadata, doc_id)
 
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
@@ -552,6 +556,9 @@ class MetadataExtractor(Task):
                     for s in metadata.population_centres
                 ),
                 "counties": metadata.counties,
+                "projection": metadata.projection,
+                "datum": metadata.datum,
+                "coordinate_systems": ", ".join(metadata.coordinate_systems),
             }
         )
         return (response.states, response.country)
