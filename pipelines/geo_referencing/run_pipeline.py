@@ -22,6 +22,7 @@ from tasks.geo_referencing.entities import (
     GEOREFERENCING_OUTPUT_KEY,
 )
 from tasks.geo_referencing.georeference import QueryPoint
+from tasks.metadata_extraction.metadata_extraction import LLM
 from util import logging as logging_util
 from typing import List, Optional, Tuple
 
@@ -68,6 +69,7 @@ def main():
         type=float,
         default=0.5,
     )
+    parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--project", action="store_true")
     parser.add_argument("--diagnostics", action="store_true")
@@ -104,6 +106,7 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
         parsed.state_code_filename,
         parsed.country_code_filename,
         parsed.ocr_gamma_correction,
+        parsed.llm,
         parsed.project,
         parsed.diagnostics,
         not parsed.no_gpu,
