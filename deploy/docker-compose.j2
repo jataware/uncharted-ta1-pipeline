@@ -13,6 +13,7 @@ services:
       timeout: 10s
       retries: 5
 
+  {% if cdr -%}
   cdr:
     image: uncharted/lara-cdr:{{ tag }}
     command: [
@@ -34,6 +35,7 @@ services:
     networks:
       - lara
     restart: on-failure
+  {%- endif %}
 
   georef:
     image: uncharted/lara-georef:{{ tag }}
