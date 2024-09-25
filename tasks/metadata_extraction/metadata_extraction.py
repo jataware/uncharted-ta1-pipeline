@@ -12,7 +12,7 @@ from langchain.schema import SystemMessage, PromptValue
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain_openai import ChatOpenAI
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 import tiktoken
 from tasks.common.image_io import pil_to_cv_image
 from tasks.common.task import TaskInput, TaskResult
@@ -43,6 +43,7 @@ class LLM(str, Enum):
     GPT_4_TURBO = "gpt-4-turbo"
     GPT_4 = "gpt-4"
     GPT_4_O = "gpt-4o"
+    GPT_4_O_MINI = "gpt-4o-mini"
 
     def __str__(self):
         return self.value
@@ -145,7 +146,6 @@ class Location(BaseModel):
 
 
 class PointLocationsLLM(BaseModel):
-    # points: List[Tuple[str, int]] = Field(
     places: List[Location] = Field(
         description="The list of point places extracted from the map area. "
         + "The 'name' key should contain the name of the point and the 'index' key should contain the index of "
@@ -254,6 +254,9 @@ class MetadataExtractor(Task):
 
     STATE_COUNTRY_TEMPLATE = (
         "The following information was extracted from a map using an OCR process:\n"
+        + "projection: {projection}\n"
+        + "datum: {datum}\n"
+        + "coordinate systems: {coordinate_systems}\n"
         + "population centers: {population_centers}\n"
         + "places: {places}\n"
         + "counties: {counties}\n"
@@ -270,10 +273,10 @@ class MetadataExtractor(Task):
         model=LLM.GPT_4_O,
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
-        cache_dir: str = "",
+        cache_location: str = "",
         include_place_bounds: bool = True,
     ):
-        super().__init__(id, cache_dir=cache_dir)
+        super().__init__(id, cache_location)
 
         self._chat_model = ChatOpenAI(
             model=model, temperature=0.1
@@ -308,17 +311,13 @@ class MetadataExtractor(Task):
             DocTextExtraction.model_validate,
             self._create_empty_extraction,
         )
-        if not doc_text:
-            logger.info(
-                "OCR output not available - returning empty metadata extraction result"
-            )
-            return task_result
 
         doc_id = self._generate_doc_key(input, doc_text)
 
         # use the cached result if available
         result = self.fetch_cached_result(doc_id)
         if result:
+            metadata = MetadataExtraction.model_validate(result)
             logger.info(f"Using cached metadata extraction result for key {doc_id}")
             task_result.add_output(METADATA_EXTRACTION_OUTPUT_KEY, result)
             return task_result
@@ -374,7 +373,7 @@ class MetadataExtractor(Task):
             metadata.map_color = self._compute_color_level(input.image)
 
             # update the cache
-            self.write_result_to_cache(metadata.model_dump(), doc_id)
+            self.write_result_to_cache(metadata, doc_id)
 
             task_result.add_output(
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
@@ -552,6 +551,9 @@ class MetadataExtractor(Task):
                     for s in metadata.population_centres
                 ),
                 "counties": metadata.counties,
+                "projection": metadata.projection,
+                "datum": metadata.datum,
+                "coordinate_systems": ", ".join(metadata.coordinate_systems),
             }
         )
         return (response.states, response.country)

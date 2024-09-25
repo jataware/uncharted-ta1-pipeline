@@ -9,6 +9,7 @@ import os
 from urllib.parse import urlparse
 from typing import List, Tuple, Sequence
 
+from tasks.common.io import Mode, get_file_source
 from tasks.segmentation.ditod import add_vit_config
 from tasks.segmentation.entities import (
     SegmentationResult,
@@ -66,6 +67,17 @@ class DetectronSegmenter(Task):
         gpu: bool = True,
     ):
         super().__init__(task_id, model_data_cache_path)
+
+        # check for conflicting paths - can't have model weights and cache both in S3
+        # because S3 model weights are downloaded and stored on the local filesystem
+        model_source = get_file_source(model_data_path)
+        cache_source = get_file_source(model_data_cache_path)
+        if (
+            model_source == Mode.S3_URI or model_source == Mode.URL
+        ) and cache_source == Mode.S3_URI:
+            raise ValueError(
+                "Model data path and cache path cannot both be S3 locations"
+            )
 
         model_paths = self._prep_config_data(model_data_path, model_data_cache_path)
 
@@ -129,15 +141,15 @@ class DetectronSegmenter(Task):
 
         # check cache and re-use existing file if present
         doc_key = f"{input.raster_id}_segmentation-{self._model_id}"
-        json_data = self.fetch_cached_result(doc_key)
-        if json_data:
+        cached_data = self.fetch_cached_result(doc_key)
+        if cached_data:
             logger.info(
                 f"Using cached segmentation results for raster: {input.raster_id}"
             )
             result = self._create_result(input)
 
             # load and post-process the cached segmentation result
-            map_segmentation = MapSegmentation(**json_data)
+            map_segmentation = MapSegmentation.model_validate(cached_data)
             rank_segments(map_segmentation, self.class_labels)
 
             result.add_output(
@@ -194,13 +206,11 @@ class DetectronSegmenter(Task):
         # rank the segments per class (most impt first)
         rank_segments(map_segmentation, self.class_labels)
 
-        json_data = map_segmentation.model_dump()
-
         # write to cache
-        self.write_result_to_cache(json_data, doc_key)
+        self.write_result_to_cache(map_segmentation, doc_key)
 
         result = self._create_result(input)
-        result.add_output(SEGMENTATION_OUTPUT_KEY, json_data)
+        result.add_output(SEGMENTATION_OUTPUT_KEY, map_segmentation.model_dump())
         return result
 
     def run_inference_batch(self):

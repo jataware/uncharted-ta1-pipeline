@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     # parse command line args
     parser = argparse.ArgumentParser()
-    parser.add_argument("--workdir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
     parser.add_argument("--model_point_extractor", type=str, required=True)
     parser.add_argument("--model_segmenter", type=str, default=None)
@@ -92,9 +92,14 @@ if __name__ == "__main__":
     parser.add_argument("--fetch_legend_items", action="store_true")
     parser.add_argument("--rest", action="store_true")
     parser.add_argument("--rabbit_host", type=str, default="localhost")
+    parser.add_argument("--rabbit_port", type=int, default=5672)
+    parser.add_argument("--rabbit_vhost", type=str, default="/")
+    parser.add_argument("--rabbit_uid", type=str, default="")
+    parser.add_argument("--rabbit_pwd", type=str, default="")
     parser.add_argument("--request_queue", type=str, default=POINTS_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=POINTS_RESULT_QUEUE)
     parser.add_argument("--no_gpu", action="store_true")
+    parser.add_argument("--batch_size", type=int, default=20)
     p = parser.parse_args()
 
     # init point extraction pipeline
@@ -104,6 +109,7 @@ if __name__ == "__main__":
         p.workdir,
         fetch_legend_items=p.fetch_legend_items,
         gpu=not p.no_gpu,
+        batch_size=p.batch_size,
     )
 
     result_key = (
@@ -127,6 +133,10 @@ if __name__ == "__main__":
             p.workdir,
             p.imagedir,
             host=p.rabbit_host,
+            port=p.rabbit_port,
+            vhost=p.rabbit_vhost,
+            uid=p.rabbit_uid,
+            pwd=p.rabbit_pwd,
         )
         queue.start_request_queue()
         queue.start_result_queue()

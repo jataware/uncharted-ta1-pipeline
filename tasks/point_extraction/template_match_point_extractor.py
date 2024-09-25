@@ -99,9 +99,6 @@ class TemplateMatchPointExtractor(Task):
                 path="", raster_id=task_input.raster_id, labels=[]
             )
 
-        # TEMP also append legend items to point extraction output (for easier conversion to CDR)
-        map_point_labels.legend_items = legend_pt_items.items
-
         # --- check which legend points still need to be processed, if any?
         pt_features = self._which_points_need_processing(
             map_point_labels.labels, legend_pt_items.items, min_predictions=MIN_MATCHES  # type: ignore
@@ -196,14 +193,16 @@ class TemplateMatchPointExtractor(Task):
             matches_dedup = []
 
             # --- pre-process the main image and template image, before template matching
-            im, im_templ = pe_utils.image_pre_processing(
-                im_in.copy(), im_template_and_masks[i][0], im_template_and_masks[i][1]
+            im_templ, foregnd_colour_lab = pe_utils.template_pre_processing(
+                im_template_and_masks[i][0], im_template_and_masks[i][1]
             )
+            im = pe_utils.image_pre_processing(im_in.copy(), foregnd_colour_lab)
+
             # note: im and im_templ are in RGB colour-space
 
             # convert to gray and get foregnd mask for template
             # TODO could also just crop/re-size the fore mask here too?
-            templ_thres, fore_mask = cv2.threshold(
+            _, fore_mask = cv2.threshold(
                 cv2.cvtColor(im_templ, cv2.COLOR_RGB2GRAY),
                 0,
                 255,
@@ -256,7 +255,7 @@ class TemplateMatchPointExtractor(Task):
             # loop through rotational intervals...
             im_xcorr_all = np.zeros((im.shape[0], im.shape[1]), dtype=np.uint8)
             for rot_deg in range(0, 360, ROTATE_INTERVAL):
-                logger.info("template rotation: {}".format(rot_deg))
+                logger.debug("template rotation: {}".format(rot_deg))
 
                 # get rotated template
                 if rot_deg > 0:
@@ -292,7 +291,7 @@ class TemplateMatchPointExtractor(Task):
                 im_xcorr = np.nan_to_num(
                     im_xcorr, copy=False, nan=0.0, posinf=0.0, neginf=0.0
                 )
-                logger.info("max x-corr: {}".format(im_xcorr.max()))
+                logger.debug("max x-corr: {}".format(im_xcorr.max()))
 
                 im_xcorr = np.clip((im_xcorr * 255), 0, 255).astype(np.uint8)  # type: ignore
                 tx_half = int(template.shape[1] * 0.5)
@@ -317,7 +316,7 @@ class TemplateMatchPointExtractor(Task):
                 )
                 * 255
             )
-            logger.info("x-corr threshold {}".format(xcorr_thres / 255))
+            logger.debug("x-corr threshold {}".format(xcorr_thres / 255))
 
             templ_hw = (im_templ.shape[0], im_templ.shape[1])
             matches = self._find_match_candidates(im_xcorr_all, xcorr_thres, templ_hw)
@@ -351,7 +350,7 @@ class TemplateMatchPointExtractor(Task):
                 templatematch_point_labels.labels.extend(preds)  # type: ignore
 
         # write to cache (note: only cache the template matched point extractions; not all of them)
-        self.write_result_to_cache(templatematch_point_labels.model_dump(), doc_key)
+        self.write_result_to_cache(templatematch_point_labels, doc_key)
 
         # append template-match extractions to main point extractions results
         map_point_labels.labels.extend(templatematch_point_labels.labels)  # type: ignore
@@ -518,9 +517,9 @@ class TemplateMatchPointExtractor(Task):
     ) -> Optional[PointLabels]:
 
         try:
-            json_data = self.fetch_cached_result(doc_key)
-            if json_data:
-                templatematch_point_labels = PointLabels(**json_data)
+            cached_data = self.fetch_cached_result(doc_key)
+            if cached_data:
+                templatematch_point_labels = PointLabels(**cached_data)
                 # check that the expected set of point types are in cache
                 pt_types_legend = set()
                 for leg in legend_items:

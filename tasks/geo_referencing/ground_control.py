@@ -3,6 +3,7 @@ import logging
 from random import randint
 
 from tasks.common.task import Task, TaskInput, TaskResult
+from tasks.geo_referencing.entities import QUERY_POINTS_OUTPUT_KEY
 from tasks.geo_referencing.georeference import QueryPoint
 from tasks.segmentation.entities import (
     MapSegmentation,
@@ -16,7 +17,7 @@ from shapely import Point, Polygon, MultiPolygon, concave_hull
 from shapely.ops import nearest_points
 
 GEOCOORD_DIST_THRES = 30
-NUM_PTS = 10
+NUM_PTS = 8
 
 logger = logging.getLogger("ground_control_points")
 
@@ -32,8 +33,8 @@ class CreateGroundControlPoints(Task):
         )
         # check if query points already defined
         query_pts = None
-        if "query_pts" in input.request:
-            query_pts = input.request["query_pts"]
+        if QUERY_POINTS_OUTPUT_KEY in input.request:
+            query_pts = input.request[QUERY_POINTS_OUTPUT_KEY]
         if query_pts and len(query_pts) > 0:
             logger.info("ground control points already exist")
             return self._create_result(input)
@@ -58,25 +59,25 @@ class CreateGroundControlPoints(Task):
             # get extracted lat and lon coords
             lon_pts = input.get_data("lons", {})
             lat_pts = input.get_data("lats", {})
+            num_inner_gcps = max(NUM_PTS - (len(lon_pts) + len(lat_pts)), 0)
+
             query_pts = self._create_geo_coord_query_points(
                 input.raster_id, poly_map, lon_pts, lat_pts
             )
             logger.info(
                 f"created {len(query_pts)} geo-coord based ground control points"
             )
-            if len(query_pts) < NUM_PTS:
+            if num_inner_gcps > 0:
                 logger.info(
-                    f"Also creating {NUM_PTS-len(query_pts)} random ground control points"
+                    f"Also creating {num_inner_gcps} random ground control points"
                 )
                 query_pts.extend(
-                    self._create_random_query_points(
-                        input, num_pts=NUM_PTS - len(query_pts)
-                    )
+                    self._create_random_query_points(input, num_pts=num_inner_gcps)
                 )
 
         # add them to the output
         result = self._create_result(input)
-        result.output["query_pts"] = query_pts
+        result.output[QUERY_POINTS_OUTPUT_KEY] = query_pts
 
         return result
 
@@ -116,7 +117,15 @@ class CreateGroundControlPoints(Task):
         gcp_pts = []
         # GCPs based on extracted longitude geo-coords
         for coord in lon_pts.values():
+
             pt = Point(coord.get_pixel_alignment())
+
+            if coord.is_corner():
+                # is a corner-pt, no need to adjust GCP location
+                if not self._do_pts_overlap(pt, gcp_pts):
+                    gcp_pts.append(pt)
+                continue
+
             if pt.intersects(poly_map):
                 if not self._do_pts_overlap(pt, gcp_pts):
                     gcp_pts.append(pt)
@@ -133,7 +142,15 @@ class CreateGroundControlPoints(Task):
                     gcp_pts.append(pt)
         # GCPs based on extracted latitude geo-coords
         for coord in lat_pts.values():
+
             pt = Point(coord.get_pixel_alignment())
+
+            if coord.is_corner():
+                # is a corner-pt, no need to adjust GCP location
+                if not self._do_pts_overlap(pt, gcp_pts):
+                    gcp_pts.append(pt)
+                continue
+
             if pt.intersects(poly_map):
                 if not self._do_pts_overlap(pt, gcp_pts):
                     gcp_pts.append(pt)
@@ -151,50 +168,6 @@ class CreateGroundControlPoints(Task):
 
         return [
             QueryPoint(raster_id, (pt.x, pt.y), None, properties={"label": "geo_coord"})
-            for pt in gcp_pts
-        ]
-
-    def _create_inner_query_points(
-        self, raster_id: str, poly_map: Polygon, buffer=0.33, num_pts=10
-    ) -> List[QueryPoint]:
-        """
-        create ground control points inside a map polygon with a given buffer
-        pts will be approx equally spaced
-        """
-
-        # calc buffer in pixels, using approx polygon radius
-        (minx, miny, maxx, maxy) = poly_map.bounds
-        p_radius = 0.5 * min(maxx - minx, maxy - miny)
-        buffer_pxl = p_radius * buffer
-
-        # apply negative buffer to map polygon so GCPs will be inside map roi
-        poly_buffer = poly_map.buffer(-buffer_pxl)
-        if isinstance(poly_buffer, Polygon):
-            poly_pts = list(poly_buffer.exterior.coords)
-            poly_pts.pop()  # remove last vertex (same as first)
-        else:
-            # unexpected shapely response, create 4 vertices around polygon centroid
-            c = poly_map.centroid
-            d = p_radius * (1 - buffer)
-            poly_pts = [
-                (c.x - d, c.y - d),
-                (c.x + d, c.y - d),
-                (c.x + d, c.y + d),
-                (c.x - d, c.y + d),
-            ]
-
-        # create approx equally spaced GCPs along inner polygon
-        gcp_pts = []
-        step = max(int(len(poly_pts) / num_pts), 1)
-        for i in range(0, len(poly_pts), step):
-            pt = poly_pts[i]
-            pt = Point(pt[0], pt[1])
-            if not self._do_pts_overlap(pt, gcp_pts):
-                gcp_pts.append(pt)
-            if len(gcp_pts) >= num_pts:
-                break
-        return [
-            QueryPoint(raster_id, (pt.x, pt.y), None, properties={"label": "map_inner"})
             for pt in gcp_pts
         ]
 

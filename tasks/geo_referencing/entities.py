@@ -1,11 +1,22 @@
 from tasks.text_extraction.entities import Point
 
 from typing import List, Optional, Tuple
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
-
+# keys for the pipeline result dictionary
 GEOFENCE_OUTPUT_KEY = "geofence_output"
 CORNER_POINTS_OUTPUT_KEY = "corner_points"
+CRS_OUTPUT_KEY = "crs"
+QUERY_POINTS_OUTPUT_KEY = "query_pts"
+PROJECTED_MAP_OUTPUT_KEY = "projected_map"
+SUMMARY_OUTPUT_KEY = "summary_output"
+SCORING_OUTPUT_KEY = "scoring_output"
+LEVERS_OUTPUT_KEY = "levers_output"
+RMSE_OUTPUT_KEY = "rmse"
+ERROR_SCALE_OUTPUT_KEY = "error_scale"
+KEYPOINTS_OUTPUT_KEY = "keypoints"
+GEOREFERENCING_OUTPUT_KEY = "georeferencing"
+
 SOURCE_LAT_LON = "lat-lon parser"
 SOURCE_STATE_PLANE = "state plane parser"
 SOURCE_UTM = "utm parser"
@@ -51,6 +62,7 @@ class Coordinate:
     _pixel_alignment: Tuple[float, float] = (0, 0)
     _confidence: float = 0
     _derivation: str = "parsed"
+    _is_corner: bool = False
 
     def __init__(
         self,
@@ -105,6 +117,9 @@ class Coordinate:
 
     def is_lat(self) -> bool:
         return self._is_lat
+
+    def is_corner(self) -> bool:
+        return self._is_corner
 
     def get_source(self) -> str:
         return self._source

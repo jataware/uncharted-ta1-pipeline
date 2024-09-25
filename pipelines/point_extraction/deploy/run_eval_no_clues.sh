@@ -34,5 +34,5 @@ docker run \
         --output /output \
         --workdir /workdir \
         --bitmasks \
-        --model_point_extractor pipelines/point_extraction_weights/lara_yolo9_20240702_best.pt \
-        --model_segmenter pipelines/segmentation_weights/layoutlmv3_20240531
+        --model_point_extractor pipelines/point_extraction_weights/points.pt \
+        --model_segmenter pipelines/segmentation_weights

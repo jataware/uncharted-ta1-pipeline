@@ -17,7 +17,7 @@ def test_resize_text_extractor():
     and re-used successfully.
     """
     # create ResizeTextExtractor object
-    cache_dir = Path("tasks/text_extraction/test/data")
+    cache_dir = "tasks/text_extraction/test/data"
     to_blocks = True
     document_ocr = False
     pixel_lim = 500
@@ -43,7 +43,7 @@ def test_resize_text_extractor():
     validate_tile_extractions(doc_text_extraction)
 
     # check cache
-    cache_file = cache_dir / f"{expected_doc_id}.json"
+    cache_file = Path(cache_dir) / f"{expected_doc_id}.json"
     assert cache_file.exists()
 
     # re-run process() to test cached version
@@ -67,7 +67,7 @@ def test_tiling_text_extractor():
     and deleted successfully.
     """
     # create TilingTextExtractor object
-    cache_dir = Path("tasks/text_extraction/test/data")
+    cache_dir = "tasks/text_extraction/test/data"
     tile_size = 256
     tte = TileTextExtractor("tile_text", cache_dir, tile_size)
 
@@ -89,7 +89,7 @@ def test_tiling_text_extractor():
     validate_tile_extractions(doc_text_extraction)
 
     # check cache
-    cache_file = cache_dir / f"{expected_doc_id}.json"
+    cache_file = Path(cache_dir) / f"{expected_doc_id}.json"
     assert cache_file.exists()
 
     # re-run process() to test cached version

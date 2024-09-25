@@ -9,7 +9,6 @@ import os
 
 from flask import Flask, request, Response
 
-from cdr.json_log import JSONLog
 from cdr.request_publisher import LaraRequestPublisher
 from cdr.result_subscriber import LaraResultSubscriber
 from tasks.common.io import download_file
@@ -56,7 +55,6 @@ class Settings:
     callback_url: str
     registration_id: Dict[str, str] = {}
     rabbitmq_host: str
-    json_log: JSONLog
     serial: bool
     sequence: List[str] = []
 
@@ -82,7 +80,6 @@ def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
 def process_cdr_event():
     logger.info("event callback started")
     evt = request.get_json(force=True)
-    settings.json_log.log("event", evt)
     logger.info(f"event data received {evt['event']}")
     lara_reqs: Dict[str, Request] = {}
 
@@ -317,6 +314,10 @@ def main():
     parser.add_argument("--imagedir", type=str, required=True)
     parser.add_argument("--cog_id", type=str, required=False)
     parser.add_argument("--host", type=str, default="localhost")
+    parser.add_argument("--rabbit_port", type=int, default=5672)
+    parser.add_argument("--rabbit_vhost", type=str, default="/")
+    parser.add_argument("--rabbit_uid", type=str, default="")
+    parser.add_argument("--rabbit_pwd", type=str, default="")
     parser.add_argument("--cdr_event_log", type=str, default=CDR_EVENT_LOG)
     parser.add_argument("--input", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
@@ -335,7 +336,6 @@ def main():
     settings.callback_secret = CDR_CALLBACK_SECRET
     settings.serial = True
     settings.sequence = p.sequence
-    settings.json_log = JSONLog(os.path.join(p.workdir, p.cdr_event_log))
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
     if p.mode == "process":
@@ -358,6 +358,10 @@ def main():
             METADATA_REQUEST_QUEUE,
         ],
         host=p.host,
+        port=p.rabbit_port,
+        vhost=p.rabbit_vhost,
+        uid=p.rabbit_uid,
+        pwd=p.rabbit_pwd,
     )
     request_publisher.start_lara_request_queue()
 
@@ -370,7 +374,6 @@ def main():
         settings.cdr_api_token,
         settings.output,
         settings.workdir,
-        settings.json_log,
         host=p.host,
         pipeline_sequence=settings.sequence,
     )

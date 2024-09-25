@@ -22,6 +22,7 @@ from tasks.text_extraction.entities import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.geo_referencing.entities import (
+    CRS_OUTPUT_KEY,
     Coordinate,
     DocGeoFence,
     GEOFENCE_OUTPUT_KEY,
@@ -383,7 +384,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                     if n.lower() in list(
                         map(lambda x: x.lower(), metadata.coordinate_systems)
                     ):
-                        return c, "crs"
+                        return c, CRS_OUTPUT_KEY
 
         # use the centre of the geofence or parsed coordinates to pick the code
         if count_lon != 0:

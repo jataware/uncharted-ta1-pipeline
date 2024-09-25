@@ -15,6 +15,6 @@ docker run \
     uncharted/lara-segmentation:test \
         --workdir /workdir \
         --imagedir /imagedir \
-        --model pipelines/segmentation_weights/layoutlmv3_20240531 \
+        --model pipelines/segmentation_weights \
         --cdr_schema \
         --rabbit_host rabbitmq

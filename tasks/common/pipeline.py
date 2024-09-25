@@ -1,8 +1,11 @@
+import io
+import logging
 from .task import Task, TaskInput, TaskResult
 from typing import Optional, List, Dict, Any, Sequence
 from PIL.Image import Image as PILImage
 from pydantic import BaseModel
-import traceback
+
+logger = logging.getLogger(__name__)
 
 
 class PipelineInput:
@@ -93,6 +96,14 @@ class ListOutput(Output):
         self.data = []
 
 
+class BytesOutput(Output):
+    data: io.BytesIO
+
+    def __init__(self, pipeline_id: str, pipeline_name: str, data: io.BytesIO):
+        super().__init__(pipeline_id, pipeline_name)
+        self.data = data
+
+
 class BaseModelOutput(Output):
     data: BaseModel
 
@@ -147,10 +158,10 @@ class Pipeline:
                 task_result = t.run(task_input)
                 pipeline_result = self._merge_result(pipeline_result, task_result)
             except Exception as e:
-                print(
-                    f"EXCEPTION executing pipeline at step {t.get_task_id()} ({task_input.task_index}) for raster {input.raster_id}"
+                logger.exception(
+                    f"error pipeline at step {t.get_task_id()} ({task_input.task_index}) for raster {input.raster_id}",
+                    exc_info=True,
                 )
-                traceback.print_exc()
 
         return self._produce_output(pipeline_result)
 

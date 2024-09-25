@@ -2,7 +2,10 @@ import logging
 from pathlib import Path
 from typing import List
 
+from flask import app
+
 from schema.mappers.cdr import PointsMapper
+from tasks.common.io import append_to_cache_location
 from tasks.point_extraction.legend_analyzer import (
     LegendPreprocessor,
     LegendPostprocessor,
@@ -13,6 +16,7 @@ from tasks.point_extraction.point_extractor_utils import convert_preds_to_bitmas
 from tasks.point_extraction.template_match_point_extractor import (
     TemplateMatchPointExtractor,
 )
+from tasks.point_extraction.finalize_point_extractions import FinalizePointExtractions
 from tasks.point_extraction.tiling import Tiler, Untiler
 from tasks.point_extraction.entities import (
     PointLabels,
@@ -55,12 +59,13 @@ class PointExtractionPipeline(Pipeline):
         self,
         model_path: str,
         model_path_segmenter: str,
-        work_dir: str,
+        cache_location: str,
         verbose=False,
         fetch_legend_items=False,
         include_cdr_output=True,
         include_bitmasks_output=False,
         gpu=True,
+        batch_size=20,
     ):
         # extract text from image, segmentation to only keep the map area,
         # tile, extract points, untile, predict direction
@@ -68,14 +73,17 @@ class PointExtractionPipeline(Pipeline):
         yolo_point_extractor = YOLOPointDetector(
             "point_detection",
             model_path,
-            str(Path(work_dir).joinpath("points")),
-            batch_size=20,
+            append_to_cache_location(cache_location, "points"),
+            batch_size=batch_size,
+            device="auto" if gpu else "cpu",
         )
 
         tasks = []
         tasks.append(
             TileTextExtractor(
-                "tile_text", Path(work_dir).joinpath("text"), gamma_correction=0.5
+                "tile_text",
+                append_to_cache_location(cache_location, "text"),
+                gamma_correction=0.5,
             )
         )
         if model_path_segmenter:
@@ -84,7 +92,7 @@ class PointExtractionPipeline(Pipeline):
                     DetectronSegmenter(
                         "segmenter",
                         model_path_segmenter,
-                        str(Path(work_dir).joinpath("segmentation")),
+                        append_to_cache_location(cache_location, "segmentation"),
                         gpu=gpu,
                     ),
                     DenoiseSegments("segment_denoising"),
@@ -103,13 +111,14 @@ class PointExtractionPipeline(Pipeline):
                 PointOrientationExtractor(
                     "point_orientation_extraction",
                     yolo_point_extractor._model_id,
-                    str(Path(work_dir).joinpath("point_orientations")),
+                    append_to_cache_location(cache_location, "point_orientations"),
                 ),
                 LegendPostprocessor("legend_postprocessor", ""),
                 TemplateMatchPointExtractor(
                     "template_match_point_extraction",
-                    str(Path(work_dir).joinpath("template_match_points")),
+                    append_to_cache_location(cache_location, "template_match_points"),
                 ),
+                FinalizePointExtractions("finalize_points"),
             ]
         )
 
@@ -176,11 +185,6 @@ class CDROutput(OutputCreator):
         map_point_labels = PointLabels.model_validate(
             pipeline_result.data[MAP_PT_LABELS_OUTPUT_KEY]
         )
-        # legend_pt_items = LegendPointItems(items=[])
-        # if LEGEND_ITEMS_OUTPUT_KEY in pipeline_result.data:
-        #     legend_pt_items = LegendPointItems.model_validate(
-        #         pipeline_result.data[LEGEND_ITEMS_OUTPUT_KEY]
-        #     )
 
         mapper = PointsMapper(MODEL_NAME, MODEL_VERSION)
 

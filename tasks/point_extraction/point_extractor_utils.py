@@ -148,14 +148,16 @@ def template_conncomp_denoise(
     return im_templ_denoise, fore_mask_denoise
 
 
-def image_pre_processing(
-    im: np.ndarray, im_templ: np.ndarray, im_templ_mask: np.ndarray
-) -> Tuple:
+def template_pre_processing(
+    im_templ: np.ndarray, im_templ_mask: np.ndarray
+) -> Tuple[np.ndarray, List[int]]:
     """
-    pre-process the main image and template image, prior to template matching
-    (assume input images are opencv format with RGB colour format)
+    pre-process the template image using thresholding and cropping
+    - assumes input template image is opencv format with RGB colour format
 
-    Returns the pre-processed image and template image in RGB colour space
+    Returns a Tuple of:
+    - the pre-processed template in RGB colour space, and
+    - its median foreground colour in LAB colour
     """
 
     # ---- Foreground and background colour analysis of the template image
@@ -170,17 +172,41 @@ def image_pre_processing(
 
     # ---- Convert to LAB colour-space
     im_templ = cv2.cvtColor(im_templ, cv2.COLOR_RGB2LAB)
-    im = cv2.cvtColor(im, cv2.COLOR_RGB2LAB)
 
     # get the 'foreground' pixel values from the template, and
     # get template colour stats
     idx = im_templ_mask != 0
     templ_fore = im_templ[idx]
     colour_med_val = np.median(templ_fore, axis=0)  # type: ignore
+    colour_med_val = [int(x) for x in colour_med_val.tolist()]
+
+    # final cropping of the template and size normalization
+    im_templ = crop_template(
+        im_templ, im_templ_mask, crop_buffer=5, backgnd_colour=WHITE_LAB
+    )
+    # convert results back to RGB colour space
+    im_templ = cv2.cvtColor(im_templ, cv2.COLOR_LAB2RGB)
+
+    return (im_templ, colour_med_val)
+
+
+def image_pre_processing(
+    im: np.ndarray, foregnd_colour_lab: List[int] = [0, 128, 128]
+) -> np.ndarray:
+    """
+    pre-process the main image using colour filtering
+    - assumes input image is opencv format with RGB colour format
+    - target foregnd template colour is in LAB colour space
+
+    Returns the pre-processed image in RGB colour space
+    """
 
     colour_lower, colour_upper = get_colour_range(
-        colour_med_val.tolist(), [COLOUR_RANGE_L, COLOUR_RANGE_AB, COLOUR_RANGE_AB]
+        foregnd_colour_lab, [COLOUR_RANGE_L, COLOUR_RANGE_AB, COLOUR_RANGE_AB]
     )
+
+    # ---- Convert to LAB colour-space
+    im = cv2.cvtColor(im, cv2.COLOR_RGB2LAB)
 
     # ---- De-emphasize (whiten) non-foreground pixels in the main image
     # create a mask to separate foreground and background pixels
@@ -193,14 +219,7 @@ def image_pre_processing(
     im[idx] = np.clip(im[idx] + WHITE_SHIFT, 0, 255)
     im = im.astype(np.uint8)
 
-    # final cropping of the template and size normalization
-    im_templ = crop_template(
-        im_templ, im_templ_mask, crop_buffer=5, backgnd_colour=WHITE_LAB
-    )
-    # convert results back to RGB colour space
-    im_templ = cv2.cvtColor(im_templ, cv2.COLOR_LAB2RGB)
-
-    return (im, im_templ)
+    return im
 
 
 def template_matching(im: np.ndarray, im_templ: np.ndarray, search_range=-1) -> Tuple:

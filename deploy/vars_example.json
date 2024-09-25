@@ -5,5 +5,7 @@
     "ngrok_authtoken": "585d02d615e74454833baa5533c6ed33",
     "openai_api_key": "fee7e90ea27b49ef9b9fcb49c3ee4ceb",
     "google_application_credentials": "~/lara/credentials/google_vision_api_key.json",
-    "tag": "latest"
+    "tag": "latest",
+    "gpu": false,
+    "cdr": true
 }
