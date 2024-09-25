@@ -15,7 +15,7 @@ docker run \
     --name cdr \
     -e CDR_API_TOKEN={{ cdr_api_token }} \
     -e NGROK_AUTHTOKEN={{ ngrok_authtoken }} \
-    -v {{ work_dir }}/workdir \
+    -v {{ work_dir }}:/workdir \
     -v {{ image_dir}}:/imagedir \
     -v $1:/input \
     --net lara \
