@@ -8,6 +8,7 @@ import random
 from threading import Thread
 from time import sleep
 import requests
+import time
 
 from cv2 import log
 import pika
@@ -327,8 +328,12 @@ class RequestQueue:
                     + "_started?step=1"
                 )
 
+            job_started_time = time.perf_counter()
+
             # run the pipeline
             outputs = self._pipeline.run(input)
+
+            run_elasped_time = time.perf_counter() - job_started_time
 
             # create the response
             output_raw = outputs[self._output_key]
@@ -338,8 +343,13 @@ class RequestQueue:
                 raise ValueError("Unsupported output type")
             logger.info("writing request result to output queue")
 
+            output_elasped_time = time.perf_counter() - run_elasped_time
+
             # run queue operations
             self._publish_result(result)
+
+            publish_elasped_time = time.perf_counter() - output_elasped_time
+
             logger.info("result written to output queue")
             if self._metrics_url != "":
                 requests.post(
@@ -347,6 +357,30 @@ class RequestQueue:
                     + "/counter/"
                     + self._metrics_type
                     + "_completed?step=1"
+                )
+            if self._metrics_url != "":
+                requests.post(
+                    self._metrics_url
+                    + "/histogram/"
+                    + self._metrics_type
+                    + "_run?value="
+                    + str(run_elasped_time)
+                )
+            if self._metrics_url != "":
+                requests.post(
+                    self._metrics_url
+                    + "/histogram/"
+                    + self._metrics_type
+                    + "_output?value="
+                    + str(output_elasped_time)
+                )
+            if self._metrics_url != "":
+                requests.post(
+                    self._metrics_url
+                    + "/histogram/"
+                    + self._metrics_type
+                    + "_publish?value="
+                    + str(publish_elasped_time)
                 )
         except Exception as e:
             logger.exception(e)
