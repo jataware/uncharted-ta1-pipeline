@@ -94,10 +94,10 @@ class LaraResultSubscriber:
 
     # map of pipeline name to system version
     PIPELINE_SYSTEM_VERSIONS = {
-        SEGMENTATION_PIPELINE: "0.0.4",
-        METADATA_PIPELINE: "0.0.4",
-        POINTS_PIPELINE: "0.0.4",
-        GEOREFERENCE_PIPELINE: "0.0.5",
+        SEGMENTATION_PIPELINE: "0.0.5",
+        METADATA_PIPELINE: "0.0.5",
+        POINTS_PIPELINE: "0.0.5",
+        GEOREFERENCE_PIPELINE: "0.0.6",
     }
 
     def __init__(
