@@ -18,7 +18,6 @@ from pika.exceptions import AMQPChannelError, AMQPConnectionError
 import pika.spec as spec
 from pydantic import BaseModel
 from regex import P
-from cdr.json_log import JSONLog
 from cdr.request_publisher import LaraRequestPublisher
 from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.georeference import GeoreferenceResults, GroundControlPoint
@@ -109,7 +108,6 @@ class LaraResultSubscriber:
         cdr_token: str,
         output: str,
         workdir: str,
-        json_log: JSONLog,
         host="localhost",
         pipeline_sequence: List[str] = DEFAULT_PIPELINE_SEQUENCE,
     ) -> None:
@@ -121,7 +119,6 @@ class LaraResultSubscriber:
         self._cdr_token = cdr_token
         self._workdir = workdir
         self._output = output
-        self._json_log = json_log
         self._host = host
         self._pipeline_sequence = (
             pipeline_sequence
@@ -234,11 +231,6 @@ class LaraResultSubscriber:
                     self._push_georeferencing(result)
                 case _:
                     logger.info("unsupported output type received from queue")
-
-            self._json_log.log(
-                "result",
-                {"type": result.output_type, "cog_id": result.request.image_id},
-            )
 
             # in the serial case we call the next pipeline in the sequence
             if self._request_publisher:

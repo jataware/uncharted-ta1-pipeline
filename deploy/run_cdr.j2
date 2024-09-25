@@ -17,7 +17,7 @@ docker run \
     -e NGROK_AUTHTOKEN={{ ngrok_authtoken }} \
     -v {{ work_dir }}/workdir \
     -v {{ image_dir}}:/imagedir \
-    -v $1 :/input \
+    -v $1:/input \
     --net lara \
     uncharted/lara-cdr:test \
         --host rabbitmq \
