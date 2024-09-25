@@ -12,7 +12,7 @@ from langchain.schema import SystemMessage, PromptValue
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain_openai import ChatOpenAI
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 import tiktoken
 from tasks.common.image_io import pil_to_cv_image
 from tasks.common.task import TaskInput, TaskResult
@@ -146,7 +146,6 @@ class Location(BaseModel):
 
 
 class PointLocationsLLM(BaseModel):
-    # points: List[Tuple[str, int]] = Field(
     places: List[Location] = Field(
         description="The list of point places extracted from the map area. "
         + "The 'name' key should contain the name of the point and the 'index' key should contain the index of "
@@ -312,11 +311,6 @@ class MetadataExtractor(Task):
             DocTextExtraction.model_validate,
             self._create_empty_extraction,
         )
-        if not doc_text:
-            logger.info(
-                "OCR output not available - returning empty metadata extraction result"
-            )
-            return task_result
 
         doc_id = self._generate_doc_key(input, doc_text)
 
