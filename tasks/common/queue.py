@@ -137,6 +137,11 @@ class RequestQueue:
         self._imagedir = imagedir
         self._result_connection: Optional[BlockingConnection] = None
 
+        self._node_name = os.environ.get("NODE_NAME", "")
+        self._pod_name = os.environ.get("POD_NAME", "")
+        self._pod_namespace = os.environ.get("POD_NAMESPACE", "")
+        self._pod_ip = os.environ.get("POD_IP", "")
+
     def _run_request_queue(self):
         while True:
             try:
@@ -308,6 +313,8 @@ class RequestQueue:
 
         logger.info("request received from input queue")
 
+        gauge_labels = {'labels':[{'name':'pod_name','value':self._pod_name}]}
+
         try:
             body_decoded = json.loads(body.decode())
             # parse body as request
@@ -326,6 +333,14 @@ class RequestQueue:
                     + "/counter/"
                     + self._metrics_type
                     + "_started?step=1"
+                )
+            if self._metrics_url != "":
+                requests.post(
+                    self._metrics_url
+                    + "/gauge/"
+                    + self._metrics_type
+                    + "_working?value=1",
+                    json = gauge_labels
                 )
 
             job_started_time = time.perf_counter()
@@ -382,6 +397,14 @@ class RequestQueue:
                     + "_publish?value="
                     + str(publish_elasped_time)
                 )
+            if self._metrics_url != "":
+                requests.post(
+                    self._metrics_url
+                    + "/gauge/"
+                    + self._metrics_type
+                    + "_working?value=0",
+                    json = gauge_labels
+                )
         except Exception as e:
             logger.exception(e)
             if self._metrics_url != "":
@@ -390,6 +413,14 @@ class RequestQueue:
                     + "/counter/"
                     + self._metrics_type
                     + "_errored?step=1"
+                )
+            if self._metrics_url != "":
+                requests.post(
+                    self._metrics_url
+                    + "/gauge/"
+                    + self._metrics_type
+                    + "_working?value=0",
+                    json = gauge_labels
                 )
 
     def _create_pipeline_input(
