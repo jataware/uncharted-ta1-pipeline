@@ -19,7 +19,7 @@ docker run \
     -v {{ image_dir}}:/imagedir \
     -v $1:/input \
     --net lara \
-    uncharted/lara-cdr:test \
+    uncharted/lara-cdr:{{ tag }} \
         --host rabbitmq \
         --workdir workdir \
         --imagedir imagedir \

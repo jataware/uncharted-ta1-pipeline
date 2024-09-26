@@ -337,6 +337,9 @@ class CDROutput(GeoreferencingOutput):
 
 
 class ProjectedMapOutput(OutputCreator):
+
+    DEFAULT_OUTPUT_CRS = "EPSG:3857"
+
     def __init__(self, id: str):
         super().__init__(id)
 
@@ -372,14 +375,17 @@ class ProjectedMapOutput(OutputCreator):
         ]
 
         # create the affine transformation matrix from the gcps
-        transform = cps_to_transform(gcps, crs, "EPSG:4326")
+        transform = cps_to_transform(gcps, crs, ProjectedMapOutput.DEFAULT_OUTPUT_CRS)
+
 
         if pipeline_result.image is None:
             raise ValueError("No image found in pipeline result - cannot project")
 
         # project the image using the tansformation matrix - results are returned
         # as a geotiff in memory (pillow doesn't support geotiffs)
-        projected_map = project_image(pipeline_result.image, transform, "EPSG:4326")
+        projected_map = project_image(
+            pipeline_result.image, transform, ProjectedMapOutput.DEFAULT_OUTPUT_CRS
+        )
 
         return BytesOutput(
             pipeline_result.pipeline_id, pipeline_result.pipeline_name, projected_map

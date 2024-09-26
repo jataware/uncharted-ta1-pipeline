@@ -368,12 +368,12 @@ class LaraResultSubscriber:
             ]
 
             logger.info(
-                f"projecting image {result.image_path} to {output_file_name_full} using crs {GeoreferenceMapper.DEFAULT_OUTPUT_CRS}"
+                f"projecting image {result.image_path} to {output_file_name_full}. CRS: {lara_result.crs} -> {GeoreferenceMapper.DEFAULT_OUTPUT_CRS}"
             )
             self._project_georeference(
                 result.image_path,
                 output_file_name_full,
-                projection.crs,
+                lara_result.crs,
                 GeoreferenceMapper.DEFAULT_OUTPUT_CRS,
                 lara_gcps,
             )
@@ -421,8 +421,12 @@ class LaraResultSubscriber:
             logger.info(
                 f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
             )
-        except:
-            logger.info("error when attempting to submit georeferencing results")
+        except Exception as e:
+            logger.exception(
+                "error when attempting to submit georeferencing results",
+                e,
+                exc_info=True,
+            )
 
     def _project_georeference(
         self,
