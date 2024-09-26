@@ -313,7 +313,7 @@ class RequestQueue:
 
         logger.info("request received from input queue")
 
-        gauge_labels = {'labels':[{'name':'pod_name','value':self._pod_name}]}
+        gauge_labels = {"labels": [{"name": "pod_name", "value": self._pod_name}]}
 
         try:
             body_decoded = json.loads(body.decode())
@@ -340,7 +340,7 @@ class RequestQueue:
                     + "/gauge/"
                     + self._metrics_type
                     + "_working?value=1",
-                    json = gauge_labels
+                    json=gauge_labels,
                 )
 
             job_started_time = time.perf_counter()
@@ -403,7 +403,7 @@ class RequestQueue:
                     + "/gauge/"
                     + self._metrics_type
                     + "_working?value=0",
-                    json = gauge_labels
+                    json=gauge_labels,
                 )
         except Exception as e:
             logger.exception(e)
@@ -420,7 +420,7 @@ class RequestQueue:
                     + "/gauge/"
                     + self._metrics_type
                     + "_working?value=0",
-                    json = gauge_labels
+                    json=gauge_labels,
                 )
 
     def _create_pipeline_input(
