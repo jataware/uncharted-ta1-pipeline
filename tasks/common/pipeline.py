@@ -120,6 +120,11 @@ class BaseModelListOutput(Output):
         self.data = data
 
 
+class EmptyOutput(Output):
+    def __init__(self):
+        super().__init__("", "")
+
+
 class OutputCreator:
     id = ""
 

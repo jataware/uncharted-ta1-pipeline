@@ -1,4 +1,3 @@
-from ast import parse
 import copy
 from dataclasses import dataclass
 import logging
@@ -301,6 +300,10 @@ class MetadataExtractor(Task):
 
         logger.info(f"Running metadata extraction task for '{input.raster_id}'")
 
+        # check if there is a map segment present in the segmentation output
+        if not self._check_map(input):
+            return self._create_result(input)
+
         if self._should_run and not self._should_run(input):
             logging.info("Skipping metadata extraction task")
             return self._create_result(input)
@@ -382,6 +385,35 @@ class MetadataExtractor(Task):
             logger.warn("No metadata extraction result found")
 
         return task_result
+
+    def _check_map(self, input: TaskInput) -> bool:
+        """
+        Checks if the segmentation output contains a map segment.
+
+        Args:
+            input (TaskInput): The input data for the task.
+
+        Returns:
+            bool: True if a map segment is found, False otherwise.
+        """
+        # make sure we have segmentation output
+        segments = input.data.get(SEGMENTATION_OUTPUT_KEY, None)
+        if segments is None:
+            logger.info(
+                f"Skipping metadata extraction task for '{input.raster_id}' - segmentation output not found"
+            )
+            return False
+
+        # check to see if the map class label occurs in any of the segments
+        segments = MapSegmentation.model_validate(segments)
+        for segment in segments.segments:
+            if segment.class_label == "map":
+                return True
+
+        logger.info(
+            f"Skipping metadata extraction task for '{input.raster_id}' - no map segment found"
+        )
+        return False
 
     def _generate_doc_key(
         self, task_input: TaskInput, doc_text: DocTextExtraction

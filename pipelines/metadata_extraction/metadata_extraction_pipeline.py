@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import List
 from PIL import ImageDraw
+from regex import B
 from tasks.common.io import append_to_cache_location
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.text_filter import TextFilter, TEXT_EXTRACTION_OUTPUT_KEY
@@ -18,6 +19,7 @@ from tasks.segmentation.detectron_segmenter import (
 )
 from tasks.common.pipeline import (
     BaseModelOutput,
+    EmptyOutput,
     Pipeline,
     PipelineResult,
     OutputCreator,
@@ -101,6 +103,10 @@ class MetadataExtractionOutput(OutputCreator):
         Returns:
             MetadataExtraction: The metadata extraction object.
         """
+        output = pipeline_result.data.get(METADATA_EXTRACTION_OUTPUT_KEY, None)
+        if output is None:
+            return EmptyOutput()
+
         metadata_extraction = MetadataExtraction.model_validate(
             pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
         )
@@ -125,6 +131,10 @@ class CDROutput(OutputCreator):
         Returns:
             Map: The CDR schema Map object.
         """
+        output = pipeline_result.data.get(METADATA_EXTRACTION_OUTPUT_KEY, None)
+        if output is None:
+            return EmptyOutput()
+
         metadata_extraction = MetadataExtraction.model_validate(
             pipeline_result.data[METADATA_EXTRACTION_OUTPUT_KEY]
         )

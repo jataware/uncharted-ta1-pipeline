@@ -532,6 +532,10 @@ class LaraResultSubscriber:
         """
         metadata_result_raw = json.loads(result.output)
 
+        # don't write when the result is empty
+        if len(metadata_result_raw) == 0:
+            return
+
         # validate the result by building the model classes
         cdr_result: Optional[CogMetaData] = None
         try:

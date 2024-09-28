@@ -14,7 +14,12 @@ from tasks.common.queue import (
     METADATA_REQUEST_QUEUE,
     METADATA_RESULT_QUEUE,
 )
-from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
+from tasks.common.pipeline import (
+    EmptyOutput,
+    PipelineInput,
+    BaseModelOutput,
+    BaseModelListOutput,
+)
 from tasks.metadata_extraction.metadata_extraction import LLM
 from tasks.common import image_io
 from tasks.metadata_extraction.entities import METADATA_EXTRACTION_OUTPUT_KEY
@@ -57,8 +62,12 @@ def process_image():
         elif isinstance(metadata_result, BaseModelListOutput):
             result_json = json.dumps([d.model_dump() for d in metadata_result.data])
             return Response(result_json, status=200, mimetype="application/json")
-        else:
+        elif isinstance(metadata_result, EmptyOutput):
             msg = "No metadata extracted"
+            logging.info(msg)
+            return (msg, 200)
+        else:
+            msg = "No metadata extracted - unknown output type"
             logging.warning(msg)
             return (msg, 500)
 
