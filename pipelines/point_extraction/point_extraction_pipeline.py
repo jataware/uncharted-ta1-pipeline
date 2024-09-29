@@ -1,11 +1,10 @@
 import logging
-from pathlib import Path
 from typing import List
-
-from flask import app
 
 from schema.mappers.cdr import PointsMapper
 from tasks.common.io import append_to_cache_location
+from tasks.common.task import EvaluateHalt, HaltPipeline
+from tasks.segmentation.segmenter_utils import map_missing
 from tasks.point_extraction.legend_analyzer import (
     LegendPreprocessor,
     LegendPostprocessor,
@@ -34,6 +33,7 @@ from tasks.common.pipeline import (
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.segmentation.denoise_segments import DenoiseSegments
+from tasks.segmentation.segmenter_utils import map_missing
 from tasks.text_extraction.text_extractor import TileTextExtractor
 
 
@@ -79,13 +79,6 @@ class PointExtractionPipeline(Pipeline):
         )
 
         tasks = []
-        tasks.append(
-            TileTextExtractor(
-                "tile_text",
-                append_to_cache_location(cache_location, "text"),
-                gamma_correction=0.5,
-            )
-        )
         if model_path_segmenter:
             tasks.extend(
                 [
@@ -95,6 +88,8 @@ class PointExtractionPipeline(Pipeline):
                         append_to_cache_location(cache_location, "segmentation"),
                         gpu=gpu,
                     ),
+                    # early termination if no map region is found
+                    EvaluateHalt("map_presence_check", map_missing),
                     DenoiseSegments("segment_denoising"),
                 ]
             )
@@ -104,6 +99,11 @@ class PointExtractionPipeline(Pipeline):
             )
         tasks.extend(
             [
+                TileTextExtractor(
+                    "tile_text",
+                    append_to_cache_location(cache_location, "text"),
+                    gamma_correction=0.5,
+                ),
                 LegendPreprocessor("legend_preprocessor", "", fetch_legend_items),
                 Tiler("tiling"),
                 yolo_point_extractor,

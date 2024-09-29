@@ -1,9 +1,7 @@
-import os
-from pathlib import Path
 from typing import List
 from PIL import ImageDraw
-from regex import B
 from tasks.common.io import append_to_cache_location
+from tasks.segmentation.segmenter_utils import map_missing
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.text_filter import TextFilter, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.metadata_extraction.entities import (
@@ -13,6 +11,7 @@ from tasks.metadata_extraction.entities import (
 from tasks.segmentation.entities import MapSegmentation
 from tasks.text_extraction.entities import DocTextExtraction
 from tasks.text_extraction.text_extractor import ResizeTextExtractor
+from tasks.common.task import EvaluateHalt
 from tasks.segmentation.detectron_segmenter import (
     DetectronSegmenter,
     SEGMENTATION_OUTPUT_KEY,
@@ -47,6 +46,19 @@ class MetadataExtractorPipeline(Pipeline):
     ):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
+            # segment the image into map, text, and other regions
+            DetectronSegmenter(
+                "segmenter",
+                model_data_path,
+                append_to_cache_location(cache_location, "segmentation"),
+                gpu=gpu,
+            ),
+            # terminate the pipeline if the map region is not found - this will immediately return an empty output
+            EvaluateHalt(
+                "map_presence_check",
+                map_missing,
+            ),
+            # extract text from the image
             ResizeTextExtractor(
                 "resize_text",
                 append_to_cache_location(cache_location, "text"),
@@ -55,12 +67,7 @@ class MetadataExtractorPipeline(Pipeline):
                 6000,
                 0.5,
             ),
-            DetectronSegmenter(
-                "segmenter",
-                model_data_path,
-                append_to_cache_location(cache_location, "segmentation"),
-                gpu=gpu,
-            ),
+            # filter out the text that is not part of the map or supplemental information
             TextFilter(
                 "text_filter",
                 classes=[
@@ -69,6 +76,7 @@ class MetadataExtractorPipeline(Pipeline):
                     "legend_polygons",
                 ],
             ),
+            # extract metadata from the filtered text
             MetadataExtractor(
                 "metadata_extractor",
                 model=model,

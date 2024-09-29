@@ -2,10 +2,15 @@ import logging
 import math
 
 from shapely import MultiPolygon
-from tasks.segmentation.entities import MapSegmentation
+from tasks.common.task import TaskInput
+from tasks.segmentation.entities import (
+    SEGMENT_MAP_CLASS,
+    SEGMENTATION_OUTPUT_KEY,
+    MapSegmentation,
+)
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 import numpy as np
 import cv2
 
@@ -123,3 +128,26 @@ def segments_to_mask(
     cv2.fillPoly(binary_mask, pts=poly_arrays, color=255)  # type: ignore
 
     return binary_mask
+
+
+def map_missing(input: TaskInput) -> bool:
+    """
+    Checks if the segmentation output contains a map segment.
+
+    Args:
+        input (TaskInput): The input data for the task.
+
+    Returns:
+        bool: True if map segment is missing, False if the map is present.
+    """
+    # make sure we have segmentation output
+    segments = input.data.get(SEGMENTATION_OUTPUT_KEY, None)
+    if segments is None:
+        return True
+
+    # check to see if the map class label occurs in any of the segments
+    segments = MapSegmentation.model_validate(segments)
+    for segment in segments.segments:
+        if segment.class_label == SEGMENT_MAP_CLASS:
+            return False
+    return True

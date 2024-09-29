@@ -72,7 +72,7 @@ def main():
                 assert isinstance(output_data.data, PILImage)
                 image_writer.process(path, output_data.data)
             elif isinstance(output_data, EmptyOutput):
-                logger.info(f"No output for {doc_id}")
+                logger.info(f"Empty {output_type} output for {doc_id}")
             else:
                 logger.warning(f"Unknown output type: {type(output_data)}")
                 continue

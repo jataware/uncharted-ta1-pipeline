@@ -13,7 +13,7 @@ from pipelines.geo_referencing.output import (
 )
 from tasks.common.io import append_to_cache_location
 from tasks.common.pipeline import OutputCreator, Pipeline
-from tasks.common.task import Task, TaskInput
+from tasks.common.task import EvaluateHalt, Task, TaskInput
 from tasks.geo_referencing.coordinates_extractor import (
     GeoCoordinatesExtractor,
 )
@@ -54,6 +54,7 @@ from tasks.metadata_extraction.text_filter import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
+from tasks.segmentation.segmenter_utils import map_missing
 from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
 
 from typing import List
@@ -100,13 +101,6 @@ class GeoreferencingPipeline(Pipeline):
         geocoder_thresh = 10
 
         tasks: List[Task] = [
-            # Extracts text from the tiled image
-            TileTextExtractor(
-                "tiled text extractor",
-                text_cache,
-                6000,
-                gamma_correction=ocr_gamma_correction,
-            ),
             # Segments the image into map,legend and cross section
             DetectronSegmenter(
                 "segmenter",
@@ -114,6 +108,18 @@ class GeoreferencingPipeline(Pipeline):
                 segmentation_cache,
                 confidence_thres=0.25,
                 gpu=gpu_enabled,
+            ),
+            # terminate the pipeline if the map region is not found - this will immediately return empty outputs
+            EvaluateHalt(
+                "map_presence_check",
+                map_missing,
+            ),
+            # Extracts text from the tiled image
+            TileTextExtractor(
+                "tiled text extractor",
+                text_cache,
+                6000,
+                gamma_correction=ocr_gamma_correction,
             ),
             # Defines an allowed region for cooredinates to occupy by buffering
             # the extracted map area polyline by a fixed amount

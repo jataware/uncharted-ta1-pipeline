@@ -12,7 +12,12 @@ from tasks.common.io import (
     ImageFileInputIterator,
     JSONFileWriter,
 )
-from tasks.common.pipeline import BaseModelOutput, BytesOutput, PipelineInput
+from tasks.common.pipeline import (
+    BaseModelOutput,
+    BytesOutput,
+    EmptyOutput,
+    PipelineInput,
+)
 from tasks.geo_referencing.entities import (
     LEVERS_OUTPUT_KEY,
     PROJECTED_MAP_OUTPUT_KEY,
@@ -143,6 +148,10 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
         if isinstance(output_data, BaseModelOutput):
             path = os.path.join(parsed.output, f"{raster_id}_georeferencing.json")
             writer_json_file.process(path, output_data.data)
+        elif isinstance(output_data, EmptyOutput):
+            logger.info(
+                f"no georeferencing results for {raster_id}, skipping writing to file"
+            )
 
         # immediately write projected map to file - these are large so we don't want to accumulate them
         # in memory like the other results
@@ -161,6 +170,10 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
                 writer_bytes.process(
                     output_path,
                     map_output.data,
+                )
+            elif isinstance(map_output, EmptyOutput):
+                logger.info(
+                    f"no projected map for {raster_id}, skipping writing to file"
                 )
 
         # store the diagnostic info if present
