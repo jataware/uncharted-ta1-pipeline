@@ -1,8 +1,7 @@
 import io
 import logging
-from queue import Empty
 from .task import HaltPipeline, Task, TaskInput, TaskResult
-from typing import Optional, List, Dict, Any, Sequence
+from typing import Optional, Dict, Any, Sequence
 from PIL.Image import Image as PILImage
 from pydantic import BaseModel
 
