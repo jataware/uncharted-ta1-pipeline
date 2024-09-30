@@ -501,7 +501,6 @@ class LaraResultSubscriber:
             )
             return
 
-
         # validate the result by building the model classes
         cdr_result: Optional[FeatureResults] = None
         try:
