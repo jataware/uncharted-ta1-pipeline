@@ -334,7 +334,6 @@ class RequestQueue:
                     + self._metrics_type
                     + "_started?step=1"
                 )
-            if self._metrics_url != "":
                 requests.post(
                     self._metrics_url
                     + "/gauge/"
@@ -373,7 +372,6 @@ class RequestQueue:
                     + self._metrics_type
                     + "_completed?step=1"
                 )
-            if self._metrics_url != "":
                 requests.post(
                     self._metrics_url
                     + "/histogram/"
@@ -381,7 +379,6 @@ class RequestQueue:
                     + "_run?value="
                     + str(run_elasped_time)
                 )
-            if self._metrics_url != "":
                 requests.post(
                     self._metrics_url
                     + "/histogram/"
@@ -389,7 +386,6 @@ class RequestQueue:
                     + "_output?value="
                     + str(output_elasped_time)
                 )
-            if self._metrics_url != "":
                 requests.post(
                     self._metrics_url
                     + "/histogram/"
@@ -397,7 +393,6 @@ class RequestQueue:
                     + "_publish?value="
                     + str(publish_elasped_time)
                 )
-            if self._metrics_url != "":
                 requests.post(
                     self._metrics_url
                     + "/gauge/"
@@ -414,7 +409,6 @@ class RequestQueue:
                     + self._metrics_type
                     + "_errored?step=1"
                 )
-            if self._metrics_url != "":
                 requests.post(
                     self._metrics_url
                     + "/gauge/"
