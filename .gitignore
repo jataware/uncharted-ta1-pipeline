@@ -167,5 +167,6 @@ temp
 pipelines/metadata_extraction/working/
 pipelines/metadata_extraction/deploy/**/
 docker-compose.yml
+run_cdr.sh
 **/results_viz/*.tif
 results_*/
