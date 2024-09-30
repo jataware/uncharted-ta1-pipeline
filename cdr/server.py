@@ -55,7 +55,6 @@ class Settings:
     callback_url: str
     registration_id: Dict[str, str] = {}
     rabbitmq_host: str
-    serial: bool
     sequence: List[str] = []
 
 
@@ -134,16 +133,12 @@ def process_cdr_event():
     # imagedir arg that should be configured to point at this location.
     prefetch_image(Path(settings.imagedir), map_event.cog_id, map_event.cog_url)
 
-    if settings.serial:
-        first_task = settings.sequence[0]
-        first_queue = LaraResultSubscriber.PIPELINE_QUEUES[first_task]
-        first_request = LaraResultSubscriber.next_request(
-            first_task, map_event.cog_id, map_event.cog_url
-        )
-        request_publisher.publish_lara_request(first_request, first_queue)
-    else:
-        for queue_name, lara_req in lara_reqs.items():
-            request_publisher.publish_lara_request(lara_req, queue_name)
+    first_task = settings.sequence[0]
+    first_queue = LaraResultSubscriber.PIPELINE_QUEUES[first_task]
+    first_request = LaraResultSubscriber.next_request(
+        first_task, map_event.cog_id, map_event.cog_url
+    )
+    request_publisher.publish_lara_request(first_request, first_queue)
 
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
@@ -189,19 +184,10 @@ def process_image(image_id: str, request_publisher: LaraRequestPublisher):
     prefetch_image(Path(settings.imagedir), image_id, image_url)
 
     # push the request onto the queue
-    if settings.serial:
-        first_task = settings.sequence[0]
-        first_queue = LaraResultSubscriber.PIPELINE_QUEUES[first_task]
-        first_request = LaraResultSubscriber.next_request(
-            first_task, image_id, image_url
-        )
-        request_publisher.publish_lara_request(first_request, first_queue)
-    else:
-        for queue_name, request in lara_reqs.items():
-            logger.info(
-                f"publishing request for image {image_id} to {queue_name} task: {request.task}"
-            )
-            request_publisher.publish_lara_request(request, queue_name)
+    first_task = settings.sequence[0]
+    first_queue = LaraResultSubscriber.PIPELINE_QUEUES[first_task]
+    first_request = LaraResultSubscriber.next_request(first_task, image_id, image_url)
+    request_publisher.publish_lara_request(first_request, first_queue)
 
 
 def register_cdr_system():
@@ -334,7 +320,6 @@ def main():
     settings.imagedir = p.imagedir
     settings.output = p.output
     settings.callback_secret = CDR_CALLBACK_SECRET
-    settings.serial = True
     settings.sequence = p.sequence
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
@@ -366,9 +351,8 @@ def main():
     request_publisher.start_lara_request_queue()
 
     # start the listener for the results
-    publisher = request_publisher if settings.serial else None
     result_subscriber = LaraResultSubscriber(
-        publisher,
+        request_publisher,
         LARA_RESULT_QUEUE_NAME,
         settings.cdr_host,
         settings.cdr_api_token,

@@ -102,7 +102,7 @@ class LaraResultSubscriber:
 
     def __init__(
         self,
-        request_publisher: Optional[LaraRequestPublisher],
+        request_publisher: LaraRequestPublisher,
         result_queue: str,
         cdr_host: str,
         cdr_token: str,
