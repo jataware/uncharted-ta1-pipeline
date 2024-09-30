@@ -500,6 +500,8 @@ class RequestQueue:
             # download image
             image_data = download_file(image_url)
 
+            image_writer = ImageFileWriter()
+
             # write it to working dir, creating the directory if necessary
             filename.parent.mkdir(parents=True, exist_ok=True)
             with open(filename, "wb") as file:

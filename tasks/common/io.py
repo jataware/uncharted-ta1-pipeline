@@ -265,6 +265,61 @@ def download_file(image_url: str) -> bytes:
     return r.content
 
 
+class ImageFileReader:
+    """Reads an image file from the local filesystem or s3 and returns a PIL image object"""
+
+    def process(self, input_location: str) -> PILImage:
+        """Reads an image file and returns a PIL image object"""
+
+        # check to see if path is an s3 uri - otherwise treat it as a file path
+        source = get_file_source(input_location)
+        if source == Mode.S3_URI or source == Mode.URL:
+            return self._read_from_s3(input_location, source)
+        else:
+            return self._read_from_file(Path(input_location))
+
+    # Read image from local file system
+    @staticmethod
+    def _read_from_file(input_location: Path) -> PILImage:
+        """Reads an image file and returns a PIL image object"""
+
+        # get the directory of the file
+        if input_location.is_dir():
+            raise ValueError(f"Input location {input_location} is not a file.")
+
+        # read the image from the input file
+        return Image.open(input_location)
+
+    # Read image from s3
+    @staticmethod
+    def _read_from_s3(input_uri: str, mode: Mode) -> PILImage:
+        """Reads an image file from an s3 bucket and returns a PIL image object"""
+
+        # create an s3 client based on the mode
+        if mode == Mode.S3_URI:
+            client = boto3.client("s3")
+        elif mode == Mode.URL:
+            parsed_url = urlparse(input_uri)
+            client = boto3.client(
+                "s3", endpoint_url=f"{parsed_url.scheme}://{parsed_url.netloc}"
+            )
+        else:
+            raise ValueError(
+                f"Invalid URI mode for S3 client instantiation: {input_uri}"
+            )
+
+        # extract bucket from s3 uri
+        bucket, key = parse_s3_reference(input_uri, mode)
+
+        # read image from the bucket
+        response = client.get_object(Bucket=bucket, Key=key)
+        if response["ResponseMetadata"]["HTTPStatusCode"] != 200:
+            raise Exception(f"Failed to read from s3 bucket {bucket} with key {key}.")
+
+        img_bytes_io = io.BytesIO(response["Body"].read())
+        return Image.open(img_bytes_io)
+
+
 class JSONFileReader:
     """Reads a JSON file and returns a list of BaseModel objects"""
 
