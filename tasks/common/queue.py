@@ -7,6 +7,8 @@ from pathlib import Path
 import random
 from threading import Thread
 from time import sleep
+import requests
+import time
 
 from cv2 import log
 import pika
@@ -109,6 +111,8 @@ class RequestQueue:
         vhost="/",
         uid="",
         pwd="",
+        metrics_url="",
+        metrics_type="",
         heartbeat=900,
         blocked_connection_timeout=600,
     ) -> None:
@@ -121,6 +125,8 @@ class RequestQueue:
         self._vhost = vhost
         self._uid = uid
         self._pwd = pwd
+        self._metrics_url = metrics_url
+        self._metrics_type = metrics_type
         self._request_queue = request_queue
         self._result_queue = result_queue
         self._output_key = output_key
@@ -130,6 +136,11 @@ class RequestQueue:
         self._working_dir = workdir
         self._imagedir = imagedir
         self._result_connection: Optional[BlockingConnection] = None
+
+        self._node_name = os.environ.get("NODE_NAME", "")
+        self._pod_name = os.environ.get("POD_NAME", "")
+        self._pod_namespace = os.environ.get("POD_NAMESPACE", "")
+        self._pod_ip = os.environ.get("POD_IP", "")
 
     def _run_request_queue(self):
         while True:
@@ -302,6 +313,8 @@ class RequestQueue:
 
         logger.info("request received from input queue")
 
+        gauge_labels = {"labels": [{"name": "pod_name", "value": self._pod_name}]}
+
         try:
             body_decoded = json.loads(body.decode())
             # parse body as request
@@ -313,8 +326,28 @@ class RequestQueue:
             )
             input = self._create_pipeline_input(request, next(image_it)[1])
 
+            # add metric of job starting
+            if self._metrics_url != "":
+                requests.post(
+                    self._metrics_url
+                    + "/counter/"
+                    + self._metrics_type
+                    + "_started?step=1"
+                )
+                requests.post(
+                    self._metrics_url
+                    + "/gauge/"
+                    + self._metrics_type
+                    + "_working?value=1",
+                    json=gauge_labels,
+                )
+
+            job_started_time = time.perf_counter()
+
             # run the pipeline
             outputs = self._pipeline.run(input)
+
+            run_elasped_time = time.perf_counter() - job_started_time
 
             # create the response
             output_raw = outputs[self._output_key]
@@ -324,11 +357,65 @@ class RequestQueue:
                 raise ValueError("Unsupported output type")
             logger.info("writing request result to output queue")
 
+            output_elasped_time = time.perf_counter() - run_elasped_time
+
             # run queue operations
             self._publish_result(result)
+
+            publish_elasped_time = time.perf_counter() - output_elasped_time
+
             logger.info("result written to output queue")
+            if self._metrics_url != "":
+                requests.post(
+                    self._metrics_url
+                    + "/counter/"
+                    + self._metrics_type
+                    + "_completed?step=1"
+                )
+                requests.post(
+                    self._metrics_url
+                    + "/histogram/"
+                    + self._metrics_type
+                    + "_run?value="
+                    + str(run_elasped_time)
+                )
+                requests.post(
+                    self._metrics_url
+                    + "/histogram/"
+                    + self._metrics_type
+                    + "_output?value="
+                    + str(output_elasped_time)
+                )
+                requests.post(
+                    self._metrics_url
+                    + "/histogram/"
+                    + self._metrics_type
+                    + "_publish?value="
+                    + str(publish_elasped_time)
+                )
+                requests.post(
+                    self._metrics_url
+                    + "/gauge/"
+                    + self._metrics_type
+                    + "_working?value=0",
+                    json=gauge_labels,
+                )
         except Exception as e:
             logger.exception(e)
+            if self._metrics_url != "":
+                requests.post(
+                    self._metrics_url
+                    + "/counter/"
+                    + self._metrics_type
+                    + "_errored?step=1"
+                )
+                requests.post(
+                    self._metrics_url
+                    + "/gauge/"
+                    + self._metrics_type
+                    + "_working?value=0",
+                    json=gauge_labels,
+                )
 
     def _create_pipeline_input(
         self, request: Request, image: PILImage
