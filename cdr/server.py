@@ -90,34 +90,6 @@ def process_cdr_event():
             case "map.process":
                 logger.info("Received map event")
                 map_event = MapEventPayload.model_validate(evt["payload"])
-                lara_reqs[GEO_REFERENCE_REQUEST_QUEUE] = Request(
-                    id=evt["id"],
-                    task="georeference",
-                    image_id=map_event.cog_id,
-                    image_url=map_event.cog_url,
-                    output_format="cdr",
-                )
-                lara_reqs[POINTS_REQUEST_QUEUE] = Request(
-                    id=evt["id"],
-                    task="points",
-                    image_id=map_event.cog_id,
-                    image_url=map_event.cog_url,
-                    output_format="cdr",
-                )
-                lara_reqs[SEGMENTATION_REQUEST_QUEUE] = Request(
-                    id=evt["id"],
-                    task="segments",
-                    image_id=map_event.cog_id,
-                    image_url=map_event.cog_url,
-                    output_format="cdr",
-                )
-                lara_reqs[METADATA_REQUEST_QUEUE] = Request(
-                    id=evt["id"],
-                    task="metadata",
-                    image_id=map_event.cog_id,
-                    image_url=map_event.cog_url,
-                    output_format="cdr",
-                )
             case _:
                 logger.info(f"received unsupported {evt['event']} event")
 
@@ -128,10 +100,6 @@ def process_cdr_event():
     if len(lara_reqs) == 0:
         # assume ping or ignored event type
         return Response({"ok": "success"}, status=200, mimetype="application/json")
-
-    # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
-    # imagedir arg that should be configured to point at this location.
-    prefetch_image(Path(settings.imagedir), map_event.cog_id, map_event.cog_url)
 
     first_task = settings.sequence[0]
     first_queue = LaraResultSubscriber.PIPELINE_QUEUES[first_task]
@@ -145,43 +113,7 @@ def process_cdr_event():
 
 def process_image(image_id: str, request_publisher: LaraRequestPublisher):
     logger.info(f"processing image with id {image_id}")
-
     image_url = f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif"
-
-    # build the request
-    lara_reqs: Dict[str, Request] = {}
-    lara_reqs[GEO_REFERENCE_REQUEST_QUEUE] = Request(
-        id="mock-georeference",
-        task="georeference",
-        image_id=image_id,
-        image_url=image_url,
-        output_format="cdr",
-    )
-    lara_reqs[POINTS_REQUEST_QUEUE] = Request(
-        id="mock-points",
-        task="points",
-        image_id=image_id,
-        image_url=image_url,
-        output_format="cdr",
-    )
-    lara_reqs[SEGMENTATION_REQUEST_QUEUE] = Request(
-        id="mock-segments",
-        task="segments",
-        image_id=image_id,
-        image_url=image_url,
-        output_format="cdr",
-    )
-    lara_reqs[METADATA_REQUEST_QUEUE] = Request(
-        id="mock-metadata",
-        task="metadata",
-        image_id=image_id,
-        image_url=image_url,
-        output_format="cdr",
-    )
-
-    # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
-    # imagedir arg that should be configured to point at this location.
-    prefetch_image(Path(settings.imagedir), image_id, image_url)
 
     # push the request onto the queue
     first_task = settings.sequence[0]
