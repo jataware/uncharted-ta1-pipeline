@@ -11,6 +11,7 @@ import requests
 import time
 
 from cv2 import log
+from numpy import empty
 import pika
 from pika.exceptions import AMQPConnectionError, AMQPChannelError
 
@@ -18,6 +19,8 @@ from PIL.Image import Image as PILImage
 
 from tasks.common.pipeline import (
     BaseModelOutput,
+    EmptyOutput,
+    Output,
     Pipeline,
     PipelineInput,
 )
@@ -351,8 +354,10 @@ class RequestQueue:
 
             # create the response
             output_raw = outputs[self._output_key]
-            if type(output_raw) == BaseModelOutput:
+            if isinstance(output_raw, BaseModelOutput):
                 result = self._create_output(request, str(image_path), output_raw)
+            elif isinstance(output_raw, Output):
+                result = self._create_empty_output(request, str(image_path), output_raw)
             else:
                 raise ValueError("Unsupported output type")
             logger.info("writing request result to output queue")
@@ -453,6 +458,28 @@ class RequestQueue:
         return RequestResult(
             request=request,
             output=json.dumps(output.data.model_dump()),
+            success=True,
+            image_path=image_path,
+            output_type=self._output_type,
+        )
+
+    def _create_empty_output(
+        self, request: Request, image_path: str, output: Output
+    ) -> RequestResult:
+        """
+        Create the output for the request.
+
+        Args:
+            request: The request.
+            image_path: The path to the image.
+            output: The output of the pipeline.
+
+        Returns:
+            The request result.
+        """
+        return RequestResult(
+            request=request,
+            output="{}",
             success=True,
             image_path=image_path,
             output_type=self._output_type,

@@ -30,7 +30,7 @@ def main():
     elif arg:
         cogs.append(args.cog_id)
 
-    # send a request for each cog in the array
+    #    a request for each cog in the array
     for i, cog in enumerate(cogs):
         request = {
             "id": str(i),

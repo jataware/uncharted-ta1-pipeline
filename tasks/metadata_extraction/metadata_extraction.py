@@ -1,4 +1,3 @@
-from ast import parse
 import copy
 from dataclasses import dataclass
 import logging
@@ -379,7 +378,7 @@ class MetadataExtractor(Task):
                 METADATA_EXTRACTION_OUTPUT_KEY, metadata.model_dump()
             )
         else:
-            logger.warn("No metadata extraction result found")
+            logger.warning("No metadata extraction result found")
 
         return task_result
 

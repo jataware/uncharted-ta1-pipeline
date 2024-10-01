@@ -334,6 +334,13 @@ class LaraResultSubscriber:
         # reproject image to file on disk for pushing to CDR
         georef_result_raw = json.loads(result.output)
 
+        # don't write when the result is empty
+        if len(georef_result_raw) == 0:
+            logger.info(
+                f"empty georef result received for {result.request.image_id} - skipping send"
+            )
+            return
+
         # validate the result by building the model classes
         cdr_result: Optional[GeoreferenceResults] = None
         files_ = []
@@ -487,6 +494,13 @@ class LaraResultSubscriber:
         """
         segmentation_raw_result = json.loads(result.output)
 
+        # don't write when the result is empty
+        if len(segmentation_raw_result) == 0:
+            logger.info(
+                f"empty segmentation result received for {result.request.image_id} - skipping send"
+            )
+            return
+
         # validate the result by building the model classes
         cdr_result: Optional[FeatureResults] = None
         try:
@@ -508,6 +522,13 @@ class LaraResultSubscriber:
 
     def _push_points(self, result: RequestResult):
         points_raw_result = json.loads(result.output)
+
+        # don't write when the result is empty
+        if len(points_raw_result) == 0:
+            logger.info(
+                f"empty point result received for {result.request.image_id} - skipping send"
+            )
+            return
 
         # validate the result by building the model classes
         cdr_result: Optional[FeatureResults] = None
@@ -532,6 +553,13 @@ class LaraResultSubscriber:
         """
         metadata_result_raw = json.loads(result.output)
 
+        # don't write when the result is empty
+        if len(metadata_result_raw) == 0:
+            logger.info(
+                f"empty metadata result received for {result.request.image_id} - skipping send"
+            )
+            return
+
         # validate the result by building the model classes
         cdr_result: Optional[CogMetaData] = None
         try:
@@ -544,7 +572,8 @@ class LaraResultSubscriber:
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
             logger.exception(
-                e, "bad metadata result received so unable to send results to cdr"
+                e,
+                f"bad metadata result received for {result.request.image_id} so unable to send results to cdr",
             )
             return
 
