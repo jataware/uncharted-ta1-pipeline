@@ -103,11 +103,9 @@ class DetectronSegmenter(Task):
             ]
 
         # add model weights URL to config
-        self.cfg.MODEL.WEIGHTS = (
-            self.model_weights
-        )  # path to model weights (e.g., model_final.pth), can be local file path or URL
+        # note, path to model weights (e.g., model_final.pth), can be local file path or URL
+        self.cfg.MODEL.WEIGHTS = self.model_weights
         logger.info(f"Using model weights at {self.model_weights}")
-        # TODO use a local cache to check for existing model weights (instead of re-downloading each time?)
 
         # confidence threshold
         self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = self.confidence_thres
@@ -163,7 +161,7 @@ class DetectronSegmenter(Task):
         predictions = predictions.to("cpu")
 
         if not predictions:
-            logger.warn("No segmentation predictions for this image!")
+            logger.warning("No segmentation predictions for this image!")
             return self._create_result(input)
 
         if (
@@ -171,7 +169,7 @@ class DetectronSegmenter(Task):
             or not predictions.has("pred_classes")
             or not predictions.has("pred_masks")
         ):
-            logger.warn(
+            logger.warning(
                 "Segmentation predictions are missing data or format is unexpected! Returning empty results"
             )
             return self._create_result(input)
