@@ -52,7 +52,6 @@ class InferenceCoordinateExtractor(CoordinatesExtractor):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
-        logger.info("inferring coordinate using coordinates from parsed direction")
         # get the coordinates and roi or assume whole image is a map
         lon_pts = input.input.get_data("lons")
         lat_pts = input.input.get_data("lats")
@@ -128,7 +127,6 @@ class InferenceCoordinateExtractor(CoordinatesExtractor):
             },
             "extracted coordinate",
         )
-        logger.info("inferred new coordinate using parsed information")
 
         return (lon_pts, lat_pts)
 

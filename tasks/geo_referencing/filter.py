@@ -34,15 +34,12 @@ class FilterCoordinates(Task):
         # get coordinates so far
         lon_pts = input.get_data("lons")
         lat_pts = input.get_data("lats")
-        logger.info(
-            f"prior to filtering {len(lat_pts)} latitude and {len(lon_pts)} longitude coordinates have been extracted"
-        )
 
         # filter the coordinates to retain only those that are deemed valid
         lon_pts_filtered, lat_pts_filtered = self._filter(input, lon_pts, lat_pts)
 
         logger.info(
-            f"after filtering run {len(lat_pts_filtered)} latitude and {len(lon_pts_filtered)} longitude coordinates have been retained"
+            f"Num coordinates after filtering: {len(lat_pts_filtered)} latitude and {len(lon_pts_filtered)}"
         )
 
         # update the coordinates list
@@ -81,9 +78,6 @@ class FilterAxisCoordinates(Task):
         # get coordinates so far
         lon_pts = input.get_data("lons")
         lat_pts = input.get_data("lats")
-        logger.info(
-            f"prior to filtering {len(lat_pts)} latitude and {len(lon_pts)} longitude coordinates have been extracted"
-        )
 
         # filter the coordinates to retain only those that are deemed valid
         lon_pts_filtered = lon_pts
@@ -94,7 +88,7 @@ class FilterAxisCoordinates(Task):
             lat_pts_filtered = self._filter(input, lat_pts)
 
         logger.info(
-            f"after filtering run {len(lat_pts_filtered)} latitude and {len(lon_pts_filtered)} longitude coordinates have been retained"
+            f"Num coordinates after axis filtering: {len(lat_pts_filtered)} latitude and {len(lon_pts_filtered)}"
         )
 
         # update the coordinates list
@@ -127,18 +121,18 @@ class OutlierFilter(FilterAxisCoordinates):
         self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
     ) -> Dict[Tuple[float, float], Coordinate]:
         if len(coords) < 3:
-            logger.info(
-                "skipping outlier filtering since there are fewer than 3 coordinates"
+            logger.debug(
+                "Skipping outlier filtering since there are fewer than 3 coordinates"
             )
             return coords
 
-        logger.info(f"outlier filter running against {coords}")
+        logger.info(f"Running outlier filter for {len(coords)} coords")
         updated_coords = coords
         test_length = 0
         while len(updated_coords) != test_length:
             test_length = len(updated_coords)
             updated_coords = self._filter_regression(input, updated_coords)
-            logger.info(
+            logger.debug(
                 f"outlier filter updated length {len(updated_coords)} compared to test length {test_length}"
             )
         return updated_coords
@@ -233,8 +227,8 @@ class DistinctDegreeOutlierFilter(FilterAxisCoordinates):
                 to_process = True
 
         if not to_process:
-            logger.info(
-                "skipping distinct degree filtering since there are not enough duplicates"
+            logger.debug(
+                "Skipping distinct degree filtering since there are not enough duplicates"
             )
             return coords
 
@@ -246,7 +240,7 @@ class DistinctDegreeOutlierFilter(FilterAxisCoordinates):
             if len(g) < 3:
                 to_keep = g
             else:
-                logger.info(f"attempting to filter by distinct degree value for {k}")
+                logger.debug(f"attempting to filter by distinct degree value for {k}")
                 # identical degree values should have one of x or y be fairly similar
                 # if one is misaligned then it is probably from some other context
                 x, y = input.image.size
@@ -260,9 +254,9 @@ class DistinctDegreeOutlierFilter(FilterAxisCoordinates):
                                 to_keep.append(c_i)
                 if len(to_keep) == 0:
                     to_keep = g
-                    logger.info(f"kept all coordinates parsed as {k}")
+                    logger.debug(f"kept all coordinates parsed as {k}")
                 else:
-                    logger.info(f"kept only a subset of coordinates parsed as {k}")
+                    logger.debug(f"kept only a subset of coordinates parsed as {k}")
             for c in to_keep:
                 key = c.to_deg_result()[0]
                 remaining_coords[key] = c
@@ -292,13 +286,10 @@ class HighQualityCoordinateFilter(FilterAxisCoordinates):
             coordinates.append(c)
 
         if not to_process:
-            logger.info(
+            logger.debug(
                 "skipping high quality coordinate filtering since there are not enough duplicates"
             )
             return coords
-        logger.info(
-            f"filtering parsed coordinates by excluding coordinates that clash with high quality coordinates"
-        )
 
         remove_coords = {}
         remaining_coords = {}
@@ -315,7 +306,7 @@ class HighQualityCoordinateFilter(FilterAxisCoordinates):
                         (pixel_range - size_relevant, pixel_range + size_relevant),
                     )
                     for c in rejected:
-                        logger.info(
+                        logger.debug(
                             f"removing {c.get_parsed_degree()} since it falls within the pixel range of high confidence points"
                         )
                         remove_coords[c.get_pixel_alignment()] = c
@@ -369,9 +360,6 @@ class UTMStatePlaneFilter(FilterCoordinates):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
-        logger.info(
-            f"utm - state plane filter running against {len(lon_coords)} lon and {len(lat_coords)} lat coords"
-        )
 
         # get the count and confidence of state plane and utm coordinates
         lon_count_sp, lon_conf_sp = self._get_score(lon_coords, SOURCE_STATE_PLANE)
@@ -391,13 +379,13 @@ class UTMStatePlaneFilter(FilterCoordinates):
             min(lon_count_utm, lat_count_utm) > 0
             and min(lon_count_sp, lat_count_sp) == 0
         ):
-            logger.info("removing state plane coordinates since one axis has none")
+            logger.debug("removing state plane coordinates since one axis has none")
             source_filter = SOURCE_STATE_PLANE
         elif (
             min(lon_count_utm, lat_count_utm) == 0
             and min(lon_count_sp, lat_count_sp) > 0
         ):
-            logger.info("removing utm coordinates since one axis has none")
+            logger.debug("removing utm coordinates since one axis has none")
             source_filter = SOURCE_UTM
 
         # if still unsure then retain the one with the highest confidence
@@ -405,16 +393,16 @@ class UTMStatePlaneFilter(FilterCoordinates):
         if source_filter == "":
             source_filter = SOURCE_UTM
             if max(lon_conf_utm, lat_conf_utm) > max(lon_conf_sp, lat_conf_sp):
-                logger.info(
+                logger.debug(
                     "removing state plane coordinates since utm coordinates have higher confidence"
                 )
                 source_filter = SOURCE_STATE_PLANE
             else:
-                logger.info(
+                logger.debug(
                     "removing utm coordinates since state plane coordinates have higher confidence"
                 )
 
-        logger.info(f"filtering {source_filter} latitude and longitude coordinates")
+        logger.debug(f"filtering {source_filter} latitude and longitude coordinates")
 
         return self._filter_source(source_filter, lon_coords), self._filter_source(
             source_filter, lat_coords
@@ -450,7 +438,7 @@ class NaiveFilter(FilterAxisCoordinates):
     def _filter(
         self, input: TaskInput, coords: Dict[Tuple[float, float], Coordinate]
     ) -> Dict[Tuple[float, float], Coordinate]:
-        logger.info(f"naive filter running against {coords}")
+        logger.debug(f"naive filter running against {len(coords)} coords")
         updated_coords = self._filter_coarse(input, coords)
         return updated_coords
 
@@ -518,7 +506,6 @@ class ROIFilter(FilterCoordinates):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
-        logger.info(f"roi filter running against lon and lat coordinates")
         roi_xy = input.get_data("roi")
         self._add_param(input, str(uuid.uuid4()), "roi", {"bounds": roi_xy})
         roi_inner_xy = input.get_data("roi_inner")
@@ -529,7 +516,7 @@ class ROIFilter(FilterCoordinates):
         )
         num_keypoints = min(lon_counts_initial, lat_counts_initial)
         if num_keypoints < 2:
-            logger.info(
+            logger.debug(
                 f"roi filter not filtering since {num_keypoints} coord exists along one axis"
             )
             return lon_coords, lat_coords
@@ -547,14 +534,14 @@ class ROIFilter(FilterCoordinates):
 
         # adjust based on distance to roi if insufficient points
         if lon_counts < 2 and lon_counts < lon_counts_initial:
-            logger.info(
+            logger.debug(
                 f"only {lon_counts} lon coords after roi filtering so re-adding coordinates"
             )
             lons_kept = self._adjust_filter(lon_coords, roi_xy, roi_inner_xy)
             for lk in lons_kept:
                 lon_pts[lk.to_deg_result()[0]] = lk
         if lat_counts < 2 and lat_counts < lat_counts_initial:
-            logger.info(
+            logger.debug(
                 f"only {lat_counts} lat coords after roi filtering so re-adding coordinates"
             )
             lats_kept = self._adjust_filter(lat_coords, roi_xy, roi_inner_xy)
@@ -568,11 +555,12 @@ class ROIFilter(FilterCoordinates):
         lon_counts, lat_counts = self._get_distinct_degrees(lon_pts, lat_pts)
         num_keypoints = min(lon_counts, lat_counts)
         if num_keypoints < 2:
-            logger.info(f"not filtering using roi due to too many points being removed")
+            logger.debug(
+                f"not filtering using roi due to too many points being removed"
+            )
             return lon_coords, lat_coords
 
         # apply to the parsed coordinates
-        logger.info(f"done filtering coordinates using roi")
         return lon_pts, lat_pts
 
     def _adjust_filter(
@@ -618,16 +606,17 @@ class ROIFilter(FilterCoordinates):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
-        logger.info("validating lonlat")
 
         num_lat_pts = len(lat_results)
         num_lon_pts = len(lon_results)
-        logger.info(f"point count after exclusion lat,lon: {num_lat_pts},{num_lon_pts}")
+        logger.debug(
+            f"point count after exclusion lat,lon: {num_lat_pts},{num_lon_pts}"
+        )
 
         # check number of unique lat and lon values
         num_lat_pts = len(set([x[0] for x in lat_results]))
         num_lon_pts = len(set([x[0] for x in lon_results]))
-        logger.info(f"distinct after roi lat,lon: {num_lat_pts},{num_lon_pts}")
+        logger.debug(f"distinct after roi lat,lon: {num_lat_pts},{num_lon_pts}")
 
         if num_lon_pts >= 2 and num_lat_pts == 1:
             # estimate additional lat pt (based on lon pxl resolution)
@@ -684,7 +673,6 @@ class ROIFilter(FilterCoordinates):
                     confidence=0.6,
                 )
                 lon_results[(new_lon, new_x)] = coord
-        logger.info("done validating coordinates")
 
         return (lon_results, lat_results)
 
@@ -704,7 +692,6 @@ class ROIFilter(FilterCoordinates):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
-        logger.info("filtering using roi")
 
         num_lat_pts = len(lat_results)
         num_lon_pts = len(lon_results)
@@ -717,7 +704,7 @@ class ROIFilter(FilterCoordinates):
                     not in_filter
                     and not self._in_polygon(coord.get_pixel_alignment(), roi_xy)
                 ):
-                    logger.info(
+                    logger.debug(
                         f"removing out-of-bounds latitude point: {deg} ({coord.get_pixel_alignment()})"
                     )
                     del lat_results[(deg, y)]
@@ -741,7 +728,7 @@ class ROIFilter(FilterCoordinates):
                     not in_filter
                     and not self._in_polygon(coord.get_pixel_alignment(), roi_xy)
                 ):
-                    logger.info(
+                    logger.debug(
                         f"removing out-of-bounds longitude point: {deg} ({coord.get_pixel_alignment()})"
                     )
                     del lon_results[(deg, x)]
@@ -784,7 +771,7 @@ class ROIFilter(FilterCoordinates):
 
         conf_adjustment = max(1 - (coord_dist / comparable_size), 0)
         score = coord_conf * conf_adjustment
-        logger.info(
+        logger.debug(
             f"adjusting confidence of point {coordinate.get_pixel_alignment()} by {conf_adjustment} to {score}"
         )
         return score

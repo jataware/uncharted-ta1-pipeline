@@ -102,13 +102,12 @@ class GeoReference(Task):
         Returns:
             TaskResult: The result of the georeferencing task.
         """
-        logger.info(f"running georeferencing task for image {input.raster_id}")
         return self._run_label_georef(input)
 
     def _run_label_georef(self, input: TaskInput) -> TaskResult:
         lon_minmax = input.get_request_info("lon_minmax", [0, 180])
         lat_minmax = input.get_request_info("lat_minmax", [0, 90])
-        logger.info(f"initial lon_minmax: {lon_minmax}")
+        logger.debug(f"initial lon_minmax: {lon_minmax}")
         lon_pts = input.get_data("lons")
         lat_pts = input.get_data("lats")
 
@@ -135,11 +134,11 @@ class GeoReference(Task):
         query_pts = None
         external_query_pts = False
         if QUERY_POINTS_OUTPUT_KEY in input.request:
-            logger.info("reading query points from request")
+            logger.debug("reading query points from request")
             query_pts = input.request[QUERY_POINTS_OUTPUT_KEY]
             external_query_pts = True
         if not query_pts or len(query_pts) < 1:
-            logger.info("reading query points from task input")
+            logger.debug("reading query points from task input")
             query_pts = input.get_data(QUERY_POINTS_OUTPUT_KEY)
 
         # if no clue point provided, build projections with fallbacks
@@ -159,10 +158,11 @@ class GeoReference(Task):
                 lon_minmax_geofence, lat_minmax_geofence = self._get_fallback_geofence(
                     geofence
                 )
-                logger.info(f"adjusting lat geofence to {lat_minmax_geofence}")
-                logger.info(f"adjusting lon geofence to {lon_minmax_geofence}")
+                logger.debug(
+                    f"adjusting geofence to lat: {lat_minmax_geofence} and lon: {lon_minmax_geofence}"
+                )
 
-            logger.info(f"{num_keypoints} key points available for project")
+            logger.debug(f"{num_keypoints} key points available for project")
             if len(lat_check) < 2 or (abs(max(lat_check) - min(lat_check)) > 20):
                 anchors = self._build_fallback(roi_xy_minmax[1], lat_minmax_geofence)
 
@@ -266,7 +266,6 @@ class GeoReference(Task):
                 qp.lonlat = (x_p, y_p)
 
         rmse, scale_error = self._score_query_points(query_pts, scale_value)
-        logger.info(f"rmse: {rmse} scale error: {scale_error}")
 
         result = super()._create_result(input)
         result.output[QUERY_POINTS_OUTPUT_KEY] = results
@@ -363,8 +362,7 @@ class GeoReference(Task):
                 qp.confidence = confidence
                 results.append(qp)
         except Exception as e:
-            logger.error(f"EXCEPTION geo projecting")
-            logger.error(e)
+            logger.error(f"EXCEPTION geo projecting: {repr(e)}")
             return self._add_fallback(input, query_pts, lon_minmax, lat_minmax)
 
         return results
@@ -418,7 +416,6 @@ class GeoReference(Task):
     def _determine_hemispheres(
         self, input: TaskInput, query_pts: List[QueryPoint]
     ) -> Tuple[float, float]:
-        logger.info("determining hemisphere for georeferencing")
         lon_multiplier = 1
         lon_determined = False
         lat_multiplier = 1
@@ -456,7 +453,7 @@ class GeoReference(Task):
                 lat_determined = True
 
             if lat_determined and lon_determined:
-                logger.info(f"hemispheres derived entirely from geofence")
+                logger.debug(f"hemispheres derived entirely from geofence")
                 return lon_multiplier, lat_multiplier
 
         # function assumes that north is up and that the image is not skewed
@@ -468,7 +465,7 @@ class GeoReference(Task):
             elif qps_sorted_x[0].lonlat[0] > qps_sorted_x[-1].lonlat[0]:
                 # x increased but lon decreased so it is in the negative hemisphere
                 lon_multiplier = -1  # if qps_sorted_x[0].lonlat[0] > 0 else 1
-            logger.info("longitude hemisphere in part determined by points")
+            logger.debug("longitude hemisphere in part determined by points")
 
         # set north - south hemisphere by seeing how latitude changes when y increases
         if not lat_determined:
@@ -478,14 +475,13 @@ class GeoReference(Task):
             elif abs(qps_sorted_y[0].lonlat[1]) < abs(qps_sorted_y[-1].lonlat[1]):
                 # y increased and lat increased so it is in the negative hemisphere
                 lat_multiplier = -1  # if qps_sorted_y[0].lonlat[1] > 0 else 1
-            logger.info("latitude hemisphere in part determined by points")
+            logger.debug("latitude hemisphere in part determined by points")
 
         return lon_multiplier, lat_multiplier
 
     def _update_hemispheres(
         self, query_pts: List[QueryPoint], lon_multiplier: float, lat_multiplier: float
     ) -> List[QueryPoint]:
-        logger.info("updating hemispheres for georeferencing")
         for qp in query_pts:
             qp.lonlat = (
                 abs(qp.lonlat[0]) * lon_multiplier,
@@ -510,7 +506,6 @@ class GeoReference(Task):
         lon_multiplier: float,
         lat_multiplier: float,
     ) -> List[GroundControlPoint]:
-        logger.info("updating corner point hemispheres for georeferencing")
         for cp in corner_points:
             cp.longitude = abs(cp.longitude) * lon_multiplier
             cp.latitude = abs(cp.latitude) * lat_multiplier
@@ -518,7 +513,6 @@ class GeoReference(Task):
         return corner_points
 
     def _determine_crs(self, input: TaskInput) -> str:
-        logger.info("determining CRS for georeferencing")
         # parse extracted metadata
         metadata: Optional[MetadataExtraction] = input.parse_data(
             METADATA_EXTRACTION_OUTPUT_KEY, MetadataExtraction.model_validate
@@ -568,7 +562,7 @@ class GeoReference(Task):
         coord_minmax: List[float],
         geo_minmax: List[float],
     ) -> List[PixelMapping]:
-        logger.info(
+        logger.debug(
             f"building fallback anchors mapping {coord_minmax} and {geo_minmax}"
         )
         # calculate the adjustment amount to shift the anchors inside the range
@@ -603,7 +597,7 @@ class GeoReference(Task):
         lon_minmax: List[float],
         lat_minmax: List[float],
     ) -> List[QueryPoint]:
-        logger.info(
+        logger.debug(
             f"adding fallback when georeferencing using {lon_minmax} & {lat_minmax}"
         )
         results = []
@@ -615,7 +609,7 @@ class GeoReference(Task):
         if geofence is not None and not geofence.geofence.defaulted:
             lon_minmax = geofence.geofence.lon_minmax
             lat_minmax = geofence.geofence.lat_minmax
-            logger.info(
+            logger.debug(
                 f"adjusting fallback window to geofence of {lon_minmax} & {lat_minmax}"
             )
 
@@ -639,7 +633,6 @@ class GeoReference(Task):
     def _score_query_points(
         self, query_pts: List[QueryPoint], scale_value: float
     ) -> Tuple[float, float]:
-        logger.info("scoring georeferencing...")
         # if ground truth lon/lat info exists, calculate the
         # RMSE of geodesic error distances (in km) for all
         # query points for a given image
@@ -683,5 +676,6 @@ class GeoReference(Task):
         scale_error = -1
         if scale_value > 0:
             scale_error = math.sqrt(sum_sq_scale_error / num_pts)
+        logger.info(f"rmse: {rmse} scale error: {scale_error}")
 
         return rmse, scale_error

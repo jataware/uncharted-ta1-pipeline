@@ -1,5 +1,4 @@
 import logging
-from unittest.mock import DEFAULT
 
 from shapely import LineString, Point, Polygon
 

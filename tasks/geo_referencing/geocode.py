@@ -65,7 +65,7 @@ class Geocoder(CoordinatesExtractor):
                     pc.results = coords
                     places_filtered.append(pc)
                 else:
-                    logger.info(
+                    logger.debug(
                         f"removing {pc.place_name} from location set since no coordinates fall within the geofence"
                     )
         return places_filtered
@@ -196,7 +196,7 @@ class PointGeocoder(Geocoder):
         places_filtered = self._filter_coordinates(geofence_raw, geocoded)
 
         # TODO: CHECK FOR SPREAD ACROSS MAP AREA
-        logger.info(
+        logger.debug(
             f"point geocoder to run if {len(places_filtered)} < {self._run_limit}"
         )
         return len(places_filtered) < self._run_limit
@@ -274,7 +274,7 @@ class BoxGeocoder(Geocoder):
         places_filtered = self._filter_coordinates(geofence_raw, geocoded)
 
         # TODO: CHECK FOR SPREAD ACROSS MAP AREA
-        logger.info(
+        logger.debug(
             f"box geocoder to run if {len(places_filtered)} >= {self._run_limit}"
         )
         return len(places_filtered) >= self._run_limit
@@ -301,12 +301,14 @@ class BoxGeocoder(Geocoder):
 
         # cluster to figure out which geocodings to consider
         coordinates = self._get_coordinates(places_filtered)
-        logger.info(f"got {len(coordinates)} geocoded coordinates for box geocoding")
+        logger.debug(f"got {len(coordinates)} geocoded coordinates for box geocoding")
 
         # keep the middle 80% of each direction roughly
         # a point dropped for one direction cannot be used for the other direction
         # TODO: SHOULD PROBABLY BE MORE BOX AND WHISKER STYLE OUTLIER FILTERING
-        logger.info(f"removing outlier coordinates via iqr from each end and direction")
+        logger.debug(
+            f"removing outlier coordinates via iqr from each end and direction"
+        )
         coordinates_lons = self._remove_outliers(
             list(filter(lambda x: not x.is_lat(), coordinates)),
             lambda x: x.get_parsed_degree(),
@@ -340,20 +342,20 @@ class BoxGeocoder(Geocoder):
                     coordinates_lats.append(c)
                 else:
                     coordinates_lons.append(c)
-        logger.info(
+        logger.debug(
             f"after harmonizing removals {len(coordinates_lons)} lons and {len(coordinates_lats)} lats remain"
         )
 
         # determine the pixel range and rough latitude / longitude range (assume x -> lon, y -> lat)
         min_lon, max_lon = self._get_min_max(coordinates_lons)
         min_lat, max_lat = self._get_min_max(coordinates_lats)
-        logger.info("obtained the coordinates covering the target range")
+        logger.debug("obtained the coordinates covering the target range")
         coordinates_all = coordinates_lons + coordinates_lats
         vals_x = [c.get_pixel_alignment()[0] for c in coordinates_all]
         vals_y = [c.get_pixel_alignment()[1] for c in coordinates_all]
         min_x, max_x = min(vals_x), max(vals_x)
         min_y, max_y = min(vals_y), max(vals_y)
-        logger.info(
+        logger.debug(
             f"creating coordinates between pixels x ({min_x}, {max_x}) and y ({min_y}, {max_y}) using lons {min_lon.get_parsed_degree()}, {max_lon.get_parsed_degree()} and lats {min_lat.get_parsed_degree()}, {max_lat.get_parsed_degree()}"
         )
 

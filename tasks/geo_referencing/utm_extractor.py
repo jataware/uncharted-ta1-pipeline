@@ -64,7 +64,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
-        logger.info("extracting utm coordinates")
+
         geofence_raw: DocGeoFence = input.input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
@@ -362,7 +362,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
         if not ocr_text_blocks_raw or len(ocr_text_blocks_raw.extractions) == 0:
-            logger.info("WARNING! No ocr text blocks available!")
+            logger.warning("No ocr text blocks available!")
             return ({}, {})
 
         ocr_text_blocks = deepcopy(ocr_text_blocks_raw)
@@ -380,7 +380,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
 
         # get utm coords and zone of clue coords
         # utm_clue = (easting, northing, zone number, zone letter)
-        logger.info(f"lat clue: {lat_clue}\tlon clue: {lon_clue}")
+        logger.debug(f"lat clue: {lat_clue}\tlon clue: {lon_clue}")
         utm_clue = utm.from_latlon(lat_clue, lon_clue)
         easting_clue = utm_clue[0]
         northing_clue = utm_clue[1]
@@ -422,7 +422,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                 continue
 
             if not valid_parsings:
-                logger.info(
+                logger.debug(
                     "Excluding candidate utm point due to invalid easting point: {}".format(
                         utm_dist
                     )
@@ -453,7 +453,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                 if utm_dist < MAX_EASTING:
                     eastings.append((utm_dist, span, idx))
                 else:
-                    logger.info(
+                    logger.debug(
                         "Excluding candidate easting point: {}".format(utm_dist)
                     )
         # convert from utm to lat/lon, using average values of northing and easting for the mapping coordinate
@@ -503,7 +503,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     "extracted northing utm coordinate",
                 )
             else:
-                logger.info(
+                logger.debug(
                     "Excluding candidate northing point due to being out of range: {}".format(
                         n
                     )
@@ -548,7 +548,5 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                 },
                 "extracted easting utm coordinate",
             )
-
-        logger.info("done utm")
 
         return (lon_results, lat_results)
