@@ -377,7 +377,6 @@ class PointOrientationExtractor(Task):
                 map_point_labels.labels[idx].direction = self._trig_to_compass_angle(
                     best_angle, task_config.rotate_max
                 )
-            logger.info(f"Finished point orientation analysis for class {c}")
 
         # write to cache
         self.write_result_to_cache(map_point_labels, doc_key)

@@ -74,8 +74,9 @@ python3 -m pipelines.geo_referencing.run_pipeline \
     --output /results/output/dir \
     --workdir /pipeline/working/dir (default is tmp/lara/workdir) \
     --model /path/to/segmentation/model/weights \
-    --extract_metadata True \
-    --no_gpu (if set, pipeline will force CPU-only processing)
+    --no_gpu (if set, pipeline will force CPU-only processing) \
+    --project (if set, pipeline will output re-projected map rasters) \
+    --diagnostics (if set, pipeline will additional diagnostics per map) 
 ```
 
 * `extract_metadata` Indicates whether to use metadata extraction to aid with georeferencing.

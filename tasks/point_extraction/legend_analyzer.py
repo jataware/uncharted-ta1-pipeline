@@ -62,9 +62,6 @@ class LegendPreprocessor(Task):
 
         if self.fetch_legend_items:
             # try to fetch legend annotations for COG id from the CDR (via REST)
-            logger.info(
-                f"Trying to fetch legend annotations for raster {task_input.raster_id} from the CDR..."
-            )
             cdr_legend_items = self.fetch_cdr_legend_items(task_input.raster_id)
             if cdr_legend_items and cdr_legend_items.items:
                 # legend items sucessfully fetched from the CDR

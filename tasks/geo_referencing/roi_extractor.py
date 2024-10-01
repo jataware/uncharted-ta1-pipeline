@@ -57,6 +57,10 @@ class ROIExtractor(Task):
 
 
 class ModelROIExtractor(ROIExtractor):
+    """
+    Use the map segmentation result, and buffer (inwards and outwards) to create a ring ROI
+    """
+
     _buffering_func: Callable
 
     def __init__(self, task_id: str, buffering_func: Callable):
