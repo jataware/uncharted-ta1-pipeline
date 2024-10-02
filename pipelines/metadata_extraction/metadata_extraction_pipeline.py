@@ -75,6 +75,7 @@ class MetadataExtractorPipeline(Pipeline):
                     "legend_points_lines",
                     "legend_polygons",
                 ],
+                class_threshold=100,
             ),
             # extract metadata from the filtered text
             MetadataExtractor(

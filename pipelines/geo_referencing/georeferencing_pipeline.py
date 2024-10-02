@@ -137,6 +137,7 @@ class GeoreferencingPipeline(Pipeline):
                     "legend_points_lines",
                     "legend_polygons",
                 ],
+                class_threshold=100,
             ),
             # Runs metadata extraction on the text remaining after the text filter above
             # is applied
@@ -175,7 +176,8 @@ class GeoreferencingPipeline(Pipeline):
                 TEXT_EXTRACTION_OUTPUT_KEY,
                 "map_area_filter",
                 ["map"],
-                self._run_step,
+                class_threshold=100,
+                should_run=self._run_step,
             ),
             # Run metadata extraction on the map area text only
             MetadataExtractor(

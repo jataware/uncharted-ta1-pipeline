@@ -404,7 +404,7 @@ class MetadataExtractor(Task):
             ]
         )
         doc_key = hashlib.sha256(attributes.encode()).hexdigest()
-        return doc_key
+        return f"{doc_key}_{task_input.raster_id}"
 
     def _process_doc_text_extraction(
         self, doc_text_extraction: DocTextExtraction
