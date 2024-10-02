@@ -110,16 +110,15 @@ class TextFilter(Task):
                     f"Skipping filtering for segment class {segment_class} with {word_count} words"
                 )
 
+        # flag the text as being included in the output if it was not filtered out
         for idx, text in enumerate(doc_text.extractions):
             for segment_class in hits.keys():
-                # flag the text as being included in the output if it was not filtered out, or
-                # if the segment is being skipped due to the class threshold
                 if (
                     self._filter_mode == FilterMode.EXCLUDE
+                    # skip filering segments with less than the class threshold word count in the exclude mo
                     and (not hits[segment_class][idx] or segment_class in skip_segments)
                 ) or (
-                    self._filter_mode == FilterMode.INCLUDE
-                    and (hits[segment_class][idx] or segment_class in skip_segments)
+                    self._filter_mode == FilterMode.INCLUDE and hits[segment_class][idx]
                 ):
                     output_text[text.text] = text
 

@@ -176,7 +176,7 @@ class GeoreferencingPipeline(Pipeline):
                 TEXT_EXTRACTION_OUTPUT_KEY,
                 "map_area_filter",
                 ["map"],
-                class_threshold=100,
+                class_threshold=0,
                 should_run=self._run_step,
             ),
             # Run metadata extraction on the map area text only
