@@ -375,6 +375,10 @@ def main():
         settings.output,
         settings.workdir,
         host=p.host,
+        port=p.rabbit_port,
+        vhost=p.rabbit_vhost,
+        uid=p.rabbit_uid,
+        pwd=p.rabbit_pwd,
         pipeline_sequence=settings.sequence,
     )
     result_subscriber.start_lara_result_queue()

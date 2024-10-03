@@ -13,7 +13,7 @@ from rasterio.warp import Resampling, calculate_default_transform, reproject
 import rasterio as rio
 import rasterio.transform as riot
 from pika.adapters.blocking_connection import BlockingChannel as Channel
-from pika import BlockingConnection, ConnectionParameters
+from pika import BlockingConnection, ConnectionParameters, PlainCredentials
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
 import pika.spec as spec
 from pydantic import BaseModel
@@ -109,6 +109,10 @@ class LaraResultSubscriber:
         output: str,
         workdir: str,
         host="localhost",
+        port=5672,
+        vhost="/",
+        uid="",
+        pwd="",
         pipeline_sequence: List[str] = DEFAULT_PIPELINE_SEQUENCE,
     ) -> None:
         self._request_publisher = request_publisher
@@ -120,6 +124,10 @@ class LaraResultSubscriber:
         self._workdir = workdir
         self._output = output
         self._host = host
+        self._port = port
+        self._vhost = vhost
+        self._uid = uid
+        self._pwd = pwd
         self._pipeline_sequence = (
             pipeline_sequence
             if len(pipeline_sequence) > 0
@@ -144,13 +152,26 @@ class LaraResultSubscriber:
             The created channel.
         """
         logger.info(f"creating channel on host {host}")
-        connection = BlockingConnection(
-            ConnectionParameters(
-                host,
-                heartbeat=self.HEARTBEAT_INTERVAL,
-                blocked_connection_timeout=self.BLOCKED_CONNECTION_TIMEOUT,
+        if self._uid != "":
+            credentials = PlainCredentials(self._uid, self._pwd)
+            connection = BlockingConnection(
+                ConnectionParameters(
+                    self._host,
+                    self._port,
+                    self._vhost,
+                    credentials,
+                    heartbeat=self.HEARTBEAT_INTERVAL,
+                    blocked_connection_timeout=self.BLOCKED_CONNECTION_TIMEOUT,
+                )
             )
-        )
+        else:
+            connection = BlockingConnection(
+                ConnectionParameters(
+                    self._host,
+                    heartbeat=self.HEARTBEAT_INTERVAL,
+                    blocked_connection_timeout=self.BLOCKED_CONNECTION_TIMEOUT,
+                )
+            )
         channel = connection.channel()
         channel.queue_declare(
             queue=queue,
