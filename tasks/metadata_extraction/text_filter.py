@@ -1,6 +1,5 @@
 import logging
 
-from pytest import skip
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.text_extraction.entities import (
     TextExtraction,

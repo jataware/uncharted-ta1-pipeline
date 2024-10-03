@@ -1,4 +1,3 @@
-from ast import mod
 import io
 import logging
 import os
@@ -9,7 +8,7 @@ from enum import Enum
 from pathlib import Path
 import httpx
 from pydantic import BaseModel
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Sequence, Union
+from typing import Any, Dict, Iterator, List, Tuple
 from PIL.Image import Image as PILImage
 from PIL import Image
 from tasks.common.image_io import normalize_image_format
