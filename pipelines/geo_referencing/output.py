@@ -377,7 +377,6 @@ class ProjectedMapOutput(OutputCreator):
         # create the affine transformation matrix from the gcps
         transform = cps_to_transform(gcps, crs, ProjectedMapOutput.DEFAULT_OUTPUT_CRS)
 
-
         if pipeline_result.image is None:
             raise ValueError("No image found in pipeline result - cannot project")
 
