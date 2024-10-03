@@ -12,7 +12,7 @@ from tasks.metadata_extraction.entities import (
 
 from typing import List, Optional, Tuple
 
-logger = logging.getLogger("geo_fencer")
+logger = logging.getLogger(__name__)
 
 CLUE_POINT_GEOFENCE_RANGE = 500
 
@@ -22,7 +22,6 @@ class GeoFencer(Task):
         super().__init__(task_id)
 
     def run(self, input: TaskInput) -> TaskResult:
-        logger.info("running geo fencing task")
 
         clue_point = input.get_request_info("clue_point")
         if clue_point is not None:

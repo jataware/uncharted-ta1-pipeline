@@ -28,9 +28,7 @@ class CreateGroundControlPoints(Task):
         super().__init__(task_id)
 
     def run(self, input: TaskInput) -> TaskResult:
-        logger.info(
-            f"running ground control point creation at task index {input.task_index} with id {self._task_id}"
-        )
+
         # check if query points already defined
         query_pts = None
         if QUERY_POINTS_OUTPUT_KEY in input.request:

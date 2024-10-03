@@ -156,64 +156,61 @@ class SummaryOutput(OutputCreator):
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
         res = TabularOutput(pipeline_result.pipeline_id, pipeline_result.pipeline_name)
+
         res.fields = [
             "raster_id",
-            "lat - lat/lon",
-            "lat - utm",
-            "lat - state plane",
-            "lat - geocode",
-            "lat - infer",
-            "lat - anchor",
-            "lon - lat/lon",
-            "lon - utm",
-            "lon - state plane",
-            "lon - geocode",
-            "lon - infer",
-            "lon - anchor",
+            "latlon",
+            "utm",
+            "state_plane",
+            "geocode",
+            "infer",
+            "anchor",
             "rmse",
-            "error_scale",
             "confidence",
         ]
 
-        # reduce the keypoint counts to the correct numbers
-        stats = [0] * 12
+        latlon = ""
+        utm = ""
+        state_plane = ""
+        geocode = ""
+        infer = ""
+        anchor = ""
+
         if KEYPOINTS_OUTPUT_KEY in pipeline_result.data:
             keypoints = pipeline_result.data[KEYPOINTS_OUTPUT_KEY]
-            if "lats" in keypoints:
-                lats = keypoints["lats"]
-                stats[0] = lats[SOURCE_LAT_LON] if SOURCE_LAT_LON in lats else 0
-                stats[1] = lats[SOURCE_UTM] if SOURCE_UTM in lats else 0
-                stats[2] = lats[SOURCE_STATE_PLANE] if SOURCE_STATE_PLANE in lats else 0
-                stats[3] = lats[SOURCE_GEOCODE] if SOURCE_GEOCODE in lats else 0
-                stats[4] = lats[SOURCE_INFERENCE] if SOURCE_INFERENCE in lats else 0
-                stats[5] = lats["anchor"] if "anchor" in lats else 0
-            if "lons" in keypoints:
-                lons = keypoints["lons"]
-                stats[6] = lons[SOURCE_LAT_LON] if SOURCE_LAT_LON in lons else 0
-                stats[7] = lons[SOURCE_UTM] if SOURCE_UTM in lons else 0
-                stats[8] = lons[SOURCE_STATE_PLANE] if SOURCE_STATE_PLANE in lons else 0
-                stats[9] = lons[SOURCE_GEOCODE] if SOURCE_GEOCODE in lons else 0
-                stats[10] = lons[SOURCE_INFERENCE] if SOURCE_INFERENCE in lons else 0
-                stats[11] = lons["anchor"] if "anchor" in lons else 0
 
-        # obtain the rmse and other summary output
+            lats = keypoints.get("lats", {})
+            lons = keypoints.get("lons", {})
+
+            if SOURCE_LAT_LON in lats or SOURCE_LAT_LON in lons:
+                latlon = (
+                    f"{lats.get(SOURCE_LAT_LON, '')};{lons.get(SOURCE_LAT_LON, '')}"
+                )
+            if SOURCE_UTM in lats or SOURCE_UTM in lons:
+                utm = f"{lats.get(SOURCE_UTM, '')};{lons.get(SOURCE_UTM, '')}"
+            if SOURCE_STATE_PLANE in lats or SOURCE_STATE_PLANE in lons:
+                state_plane = f"{lats.get(SOURCE_STATE_PLANE, '')};{lons.get(SOURCE_STATE_PLANE, '')}"
+            if SOURCE_GEOCODE in lats or SOURCE_GEOCODE in lons:
+                geocode = (
+                    f"{lats.get(SOURCE_GEOCODE, '')};{lons.get(SOURCE_GEOCODE, '')}"
+                )
+            if SOURCE_INFERENCE in lats or SOURCE_INFERENCE in lons:
+                infer = (
+                    f"{lats.get(SOURCE_INFERENCE, '')};{lons.get(SOURCE_INFERENCE, '')}"
+                )
+            if "anchor" in lats or "anchor" in lons:
+                anchor = f"{lats.get('anchor', '')};{lons.get('anchor', '')}"
+
         res.data = [
             {
                 "raster_id": pipeline_result.raster_id,
-                "lat - lat/lon": stats[0],
-                "lat - utm": stats[1],
-                "lat - state plane": stats[2],
-                "lat - geocode": stats[3],
-                "lat - infer": stats[4],
-                "lat - anchor": stats[5],
-                "lon - lat/lon": stats[6],
-                "lon - utm": stats[7],
-                "lon - state plane": stats[8],
-                "lon - geocode": stats[9],
-                "lon - infer": stats[10],
-                "lon - anchor": stats[11],
+                "latlon": latlon,
+                "utm": utm,
+                "state_plane": state_plane,
+                "geocode": geocode,
+                "infer": infer,
+                "anchor": anchor,
                 "rmse": pipeline_result.data[RMSE_OUTPUT_KEY],
-                "error_scale": pipeline_result.data[ERROR_SCALE_OUTPUT_KEY],
                 "confidence": pipeline_result.data[QUERY_POINTS_OUTPUT_KEY][
                     0
                 ].confidence,

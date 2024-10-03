@@ -29,13 +29,13 @@ def split_lon_lat_degrees(
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
     n_noise_ = list(labels).count(-1)
 
-    logger.info("Estimated number of clusters: %d" % n_clusters_)
-    logger.info("Estimated number of noise points: %d" % n_noise_)
-    logger.info(f"labels: {labels}")
+    logger.debug("Estimated number of clusters: %d" % n_clusters_)
+    logger.debug("Estimated number of noise points: %d" % n_noise_)
+    logger.debug(f"labels: {labels}")
 
     # determine which of the clusters could be lat vs lon
     data_clustered = list(zip(degrees, labels))
-    logger.info(f"cluster results: {data_clustered}")
+    logger.debug(f"cluster results: {data_clustered}")
 
     clusters = {}
     for d in data_clustered:
@@ -59,7 +59,7 @@ def split_lon_lat_degrees(
             degrees_extracted = list(map(lambda x: x[2], cluster_list[0]))
             updated_geofence = [geofence[0], geofence[1]]
             if is_lat:
-                logger.info("lat determined")
+                logger.debug("lat determined")
                 updated_lat = narrow_geofence(
                     [min(degrees_extracted), max(degrees_extracted)],
                     geofence[0],
@@ -67,7 +67,7 @@ def split_lon_lat_degrees(
                 )
                 updated_geofence = [geofence[0], updated_lat[1]]
             else:
-                logger.info("lon determined")
+                logger.debug("lon determined")
                 updated_lon = narrow_geofence(
                     geofence[1],
                     [min(degrees_extracted), max(degrees_extracted)],

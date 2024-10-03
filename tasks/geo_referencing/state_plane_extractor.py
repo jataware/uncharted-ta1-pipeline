@@ -368,9 +368,9 @@ class StatePlaneExtractor(CoordinatesExtractor):
         states = [s for s in metadata.states if not s == "NULL"]
         if len(states) > 0:
             state = states[0].lower()
-            logger.info(f"narrowing state plane zone to state {state}")
+            logger.debug(f"narrowing state plane zone to state {state}")
             state_code = self._get_state_code(state)
-            logger.info(f"narrowing state plane zone to state code {state_code}")
+            logger.debug(f"narrowing state plane zone to state code {state_code}")
             if state_code in self._code_lookup[projection]:
                 possible = self._code_lookup[projection][state_code]
                 if len(possible) == 1:
@@ -426,7 +426,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
         if not ocr_text_blocks_raw or len(ocr_text_blocks_raw.extractions) == 0:
-            logger.info("WARNING! No ocr text blocks available!")
+            logger.warning("No ocr text blocks available!")
             return ({}, {})
 
         ocr_text_blocks = deepcopy(ocr_text_blocks_raw)
@@ -444,7 +444,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
 
         # get utm coords and zone of clue coords
         # utm_clue = (easting, northing, zone number, zone letter)
-        logger.info(f"lat clue: {lat_clue}\tlon clue: {lon_clue}")
+        logger.debug(f"lat clue: {lat_clue}\tlon clue: {lon_clue}")
         utm_clue = stateplane.from_latlon(lat_clue, lon_clue)
         easting_clue = utm_clue[0]
         northing_clue = utm_clue[1]
@@ -563,7 +563,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                     "extracted northing state plane coordinate",
                 )
             else:
-                logger.info("Excluding candidate northing point: {}".format(n))
+                logger.debug("Excluding candidate northing point: {}".format(n))
 
         if len(northings) > 0:
             northing_clue = statistics.median(map(lambda x: x[0], northings))
@@ -602,8 +602,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 },
                 "extracted easting state plane coordinate",
             )
-
-        logger.info("done state plane coordinate extraction")
 
         return (lon_results, lat_results)
 
