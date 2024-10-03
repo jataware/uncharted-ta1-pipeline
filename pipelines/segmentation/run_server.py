@@ -129,6 +129,7 @@ if __name__ == "__main__":
             result_key,
             OutputType.SEGMENTATION,
             p.imagedir,
+            host=p.rabbit_host,
             port=p.rabbit_port,
             vhost=p.rabbit_vhost,
             uid=p.rabbit_uid,
