@@ -103,11 +103,14 @@ def process_image():
             return (msg, 500)
 
         result_json = ""
-        result = outputs[GEOREFERENCING_OUTPUT_KEY]
-        if isinstance(result, BaseModelOutput):
-            result_dict = result.data.model_dump()
+        result_dict = {}
+        if GEOREFERENCING_OUTPUT_KEY in outputs:
+            result = outputs[GEOREFERENCING_OUTPUT_KEY]
+            if isinstance(result, BaseModelOutput):
+                result_dict = result.data.model_dump()
 
-            # get the projected map if its present and convert to base64
+        # get the projected map if its present and convert to base64
+        if PROJECTED_MAP_OUTPUT_KEY in outputs:
             map = outputs[PROJECTED_MAP_OUTPUT_KEY]
             if isinstance(map, BytesOutput):
                 map_str = base64.b64encode(map.data.getvalue()).decode()
