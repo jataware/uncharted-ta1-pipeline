@@ -22,7 +22,7 @@ def create_test_data() -> TaskInput:
                 ],
             },
             {
-                "text": "BANDERSNATCH",
+                "text": "BANDERSNATCH SNICKER-SNACK",
                 "confidence": 1.0,
                 "bounds": [
                     {"x": 3, "y": 30},
@@ -89,9 +89,13 @@ def test_text_filter_exclude():
     doc_text_extraction = DocTextExtraction.model_validate(
         result.output[TEXT_EXTRACTION_OUTPUT_KEY]
     )
-    assert len(doc_text_extraction.extractions) == 1
+    assert len(doc_text_extraction.extractions) == 2
+
     extraction = doc_text_extraction.extractions[0]
-    assert extraction.text == "BANDERSNATCH"
+    assert extraction.text == "FUMIOUS"
+
+    extraction = doc_text_extraction.extractions[1]
+    assert extraction.text == "BANDERSNATCH SNICKER-SNACK"
 
 
 def test_text_filter_include():
@@ -115,4 +119,4 @@ def test_text_filter_include():
     extraction = doc_text_extraction.extractions[0]
     assert extraction.text == "FUMIOUS"
     extraction = doc_text_extraction.extractions[1]
-    assert extraction.text == "BANDERSNATCH"
+    assert extraction.text == "BANDERSNATCH SNICKER-SNACK"
