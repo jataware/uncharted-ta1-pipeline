@@ -2,7 +2,6 @@ import argparse
 import base64
 import json
 import logging
-import os
 from pathlib import Path
 
 from flask import Flask, request, Response
@@ -10,7 +9,6 @@ from hashlib import sha1
 from io import BytesIO
 from PIL.Image import Image as PILImage
 from PIL import Image
-from pyproj import Proj
 
 from pipelines.geo_referencing.georeferencing_pipeline import GeoreferencingPipeline
 from pipelines.geo_referencing.output import (
@@ -148,7 +146,7 @@ def start_server():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--imagedir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--min_confidence", type=float, default=0.25)
     parser.add_argument("--debug", type=float, default=False)
@@ -231,7 +229,6 @@ def start_server():
             p.result_queue,
             GEOREFERENCING_OUTPUT_KEY,
             OutputType.GEOREFERENCING,
-            p.workdir,
             p.imagedir,
             host=p.rabbit_host,
             port=p.rabbit_port,

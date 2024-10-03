@@ -1,4 +1,4 @@
-from io import BytesIO
+import logging
 import os
 from typing import Optional
 from PIL.Image import Image as PILImage
@@ -10,6 +10,8 @@ from tasks.common.io import (
     bucket_exists,
     get_file_source,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ImageCache:
@@ -40,17 +42,21 @@ class ImageCache:
         """
         Generate the full local path for cached json result
         """
-        return append_to_cache_location(self._cache_location, f"{doc_key}.json")
+        return append_to_cache_location(self._cache_location, f"{doc_key}")
 
     def fetch_cached_result(self, doc_key: str) -> Optional[PILImage]:
         """
         Check if task result is available in the local cache
         """
+        cached_path = self._get_cache_doc_path(doc_key)
         if not self._cache_location:
             return None
         try:
-            return self._image_reader.process(self._get_cache_doc_path(doc_key))
+            return self._image_reader.process(cached_path)
         except Exception:
+            logger.exception(
+                f"error fetching cached image from {cached_path}", exc_info=True
+            )
             return None
 
     def write_result_to_cache(self, image: PILImage, doc_key: str):

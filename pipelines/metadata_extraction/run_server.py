@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--imagedir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--debug", action="store_true")
     parser.add_argument(
@@ -138,7 +138,6 @@ if __name__ == "__main__":
             p.result_queue,
             metadata_result_key,
             OutputType.METADATA,
-            p.workdir,
             p.imagedir,
             host=p.rabbit_host,
             port=p.rabbit_port,
