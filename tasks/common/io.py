@@ -14,7 +14,6 @@ from pydantic import BaseModel
 from typing import Any, Dict, Iterator, List, Tuple
 from PIL.Image import Image as PILImage
 from PIL import Image
-from sympy import im
 from tasks.common.image_io import normalize_image_format
 
 # https://stackoverflow.com/questions/51152059/pillow-in-python-wont-let-me-open-image-exceeds-limit
@@ -270,12 +269,6 @@ class ImageFileWriter(BytesIOFileWriter):
             self._write_to_s3(buf, output_location, mode)
         else:
             self._write_to_file(buf, Path(output_location))
-
-
-def download_file(image_url: str) -> bytes:
-    r = httpx.get(image_url, timeout=1000)
-    return r.content
-
 
 class ImageFileReader:
     """Reads an image file from the local filesystem or s3 and returns a PIL image object"""

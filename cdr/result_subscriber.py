@@ -1,17 +1,12 @@
+from functools import cache
 import json
 import logging
 import os
-import pprint
 import threading
 from time import sleep
 from typing import List, Optional
+from cv2 import log
 import httpx
-from PIL import Image
-from pyproj import Transformer
-from rasterio.transform import Affine
-from rasterio.warp import Resampling, calculate_default_transform, reproject
-import rasterio as rio
-import rasterio.transform as riot
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import BlockingConnection, ConnectionParameters, PlainCredentials
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
@@ -20,8 +15,10 @@ from pydantic import BaseModel
 from regex import P
 from cdr.request_publisher import LaraRequestPublisher
 from schema.cdr_schemas.feature_results import FeatureResults
-from schema.cdr_schemas.georeference import GeoreferenceResults, GroundControlPoint
+from schema.cdr_schemas.georeference import GeoreferenceResults
 from schema.cdr_schemas.metadata import CogMetaData
+from tasks.common.image_cache import ImageCache
+from tasks.common.io import BytesIOFileWriter, ImageFileReader
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
     METADATA_REQUEST_QUEUE,
@@ -108,6 +105,7 @@ class LaraResultSubscriber:
         cdr_token: str,
         output: str,
         workdir: str,
+        imagedir: str,
         host="localhost",
         port=5672,
         vhost="/",
@@ -122,6 +120,7 @@ class LaraResultSubscriber:
         self._cdr_host = cdr_host
         self._cdr_token = cdr_token
         self._workdir = workdir
+        self._imagedir = imagedir,
         self._output = output
         self._host = host
         self._port = port
@@ -133,6 +132,8 @@ class LaraResultSubscriber:
             if len(pipeline_sequence) > 0
             else self.DEFAULT_PIPELINE_SEQUENCE
         )
+        self._image_cache = ImageCache(imagedir)
+        self._image_cache._init_cache()
 
     def start_lara_result_queue(self):
         threading.Thread(
@@ -279,7 +280,7 @@ class LaraResultSubscriber:
                 )
 
         except Exception as e:
-            logger.exception(f"Error processing result: {str(e)}")
+            logger.exception(f"Error processing lara result: {e}")
 
         logger.info("result processing finished")
 
@@ -399,6 +400,7 @@ class LaraResultSubscriber:
                 f"projecting image {result.image_path} to {output_file_name_full}. CRS: {lara_result.crs} -> {GeoreferenceMapper.DEFAULT_OUTPUT_CRS}"
             )
             self._project_georeference(
+                result.request.image_id,
                 result.image_path,
                 output_file_name_full,
                 lara_result.crs,
@@ -411,8 +413,7 @@ class LaraResultSubscriber:
             )
         except Exception as e:
             logger.exception(
-                "bad georeferencing result received so creating an empty result to send to cdr",
-                e,
+                "formatting for CDR schema failed for {result.request.image_id}: {e}",
             )
 
             # create an empty result to send to cdr
@@ -450,15 +451,12 @@ class LaraResultSubscriber:
                 f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
             )
         except Exception as e:
-            logger.exception(
-                "error when attempting to submit georeferencing results",
-                e,
-                exc_info=True,
-            )
+            logger.exception(f"error when attempting to submit georeferencing results: {e}")
 
     def _project_georeference(
         self,
-        source_image_path: str,
+        source_image_id: str,
+        source_image_url: str,
         target_image_path: str,
         source_crs: str,
         target_crs: str,
@@ -474,40 +472,49 @@ class LaraResultSubscriber:
             gcps (List[GroundControlPoint]): The ground control points.
         """
         # open the image
-        img = Image.open(source_image_path)
+        image = self._image_cache.fetch_cached_result(f"{source_image_id}.tif")
+        if not image:
+            # not cached - download from s3 and cache - we assume no credentials are needed
+            # on the download url
+            logger.info(f"cache miss - downloading image from {source_image_url}")
+            image_file_reader = ImageFileReader()
+            image = image_file_reader.process(source_image_url, anonymous=True)
+            self._image_cache.write_result_to_cache(image, f"{source_image_id}.tif")
 
         # create the transform and use it to project the image
         geo_transform = cps_to_transform(gcps, source_crs, target_crs)
-        image_bytes = project_image(img, geo_transform, target_crs)
+        image_bytes = project_image(image, geo_transform, target_crs)
 
-        # write the projected image to disk, creating the directory if it doesn't exist
-        os.makedirs(os.path.dirname(target_image_path), exist_ok=True)
-        with open(target_image_path, "wb") as f:
-            f.write(image_bytes.getvalue())
+        # write the projected image out
+        image_file_writer = BytesIOFileWriter()
+        image_file_writer.process(target_image_path, image_bytes)
 
     def _push_features(self, result: RequestResult, model: FeatureResults):
         """
         Pushes the features result to the CDR
         """
-        if self._output:
-            self._write_cdr_result(result.request.image_id, result.output_type, model)
-            return
+        try:
+            if self._output:
+                self._write_cdr_result(result.request.image_id, result.output_type, model)
+                return
 
-        logger.info(f"pushing features result for request {result.request.id} to CDR")
-        headers = {
-            "Authorization": f"Bearer {self._cdr_token}",
-            "Content-Type": "application/json",
-        }
-        client = httpx.Client(follow_redirects=True)
-        resp = client.post(
-            f"{self._cdr_host}/v1/maps/publish/features",
-            data=model.model_dump_json(),  #   type: ignore
-            headers=headers,
-            timeout=None,
-        )
-        logger.info(
-            f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
-        )
+            logger.info(f"pushing features result for request {result.request.id} to CDR")
+            headers = {
+                "Authorization": f"Bearer {self._cdr_token}",
+                "Content-Type": "application/json",
+            }
+            client = httpx.Client(follow_redirects=True)
+            resp = client.post(
+                f"{self._cdr_host}/v1/maps/publish/features",
+                data=model.model_dump_json(),  #   type: ignore
+                headers=headers,
+                timeout=None,
+            )
+            logger.info(
+                f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
+            )
+        except Exception as e:
+            logger.exception(f"error when attempting to submit feature results: {e}")
 
     def _push_segmentation(self, result: RequestResult):
         """
@@ -532,9 +539,9 @@ class LaraResultSubscriber:
                 self.PIPELINE_SYSTEM_VERSIONS[self.SEGMENTATION_PIPELINE],
             )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
-        except:
-            logger.error(
-                "bad segmentation result received so unable to send results to cdr"
+        except Exception as e:
+            logger.exception(
+                f"mapping segmentation to CDR schema failed for {result.request.image_id}: {e}",
             )
             return
 
@@ -561,8 +568,10 @@ class LaraResultSubscriber:
                 self.PIPELINE_SYSTEM_VERSIONS[self.POINTS_PIPELINE],
             )
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
-        except:
-            logger.error("bad points result received so unable to send results to cdr")
+        except Exception as e:
+            logger.exception(
+                f"mapping points to CDR schema failed for {result.request.image_id}: {e}",
+            )
             return
 
         assert cdr_result is not None
@@ -593,8 +602,7 @@ class LaraResultSubscriber:
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
             logger.exception(
-                e,
-                f"bad metadata result received for {result.request.image_id} so unable to send results to cdr",
+                f"mapping metadata to CDR schema failed for {result.request.image_id}: {e}",
             )
             return
 

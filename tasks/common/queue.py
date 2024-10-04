@@ -4,7 +4,6 @@ import logging
 import os
 from threading import Thread
 from time import sleep
-from tkinter import Image
 import requests
 import time
 
@@ -20,13 +19,13 @@ from tasks.common.pipeline import (
     Pipeline,
     PipelineInput,
 )
-from tasks.common.io import ImageFileInputIterator, ImageFileReader, download_file
+from tasks.common.io import ImageFileReader
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import BlockingConnection, spec
 from pydantic import BaseModel
 from typing import Optional, Tuple
 
-logger = logging.getLogger("process_queue")
+logger = logging.getLogger("request_queue")
 
 # default queue names
 
@@ -169,7 +168,7 @@ class RequestQueue:
                                 )
 
             except (AMQPChannelError, AMQPConnectionError):
-                logger.warn("request connection closed, reconnecting")
+                logger.warning("request connection closed, reconnecting")
                 if self._input_channel and not self._input_channel.connection.is_closed:
                     logger.info("closing request connection")
                     self._input_channel.connection.close()
@@ -485,14 +484,12 @@ class RequestQueue:
         """
         # check cache for the iamge
         image_path = self._image_cache._get_cache_doc_path(image_id)
-        logger.error(f"image path: {image_path}")
         image = self._image_cache.fetch_cached_result(f"{image_id}.tif")
         if not image:
             # not cached - download from s3 and cache - we assume no credentials are needed
             # on the download url
+            logger.info(f"cache miss - downloading image from {image_url}")
             image_file_reader = ImageFileReader()
-            logger.error(f"fetching from {image_url}")
             image = image_file_reader.process(image_url, anonymous=True)
-            logger.error("writing to cache")
             self._image_cache.write_result_to_cache(image, f"{image_id}.tif")
         return (image, image_path)

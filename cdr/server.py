@@ -11,7 +11,6 @@ from flask import Flask, request, Response
 
 from cdr.request_publisher import LaraRequestPublisher
 from cdr.result_subscriber import LaraResultSubscriber
-from tasks.common.io import download_file
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
     METADATA_REQUEST_QUEUE,
@@ -56,24 +55,6 @@ class Settings:
     registration_id: Dict[str, str] = {}
     rabbitmq_host: str
     sequence: List[str] = []
-
-
-def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
-    """
-    Prefetches the image from the CDR for use by the pipelines.
-    """
-    # check working dir for the image
-    filename = working_dir / f"{image_id}.tif"
-
-    if not os.path.exists(filename):
-        # download image
-        image_data = download_file(image_url)
-
-        # write it to working dir, creating the directory if necessary
-        filename.parent.mkdir(parents=True, exist_ok=True)
-        with open(filename, "wb") as file:
-            file.write(image_data)
-
 
 @app.route("/process_event", methods=["POST"])
 def process_cdr_event():
@@ -290,6 +271,7 @@ def main():
         settings.cdr_api_token,
         settings.output,
         settings.workdir,
+        settings.imagedir,
         host=p.host,
         port=p.rabbit_port,
         vhost=p.rabbit_vhost,
