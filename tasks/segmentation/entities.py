@@ -18,7 +18,7 @@ class SegmentationResult(BaseModel):
         Tuple[float, float]
     ]  # segmentation polygon, list of xy co-ords (in pixel units)
     area: float  # segmentation area
-    bbox: List[float]  # bounding box
+    bbox: List[float]  # bounding box (opencv format: [xmin,ymin,width,height])
     class_label: str  # predicted segmentation class label
     confidence: float  # prediction score
     id_model: str  # model ID (model_id not used due to pydantic reserved word)
