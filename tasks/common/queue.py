@@ -491,5 +491,8 @@ class RequestQueue:
             logger.info(f"cache miss - downloading image from {image_url}")
             image_file_reader = ImageFileReader()
             image = image_file_reader.process(image_url, anonymous=True)
+            if not image:
+                logger.error(f"failed to download image from {image_url}")
+                raise ValueError("Failed to download image")
             self._image_cache.write_result_to_cache(image, f"{image_id}.tif")
         return (image, image_path)

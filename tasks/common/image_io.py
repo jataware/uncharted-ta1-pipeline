@@ -1,7 +1,6 @@
 from PIL import Image
 from PIL.Image import Image as PILImage
 import cv2
-import httpx
 import numpy as np
 import logging
 from io import BytesIO

@@ -277,6 +277,7 @@ def test_image_file_reader_filesystem():
 
     reader = ImageFileReader()
     image = reader.process(output_location)
+    assert image
     assert image.tobytes() == test_data.tobytes()
 
     # clean up the temporary directory
@@ -300,4 +301,5 @@ def test_image_file_reader_s3():
 
     reader = ImageFileReader()
     image = reader.process(output_location)
+    assert image
     assert image.tobytes() == test_data.tobytes()

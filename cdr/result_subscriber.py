@@ -479,6 +479,9 @@ class LaraResultSubscriber:
             logger.info(f"cache miss - downloading image from {source_image_url}")
             image_file_reader = ImageFileReader()
             image = image_file_reader.process(source_image_url, anonymous=True)
+            if image is None:
+                logger.error(f"failed to download image from {source_image_url}")
+                return
             self._image_cache.write_result_to_cache(image, f"{source_image_id}.tif")
 
         # create the transform and use it to project the image

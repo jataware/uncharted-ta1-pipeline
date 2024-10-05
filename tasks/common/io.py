@@ -11,7 +11,7 @@ from botocore.config import Config
 from botocore import UNSIGNED
 import httpx
 from pydantic import BaseModel
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 from PIL.Image import Image as PILImage
 from PIL import Image
 from tasks.common.image_io import normalize_image_format
@@ -200,7 +200,6 @@ class JSONFileWriter:
             Key=key,
         )
 
-
 class BytesIOFileWriter:
     """Write bytes to a file on the local file system or an s3 bucket"""
 
@@ -247,7 +246,6 @@ class BytesIOFileWriter:
         bucket = output_uri.split("/")[3]
         key = "/".join(output_uri.split("/")[4:])
 
-
         # write data to the bucket
         client.put_object(Body=data.getvalue(), Bucket=bucket, Key=key)
 
@@ -273,7 +271,7 @@ class ImageFileWriter(BytesIOFileWriter):
 class ImageFileReader:
     """Reads an image file from the local filesystem or s3 and returns a PIL image object"""
 
-    def process(self, input_location: str, anonymous=False) -> PILImage:
+    def process(self, input_location: str, anonymous=False) -> Optional[PILImage]:
         """Reads an image file and returns a PIL image object"""
 
         # check to see if path is an s3 uri - otherwise treat it as a file path
@@ -285,19 +283,23 @@ class ImageFileReader:
 
     # Read image from local file system
     @staticmethod
-    def _read_from_file(input_location: Path) -> PILImage:
+    def _read_from_file(input_location: Path) -> Optional[PILImage]:
         """Reads an image file and returns a PIL image object"""
 
         # get the directory of the file
         if input_location.is_dir():
             raise ValueError(f"Input location {input_location} is not a file.")
 
+        # check if the file exists
+        if not input_location.exists():
+            return None
+
         # read the image from the input file
         return Image.open(input_location)
 
     # Read image from s3
     @staticmethod
-    def _read_from_s3(input_uri: str, mode: Mode, anonymous: bool) -> PILImage:
+    def _read_from_s3(input_uri: str, mode: Mode, anonymous: bool) -> Optional[PILImage]:
         """Reads an image file from an s3 bucket and returns a PIL image object"""
 
         # create an s3 client based on the mode
@@ -311,6 +313,14 @@ class ImageFileReader:
 
         # extract bucket from s3 uri
         bucket, key = parse_s3_reference(input_uri, mode)
+
+        # check if image exists in the bucket
+        try:
+            client.head_object(Bucket=bucket, Key=key)
+        except client.exceptions.ClientError as e:
+            error_code = int(e.response["Error"]["Code"])
+            if error_code == 404:
+                return None
 
         # read image from the bucket
         response = client.get_object(Bucket=bucket, Key=key)
