@@ -2,10 +2,13 @@
     "work_dir": "~/lara/working",
     "image_dir": "~/lara/images",
     "cdr_api_token": "3b8df2be0b494c50ab3562b0c429bb58",
-    "ngrok_authtoken": "585d02d615e74454833baa5533c6ed33",
-    "openai_api_key": "fee7e90ea27b49ef9b9fcb49c3ee4ceb",
+    "ngrok_authtoken": "1234567890abcdef1234567890abcdef",
+    "aws_access_key_id": "AKIAIOSFODNN7EXAMPLE",
+    "aws_secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    "openai_api_key": "sk-1234567890abcdef1234567890abcdef",
     "google_application_credentials_dir": "~/lara/credentials",
     "tag": "latest",
     "gpu": false,
-    "cdr": true
+    "cdr": true,
+    "local": true
 }
