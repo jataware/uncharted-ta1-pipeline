@@ -244,8 +244,8 @@ class BytesIOFileWriter:
             )
 
         # extract bucket from s3 uri
-        bucket = output_uri.split("/")[3]
-        key = "/".join(output_uri.split("/")[4:])
+        # extract bucket from s3 uri
+        bucket, key = parse_s3_reference(output_uri, mode)
 
         # write data to the bucket
         client.put_object(Body=data.getvalue(), Bucket=bucket, Key=key)

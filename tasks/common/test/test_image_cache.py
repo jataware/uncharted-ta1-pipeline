@@ -76,9 +76,10 @@ def test_write_result_to_cache_s3(s3_cache_location, s3_bucket_name, image):
     conn = boto3.resource("s3", region_name="us-east-1")
     conn.create_bucket(Bucket=s3_bucket_name)
     cache = ImageCache(s3_cache_location)
-    doc_key = "test_image"
+    doc_key = "test_image.json"
     cache.write_result_to_cache(image, doc_key)
     doc_path = cache._get_cache_doc_path(doc_key)
     bucket = conn.Bucket(s3_bucket_name)
+    o = list(bucket.objects.filter())
     objs = list(bucket.objects.filter(Prefix="image_cache/test_image.json"))
     assert len(objs) == 1
