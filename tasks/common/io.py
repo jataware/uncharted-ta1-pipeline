@@ -200,6 +200,7 @@ class JSONFileWriter:
             Key=key,
         )
 
+
 class BytesIOFileWriter:
     """Write bytes to a file on the local file system or an s3 bucket"""
 
@@ -268,6 +269,7 @@ class ImageFileWriter(BytesIOFileWriter):
         else:
             self._write_to_file(buf, Path(output_location))
 
+
 class ImageFileReader:
     """Reads an image file from the local filesystem or s3 and returns a PIL image object"""
 
@@ -299,7 +301,9 @@ class ImageFileReader:
 
     # Read image from s3
     @staticmethod
-    def _read_from_s3(input_uri: str, mode: Mode, anonymous: bool) -> Optional[PILImage]:
+    def _read_from_s3(
+        input_uri: str, mode: Mode, anonymous: bool
+    ) -> Optional[PILImage]:
         """Reads an image file from an s3 bucket and returns a PIL image object"""
 
         # create an s3 client based on the mode

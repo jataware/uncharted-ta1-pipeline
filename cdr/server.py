@@ -56,6 +56,7 @@ class Settings:
     rabbitmq_host: str
     sequence: List[str] = []
 
+
 @app.route("/process_event", methods=["POST"])
 def process_cdr_event():
     logger.info("event callback started")

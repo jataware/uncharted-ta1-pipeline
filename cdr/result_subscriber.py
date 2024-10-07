@@ -121,7 +121,7 @@ class LaraResultSubscriber:
         self._cdr_host = cdr_host
         self._cdr_token = cdr_token
         self._workdir = workdir
-        self._imagedir = imagedir,
+        self._imagedir = imagedir
         self._output = output
         self._host = host
         self._port = port
@@ -326,7 +326,11 @@ class LaraResultSubscriber:
                 sleep(5)
 
     def _write_cdr_result(
-        self, image_id: str, output_type: OutputType, result: BaseModel, image_bytes: Optional[BytesIO] = None
+        self,
+        image_id: str,
+        output_type: OutputType,
+        result: BaseModel,
+        image_bytes: Optional[BytesIO] = None,
     ):
         """
         Write the CDR result to a JSON file and optionally write image bytes to a file.
@@ -386,7 +390,9 @@ class LaraResultSubscriber:
             projection = cdr_result.georeference_results[0].projections[0]
             gcps = cdr_result.gcps
             output_file_name = projection.file_name
-            output_file_name_full = os.path.join(self._workdir, "projected_image", output_file_name)
+            output_file_name_full = os.path.join(
+                self._workdir, "projected_image", output_file_name
+            )
 
             assert gcps is not None
             lara_gcps = [
@@ -412,9 +418,7 @@ class LaraResultSubscriber:
                 lara_gcps,
             )
             # pass the image bytes to the CDR
-            files_.append(
-                ("files", (output_file_name, BufferedReader(image_bytes)))
-            )
+            files_.append(("files", (output_file_name, BufferedReader(image_bytes))))
         except Exception as e:
             logger.exception(
                 "formatting for CDR schema failed for {result.request.image_id}: {e}",
@@ -455,7 +459,9 @@ class LaraResultSubscriber:
                 f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
             )
         except Exception as e:
-            logger.exception(f"error when attempting to submit georeferencing results: {e}")
+            logger.exception(
+                f"error when attempting to submit georeferencing results: {e}"
+            )
 
     def _project_georeference(
         self,
@@ -500,10 +506,14 @@ class LaraResultSubscriber:
         """
         try:
             if self._output:
-                self._write_cdr_result(result.request.image_id, result.output_type, model)
+                self._write_cdr_result(
+                    result.request.image_id, result.output_type, model
+                )
                 return
 
-            logger.info(f"pushing features result for request {result.request.id} to CDR")
+            logger.info(
+                f"pushing features result for request {result.request.id} to CDR"
+            )
             headers = {
                 "Authorization": f"Bearer {self._cdr_token}",
                 "Content-Type": "application/json",
