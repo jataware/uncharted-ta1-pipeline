@@ -15,7 +15,7 @@ DEV_TAG := test
 TAG := latest
 
 # List of images to build
-IMAGE_NAMES := lara-cdr lara-georef lara-point-extract lara-segmentation lara-metadata-extract lara-text-extract
+IMAGE_NAMES := lara-cdr lara-cdr-writer lara-georef lara-point-extract lara-segmentation lara-metadata-extract lara-text-extract
 
 # This Makefile contains build and deployment commands for various components of the LARA models project.
 
@@ -55,9 +55,16 @@ build_cdr:
 	@echo "*** Building CDR mediator ***"\n
 	@cd cdr/deploy && ./build.sh $(PLATFORMS)
 
+# Target: build_cdr_writer
+# Description: Builds the CDR writer component.
+build_cdr_writer:
+	@echo "*** Building CDR writer ***"\n
+	@cd cdr_writer/deploy && ./build.sh $(PLATFORMS)
+
+
 # Target: build
 # Description: Builds all components.
-build: build_segmentation build_metadata build_points build_georef build_text build_cdr
+build: build_segmentation build_metadata build_points build_georef build_text build_cdr build_cdr_writer
 
 # Target: tag_dev
 # Description: Tags images with the dev tag.

@@ -100,7 +100,7 @@ class LaraResultSubscriber:
 
     def __init__(
         self,
-        request_publisher: LaraRequestPublisher,
+        request_publisher: Optional[LaraRequestPublisher],
         result_queue: str,
         cdr_host: str,
         cdr_token: str,
@@ -239,25 +239,30 @@ class LaraResultSubscriber:
                 f"processing result for request {result.request.id} of type {result.output_type}"
             )
 
-            match result.output_type:
-                case OutputType.SEGMENTATION:
-                    logger.info("segmentation results received")
-                    self._push_segmentation(result)
-                case OutputType.METADATA:
-                    logger.info("metadata results received")
-                    self._push_metadata(result)
-                case OutputType.POINTS:
-                    logger.info("points results received")
-                    self._push_points(result)
-                case OutputType.GEOREFERENCING:
-                    logger.info("georeferencing results received")
-                    self._push_georeferencing(result)
-                case _:
-                    logger.info("unsupported output type received from queue")
-
-            # in the serial case we call the next pipeline in the sequence
-            if self._request_publisher:
-                # find the next pipeline
+            # When there is no publisher associated with this subscriber we are just grabbing results
+            # and pushing thme to the CDR
+            #
+            # TODO: this should probably be refactored so that a handler function is passed in, and we justt
+            # invoke it here.
+            if not self._request_publisher:
+                match result.output_type:
+                    case OutputType.SEGMENTATION:
+                        logger.info("segmentation results received")
+                        self._push_segmentation(result)
+                    case OutputType.METADATA:
+                        logger.info("metadata results received")
+                        self._push_metadata(result)
+                    case OutputType.POINTS:
+                        logger.info("points results received")
+                        self._push_points(result)
+                    case OutputType.GEOREFERENCING:
+                        logger.info("georeferencing results received")
+                        self._push_georeferencing(result)
+                    case _:
+                        logger.info("unsupported output type received from queue")
+            else:
+                # When a publisher has been supplied we run the next pipeline in the
+                # sequence
                 output_pipeline = self.PIPELINE_OUTPUTS[result.output_type]
                 next = self._pipeline_sequence.index(output_pipeline) + 1
                 next_pipeline = (
