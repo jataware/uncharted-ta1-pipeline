@@ -1,6 +1,5 @@
 import argparse
 import atexit
-from pathlib import Path
 import httpx
 import json
 import logging
@@ -10,7 +9,7 @@ import os
 from flask import Flask, request, Response
 
 from cdr.request_publisher import LaraRequestPublisher
-from cdr.result_subscriber import LaraResultSubscriber
+from tasks.common.result_subscriber import LaraResultSubscriber
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
     METADATA_REQUEST_QUEUE,
