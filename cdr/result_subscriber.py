@@ -1,4 +1,5 @@
 from functools import cache
+from io import BufferedReader, BytesIO
 import json
 import logging
 import os
@@ -18,7 +19,7 @@ from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.georeference import GeoreferenceResults
 from schema.cdr_schemas.metadata import CogMetaData
 from tasks.common.image_cache import ImageCache
-from tasks.common.io import BytesIOFileWriter, ImageFileReader
+from tasks.common.io import BytesIOFileWriter, ImageFileReader, JSONFileWriter
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
     METADATA_REQUEST_QUEUE,
@@ -325,32 +326,35 @@ class LaraResultSubscriber:
                 sleep(5)
 
     def _write_cdr_result(
-        self, image_id: str, output_type: OutputType, result: BaseModel
+        self, image_id: str, output_type: OutputType, result: BaseModel, image_bytes: Optional[BytesIO] = None
     ):
         """
-        Write the CDR result to a JSON file.
+        Write the CDR result to a JSON file and optionally write image bytes to a file.
 
         Args:
             image_id (str): The ID of the image.
             output_type (OutputType): The type of output.
             result (BaseModel): The result to be written.
+            image_bytes (Optional[BytesIO]): The image bytes to be written, if any.
 
         Returns:
             None
         """
         if self._output:
+            writer = JSONFileWriter()
             output_file = os.path.join(
                 self._output,
                 f"{image_id}_{output_type.name.lower()}.json",
             )
-            os.makedirs(
-                self._output, exist_ok=True
-            )  # Create the output directory if it doesn't exist
-            with open(output_file, "a") as f:
-                logger.info(f"writing result to {output_file}")
-                f.write(json.dumps(result.model_dump()))
-                f.write("\n")
-            return
+            writer.process(output_file, result)
+
+        if image_bytes:
+            writer = BytesIOFileWriter()
+            output_file = os.path.join(
+                self._output,
+                f"{image_id}_{output_type.name.lower()}.tif",
+            )
+            writer.process(output_file, image_bytes)
 
     def _push_georeferencing(self, result: RequestResult):
         # reproject image to file on disk for pushing to CDR
@@ -366,6 +370,7 @@ class LaraResultSubscriber:
         # validate the result by building the model classes
         cdr_result: Optional[GeoreferenceResults] = None
         files_ = []
+        image_bytes = None
         try:
             lara_result = LARAGeoreferenceResult.model_validate(georef_result_raw)
             mapper = get_mapper(
@@ -381,7 +386,7 @@ class LaraResultSubscriber:
             projection = cdr_result.georeference_results[0].projections[0]
             gcps = cdr_result.gcps
             output_file_name = projection.file_name
-            output_file_name_full = os.path.join(self._workdir, output_file_name)
+            output_file_name_full = os.path.join(self._workdir, "projected_image", output_file_name)
 
             assert gcps is not None
             lara_gcps = [
@@ -399,17 +404,16 @@ class LaraResultSubscriber:
             logger.info(
                 f"projecting image {result.image_path} to {output_file_name_full}. CRS: {lara_result.crs} -> {GeoreferenceMapper.DEFAULT_OUTPUT_CRS}"
             )
-            self._project_georeference(
+            image_bytes = self._project_georeference(
                 result.request.image_id,
                 result.image_path,
-                output_file_name_full,
                 lara_result.crs,
                 GeoreferenceMapper.DEFAULT_OUTPUT_CRS,
                 lara_gcps,
             )
-
+            # pass the image bytes to the CDR
             files_.append(
-                ("files", (output_file_name, open(output_file_name_full, "rb")))
+                ("files", (output_file_name, BufferedReader(image_bytes)))
             )
         except Exception as e:
             logger.exception(
@@ -432,7 +436,7 @@ class LaraResultSubscriber:
             # write the result to disk if output is set
             if self._output:
                 self._write_cdr_result(
-                    result.request.image_id, result.output_type, cdr_result
+                    result.request.image_id, result.output_type, cdr_result, image_bytes
                 )
                 return
 
@@ -457,11 +461,10 @@ class LaraResultSubscriber:
         self,
         source_image_id: str,
         source_image_url: str,
-        target_image_path: str,
         source_crs: str,
         target_crs: str,
         gcps: List[LARAGroundControlPoint],
-    ):
+    ) -> BytesIO:
         """
         Projects an image to a new coordinate reference system using ground control points.
 
@@ -489,8 +492,7 @@ class LaraResultSubscriber:
         image_bytes = project_image(image, geo_transform, target_crs)
 
         # write the projected image out
-        image_file_writer = BytesIOFileWriter()
-        image_file_writer.process(target_image_path, image_bytes)
+        return image_bytes
 
     def _push_features(self, result: RequestResult, model: FeatureResults):
         """

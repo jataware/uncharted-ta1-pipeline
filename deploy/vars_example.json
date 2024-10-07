@@ -10,5 +10,9 @@
     "tag": "latest",
     "gpu": false,
     "cdr": true,
-    "local": true
+    "local": true,
+    "georef_replicas": 1,
+    "points_replicas": 1,
+    "segmentation_replicas": 1,
+    "metadata_replicas": 1
 }
