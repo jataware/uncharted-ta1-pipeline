@@ -29,6 +29,8 @@ def main():
     parser.add_argument("--imagedir", type=str, required=True)
     parser.add_argument("--input", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
+    parser.add_argument("--host", type=str, default="localhost")
+    parser.add_argument("--rabbit_port", type=int, default=5672)
     p = parser.parse_args()
 
     result_subscriber = LaraResultSubscriber(
@@ -39,6 +41,8 @@ def main():
         p.output,
         p.workdir,
         p.imagedir,
+        host=p.host,
+        port=p.port,
     )
     result_subscriber.start_lara_result_queue()
 

@@ -1,19 +1,16 @@
-from functools import cache
-from io import BufferedReader, BytesIO
+from io import BytesIO
 import json
 import logging
 import os
 import threading
 from time import sleep
 from typing import List, Optional
-from cv2 import log
 import httpx
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import BlockingConnection, ConnectionParameters, PlainCredentials
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
 import pika.spec as spec
 from pydantic import BaseModel
-from regex import P
 from cdr.request_publisher import LaraRequestPublisher
 from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.georeference import GeoreferenceResults

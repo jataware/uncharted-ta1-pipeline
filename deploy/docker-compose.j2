@@ -48,6 +48,37 @@ services:
     restart: on-failure
   {%- endif %}
 
+  writer:
+    image: uncharted/lara-cdr-writer:{{ tag }}
+    command: [
+      {%- if local %}
+      "--workdir", "/workdir",
+      "--imagedir", "/imagedir",
+      {% else %}
+      "--workdir", {{ work_dir }},
+      "--imagedir", {{ image_dir }},
+      {%- endif %}
+      "--host", "rabbitmq"]
+    ports:
+      - 5000:5000
+    environment:
+      - CDR_API_TOKEN={{ cdr_api_token }}
+      {%- if not local %}
+      - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
+      - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      {%- endif %}
+    {%- if local %}
+    volumes:
+      - {{ work_dir }}:/workdir
+      - {{ image_dir }}:/imagedir
+    {%- endif %}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - lara
+    restart: on-failure
+
   georef:
     image: uncharted/lara-georef:{{ tag }}
     command: [
