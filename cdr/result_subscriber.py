@@ -418,7 +418,7 @@ class LaraResultSubscriber:
                 lara_gcps,
             )
             # pass the image bytes to the CDR
-            files_.append(("files", (output_file_name, BufferedReader(image_bytes))))
+            files_.append(("files", (output_file_name, image_bytes)))
         except Exception as e:
             logger.exception(
                 "formatting for CDR schema failed for {result.request.image_id}: {e}",
@@ -470,7 +470,7 @@ class LaraResultSubscriber:
         source_crs: str,
         target_crs: str,
         gcps: List[LARAGroundControlPoint],
-    ) -> BytesIO:
+    ) -> Optional[BytesIO]:
         """
         Projects an image to a new coordinate reference system using ground control points.
 
