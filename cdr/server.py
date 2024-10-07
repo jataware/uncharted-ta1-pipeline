@@ -8,6 +8,7 @@ import os
 
 from flask import Flask, request, Response
 
+from cdr.chaining_result_subscriber import ChainingResultSubscriber
 from cdr.request_publisher import LaraRequestPublisher
 from tasks.common.result_subscriber import LaraResultSubscriber
 from tasks.common.queue import (
@@ -221,7 +222,9 @@ def main():
     parser.add_argument("--input", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
     parser.add_argument(
-        "--sequence", nargs="*", default=LaraResultSubscriber.DEFAULT_PIPELINE_SEQUENCE
+        "--sequence",
+        nargs="*",
+        default=ChainingResultSubscriber.DEFAULT_PIPELINE_SEQUENCE,
     )
     p = parser.parse_args()
 
@@ -264,7 +267,7 @@ def main():
     request_publisher.start_lara_request_queue()
 
     # start the listener for the results
-    result_subscriber = LaraResultSubscriber(
+    result_subscriber = ChainingResultSubscriber(
         request_publisher,
         LARA_RESULT_QUEUE_NAME,
         settings.cdr_host,

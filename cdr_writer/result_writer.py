@@ -1,7 +1,7 @@
 import argparse
 import logging
 import os
-from tasks.common.result_subscriber import LaraResultSubscriber
+from cdr_writer.write_result_subscriber import WriteResultSubscriber
 from util.logging import config_logger
 
 logger = logging.getLogger("cdr")
@@ -33,8 +33,7 @@ def main():
     parser.add_argument("--rabbit_port", type=int, default=5672)
     p = parser.parse_args()
 
-    result_subscriber = LaraResultSubscriber(
-        None,
+    result_subscriber = WriteResultSubscriber(
         LARA_RESULT_QUEUE_NAME,
         CDR_HOST,
         CDR_API_TOKEN,
@@ -42,7 +41,7 @@ def main():
         p.workdir,
         p.imagedir,
         host=p.host,
-        port=p.port,
+        port=p.rabbit_port,
     )
     result_subscriber.start_lara_result_queue()
 
