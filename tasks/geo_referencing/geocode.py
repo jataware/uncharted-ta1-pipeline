@@ -9,7 +9,6 @@ from copy import deepcopy
 
 from sklearn.cluster import DBSCAN
 
-from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.coordinates_extractor import (
     CoordinatesExtractor,
     CoordinateInput,
@@ -17,7 +16,6 @@ from tasks.geo_referencing.coordinates_extractor import (
 from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
-    GeoFence,
     GEOFENCE_OUTPUT_KEY,
     SOURCE_GEOCODE,
 )
@@ -28,7 +26,7 @@ from tasks.metadata_extraction.entities import (
     GEOCODED_PLACES_OUTPUT_KEY,
 )
 
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import Dict, List, Tuple, Callable
 
 COORDINATE_CONFIDENCE_GEOCODE = 0.8
 

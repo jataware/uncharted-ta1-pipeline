@@ -22,6 +22,13 @@ SOURCE_STATE_PLANE = "state plane parser"
 SOURCE_UTM = "utm parser"
 SOURCE_GEOCODE = "geocoder"
 SOURCE_INFERENCE = "inference"
+ROI_MAP_OUTPUT_KEY = "map_roi"
+
+
+class MapROI(BaseModel):
+    map_bounds: List[Tuple[float, float]]
+    buffer_outer: List[Tuple[float, float]]
+    buffer_inner: List[Tuple[float, float]]
 
 
 class GeoFence(BaseModel):

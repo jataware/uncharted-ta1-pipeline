@@ -16,6 +16,8 @@ from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
     GEOFENCE_OUTPUT_KEY,
+    MapROI,
+    ROI_MAP_OUTPUT_KEY,
 )
 from tasks.geo_referencing.geo_projection import GeoProjection
 from tasks.geo_referencing.util import get_input_geofence
@@ -108,8 +110,8 @@ class GeoReference(Task):
         lon_minmax = input.get_request_info("lon_minmax", [0, 180])
         lat_minmax = input.get_request_info("lat_minmax", [0, 90])
         logger.debug(f"initial lon_minmax: {lon_minmax}")
-        lon_pts = input.get_data("lons")
-        lat_pts = input.get_data("lats")
+        lon_pts = input.get_data("lons", {})
+        lat_pts = input.get_data("lats", {})
 
         scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
@@ -117,7 +119,13 @@ class GeoReference(Task):
         geofence: DocGeoFence = input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
-        roi_xy = input.get_data("roi")
+
+        roi_xy = []
+        if ROI_MAP_OUTPUT_KEY in input.data:
+            # get map ROI bounds (without inner/outer buffering)
+            map_roi = MapROI.model_validate(input.data[ROI_MAP_OUTPUT_KEY])
+            roi_xy = map_roi.map_bounds
+
         roi_xy_minmax: Tuple[List[float], List[float]] = ([], [])
         if roi_xy is not None:
             roi_xy_minmax = (

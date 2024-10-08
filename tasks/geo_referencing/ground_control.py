@@ -3,7 +3,11 @@ import logging
 from random import randint
 
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.geo_referencing.entities import QUERY_POINTS_OUTPUT_KEY
+from tasks.geo_referencing.entities import (
+    QUERY_POINTS_OUTPUT_KEY,
+    MapROI,
+    ROI_MAP_OUTPUT_KEY,
+)
 from tasks.geo_referencing.georeference import QueryPoint
 from tasks.segmentation.entities import (
     MapSegmentation,
@@ -86,10 +90,14 @@ class CreateGroundControlPoints(Task):
         create N random ground control points roughly around the middle of the ROI (or failing that the middle of the image)
         """
         min_x = min_y = max_x = max_y = 0
-        roi = input.get_data("roi")
-        if roi and len(roi) > 0:
-            roi_x = list(map(lambda x: x[0], roi))
-            roi_y = list(map(lambda x: x[1], roi))
+        roi_xy = []
+        if ROI_MAP_OUTPUT_KEY in input.data:
+            # get map ROI bounds (without inner/outer buffering)
+            map_roi = MapROI.model_validate(input.data[ROI_MAP_OUTPUT_KEY])
+            roi_xy = map_roi.map_bounds
+        if roi_xy and len(roi_xy) > 0:
+            roi_x = list(map(lambda x: x[0], roi_xy))
+            roi_y = list(map(lambda x: x[1], roi_xy))
 
             max_x, max_y = max(roi_x), max(roi_y)
             min_x, min_y = min(roi_x), min(roi_y)
