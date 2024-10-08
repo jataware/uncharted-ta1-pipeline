@@ -8,9 +8,9 @@ from tasks.geo_referencing.coordinates_extractor import (
 )
 from tasks.geo_referencing.entities import (
     Coordinate,
-    DocGeoFence,
-    GEOFENCE_OUTPUT_KEY,
     SOURCE_INFERENCE,
+    MapROI,
+    ROI_MAP_OUTPUT_KEY,
 )
 from tasks.geo_referencing.util import ocr_to_coordinates
 
@@ -55,7 +55,11 @@ class InferenceCoordinateExtractor(CoordinatesExtractor):
         # get the coordinates and roi or assume whole image is a map
         lon_pts = input.input.get_data("lons")
         lat_pts = input.input.get_data("lats")
-        roi_xy = input.input.get_data("roi")
+        roi_xy = []
+        if ROI_MAP_OUTPUT_KEY in input.input.data:
+            # get map ROI bounds (without inner/outer buffering)
+            map_roi = MapROI.model_validate(input.input.data[ROI_MAP_OUTPUT_KEY])
+            roi_xy = map_roi.map_bounds
 
         lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lon_pts.items()))
         infer_lon = len(lons_distinct) < 2

@@ -1,8 +1,6 @@
 import os
 import logging
 
-from pathlib import Path
-
 from pipelines.geo_referencing.output import (
     GeoreferencingOutput,
     GCPOutput,
@@ -41,10 +39,7 @@ from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.geocode import PointGeocoder, BoxGeocoder
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.inference import InferenceCoordinateExtractor
-from tasks.geo_referencing.roi_extractor import (
-    ModelROIExtractor,
-    buffer_fixed,
-)
+from tasks.geo_referencing.roi_extractor import ROIExtractor
 from tasks.metadata_extraction.geocoder import Geocoder, NominatimGeocoder
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.scale import ScaleExtractor
@@ -55,7 +50,7 @@ from tasks.metadata_extraction.text_filter import (
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.segmentation.segmenter_utils import map_missing
-from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
+from tasks.text_extraction.text_extractor import TileTextExtractor
 
 from typing import List
 
@@ -123,10 +118,7 @@ class GeoreferencingPipeline(Pipeline):
             ),
             # Defines an allowed region for cooredinates to occupy by buffering
             # the extracted map area polyline by a fixed amount
-            ModelROIExtractor(
-                "fixed region of interest extractor",
-                buffer_fixed,
-            ),
+            ROIExtractor("region of interest extractor"),
             # Filters out any text that is in the cross section or the legend areas of the
             # map
             TextFilter(
