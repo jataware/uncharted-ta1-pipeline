@@ -9,12 +9,7 @@ from pika.exceptions import AMQPChannelError, AMQPConnectionError
 import pika.spec as spec
 from tasks.common.image_cache import ImageCache
 from tasks.common.queue import (
-    GEO_REFERENCE_REQUEST_QUEUE,
-    METADATA_REQUEST_QUEUE,
-    POINTS_REQUEST_QUEUE,
     REQUEUE_LIMIT,
-    SEGMENTATION_REQUEST_QUEUE,
-    OutputType,
     Request,
 )
 import datetime
@@ -35,22 +30,6 @@ class LaraResultSubscriber(ABC):
     POINTS_PIPELINE = "points"
     GEOREFERENCE_PIPELINE = "georeference"
     NULL_PIPELINE = "null"
-
-    # pipeline related rabbitmq queue names
-    PIPELINE_QUEUES = {
-        SEGMENTATION_PIPELINE: SEGMENTATION_REQUEST_QUEUE,
-        METADATA_PIPELINE: METADATA_REQUEST_QUEUE,
-        POINTS_PIPELINE: POINTS_REQUEST_QUEUE,
-        GEOREFERENCE_PIPELINE: GEO_REFERENCE_REQUEST_QUEUE,
-    }
-
-    # map of pipeline output types to pipeline names
-    PIPELINE_OUTPUTS = {
-        OutputType.SEGMENTATION: SEGMENTATION_PIPELINE,
-        OutputType.METADATA: METADATA_PIPELINE,
-        OutputType.POINTS: POINTS_PIPELINE,
-        OutputType.GEOREFERENCING: GEOREFERENCE_PIPELINE,
-    }
 
     # map of pipeline name to system name
     PIPELINE_SYSTEM_NAMES = {

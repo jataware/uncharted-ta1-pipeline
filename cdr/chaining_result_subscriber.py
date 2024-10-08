@@ -5,13 +5,36 @@ import pika.spec as spec
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 
 from cdr.request_publisher import LaraRequestPublisher
-from tasks.common.queue import RequestResult
+from tasks.common.queue import OutputType, RequestResult
 from tasks.common.result_subscriber import LaraResultSubscriber
+from tasks.common.queue import (
+    GEO_REFERENCE_REQUEST_QUEUE,
+    METADATA_REQUEST_QUEUE,
+    POINTS_REQUEST_QUEUE,
+    SEGMENTATION_REQUEST_QUEUE,
+)
 
 logger = logging.getLogger("chaining_result_subscriber")
 
 
 class ChainingResultSubscriber(LaraResultSubscriber):
+
+    # pipeline related rabbitmq queue names
+    PIPELINE_QUEUES = {
+        LaraResultSubscriber.SEGMENTATION_PIPELINE: SEGMENTATION_REQUEST_QUEUE,
+        LaraResultSubscriber.METADATA_PIPELINE: METADATA_REQUEST_QUEUE,
+        LaraResultSubscriber.POINTS_PIPELINE: POINTS_REQUEST_QUEUE,
+        LaraResultSubscriber.GEOREFERENCE_PIPELINE: GEO_REFERENCE_REQUEST_QUEUE,
+    }
+
+    # map of pipeline output types to pipeline names
+    PIPELINE_OUTPUTS = {
+        OutputType.SEGMENTATION: LaraResultSubscriber.SEGMENTATION_PIPELINE,
+        OutputType.METADATA: LaraResultSubscriber.METADATA_PIPELINE,
+        OutputType.POINTS: LaraResultSubscriber.POINTS_PIPELINE,
+        OutputType.GEOREFERENCING: LaraResultSubscriber.GEOREFERENCE_PIPELINE,
+    }
+
     # sequence of pipelines execution
     DEFAULT_PIPELINE_SEQUENCE = [
         LaraResultSubscriber.SEGMENTATION_PIPELINE,
