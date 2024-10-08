@@ -59,8 +59,6 @@ services:
       "--imagedir", {{ image_dir }},
       {%- endif %}
       "--host", "rabbitmq"]
-    ports:
-      - 5000:5000
     environment:
       - CDR_API_TOKEN={{ cdr_api_token }}
       {%- if not local %}
