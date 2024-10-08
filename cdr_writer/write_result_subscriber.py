@@ -85,7 +85,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             body_decoded = json.loads(body.decode())
             result = RequestResult.model_validate(body_decoded)
             logger.info(
-                f"processing result for request {result.request.id} of type {result.output_type}"
+                f"processing result for request {result.id} of type {result.output_type}"
             )
 
             match result.output_type:
@@ -151,7 +151,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
         # don't write when the result is empty
         if len(georef_result_raw) == 0:
             logger.info(
-                f"empty georef result received for {result.request.image_id} - skipping send"
+                f"empty georef result received for {result.image_id} - skipping send"
             )
             return
 
@@ -195,7 +195,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
                 f"projecting image {result.image_path} to {output_file_name_full}. CRS: {lara_result.crs} -> {GeoreferenceMapper.DEFAULT_OUTPUT_CRS}"
             )
             image_bytes = self._project_georeference(
-                result.request.image_id,
+                result.image_id,
                 result.image_path,
                 lara_result.crs,
                 GeoreferenceMapper.DEFAULT_OUTPUT_CRS,
@@ -210,7 +210,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
 
             # create an empty result to send to cdr
             cdr_result = GeoreferenceResults(
-                cog_id=result.request.image_id,
+                cog_id=result.image_id,
                 georeference_results=[],
                 gcps=[],
                 system=self.PIPELINE_SYSTEM_NAMES[self.GEOREFERENCE_PIPELINE],
@@ -224,12 +224,12 @@ class WriteResultSubscriber(LaraResultSubscriber):
             # write the result to disk if output is set
             if self._output:
                 self._write_cdr_result(
-                    result.request.image_id, result.output_type, cdr_result, image_bytes
+                    result.image_id, result.output_type, cdr_result, image_bytes
                 )
                 return
 
             # push the result to CDR
-            logger.info(f"pushing result for request {result.request.id} to CDR")
+            logger.info(f"pushing result for request {result.id} to CDR")
             headers = {"Authorization": f"Bearer {self._cdr_token}"}
             client = httpx.Client(follow_redirects=True)
             resp = client.post(
@@ -240,7 +240,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
                 timeout=None,
             )
             logger.info(
-                f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
+                f"result for request {result.id} sent to CDR with response {resp.status_code}: {resp.content}"
             )
         except Exception as e:
             logger.exception(
@@ -290,14 +290,10 @@ class WriteResultSubscriber(LaraResultSubscriber):
         """
         try:
             if self._output:
-                self._write_cdr_result(
-                    result.request.image_id, result.output_type, model
-                )
+                self._write_cdr_result(result.image_id, result.output_type, model)
                 return
 
-            logger.info(
-                f"pushing features result for request {result.request.id} to CDR"
-            )
+            logger.info(f"pushing features result for request {result.id} to CDR")
             headers = {
                 "Authorization": f"Bearer {self._cdr_token}",
                 "Content-Type": "application/json",
@@ -310,7 +306,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
                 timeout=None,
             )
             logger.info(
-                f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
+                f"result for request {result.id} sent to CDR with response {resp.status_code}: {resp.content}"
             )
         except Exception as e:
             logger.exception(f"error when attempting to submit feature results: {e}")
@@ -324,7 +320,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
         # don't write when the result is empty
         if len(segmentation_raw_result) == 0:
             logger.info(
-                f"empty segmentation result received for {result.request.image_id} - skipping send"
+                f"empty segmentation result received for {result.image_id} - skipping send"
             )
             return
 
@@ -340,7 +336,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
             logger.exception(
-                f"mapping segmentation to CDR schema failed for {result.request.image_id}: {e}",
+                f"mapping segmentation to CDR schema failed for {result.image_id}: {e}",
             )
             return
 
@@ -353,7 +349,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
         # don't write when the result is empty
         if len(points_raw_result) == 0:
             logger.info(
-                f"empty point result received for {result.request.image_id} - skipping send"
+                f"empty point result received for {result.image_id} - skipping send"
             )
             return
 
@@ -369,7 +365,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
             logger.exception(
-                f"mapping points to CDR schema failed for {result.request.image_id}: {e}",
+                f"mapping points to CDR schema failed for {result.image_id}: {e}",
             )
             return
 
@@ -385,7 +381,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
         # don't write when the result is empty
         if len(metadata_result_raw) == 0:
             logger.info(
-                f"empty metadata result received for {result.request.image_id} - skipping send"
+                f"empty metadata result received for {result.image_id} - skipping send"
             )
             return
 
@@ -401,7 +397,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
             logger.exception(
-                f"mapping metadata to CDR schema failed for {result.request.image_id}: {e}",
+                f"mapping metadata to CDR schema failed for {result.image_id}: {e}",
             )
             return
 
@@ -409,7 +405,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
 
         # wrap metadata into feature result
         final_result = FeatureResults(
-            cog_id=result.request.image_id,
+            cog_id=result.image_id,
             cog_metadata_extractions=[cdr_result],
             system=cdr_result.system,
             system_version=cdr_result.system_version,

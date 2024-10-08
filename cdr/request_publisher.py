@@ -7,7 +7,7 @@ from typing import List, Optional
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import BlockingConnection, ConnectionParameters, PlainCredentials
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
-from tasks.common.request_client import Request
+from tasks.common.request_client import Request, RequestResult
 
 
 logger = logging.getLogger("request_publisher")

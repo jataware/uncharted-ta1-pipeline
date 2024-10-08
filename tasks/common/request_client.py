@@ -69,12 +69,11 @@ class OutputType(int, Enum):
     TEXT = 5
 
 
-class RequestResult(BaseModel):
+class RequestResult(Request):
     """
     The result of a pipeline request.
     """
 
-    request: Request
     success: bool
     output: str
     output_type: OutputType
@@ -479,7 +478,11 @@ class RequestClient:
             The request result.
         """
         return RequestResult(
-            request=request,
+            id=request.id,
+            task=request.task,
+            image_id=request.image_id,
+            image_url=request.image_url,
+            output_format=request.output_format,
             output=json.dumps(output.data.model_dump()),
             success=True,
             image_path=image_path,
@@ -501,7 +504,11 @@ class RequestClient:
             The request result.
         """
         return RequestResult(
-            request=request,
+            id=request.id,
+            task=request.task,
+            image_id=request.image_id,
+            image_url=request.image_url,
+            output_format=request.output_format,
             output="{}",
             success=True,
             image_path=image_path,

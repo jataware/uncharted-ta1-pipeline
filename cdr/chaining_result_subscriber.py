@@ -111,7 +111,7 @@ class ChainingResultSubscriber(LaraResultSubscriber):
             body_decoded = json.loads(body.decode())
             result = RequestResult.model_validate(body_decoded)
             logger.info(
-                f"processing result for request {result.request.id} of type {result.output_type}"
+                f"processing result for request {result.id} of type {result.output_type}"
             )
 
             # When a publisher has been supplied we run the next pipeline in the
@@ -130,17 +130,15 @@ class ChainingResultSubscriber(LaraResultSubscriber):
 
             request = self.next_request(
                 next_pipeline,
-                result.request.image_id,
-                result.request.image_url,
+                result.image_id,
+                result.image_url,
             )
             logger.info(f"sending next request in sequence: {request.task}")
             self._request_publisher.publish_lara_request(
                 request, self.PIPELINE_QUEUES[next_pipeline]
             )
             logger.info(f"sending write request: {request.task}")
-            self._request_publisher.publish_lara_request(
-                result.request, WRITE_REQUEST_QUEUE
-            )
+            self._request_publisher.publish_lara_request(result, WRITE_REQUEST_QUEUE)
 
         except Exception as e:
             logger.exception(f"Error processing lara result: {e}")
