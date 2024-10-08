@@ -162,6 +162,10 @@ class LaraResultSubscriber(ABC):
         """
         Main loop to service the result queue. process_data_events is set to block for a maximum
         of 1 second before returning to ensure that heartbeats etc. are processed.
+
+        Args:
+            result_queue (str): The name of the result queue to listen to.
+            host (str, optional): The hostname of the message broker. Defaults to "localhost".
         """
         while True:
             result_channel: Optional[Channel] = None

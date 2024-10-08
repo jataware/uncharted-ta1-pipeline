@@ -12,7 +12,7 @@ from tasks.common.queue import (
     POINTS_REQUEST_QUEUE,
     POINTS_RESULT_QUEUE,
     OutputType,
-    RequestQueue,
+    RequestClient,
 )
 from util import logging as logging_util
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        queue = RequestClient(
             point_extraction_pipeline,
             p.request_queue,
             p.result_queue,

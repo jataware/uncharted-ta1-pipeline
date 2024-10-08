@@ -10,7 +10,7 @@ from tasks.common import image_io
 from tasks.common.queue import (
     SEGMENTATION_REQUEST_QUEUE,
     SEGMENTATION_RESULT_QUEUE,
-    RequestQueue,
+    RequestClient,
     OutputType,
 )
 from tasks.segmentation.ditod.table_evaluation.evaluate import PATH
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        queue = RequestClient(
             segmentation_pipeline,
             p.request_queue,
             p.result_queue,

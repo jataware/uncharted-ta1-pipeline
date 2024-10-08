@@ -10,7 +10,7 @@ from PIL import Image
 from tasks.common.queue import (
     TEXT_REQUEST_QUEUE,
     TEXT_RESULT_QUEUE,
-    RequestQueue,
+    RequestClient,
     OutputType,
 )
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        queue = RequestClient(
             pipeline,
             p.request_queue,
             p.result_queue,

@@ -10,7 +10,7 @@ from pipelines.metadata_extraction.metadata_extraction_pipeline import (
 )
 from tasks.common.queue import (
     OutputType,
-    RequestQueue,
+    RequestClient,
     METADATA_REQUEST_QUEUE,
     METADATA_RESULT_QUEUE,
 )
@@ -132,7 +132,7 @@ if __name__ == "__main__":
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        queue = RequestClient(
             metadata_extraction,
             p.request_queue,
             p.result_queue,

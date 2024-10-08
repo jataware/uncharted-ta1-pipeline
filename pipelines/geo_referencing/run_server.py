@@ -24,7 +24,7 @@ from tasks.common.pipeline import (
 from tasks.common.queue import (
     GEO_REFERENCE_REQUEST_QUEUE,
     GEO_REFERENCE_RESULT_QUEUE,
-    RequestQueue,
+    RequestClient,
     OutputType,
 )
 from typing import List, Tuple
@@ -223,7 +223,7 @@ def start_server():
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        queue = RequestClient(
             georef_pipeline,
             p.request_queue,
             p.result_queue,

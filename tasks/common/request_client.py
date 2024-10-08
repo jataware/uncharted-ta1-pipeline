@@ -79,19 +79,11 @@ class RequestResult(BaseModel):
     image_path: str
 
 
-class RequestQueue:
+class RequestClient:
     """
-    Input and output messages queues for process pipeline requests and publishing
-    the results.
-
-    Args:
-        pipeline: The pipeline to use for processing requests.
-        request_queue: The name of the request queue.
-        result_queue: The name of the result queue.
-        host: The host of the queue.
-        heartbeat: The heartbeat interval.
-        blocked_connection_timeout: The blocked connection timeout.
-        imagedir: s3 or local file location for storing source images.
+    RequestClient is a class that handles the processing of requests and results through
+    a pipeline. It connects to request and result queues, processes incoming requests,
+    runs them through a pipeline, and publishes the results.
     """
 
     def __init__(
@@ -113,8 +105,27 @@ class RequestQueue:
         blocked_connection_timeout=600,
     ) -> None:
         """
-        Initialize the request queue.
+        Initializes the RequestClient.
+        Args:
+            pipeline (Pipeline): The pipeline instance to be used.
+            request_queue (str): The name of the request queue.
+            result_queue (str): The name of the result queue.
+            output_key (str): The key for the output.
+            output_type (OutputType): The type of the output.
+            imagedir (str): The directory for storing images.
+            host (str, optional): The host address for the connection. Defaults to "localhost".
+            port (int, optional): The port number for the connection. Defaults to 5672.
+            vhost (str, optional): The virtual host for the connection. Defaults to "/".
+            uid (str, optional): The user ID for the connection. Defaults to "".
+            pwd (str, optional): The password for the connection. Defaults to "".
+            metrics_url (str, optional): The URL for metrics. Defaults to "".
+            metrics_type (str, optional): The type of metrics. Defaults to "".
+            heartbeat (int, optional): The heartbeat interval in seconds. Defaults to 900.
+            blocked_connection_timeout (int, optional): The timeout for blocked connections in seconds. Defaults to 600.
+        Returns:
+            None
         """
+
         self._pipeline = pipeline
         self._host = host
         self._port = port
@@ -140,7 +151,18 @@ class RequestQueue:
         self._image_cache = ImageCache(imagedir)
         self._image_cache._init_cache()
 
-    def _run_request_queue(self):
+    def _run_request_queue(self) -> None:
+        """
+        Continuously runs the request queue, connecting to the request service and consuming messages.
+        This method establishes a connection to the request service and processes messages from the request queue.
+        It handles message acknowledgment on success and negative acknowledgment on failure, allowing for message
+        requeueing and eventual dropping if the requeue limit is reached. In case of connection errors, it attempts
+        to reconnect after a short delay.
+        Raises:
+            AMQPChannelError: If there is an error with the AMQP channel.
+            AMQPConnectionError: If there is an error with the AMQP connection.
+        """
+
         while True:
             try:
                 self._connect_to_request()
@@ -174,11 +196,11 @@ class RequestQueue:
                     self._input_channel.connection.close()
                 sleep(5)
 
-    def start_request_queue(self):
+    def start_request_queue(self) -> None:
         """Start the request queue."""
         Thread(target=self._run_request_queue).start()
 
-    def _connect_to_request(self):
+    def _connect_to_request(self) -> None:
         """
         Setup the connection, channel and queue to service incoming requests.
         """
@@ -212,7 +234,13 @@ class RequestQueue:
         )
         self._input_channel.basic_qos(prefetch_count=1)
 
-    def _get_connection_parameters(self):
+    def _get_connection_parameters(self) -> pika.ConnectionParameters:
+        """
+        Generates and returns the connection parameters for connecting to a RabbitMQ server.
+        If a user ID (`_uid`) is provided, it includes the credentials in the connection parameters.
+        Returns:
+            pika.ConnectionParameters: The connection parameters for the RabbitMQ server.
+        """
         if self._uid != "":
             credentials = pika.PlainCredentials(self._uid, self._pwd)
             return pika.ConnectionParameters(
@@ -230,7 +258,7 @@ class RequestQueue:
             blocked_connection_timeout=self._blocked_connection_timeout,
         )
 
-    def _connect_to_result(self):
+    def _connect_to_result(self) -> None:
         """
         Setup the connection, channel and queue to service outgoing results.
         """
@@ -246,11 +274,11 @@ class RequestQueue:
                 arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
             )
 
-    def start_result_queue(self):
+    def start_result_queue(self) -> None:
         """Start the result publishing thread."""
         Thread(target=self._run_result_queue).start()
 
-    def _run_result_queue(self):
+    def _run_result_queue(self) -> None:
         """
         Main loop to service the result queue. process_data_events is set to block for a maximum
         of 1 second before returning to ensure that heartbeats etc. are processed.
@@ -480,7 +508,14 @@ class RequestQueue:
 
     def _get_image(self, image_id: str, image_url: str) -> Tuple[PILImage, str]:
         """
-        Get the image for the request.
+        Retrieve an image either from the cache or by downloading it from a given URL.
+        Args:
+            image_id (str): The unique identifier for the image.
+            image_url (str): The URL from which to download the image if it is not cached.
+        Returns:
+            Tuple[PILImage, str]: A tuple containing the image object and the path to the cached image.
+        Raises:
+            ValueError: If the image cannot be downloaded from the provided URL.
         """
         # check cache for the iamge
         image_path = self._image_cache._get_cache_doc_path(image_id)
