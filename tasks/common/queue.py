@@ -1,36 +1,31 @@
-from concurrent.futures import thread
 from enum import Enum
 import json
 import logging
 import os
-from pathlib import Path
-import random
 from threading import Thread
 from time import sleep
 import requests
 import time
 
-from cv2 import log
-from numpy import empty
 import pika
 from pika.exceptions import AMQPConnectionError, AMQPChannelError
 
 from PIL.Image import Image as PILImage
 
+from tasks.common.image_cache import ImageCache
 from tasks.common.pipeline import (
     BaseModelOutput,
-    EmptyOutput,
     Output,
     Pipeline,
     PipelineInput,
 )
-from tasks.common.io import ImageFileInputIterator, download_file
+from tasks.common.io import ImageFileReader
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import BlockingConnection, spec
 from pydantic import BaseModel
 from typing import Optional, Tuple
 
-logger = logging.getLogger("process_queue")
+logger = logging.getLogger("request_queue")
 
 # default queue names
 
@@ -96,8 +91,7 @@ class RequestQueue:
         host: The host of the queue.
         heartbeat: The heartbeat interval.
         blocked_connection_timeout: The blocked connection timeout.
-        workdir: Intermediate output storage directory.
-        imagedir: Drectory for storing source images.
+        imagedir: s3 or local file location for storing source images.
     """
 
     def __init__(
@@ -107,8 +101,7 @@ class RequestQueue:
         result_queue: str,
         output_key: str,
         output_type: OutputType,
-        workdir: Path,
-        imagedir: Path,
+        imagedir: str,
         host="localhost",
         port=5672,
         vhost="/",
@@ -136,7 +129,6 @@ class RequestQueue:
         self._output_type = output_type
         self._heartbeat = heartbeat
         self._blocked_connection_timeout = blocked_connection_timeout
-        self._working_dir = workdir
         self._imagedir = imagedir
         self._result_connection: Optional[BlockingConnection] = None
 
@@ -144,6 +136,9 @@ class RequestQueue:
         self._pod_name = os.environ.get("POD_NAME", "")
         self._pod_namespace = os.environ.get("POD_NAMESPACE", "")
         self._pod_ip = os.environ.get("POD_IP", "")
+
+        self._image_cache = ImageCache(imagedir)
+        self._image_cache._init_cache()
 
     def _run_request_queue(self):
         while True:
@@ -173,7 +168,7 @@ class RequestQueue:
                                 )
 
             except (AMQPChannelError, AMQPConnectionError):
-                logger.warn("request connection closed, reconnecting")
+                logger.warning("request connection closed, reconnecting")
                 if self._input_channel and not self._input_channel.connection.is_closed:
                     logger.info("closing request connection")
                     self._input_channel.connection.close()
@@ -324,10 +319,8 @@ class RequestQueue:
             request = Request.model_validate(body_decoded)
 
             # create the input
-            image_path, image_it = self._get_image(
-                self._imagedir, request.image_id, request.image_url
-            )
-            input = self._create_pipeline_input(request, next(image_it)[1])
+            image, image_path = self._get_image(request.image_id, request.image_url)
+            input = self._create_pipeline_input(request, image)
 
             # add metric of job starting
             if self._metrics_url != "":
@@ -485,25 +478,21 @@ class RequestQueue:
             output_type=self._output_type,
         )
 
-    def _get_image(
-        self, imagedir: Path, image_id: str, image_url: str
-    ) -> Tuple[Path, ImageFileInputIterator]:
+    def _get_image(self, image_id: str, image_url: str) -> Tuple[PILImage, str]:
         """
         Get the image for the request.
         """
-        # check working dir for the image
-        filename = imagedir / f"{image_id}.tif"
-
-        if not os.path.exists(filename):
-            logger.info(f"image not found - downloading to {filename}")
-
-            # download image
-            image_data = download_file(image_url)
-
-            # write it to working dir, creating the directory if necessary
-            filename.parent.mkdir(parents=True, exist_ok=True)
-            with open(filename, "wb") as file:
-                file.write(image_data)
-
-        # load images from file
-        return filename, ImageFileInputIterator(str(filename))
+        # check cache for the iamge
+        image_path = self._image_cache._get_cache_doc_path(image_id)
+        image = self._image_cache.fetch_cached_result(f"{image_id}.tif")
+        if not image:
+            # not cached - download from s3 and cache - we assume no credentials are needed
+            # on the download url
+            logger.info(f"cache miss - downloading image from {image_url}")
+            image_file_reader = ImageFileReader()
+            image = image_file_reader.process(image_url, anonymous=True)
+            if not image:
+                logger.error(f"failed to download image from {image_url}")
+                raise ValueError("Failed to download image")
+            self._image_cache.write_result_to_cache(image, f"{image_id}.tif")
+        return (image, image_path)

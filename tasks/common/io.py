@@ -6,13 +6,15 @@ import json
 from urllib.parse import urlparse
 from enum import Enum
 from pathlib import Path
+import boto3
+from botocore.config import Config
+from botocore import UNSIGNED
 import httpx
 from pydantic import BaseModel
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 from PIL.Image import Image as PILImage
 from PIL import Image
 from tasks.common.image_io import normalize_image_format
-import boto3
 
 # https://stackoverflow.com/questions/51152059/pillow-in-python-wont-let-me-open-image-exceeds-limit
 Image.MAX_IMAGE_PIXELS = 400000000  # to allow PIL to load large images
@@ -207,8 +209,9 @@ class BytesIOFileWriter:
         on the output location format"""
 
         # check to see if path is an s3 uri - otherwise treat it as a file path
-        if S3_URI_MATCHER.match(output_location):
-            self._write_to_s3(data, output_location)
+        mode = get_file_source(output_location)
+        if mode == Mode.S3_URI or mode == Mode.URL:
+            self._write_to_s3(data, output_location, mode)
         else:
             self._write_to_file(data, Path(output_location))
 
@@ -229,15 +232,20 @@ class BytesIOFileWriter:
             outfile.write(data.getvalue())
 
     @staticmethod
-    def _write_to_s3(data: io.BytesIO, output_uri: str) -> None:
+    def _write_to_s3(data: io.BytesIO, output_uri: str, mode: Mode) -> None:
         """Writes bytes to an s3 bucket"""
-
-        # create s3 client
-        client = boto3.client("s3")  # type: ignore
+        if mode == Mode.S3_URI:
+            # create s3 client
+            client = boto3.client("s3")
+        elif mode == Mode.URL:
+            parsed_url = urlparse(output_uri)
+            client = boto3.client(
+                "s3", endpoint_url=f"{parsed_url.scheme}://{parsed_url.netloc}"
+            )
 
         # extract bucket from s3 uri
-        bucket = output_uri.split("/")[2]
-        key = "/".join(output_uri.split("/")[3:])
+        # extract bucket from s3 uri
+        bucket, key = parse_s3_reference(output_uri, mode)
 
         # write data to the bucket
         client.put_object(Body=data.getvalue(), Bucket=bucket, Key=key)
@@ -251,18 +259,80 @@ class ImageFileWriter(BytesIOFileWriter):
         on the output location format"""
 
         buf = io.BytesIO()
-        image.save(buf, format="PNG")
+        # get the image format from the output location
+        image.save(buf, format="tiff")
 
         # check to see if path is an s3 uri - otherwise treat it as a file path
-        if S3_URI_MATCHER.match(output_location):
-            self._write_to_s3(buf, output_location)
+        mode = get_file_source(output_location)
+        if mode == Mode.S3_URI or mode == Mode.URL:
+            self._write_to_s3(buf, output_location, mode)
         else:
             self._write_to_file(buf, Path(output_location))
 
 
-def download_file(image_url: str) -> bytes:
-    r = httpx.get(image_url, timeout=1000)
-    return r.content
+class ImageFileReader:
+    """Reads an image file from the local filesystem or s3 and returns a PIL image object"""
+
+    def process(self, input_location: str, anonymous=False) -> Optional[PILImage]:
+        """Reads an image file and returns a PIL image object"""
+
+        # check to see if path is an s3 uri - otherwise treat it as a file path
+        source = get_file_source(input_location)
+        if source == Mode.S3_URI or source == Mode.URL:
+            return self._read_from_s3(input_location, source, anonymous)
+        else:
+            return self._read_from_file(Path(input_location))
+
+    # Read image from local file system
+    @staticmethod
+    def _read_from_file(input_location: Path) -> Optional[PILImage]:
+        """Reads an image file and returns a PIL image object"""
+
+        # get the directory of the file
+        if input_location.is_dir():
+            raise ValueError(f"Input location {input_location} is not a file.")
+
+        # check if the file exists
+        if not input_location.exists():
+            return None
+
+        # read the image from the input file
+        return Image.open(input_location)
+
+    # Read image from s3
+    @staticmethod
+    def _read_from_s3(
+        input_uri: str, mode: Mode, anonymous: bool
+    ) -> Optional[PILImage]:
+        """Reads an image file from an s3 bucket and returns a PIL image object"""
+
+        # create an s3 client based on the mode
+        config = Config(signature_version=UNSIGNED) if anonymous else None
+        parsed_url = urlparse(input_uri) if mode == Mode.URL else None
+        endpoint_url = (
+            f"{parsed_url.scheme}://{parsed_url.netloc}" if parsed_url else None
+        )
+
+        client = boto3.client("s3", config=config, endpoint_url=endpoint_url)
+
+        # extract bucket from s3 uri
+        bucket, key = parse_s3_reference(input_uri, mode)
+
+        # check if image exists in the bucket
+        try:
+            client.head_object(Bucket=bucket, Key=key)
+        except client.exceptions.ClientError as e:
+            error_code = int(e.response["Error"]["Code"])
+            if error_code == 404:
+                return None
+
+        # read image from the bucket
+        response = client.get_object(Bucket=bucket, Key=key)
+        if response["ResponseMetadata"]["HTTPStatusCode"] != 200:
+            raise Exception(f"Failed to read from s3 bucket {bucket} with key {key}.")
+
+        img_bytes_io = io.BytesIO(response["Body"].read())
+        return Image.open(img_bytes_io)
 
 
 class JSONFileReader:
@@ -296,17 +366,11 @@ class JSONFileReader:
         """Reads a JSON file from an s3 bucket and returns a list of BaseModel objects"""
 
         # create an s3 client based on the mode
-        if mode == Mode.S3_URI:
-            client = boto3.client("s3")
-        elif mode == Mode.URL:
-            parsed_url = urlparse(input_uri)
-            client = boto3.client(
-                "s3", endpoint_url=f"{parsed_url.scheme}://{parsed_url.netloc}"
-            )
-        else:
-            raise ValueError(
-                f"Invalid URI mode for S3 client instantiation: {input_uri}"
-            )
+        parsed_url = urlparse(input_uri) if mode == Mode.URL else None
+        endpoint_url = (
+            f"{parsed_url.scheme}://{parsed_url.netloc}" if parsed_url else None
+        )
+        client = boto3.client("s3", endpoint_url=endpoint_url)
 
         # extract bucket from s3 uri
         bucket, key = parse_s3_reference(input_uri, mode)
