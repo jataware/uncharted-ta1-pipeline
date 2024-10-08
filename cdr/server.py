@@ -10,7 +10,7 @@ from flask import Flask, request, Response
 
 from cdr.chaining_result_subscriber import ChainingResultSubscriber
 from cdr.request_publisher import LaraRequestPublisher
-from tasks.common.queue import (
+from tasks.common.request_client import (
     GEO_REFERENCE_REQUEST_QUEUE,
     METADATA_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,

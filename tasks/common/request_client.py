@@ -44,6 +44,8 @@ POINTS_RESULT_QUEUE = "points_result"
 TEXT_REQUEST_QUEUE = "text_request"
 TEXT_RESULT_QUEUE = "text_result"
 
+WRITE_REQUEST_QUEUE = "write_request"
+
 REQUEUE_LIMIT = 3
 
 

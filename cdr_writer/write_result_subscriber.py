@@ -14,7 +14,7 @@ from schema.cdr_schemas.georeference import GeoreferenceResults
 from schema.cdr_schemas.metadata import CogMetaData
 from schema.mappers.cdr import GeoreferenceMapper, get_mapper
 from tasks.common.io import BytesIOFileWriter, ImageFileReader, JSONFileWriter
-from tasks.common.queue import OutputType, RequestResult
+from tasks.common.request_client import OutputType, RequestResult
 from tasks.common.result_subscriber import LaraResultSubscriber
 from tasks.geo_referencing.entities import (
     GeoreferenceResult as LARAGeoreferenceResult,

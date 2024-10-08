@@ -21,7 +21,7 @@ from tasks.common.pipeline import (
     OutputCreator,
     PipelineInput,
 )
-from tasks.common.queue import (
+from tasks.common.request_client import (
     GEO_REFERENCE_REQUEST_QUEUE,
     GEO_REFERENCE_RESULT_QUEUE,
     RequestClient,
@@ -223,7 +223,7 @@ def start_server():
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestClient(
+        client = RequestClient(
             georef_pipeline,
             p.request_queue,
             p.result_queue,
@@ -238,8 +238,8 @@ def start_server():
             metrics_url=p.metrics_url,
             metrics_type="georef",
         )
-        queue.start_request_queue()
-        queue.start_result_queue()
+        client.start_request_queue()
+        client.start_result_queue()
 
 
 if __name__ == "__main__":

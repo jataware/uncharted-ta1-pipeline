@@ -8,7 +8,7 @@ from pika import BlockingConnection, ConnectionParameters, PlainCredentials
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
 import pika.spec as spec
 from tasks.common.image_cache import ImageCache
-from tasks.common.queue import (
+from tasks.common.request_client import (
     REQUEUE_LIMIT,
     Request,
 )

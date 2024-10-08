@@ -2,17 +2,13 @@ import argparse
 import logging
 import os
 from cdr_writer.write_result_subscriber import WriteResultSubscriber
+from tasks.common.request_client import WRITE_REQUEST_QUEUE
 from util.logging import config_logger
 
 logger = logging.getLogger("cdr")
 
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 CDR_HOST = "https://api.cdr.land"
-CDR_CALLBACK_SECRET = "maps rock"
-APP_PORT = 5001
-CDR_EVENT_LOG = "events.log"
-
-LARA_RESULT_QUEUE_NAME = "lara_result_queue"
 
 REQUEUE_LIMIT = 3
 INACTIVITY_TIMEOUT = 5
@@ -31,11 +27,12 @@ def main():
     parser.add_argument("--output", type=str, default=None)
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--rabbit_port", type=int, default=5672)
+    parser.add_argument("--cdr_host", type=str, default=CDR_HOST)
     p = parser.parse_args()
 
     result_subscriber = WriteResultSubscriber(
-        LARA_RESULT_QUEUE_NAME,
-        CDR_HOST,
+        WRITE_REQUEST_QUEUE,
+        p.cdr_host,
         CDR_API_TOKEN,
         p.output,
         p.workdir,

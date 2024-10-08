@@ -5,13 +5,14 @@ import pika.spec as spec
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 
 from cdr.request_publisher import LaraRequestPublisher
-from tasks.common.queue import OutputType, RequestResult
+from tasks.common.request_client import OutputType, RequestResult
 from tasks.common.result_subscriber import LaraResultSubscriber
-from tasks.common.queue import (
+from tasks.common.request_client import (
     GEO_REFERENCE_REQUEST_QUEUE,
     METADATA_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,
     SEGMENTATION_REQUEST_QUEUE,
+    WRITE_REQUEST_QUEUE,
 )
 
 logger = logging.getLogger("chaining_result_subscriber")
@@ -135,6 +136,10 @@ class ChainingResultSubscriber(LaraResultSubscriber):
             logger.info(f"sending next request in sequence: {request.task}")
             self._request_publisher.publish_lara_request(
                 request, self.PIPELINE_QUEUES[next_pipeline]
+            )
+            logger.info(f"sending write request: {request.task}")
+            self._request_publisher.publish_lara_request(
+                result.request, WRITE_REQUEST_QUEUE
             )
 
         except Exception as e:
