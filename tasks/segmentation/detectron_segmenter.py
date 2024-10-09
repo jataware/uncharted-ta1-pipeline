@@ -160,19 +160,21 @@ class DetectronSegmenter(Task):
         predictions = self.predictor(np.array(input.image))["instances"]
         predictions = predictions.to("cpu")
 
-        if not predictions:
-            logger.warning("No segmentation predictions for this image!")
-            return self._create_result(input)
-
         if (
-            not predictions.has("scores")
+            not predictions
+            or not predictions.has("scores")
             or not predictions.has("pred_classes")
             or not predictions.has("pred_masks")
         ):
             logger.warning(
-                "Segmentation predictions are missing data or format is unexpected! Returning empty results"
+                "No valid segmentation predictions for this image!  Returning empty results"
             )
-            return self._create_result(input)
+            map_segmentation = MapSegmentation(doc_id=input.raster_id, segments=[])
+            # write empty results to cache
+            self.write_result_to_cache(map_segmentation, doc_key)
+            result = self._create_result(input)
+            result.add_output(SEGMENTATION_OUTPUT_KEY, map_segmentation.model_dump())
+            return result
 
         # convert prediction masks to polygons and prepare results
         scores = predictions.scores.tolist()
