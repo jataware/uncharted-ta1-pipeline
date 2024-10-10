@@ -114,6 +114,10 @@ class ChainingResultSubscriber(LaraResultSubscriber):
                 f"processing result for request {result.id} of type {result.output_type}"
             )
 
+            # send the write request to the CDR
+            logger.info(f"sending write request: {result.task}")
+            self._request_publisher.publish_lara_request(result, WRITE_REQUEST_QUEUE)
+
             # When a publisher has been supplied we run the next pipeline in the
             # sequence
             output_pipeline = self.PIPELINE_OUTPUTS[result.output_type]
@@ -137,8 +141,6 @@ class ChainingResultSubscriber(LaraResultSubscriber):
             self._request_publisher.publish_lara_request(
                 request, self.PIPELINE_QUEUES[next_pipeline]
             )
-            logger.info(f"sending write request: {request.task}")
-            self._request_publisher.publish_lara_request(result, WRITE_REQUEST_QUEUE)
 
         except Exception as e:
             logger.exception(f"Error processing lara result: {e}")
