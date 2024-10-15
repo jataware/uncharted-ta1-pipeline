@@ -27,6 +27,9 @@ def main():
     parser.add_argument("--output", type=str, default=None)
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--rabbit_port", type=int, default=5672)
+    parser.add_argument("--rabbit_vhost", type=str, default="/")
+    parser.add_argument("--rabbit_uid", type=str, default="")
+    parser.add_argument("--rabbit_pwd", type=str, default="")
     parser.add_argument("--cdr_host", type=str, default=CDR_HOST)
     p = parser.parse_args()
 
@@ -39,6 +42,9 @@ def main():
         p.imagedir,
         host=p.host,
         port=p.rabbit_port,
+        vhost=p.rabbit_vhost,
+        uid=p.rabbit_uid,
+        pwd=p.rabbit_pwd,
     )
     result_subscriber.start_lara_result_queue()
 
