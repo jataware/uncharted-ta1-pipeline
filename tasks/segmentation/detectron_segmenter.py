@@ -160,19 +160,21 @@ class DetectronSegmenter(Task):
         predictions = self.predictor(np.array(input.image))["instances"]
         predictions = predictions.to("cpu")
 
-        if not predictions:
-            logger.warning("No segmentation predictions for this image!")
-            return self._create_result(input)
-
         if (
-            not predictions.has("scores")
+            not predictions
+            or not predictions.has("scores")
             or not predictions.has("pred_classes")
             or not predictions.has("pred_masks")
         ):
             logger.warning(
-                "Segmentation predictions are missing data or format is unexpected! Returning empty results"
+                "No valid segmentation predictions for this image!  Returning empty results"
             )
-            return self._create_result(input)
+            map_segmentation = MapSegmentation(doc_id=input.raster_id, segments=[])
+            # write empty results to cache
+            self.write_result_to_cache(map_segmentation, doc_key)
+            result = self._create_result(input)
+            result.add_output(SEGMENTATION_OUTPUT_KEY, map_segmentation.model_dump())
+            return result
 
         # convert prediction masks to polygons and prepare results
         scores = predictions.scores.tolist()
@@ -182,23 +184,34 @@ class DetectronSegmenter(Task):
 
         # TODO -- could simplify the polygon segmentation result, if desired (fewer keypoints, etc.)
         # https://shapely.readthedocs.io/en/stable/reference/shapely.Polygon.html#shapely.Polygon.simplify
-
         seg_results: List[SegmentationResult] = []
         for i, mask in enumerate(masks):
-            contours, _ = self._mask_to_contours(mask)
+            contours, hierarchies = self._mask_to_contours(mask)
+            # hierarchy is opencv contours format,
+            # for each contour the hierarchy info is: [Next, Previous, First_Child, Parent]
+            # (with -1 == null entry)
+            # more info here: https://docs.opencv.org/4.x/d9/d8b/tutorial_py_contours_hierarchy.html
+            for contour, hierarchy in zip(contours, hierarchies):
+                if contour.size < 6:
+                    # contour too small (ie just a line segment?); discard
+                    continue
+                # check if this contour is a "child" of another
+                # (ie representing a hole in the segmentation mask)
+                is_child = hierarchy[3] > -1
+                if is_child:
+                    # skip child contours
+                    continue
+                poly = contour.reshape(-1, 2)
+                seg_result = SegmentationResult(
+                    poly_bounds=poly.tolist(),
+                    bbox=list(cv2.boundingRect(contour)),
+                    area=cv2.contourArea(contour),
+                    confidence=scores[i],
+                    class_label=self.class_labels[classes[i]],
+                    id_model=self._model_id,
+                )
+                seg_results.append(seg_result)
 
-            for contour in contours:
-                if contour.size >= 6:
-                    poly = contour.reshape(-1, 2)
-                    seg_result = SegmentationResult(
-                        poly_bounds=poly.tolist(),
-                        bbox=list(cv2.boundingRect(contour)),
-                        area=cv2.contourArea(contour),
-                        confidence=scores[i],
-                        class_label=self.class_labels[classes[i]],
-                        id_model=self._model_id,
-                    )
-                    seg_results.append(seg_result)
         map_segmentation = MapSegmentation(doc_id=input.raster_id, segments=seg_results)
 
         # rank the segments per class (most impt first)
@@ -211,17 +224,14 @@ class DetectronSegmenter(Task):
         result.add_output(SEGMENTATION_OUTPUT_KEY, map_segmentation.model_dump())
         return result
 
-    def run_inference_batch(self):
-        """
-        Run legend and map segmentation inference on a batch of images
-        """
-        # TODO add batch processing support (see comment above)
-        raise NotImplementedError
-
-    def _mask_to_contours(self, mask: np.ndarray) -> Tuple[Sequence[MatLike], bool]:
+    def _mask_to_contours(
+        self, mask: np.ndarray
+    ) -> Tuple[Sequence[MatLike], Sequence[MatLike]]:
         """
         Converts segmentation mask to polygon contours
-        Adapted from Detectron2 GenericMask code
+        Adapted from Detectron2 GenericMask 'mask_to_polygons' code
+
+        Returns a tuple of (contours, contour hierarchy info)
         """
 
         mask = np.ascontiguousarray(
@@ -232,10 +242,11 @@ class DetectronSegmenter(Task):
         )
         hierarchy = res[-1]
         if hierarchy is None:  # empty mask
-            return [], False
-        reshaped: np.ndarray = hierarchy.reshape(-1, 4)
-        has_holes = (reshaped[:, 3] >= 0).sum() > 0
-        return (res[-2], has_holes)
+            return [], []
+        # convert hierarchy info to a list of 1d arrays
+        hierarchy = list(hierarchy.reshape(-1, 4))
+        contours = res[-2]
+        return (contours, hierarchy)
 
     def _get_model_id(self) -> str:
         """
