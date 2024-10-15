@@ -1,210 +1,60 @@
-from functools import cache
-from io import BufferedReader, BytesIO
 import json
 import logging
 import os
-import threading
-from time import sleep
+from io import BytesIO
 from typing import List, Optional
-from cv2 import log
+
 import httpx
-from pika.adapters.blocking_connection import BlockingChannel as Channel
-from pika import BlockingConnection, ConnectionParameters, PlainCredentials
-from pika.exceptions import AMQPChannelError, AMQPConnectionError
 import pika.spec as spec
 from pydantic import BaseModel
-from regex import P
-from cdr.request_publisher import LaraRequestPublisher
+from pika.adapters.blocking_connection import BlockingChannel as Channel
+
 from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.georeference import GeoreferenceResults
 from schema.cdr_schemas.metadata import CogMetaData
-from tasks.common.image_cache import ImageCache
-from tasks.common.io import BytesIOFileWriter, ImageFileReader, JSONFileWriter
-from tasks.common.queue import (
-    GEO_REFERENCE_REQUEST_QUEUE,
-    METADATA_REQUEST_QUEUE,
-    POINTS_REQUEST_QUEUE,
-    REQUEUE_LIMIT,
-    SEGMENTATION_REQUEST_QUEUE,
-    OutputType,
-    Request,
-    RequestResult,
-)
 from schema.mappers.cdr import GeoreferenceMapper, get_mapper
+from tasks.common.io import BytesIOFileWriter, ImageFileReader, JSONFileWriter
+from tasks.common.request_client import OutputType, RequestResult
+from tasks.common.result_subscriber import LaraResultSubscriber
 from tasks.geo_referencing.entities import (
     GeoreferenceResult as LARAGeoreferenceResult,
     GroundControlPoint as LARAGroundControlPoint,
 )
-from tasks.geo_referencing.util import cps_to_transform, project_image
 from tasks.metadata_extraction.entities import MetadataExtraction as LARAMetadata
 from tasks.point_extraction.entities import PointLabels as LARAPoints
 from tasks.segmentation.entities import MapSegmentation as LARASegmentation
-import datetime
+from tasks.geo_referencing.util import cps_to_transform, project_image
 
-logger = logging.getLogger("result_subscriber")
+logger = logging.getLogger("write_result_subscriber")
 
 
-class LaraResultSubscriber:
-
-    REQUEUE_LIMIT = 3
-    INACTIVITY_TIMEOUT = 5
-    HEARTBEAT_INTERVAL = 900
-    BLOCKED_CONNECTION_TIMEOUT = 600
-
-    # pipeline name definitions
-    SEGMENTATION_PIPELINE = "segmentation"
-    METADATA_PIPELINE = "metadata"
-    POINTS_PIPELINE = "points"
-    GEOREFERENCE_PIPELINE = "georeference"
-    NULL_PIPELINE = "null"
-
-    # pipeline related rabbitmq queue names
-    PIPELINE_QUEUES = {
-        SEGMENTATION_PIPELINE: SEGMENTATION_REQUEST_QUEUE,
-        METADATA_PIPELINE: METADATA_REQUEST_QUEUE,
-        POINTS_PIPELINE: POINTS_REQUEST_QUEUE,
-        GEOREFERENCE_PIPELINE: GEO_REFERENCE_REQUEST_QUEUE,
-    }
-
-    # map of pipeline output types to pipeline names
-    PIPELINE_OUTPUTS = {
-        OutputType.SEGMENTATION: SEGMENTATION_PIPELINE,
-        OutputType.METADATA: METADATA_PIPELINE,
-        OutputType.POINTS: POINTS_PIPELINE,
-        OutputType.GEOREFERENCING: GEOREFERENCE_PIPELINE,
-    }
-
-    # sequence of pipelines execution
-    DEFAULT_PIPELINE_SEQUENCE = [
-        SEGMENTATION_PIPELINE,
-        METADATA_PIPELINE,
-        POINTS_PIPELINE,
-        GEOREFERENCE_PIPELINE,
-    ]
-
-    # map of pipeline name to system name
-    PIPELINE_SYSTEM_NAMES = {
-        SEGMENTATION_PIPELINE: "uncharted-area",
-        METADATA_PIPELINE: "uncharted-metadata",
-        POINTS_PIPELINE: "uncharted-points",
-        GEOREFERENCE_PIPELINE: "uncharted-georeference",
-    }
-
-    # map of pipeline name to system version
-    PIPELINE_SYSTEM_VERSIONS = {
-        SEGMENTATION_PIPELINE: "0.0.5",
-        METADATA_PIPELINE: "0.0.5",
-        POINTS_PIPELINE: "0.0.5",
-        GEOREFERENCE_PIPELINE: "0.0.6",
-    }
-
+class WriteResultSubscriber(LaraResultSubscriber):
     def __init__(
         self,
-        request_publisher: LaraRequestPublisher,
-        result_queue: str,
-        cdr_host: str,
-        cdr_token: str,
-        output: str,
-        workdir: str,
-        imagedir: str,
+        result_queue,
+        cdr_host,
+        cdr_token,
+        output,
+        workdir,
+        imagedir,
         host="localhost",
         port=5672,
         vhost="/",
         uid="",
         pwd="",
-        pipeline_sequence: List[str] = DEFAULT_PIPELINE_SEQUENCE,
-    ) -> None:
-        self._request_publisher = request_publisher
-        self._result_connection: Optional[BlockingConnection] = None
-        self._result_channel: Optional[Channel] = None
-        self._result_queue = result_queue
-        self._cdr_host = cdr_host
-        self._cdr_token = cdr_token
-        self._workdir = workdir
-        self._imagedir = imagedir
-        self._output = output
-        self._host = host
-        self._port = port
-        self._vhost = vhost
-        self._uid = uid
-        self._pwd = pwd
-        self._pipeline_sequence = (
-            pipeline_sequence
-            if len(pipeline_sequence) > 0
-            else self.DEFAULT_PIPELINE_SEQUENCE
-        )
-        self._image_cache = ImageCache(imagedir)
-        self._image_cache._init_cache()
-
-    def start_lara_result_queue(self):
-        threading.Thread(
-            target=self._run_lara_result_queue,
-            args=(self._result_queue, self._host),
-        ).start()
-
-    def _create_channel(self, host: str, queue: str) -> Channel:
-        """
-        Creates a blocking connection and channel on the given host and declares the given queue.
-
-        Args:
-            host: The host to connect to.
-            queue: The queue to declare.
-
-        Returns:
-            The created channel.
-        """
-        logger.info(f"creating channel on host {host}")
-        if self._uid != "":
-            credentials = PlainCredentials(self._uid, self._pwd)
-            connection = BlockingConnection(
-                ConnectionParameters(
-                    self._host,
-                    self._port,
-                    self._vhost,
-                    credentials,
-                    heartbeat=self.HEARTBEAT_INTERVAL,
-                    blocked_connection_timeout=self.BLOCKED_CONNECTION_TIMEOUT,
-                )
-            )
-        else:
-            connection = BlockingConnection(
-                ConnectionParameters(
-                    self._host,
-                    heartbeat=self.HEARTBEAT_INTERVAL,
-                    blocked_connection_timeout=self.BLOCKED_CONNECTION_TIMEOUT,
-                )
-            )
-        channel = connection.channel()
-        channel.queue_declare(
-            queue=queue,
-            durable=True,
-            arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
-        )
-        return channel
-
-    @staticmethod
-    def next_request(next_pipeline: str, image_id: str, image_url: str) -> Request:
-        """
-        Creates a new Request object for the next pipeline.
-
-        Args:
-            next_pipeline (str): The name of the next pipeline.
-            image_id (str): The ID of the image.
-            image_url (str): The URL of the image.
-
-        Returns:
-            Request: A new Request object with the specified parameters.
-        """
-        # Get the current UTC time
-        current_time = datetime.datetime.now(datetime.timezone.utc)
-        timestamp = int(current_time.timestamp())
-
-        return Request(
-            id=f"{next_pipeline}-{timestamp}-pipeline",
-            task=f"{next_pipeline}",
-            output_format="cdr",
-            image_id=image_id,
-            image_url=image_url,
+    ):
+        super().__init__(
+            result_queue,
+            cdr_host,
+            cdr_token,
+            output,
+            workdir,
+            imagedir,
+            host=host,
+            port=port,
+            vhost=vhost,
+            uid=uid,
+            pwd=pwd,
         )
 
     def _process_lara_result(
@@ -215,8 +65,7 @@ class LaraResultSubscriber:
         body: bytes,
     ):
         """
-        Process the received LARA result.  In a serial execution model this will also
-        trigger the next pipeline in the sequence.
+        Process the received LARA result by mapping it to the CDR schema and uploading it.
 
         Args:
             channel (Channel): The channel object.
@@ -236,7 +85,7 @@ class LaraResultSubscriber:
             body_decoded = json.loads(body.decode())
             result = RequestResult.model_validate(body_decoded)
             logger.info(
-                f"processing result for request {result.request.id} of type {result.output_type}"
+                f"processing result for request {result.id} of type {result.output_type}"
             )
 
             match result.output_type:
@@ -255,75 +104,10 @@ class LaraResultSubscriber:
                 case _:
                     logger.info("unsupported output type received from queue")
 
-            # in the serial case we call the next pipeline in the sequence
-            if self._request_publisher:
-                # find the next pipeline
-                output_pipeline = self.PIPELINE_OUTPUTS[result.output_type]
-                next = self._pipeline_sequence.index(output_pipeline) + 1
-                next_pipeline = (
-                    self._pipeline_sequence[next]
-                    if next < len(self._pipeline_sequence)
-                    else self.NULL_PIPELINE
-                )
-
-                # if there is no next pipeline in the sequence then we are done
-                if next_pipeline == self.NULL_PIPELINE:
-                    return
-
-                request = self.next_request(
-                    next_pipeline,
-                    result.request.image_id,
-                    result.request.image_url,
-                )
-                logger.info(f"sending next request in sequence: {request.task}")
-                self._request_publisher.publish_lara_request(
-                    request, self.PIPELINE_QUEUES[next_pipeline]
-                )
-
         except Exception as e:
             logger.exception(f"Error processing lara result: {e}")
 
         logger.info("result processing finished")
-
-    def _run_lara_result_queue(self, result_queue: str, host="localhost"):
-        """
-        Main loop to service the result queue. process_data_events is set to block for a maximum
-        of 1 second before returning to ensure that heartbeats etc. are processed.
-        """
-        while True:
-            result_channel: Optional[Channel] = None
-            try:
-                logger.info(
-                    f"starting the listener on the result queue ({host}:{result_queue})"
-                )
-                # setup the result queue
-                result_channel = self._create_channel(host, result_queue)
-                result_channel.basic_qos(prefetch_count=1)
-
-                # start consuming the results - will timeout after 5 seconds of inactivity
-                # allowing things like heartbeats to be processed
-                while True:
-                    for method_frame, properties, body in result_channel.consume(
-                        result_queue, inactivity_timeout=self.INACTIVITY_TIMEOUT
-                    ):
-                        if method_frame:
-                            try:
-                                self._process_lara_result(
-                                    result_channel, method_frame, properties, body
-                                )
-                                result_channel.basic_ack(method_frame.delivery_tag)
-                            except Exception as e:
-                                logger.exception(e)
-                                result_channel.basic_nack(method_frame.delivery_tag)
-
-            except (AMQPConnectionError, AMQPChannelError):
-                logger.warning(f"result channel closed, reconnecting")
-                # channel is closed - make sure the connection is closed to facilitate a
-                # clean reconnect
-                if result_channel and not result_channel.connection.is_closed:
-                    logger.info("closing result connection")
-                    result_channel.connection.close()
-                sleep(5)
 
     def _write_cdr_result(
         self,
@@ -367,7 +151,7 @@ class LaraResultSubscriber:
         # don't write when the result is empty
         if len(georef_result_raw) == 0:
             logger.info(
-                f"empty georef result received for {result.request.image_id} - skipping send"
+                f"empty georef result received for {result.image_id} - skipping send"
             )
             return
 
@@ -411,7 +195,7 @@ class LaraResultSubscriber:
                 f"projecting image {result.image_path} to {output_file_name_full}. CRS: {lara_result.crs} -> {GeoreferenceMapper.DEFAULT_OUTPUT_CRS}"
             )
             image_bytes = self._project_georeference(
-                result.request.image_id,
+                result.image_id,
                 result.image_path,
                 lara_result.crs,
                 GeoreferenceMapper.DEFAULT_OUTPUT_CRS,
@@ -426,7 +210,7 @@ class LaraResultSubscriber:
 
             # create an empty result to send to cdr
             cdr_result = GeoreferenceResults(
-                cog_id=result.request.image_id,
+                cog_id=result.image_id,
                 georeference_results=[],
                 gcps=[],
                 system=self.PIPELINE_SYSTEM_NAMES[self.GEOREFERENCE_PIPELINE],
@@ -440,12 +224,12 @@ class LaraResultSubscriber:
             # write the result to disk if output is set
             if self._output:
                 self._write_cdr_result(
-                    result.request.image_id, result.output_type, cdr_result, image_bytes
+                    result.image_id, result.output_type, cdr_result, image_bytes
                 )
                 return
 
             # push the result to CDR
-            logger.info(f"pushing result for request {result.request.id} to CDR")
+            logger.info(f"pushing result for request {result.id} to CDR")
             headers = {"Authorization": f"Bearer {self._cdr_token}"}
             client = httpx.Client(follow_redirects=True)
             resp = client.post(
@@ -456,7 +240,7 @@ class LaraResultSubscriber:
                 timeout=None,
             )
             logger.info(
-                f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
+                f"result for request {result.id} sent to CDR with response {resp.status_code}: {resp.content}"
             )
         except Exception as e:
             logger.exception(
@@ -506,14 +290,10 @@ class LaraResultSubscriber:
         """
         try:
             if self._output:
-                self._write_cdr_result(
-                    result.request.image_id, result.output_type, model
-                )
+                self._write_cdr_result(result.image_id, result.output_type, model)
                 return
 
-            logger.info(
-                f"pushing features result for request {result.request.id} to CDR"
-            )
+            logger.info(f"pushing features result for request {result.id} to CDR")
             headers = {
                 "Authorization": f"Bearer {self._cdr_token}",
                 "Content-Type": "application/json",
@@ -526,7 +306,7 @@ class LaraResultSubscriber:
                 timeout=None,
             )
             logger.info(
-                f"result for request {result.request.id} sent to CDR with response {resp.status_code}: {resp.content}"
+                f"result for request {result.id} sent to CDR with response {resp.status_code}: {resp.content}"
             )
         except Exception as e:
             logger.exception(f"error when attempting to submit feature results: {e}")
@@ -540,7 +320,7 @@ class LaraResultSubscriber:
         # don't write when the result is empty
         if len(segmentation_raw_result) == 0:
             logger.info(
-                f"empty segmentation result received for {result.request.image_id} - skipping send"
+                f"empty segmentation result received for {result.image_id} - skipping send"
             )
             return
 
@@ -556,7 +336,7 @@ class LaraResultSubscriber:
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
             logger.exception(
-                f"mapping segmentation to CDR schema failed for {result.request.image_id}: {e}",
+                f"mapping segmentation to CDR schema failed for {result.image_id}: {e}",
             )
             return
 
@@ -569,7 +349,7 @@ class LaraResultSubscriber:
         # don't write when the result is empty
         if len(points_raw_result) == 0:
             logger.info(
-                f"empty point result received for {result.request.image_id} - skipping send"
+                f"empty point result received for {result.image_id} - skipping send"
             )
             return
 
@@ -585,7 +365,7 @@ class LaraResultSubscriber:
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
             logger.exception(
-                f"mapping points to CDR schema failed for {result.request.image_id}: {e}",
+                f"mapping points to CDR schema failed for {result.image_id}: {e}",
             )
             return
 
@@ -601,7 +381,7 @@ class LaraResultSubscriber:
         # don't write when the result is empty
         if len(metadata_result_raw) == 0:
             logger.info(
-                f"empty metadata result received for {result.request.image_id} - skipping send"
+                f"empty metadata result received for {result.image_id} - skipping send"
             )
             return
 
@@ -617,7 +397,7 @@ class LaraResultSubscriber:
             cdr_result = mapper.map_to_cdr(lara_result)  #   type: ignore
         except Exception as e:
             logger.exception(
-                f"mapping metadata to CDR schema failed for {result.request.image_id}: {e}",
+                f"mapping metadata to CDR schema failed for {result.image_id}: {e}",
             )
             return
 
@@ -625,7 +405,7 @@ class LaraResultSubscriber:
 
         # wrap metadata into feature result
         final_result = FeatureResults(
-            cog_id=result.request.image_id,
+            cog_id=result.image_id,
             cog_metadata_extractions=[cdr_result],
             system=cdr_result.system,
             system_version=cdr_result.system_version,

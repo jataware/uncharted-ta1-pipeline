@@ -3,7 +3,7 @@ import json
 import pprint
 import pika, sys, os
 import argparse
-from tasks.common.queue import RequestResult
+from tasks.common.request_client import RequestResult
 
 
 def main():

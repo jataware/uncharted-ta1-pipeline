@@ -8,11 +8,11 @@ from io import BytesIO
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
-from tasks.common.queue import (
+from tasks.common.request_client import (
     POINTS_REQUEST_QUEUE,
     POINTS_RESULT_QUEUE,
     OutputType,
-    RequestQueue,
+    RequestClient,
 )
 from util import logging as logging_util
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        client = RequestClient(
             point_extraction_pipeline,
             p.request_queue,
             p.result_queue,
@@ -140,5 +140,5 @@ if __name__ == "__main__":
             metrics_url=p.metrics_url,
             metrics_type="points",
         )
-        queue.start_request_queue()
-        queue.start_result_queue()
+        client.start_request_queue()
+        client.start_result_queue()

@@ -1,6 +1,5 @@
 import argparse
 import atexit
-from pathlib import Path
 import httpx
 import json
 import logging
@@ -9,9 +8,9 @@ import os
 
 from flask import Flask, request, Response
 
+from cdr.chaining_result_subscriber import ChainingResultSubscriber
 from cdr.request_publisher import LaraRequestPublisher
-from cdr.result_subscriber import LaraResultSubscriber
-from tasks.common.queue import (
+from tasks.common.request_client import (
     GEO_REFERENCE_REQUEST_QUEUE,
     METADATA_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,
@@ -32,9 +31,9 @@ app = Flask(__name__)
 
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 CDR_HOST = "https://api.cdr.land"
+COG_PATH = "https://s3.amazonaws.com/public.cdr.land/cogs"
 CDR_CALLBACK_SECRET = "maps rock"
 APP_PORT = 5001
-CDR_EVENT_LOG = "events.log"
 
 LARA_RESULT_QUEUE_NAME = "lara_result_queue"
 
@@ -47,6 +46,7 @@ BLOCKED_CONNECTION_TIMEOUT = 600
 class Settings:
     cdr_api_token: str
     cdr_host: str
+    cogdir: str
     workdir: str
     imagedir: str
     output: str
@@ -84,8 +84,8 @@ def process_cdr_event():
         return Response({"ok": "success"}, status=200, mimetype="application/json")
 
     first_task = settings.sequence[0]
-    first_queue = LaraResultSubscriber.PIPELINE_QUEUES[first_task]
-    first_request = LaraResultSubscriber.next_request(
+    first_queue = ChainingResultSubscriber.PIPELINE_QUEUES[first_task]
+    first_request = ChainingResultSubscriber.next_request(
         first_task, map_event.cog_id, map_event.cog_url
     )
     request_publisher.publish_lara_request(first_request, first_queue)
@@ -95,20 +95,22 @@ def process_cdr_event():
 
 def process_image(image_id: str, request_publisher: LaraRequestPublisher):
     logger.info(f"processing image with id {image_id}")
-    image_url = f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif"
+    image_url = f"{settings.cogdir}/{image_id}.cog.tif"
 
     # push the request onto the queue
     first_task = settings.sequence[0]
-    first_queue = LaraResultSubscriber.PIPELINE_QUEUES[first_task]
-    first_request = LaraResultSubscriber.next_request(first_task, image_id, image_url)
+    first_queue = ChainingResultSubscriber.PIPELINE_QUEUES[first_task]
+    first_request = ChainingResultSubscriber.next_request(
+        first_task, image_id, image_url
+    )
     request_publisher.publish_lara_request(first_request, first_queue)
 
 
 def register_cdr_system():
 
     for i, pipeline in enumerate(settings.sequence):
-        system_name = LaraResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]
-        system_version = LaraResultSubscriber.PIPELINE_SYSTEM_VERSIONS[pipeline]
+        system_name = ChainingResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]
+        system_version = ChainingResultSubscriber.PIPELINE_SYSTEM_VERSIONS[pipeline]
         logger.info(f"registering system {system_name} with cdr")
         headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
 
@@ -181,7 +183,10 @@ def cdr_startup(host: str):
     if len(registrations) > 0:
         for r in registrations:
             for pipeline in settings.sequence:
-                if r["name"] == LaraResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]:
+                if (
+                    r["name"]
+                    == ChainingResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]
+                ):
                     logger.info(f"unregistering system {r['name']} with cdr")
                     cdr_unregister(r["id"])
                     break
@@ -218,18 +223,22 @@ def main():
     parser.add_argument("--rabbit_vhost", type=str, default="/")
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
-    parser.add_argument("--cdr_event_log", type=str, default=CDR_EVENT_LOG)
     parser.add_argument("--input", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
+    parser.add_argument("--cdr_host", type=str, default=CDR_HOST)
+    parser.add_argument("--cogdir", type=str, default=COG_PATH)
     parser.add_argument(
-        "--sequence", nargs="*", default=LaraResultSubscriber.DEFAULT_PIPELINE_SEQUENCE
+        "--sequence",
+        nargs="*",
+        default=ChainingResultSubscriber.DEFAULT_PIPELINE_SEQUENCE,
     )
     p = parser.parse_args()
 
     global settings
     settings = Settings()
     settings.cdr_api_token = CDR_API_TOKEN
-    settings.cdr_host = CDR_HOST
+    settings.cdr_host = p.cdr_host
+    settings.cogdir = p.cogdir
     settings.workdir = p.workdir
     settings.imagedir = p.imagedir
     settings.output = p.output
@@ -265,7 +274,7 @@ def main():
     request_publisher.start_lara_request_queue()
 
     # start the listener for the results
-    result_subscriber = LaraResultSubscriber(
+    result_subscriber = ChainingResultSubscriber(
         request_publisher,
         LARA_RESULT_QUEUE_NAME,
         settings.cdr_host,

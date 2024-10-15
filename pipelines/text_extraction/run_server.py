@@ -7,10 +7,10 @@ from hashlib import sha1
 import io
 from PIL import Image
 
-from tasks.common.queue import (
+from tasks.common.request_client import (
     TEXT_REQUEST_QUEUE,
     TEXT_RESULT_QUEUE,
-    RequestQueue,
+    RequestClient,
     OutputType,
 )
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        client = RequestClient(
             pipeline,
             p.request_queue,
             p.result_queue,
@@ -130,5 +130,5 @@ if __name__ == "__main__":
             metrics_url=p.metrics_url,
             metrics_type="text",
         )
-        queue.start_request_queue()
-        queue.start_result_queue()
+        client.start_request_queue()
+        client.start_result_queue()
