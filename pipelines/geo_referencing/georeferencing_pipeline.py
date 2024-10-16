@@ -40,7 +40,8 @@ from tasks.geo_referencing.geocode import PointGeocoder, BoxGeocoder
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.inference import InferenceCoordinateExtractor
 from tasks.geo_referencing.roi_extractor import ROIExtractor
-from tasks.metadata_extraction.geocoder import Geocoder, NominatimGeocoder
+from tasks.metadata_extraction.geocoder import Geocoder
+from tasks.metadata_extraction.geocoding_service import NominatimGeocoder
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.scale import ScaleExtractor
 from tasks.metadata_extraction.text_filter import (
@@ -123,6 +124,7 @@ class GeoreferencingPipeline(Pipeline):
             # map
             TextFilter(
                 "metadata text filter",
+                FilterMode.EXCLUDE,
                 output_key="filtered_ocr_text",
                 classes=[
                     "cross_section",
