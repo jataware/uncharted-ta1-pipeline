@@ -123,8 +123,12 @@ class GeoFencer(Task):
         return self._get_country_geofence(input, geocoded)
 
     def _create_default_geofence(self, input: TaskInput) -> DocGeoFence:
-        lon_minmax = input.get_request_info("lon_minmax", [0, 180])
-        lat_minmax = input.get_request_info("lat_minmax", [0, 90])
+        """
+        Create geofence from the default ranges (as specified as pipeline input parameters),
+        or alternatively, set to the geofence to the whole world
+        """
+        lon_minmax = input.get_request_info("lon_minmax", [-180, 180])
+        lat_minmax = input.get_request_info("lat_minmax", [-90, 90])
         return DocGeoFence(
             map_id=input.raster_id,
             geofence=GeoFence(

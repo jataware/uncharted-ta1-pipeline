@@ -11,6 +11,7 @@ from PIL.Image import Image as PILImage
 from PIL import Image
 
 from pipelines.geo_referencing.georeferencing_pipeline import GeoreferencingPipeline
+from pipelines.geo_referencing.pipeline_input_utils import get_geofence_defaults
 from pipelines.geo_referencing.output import (
     GeoreferencingOutput,
     ProjectedMapOutput,
@@ -42,38 +43,12 @@ app = Flask(__name__)
 georef_pipeline: GeoreferencingPipeline
 
 
-def get_geofence(
-    lon_limits: Tuple[float, float] = (-66.0, -180.0),
-    lat_limits: Tuple[float, float] = (24.0, 73.0),
-    use_abs: bool = True,
-):
-    lon_minmax = lon_limits
-    lat_minmax = lat_limits
-    lon_sign_factor = 1.0
-
-    if (
-        use_abs
-    ):  # use abs of lat/lon geo-fence? (since parsed OCR values don't usually include sign)
-        if lon_minmax[0] < 0.0:
-            lon_sign_factor = (
-                -1.0
-            )  # to account for -ve longitude values being forced to abs
-            # (used when finalizing lat/lon results for query points)
-        lon_minmax = [abs(x) for x in lon_minmax]
-        lat_minmax = [abs(x) for x in lat_minmax]
-
-        lon_minmax = [min(lon_minmax), max(lon_minmax)]
-        lat_minmax = [min(lat_minmax), max(lat_minmax)]
-
-    return (lon_minmax, lat_minmax, lon_sign_factor)
-
-
 def create_input(raster_id: str, image: PILImage) -> PipelineInput:
     input = PipelineInput()
     input.image = image
     input.raster_id = raster_id
 
-    lon_minmax, lat_minmax, lon_sign_factor = get_geofence()
+    lon_minmax, lat_minmax, lon_sign_factor = get_geofence_defaults()
     input.params["lon_minmax"] = lon_minmax
     input.params["lat_minmax"] = lat_minmax
     input.params["lon_sign_factor"] = lon_sign_factor
