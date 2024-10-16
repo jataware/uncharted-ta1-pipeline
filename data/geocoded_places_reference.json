@@ -1,0 +1,26 @@
+{
+    "US": {
+        "display_name": "United States",
+        "featuretype": "country",
+        "country_code": "US",
+        "boundingbox": [17.5, 71.6, -180.0, -64.5]
+    },
+    "US-AK": {
+        "display_name": "Alaska, United States",
+        "featuretype": "state",
+        "country_code": "US",
+        "boundingbox": [51.0, 71.6, -180.0, -130.0]
+    },
+    "US-PR": {
+        "display_name": "Puerto Rico",
+        "featuretype": "state",
+        "country_code": "US",
+        "boundingbox": [17.7, 18.7, -68.1, -65.2]
+    },
+    "PR": {
+        "display_name": "Puerto Rico",
+        "featuretype": "country",
+        "country_code": "PR",
+        "boundingbox": [17.7, 18.7, -68.1, -65.2]
+    }
+}

@@ -67,6 +67,7 @@ class GeoreferencingPipeline(Pipeline):
         state_plane_zone_filename: str,
         state_code_filename: str,
         country_code_filename: str,
+        geocoded_places_filename: str,
         ocr_gamma_correction: float,
         model: LLM,
         projected: bool,
@@ -83,12 +84,20 @@ class GeoreferencingPipeline(Pipeline):
 
         # Nominatim geocoder service for bounds
         bounds_geocoder = NominatimGeocoder(
-            10, geocoding_cache_bounds, 1, country_code_filename=country_code_filename
+            10,
+            geocoding_cache_bounds,
+            1,
+            country_code_filename=country_code_filename,
+            geocoded_places_filename=geocoded_places_filename,
         )
 
         # Nominatim geocoder service for points
         points_geocoder = NominatimGeocoder(
-            10, geocoding_cache_points, 5, country_code_filename=country_code_filename
+            10,
+            geocoding_cache_points,
+            5,
+            country_code_filename=country_code_filename,
+            geocoded_places_filename=geocoded_places_filename,
         )
 
         segmentation_cache = append_to_cache_location(working_dir, "segmentation")

@@ -183,6 +183,11 @@ def start_server():
         default="./data/state_codes.csv",
     )
     parser.add_argument(
+        "--geocoded_places_filename",
+        type=str,
+        default="./data/geocoded_places_reference.json",
+    )
+    parser.add_argument(
         "--ocr_gamma_correction",
         type=float,
         default=0.5,
@@ -209,6 +214,7 @@ def start_server():
         p.state_plane_zone_filename,
         p.state_code_filename,
         p.country_code_filename,
+        p.geocoded_places_filename,
         p.ocr_gamma_correction,
         p.llm,
         p.project,

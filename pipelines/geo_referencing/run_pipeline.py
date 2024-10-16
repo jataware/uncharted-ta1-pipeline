@@ -70,6 +70,11 @@ def main():
         default="./data/country_codes.csv",
     )
     parser.add_argument(
+        "--geocoded_places_filename",
+        type=str,
+        default="./data/geocoded_places_reference.json",
+    )
+    parser.add_argument(
         "--ocr_gamma_correction",
         type=float,
         default=0.5,
@@ -110,6 +115,7 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
         parsed.state_plane_zone_filename,
         parsed.state_code_filename,
         parsed.country_code_filename,
+        parsed.geocoded_places_filename,
         parsed.ocr_gamma_correction,
         parsed.llm,
         parsed.project,
