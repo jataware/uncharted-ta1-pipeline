@@ -229,19 +229,6 @@ class PointGeocoder(Geocoder):
             if c.is_lat():
                 d = lat_pts
             d[c.to_deg_result()[0]] = c
-            self._add_param(
-                input.input,
-                str(uuid.uuid4()),
-                f"coordinate-{c.get_type()}-geocoded",
-                {
-                    "text": c.get_text(),
-                    "parsed": c.get_parsed_degree(),
-                    "type": "latitude" if c.is_lat() else "longitude",
-                    "pixel_alignment": c.get_pixel_alignment(),
-                    "confidence": c.get_confidence(),
-                },
-                "geocoded coordinate",
-            )
 
         return lon_pts, lat_pts
 
@@ -362,19 +349,6 @@ class BoxGeocoder(Geocoder):
             (min_x, max_x), (min_y, max_y), (min_lon, max_lon), (min_lat, max_lat)
         )
         for c in coords:
-            self._add_param(
-                input.input,
-                str(uuid.uuid4()),
-                f"coordinate-{c.get_type()}-geocoded",
-                {
-                    "text": c.get_text(),
-                    "parsed": c.get_parsed_degree(),
-                    "type": "latitude" if c.is_lat() else "longitude",
-                    "pixel_alignment": c.get_pixel_alignment(),
-                    "confidence": c.get_confidence(),
-                },
-                "geocoded coordinate",
-            )
             if c.is_lat():
                 lat_pts[c.to_deg_result()[0]] = c
             else:

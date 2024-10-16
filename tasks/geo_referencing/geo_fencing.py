@@ -28,17 +28,6 @@ class GeoFencer(Task):
             geofence = self._get_clue_point_geofence(
                 input.raster_id, clue_point, CLUE_POINT_GEOFENCE_RANGE
             )
-            self._add_param(
-                input,
-                "geo-fence-clue",
-                "geofence",
-                {
-                    "clue-point": clue_point,
-                    "geofence-lon": geofence.geofence.lon_minmax,
-                    "geofence-lat": geofence.geofence.lat_minmax,
-                },
-                "geofence derived from clue point",
-            )
             return self._create_result(input, geofence)
 
         geocoded: DocGeocodedPlaces = input.parse_data(
@@ -46,17 +35,6 @@ class GeoFencer(Task):
         )
 
         geofence, places = self._get_geofence(input, geocoded)
-        self._add_param(
-            input,
-            "geo-fence-derived",
-            "geofence",
-            {
-                "places": places,
-                "geofence-lon": geofence.geofence.lon_minmax,
-                "geofence-lat": geofence.geofence.lat_minmax,
-            },
-            "geofence derived from geocoded places",
-        )
 
         # TODO: NEED TO DETERMINE IF INPUT HAS BETTER GEOFENCE (MAYBE BY AREA) OR SKIP IF RELATIVELY SMALL GEOFENCE
 

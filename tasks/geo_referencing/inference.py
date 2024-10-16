@@ -117,21 +117,6 @@ class InferenceCoordinateExtractor(CoordinatesExtractor):
             )
 
         coord_update[new_coord.to_deg_result()[0]] = new_coord
-        self._add_param(
-            input.input,
-            str(uuid.uuid4()),
-            f"coordinate-{new_coord.get_type()}",
-            {
-                "bounds": ocr_to_coordinates(new_coord.get_bounds()),
-                "text": new_coord.get_text(),
-                "parsed": new_coord.get_parsed_degree(),
-                "type": "latitude" if new_coord.is_lat() else "longitude",
-                "pixel_alignment": new_coord.get_pixel_alignment(),
-                "confidence": new_coord.get_confidence(),
-            },
-            "extracted coordinate",
-        )
-
         return (lon_pts, lat_pts)
 
     def _get_range(self, range: List[float]) -> float:
