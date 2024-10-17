@@ -219,7 +219,5 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
     )
 
 
-
-
 if __name__ == "__main__":
     main()
