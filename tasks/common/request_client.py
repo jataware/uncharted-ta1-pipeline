@@ -367,7 +367,6 @@ class RequestClient:
                     json=gauge_labels,
                 )
 
-
             # run the pipeline
             run_start_time = time.perf_counter()
             outputs = self._pipeline.run(input)
