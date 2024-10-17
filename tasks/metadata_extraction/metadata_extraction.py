@@ -443,7 +443,7 @@ class MetadataExtractor(Task):
                 text = self._extract_text(doc_text_extraction, max_text_length)
                 input_prompt = prompt_template.format_prompt(text_str="\n".join(text))
                 if input_prompt is None:
-                    logger.warn(
+                    logger.warning(
                         f"Skipping extraction '{doc_text_extraction.doc_id}' - prompt generation failed"
                     )
                     return self._create_empty_extraction(doc_text_extraction.doc_id)
@@ -476,7 +476,7 @@ class MetadataExtractor(Task):
                     map_id=doc_text_extraction.doc_id, **response_dict
                 )
 
-            logger.warn(
+            logger.warning(
                 f"Skipping extraction '{doc_text_extraction.doc_id}' - input token count {num_tokens} is greater than limit {self.TOKEN_LIMIT}"
             )
             return self._create_empty_extraction(doc_text_extraction.doc_id)

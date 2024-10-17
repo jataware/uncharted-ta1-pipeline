@@ -88,6 +88,7 @@ class GeoreferencingPipeline(Pipeline):
             geocoding_cache_bounds,
             1,
             country_code_filename=country_code_filename,
+            state_code_filename=state_code_filename,
             geocoded_places_filename=geocoded_places_filename,
         )
 
@@ -97,6 +98,7 @@ class GeoreferencingPipeline(Pipeline):
             geocoding_cache_points,
             5,
             country_code_filename=country_code_filename,
+            state_code_filename=state_code_filename,
             geocoded_places_filename=geocoded_places_filename,
         )
 

@@ -47,6 +47,7 @@ class NominatimGeocoder(GeocodingService):
         cache_location: str,
         limit_hits: int = 4,
         country_code_filename: str = "",
+        state_code_filename: str = "",
         geocoded_places_filename: str = "",
     ) -> None:
         self._service = Nominatim(
@@ -55,19 +56,22 @@ class NominatimGeocoder(GeocodingService):
         self._limit_hits = limit_hits
         self._cache = self._load_cache(cache_location)
         self._cache_location = cache_location
-        self._country_to_code = self._build_country_lookup(country_code_filename)
+        self._country_to_code = self._build_placecode_lookup(country_code_filename)
         self._code_to_country = {v: k for k, v in self._country_to_code.items()}
+        self._code_to_state = {
+            v: k for k, v in self._build_placecode_lookup(state_code_filename).items()
+        }
         self._geocoded_places_reference = self._build_geocoded_places_reference(
             geocoded_places_filename
         )
 
-    def _build_country_lookup(self, country_code_filename: str) -> Dict[str, str]:
-        if len(country_code_filename) == 0:
+    def _build_placecode_lookup(self, place_code_filename: str) -> Dict[str, str]:
+        if len(place_code_filename) == 0:
             return {}
 
         # read the lookup file
         data = []
-        with open(country_code_filename, newline="") as f:
+        with open(place_code_filename, newline="") as f:
             reader = csv.reader(f)
             data = list(reader)
 
@@ -175,22 +179,35 @@ class NominatimGeocoder(GeocodingService):
             )
         return place_copy, True
 
-    def _get_country_code(self, place: GeocodedPlace) -> Optional[str]:
+    def _get_countrystate_codes(self, place: GeocodedPlace) -> Tuple:
+        """
+        Parse and normalize the country and state codes for a given place
+        """
         country_code = None
-        if len(self._country_to_code) > 0:
-            country = place.place_location_restriction.lower()
-            # could already be a code
-            if len(country) == 2:
-                return country
-            if country in self._country_to_code:
-                country_code = self._country_to_code[country]
-        return country_code
+        state_code = None
+        # try to parse country code from 'place_location_restriction'
+        parent_country = place.place_location_restriction.lower()
+        # could already be a code
+        if len(parent_country) == 2:
+            country_code = parent_country
+        elif parent_country in self._country_to_code:
+            country_code = self._country_to_code[parent_country]
+
+        # try to parse state code from 'place_name', if of the form (US-MI)
+        countrystate = place.place_name.lower().split("-")
+        if len(countrystate) == 2 and len(countrystate[1]) == 2:
+            state_code = countrystate[1]
+        return country_code, state_code
 
     def _get_geocode(
         self,
         place: GeocodedPlace,
         geofence: Optional[Tuple[Tuple[float, float], Tuple[float, float]]],
     ) -> Optional[List[Tuple[List[float], str]]]:
+        """
+        Get the geo-coding result for a given place
+        (either via Nominatim query or from LARA's geocoding cache)
+        """
 
         if place.place_name in self._geocoded_places_reference:
             # a reference geocoded result already exists for this place-name
@@ -205,21 +222,29 @@ class NominatimGeocoder(GeocodingService):
             featuretype = "country"
             # force the parent country code = None if this place represents a country
             parent_country_code = None
+            state_code = None
         else:
-            parent_country_code = self._get_country_code(place)
+            parent_country_code, state_code = self._get_countrystate_codes(place)
 
-        key = f"{place.place_name}|{self._limit_hits}|{parent_country_code}|{geofence}|{featuretype}"
+        # use full country or state name when geo-coding (prevents noisy results with Nominatim)
+        place_name = place.place_name
+        if featuretype == "country":
+            place_name = self._code_to_country.get(place_name.lower(), place_name)
+        elif (
+            (parent_country_code == "us" or parent_country_code == "ca")
+            and state_code
+            and state_code in self._code_to_state
+        ):
+            featuretype = "state"
+            place_name = self._code_to_state.get(state_code, place_name)
+
+        key = f"{place_name}|{self._limit_hits}|{parent_country_code}|{geofence}|{featuretype}"
 
         # check cache, assuming cache is a structure {"boundingbox": list[list[float]]}
         if key in self._cache:
             cached_value = self._cache[key]
             results: List[Tuple[List[float], str]] = cached_value["boundingbox"]
             return results
-
-        # use full country name when geo-coding at country level (prevents noisy results with Nominatim)
-        place_name = place.place_name
-        if featuretype == "country":
-            place_name = self._code_to_country.get(place_name.lower(), place_name)
 
         res = self._service.geocode(
             place_name,  # type: ignore
