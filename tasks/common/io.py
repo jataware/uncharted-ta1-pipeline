@@ -278,10 +278,14 @@ class ImageFileReader:
 
         # check to see if path is an s3 uri - otherwise treat it as a file path
         source = get_file_source(input_location)
+        image: Optional[PILImage] = None
         if source == Mode.S3_URI or source == Mode.URL:
-            return self._read_from_s3(input_location, source, anonymous)
+            image = self._read_from_s3(input_location, source, anonymous)
         else:
-            return self._read_from_file(Path(input_location))
+            image = self._read_from_file(Path(input_location))
+        if image:
+            image = normalize_image_format(image)
+        return image
 
     # Read image from local file system
     @staticmethod

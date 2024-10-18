@@ -2,7 +2,6 @@ import argparse
 import base64
 import json
 import logging
-from pathlib import Path
 
 from flask import Flask, request, Response
 from hashlib import sha1
@@ -27,6 +26,7 @@ from tasks.common.request_client import (
     RequestClient,
     OutputType,
 )
+from tasks.common import image_io
 from typing import List, Tuple
 from tasks.geo_referencing.entities import (
     GEOREFERENCING_OUTPUT_KEY,
@@ -87,7 +87,7 @@ def process_image():
     try:
         # open the image from the supplied byte stream
         bytes_io = BytesIO(request.data)
-        image = Image.open(bytes_io)
+        image = image_io.load_pil_image_stream(bytes_io)
 
         # use the hash as the doc id since we don't have a filename
         doc_id = sha1(request.data).hexdigest()
