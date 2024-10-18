@@ -6,25 +6,30 @@ from tasks.geo_referencing.georeference import QueryPoint
 # Utility functions for loading / setting input parameters for the georeferencing pipeline
 #
 
-# --- lat/lon limits for USA (incl Alaska, Puerto Rico, etc.)
-LON_LIMITS_US = (-180.0, -64.5)
-LAT_LIMITS_US = (17.5, 71.6)
-# --- lat/lon limits for the whole world
-LON_LIMITS_WORLD = (-180.0, 180.0)
-LAT_LIMITS_WORLD = (-90, 90.0)
+GEOFENCE_DEFAULTS = {
+    # --- lat/lon limits for the whole world
+    "world": {"lon": (-180.0, 180.0), "lat": (-90.0, 90.0)},
+    # --- lat/lon limits for USA (incl Alaska, Puerto Rico, etc.)
+    "us": {"lon": (-180.0, -64.5), "lat": (17.5, 71.6)},
+}
 
 logger = logging.getLogger(__name__)
 
 
-def get_geofence_defaults(
-    lon_limits: Tuple[float, float] = LON_LIMITS_US,
-    lat_limits: Tuple[float, float] = LAT_LIMITS_US,
-):
+def get_geofence_defaults(geofence_region: str = "world") -> Tuple:
     """
     Get the default geo-fence ranges
+
+    geofence_region: current excepted values are "world" or "us"
     """
-    lon_minmax = [min(lon_limits), max(lon_limits)]
-    lat_minmax = [min(lat_limits), max(lat_limits)]
+    if geofence_region not in GEOFENCE_DEFAULTS:
+        logger.warning(
+            f"geofence_region {geofence_region} not found; using whole world as default geofence"
+        )
+        geofence_region = "world"
+
+    lon_minmax = GEOFENCE_DEFAULTS[geofence_region]["lon"]
+    lat_minmax = GEOFENCE_DEFAULTS[geofence_region]["lat"]
     lon_sign_factor = 1.0
     return (lon_minmax, lat_minmax, lon_sign_factor)
 

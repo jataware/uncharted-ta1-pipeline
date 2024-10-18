@@ -43,12 +43,14 @@ app = Flask(__name__)
 georef_pipeline: GeoreferencingPipeline
 
 
-def create_input(raster_id: str, image: PILImage) -> PipelineInput:
+def create_input(
+    raster_id: str, image: PILImage, geofence_region: str = "world"
+) -> PipelineInput:
     input = PipelineInput()
     input.image = image
     input.raster_id = raster_id
 
-    lon_minmax, lat_minmax, lon_sign_factor = get_geofence_defaults()
+    lon_minmax, lat_minmax, lon_sign_factor = get_geofence_defaults(geofence_region)
     input.params["lon_minmax"] = lon_minmax
     input.params["lat_minmax"] = lat_minmax
     input.params["lon_sign_factor"] = lon_sign_factor
