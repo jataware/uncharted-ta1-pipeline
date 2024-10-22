@@ -44,7 +44,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
         vhost="/",
         uid="",
         pwd="",
-        metrics_url=""
+        metrics_url="",
     ):
         super().__init__(
             result_queue,
@@ -94,10 +94,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
 
             # add metric of job starting
             if self._metrics_url != "":
-                requests.post(
-                    self._metrics_url
-                    + "/counter/writer_started?step=1"
-                )
+                requests.post(self._metrics_url + "/counter/writer_started?step=1")
 
             start_time = time.perf_counter()
             match result.output_type:
@@ -117,14 +114,9 @@ class WriteResultSubscriber(LaraResultSubscriber):
                     logger.info("unsupported output type received from queue")
             elasped_time = time.perf_counter() - start_time
             if self._metrics_url != "":
+                requests.post(self._metrics_url + "/counter/writer_completed?step=1")
                 requests.post(
-                    self._metrics_url
-                    + "/counter/writer_completed?step=1"
-                )
-                requests.post(
-                    self._metrics_url
-                    + "/histogram/writer?value="
-                    + str(elasped_time)
+                    self._metrics_url + "/histogram/writer?value=" + str(elasped_time)
                 )
 
         except Exception as e:
