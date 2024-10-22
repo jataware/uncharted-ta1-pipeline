@@ -390,7 +390,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
         # depending on parsed metadata, could either be 'US-STATE CODE' or STATE
         if len(state) == 5 and state.startswith("us"):
             return state[-2:]
-        return self._state_codes[state]
+        return self._state_codes.get(state, "")
 
     def _is_scale(self, text: str) -> bool:
         text = text.lower()
