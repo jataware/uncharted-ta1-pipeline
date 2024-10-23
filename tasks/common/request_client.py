@@ -367,14 +367,13 @@ class RequestClient:
                     json=gauge_labels,
                 )
 
-            job_started_time = time.perf_counter()
-
             # run the pipeline
+            run_start_time = time.perf_counter()
             outputs = self._pipeline.run(input)
-
-            run_elasped_time = time.perf_counter() - job_started_time
+            run_elasped_time = time.perf_counter() - run_start_time
 
             # create the response
+            output_start_time = time.perf_counter()
             output_raw = outputs[self._output_key]
             if isinstance(output_raw, BaseModelOutput):
                 result = self._create_output(request, str(image_path), output_raw)
@@ -383,13 +382,12 @@ class RequestClient:
             else:
                 raise ValueError("Unsupported output type")
             logger.info("writing request result to output queue")
-
-            output_elasped_time = time.perf_counter() - run_elasped_time
+            output_elasped_time = time.perf_counter() - output_start_time
 
             # run queue operations
+            publish_start_time = time.perf_counter()
             self._publish_result(result)
-
-            publish_elasped_time = time.perf_counter() - output_elasped_time
+            publish_elasped_time = time.perf_counter() - publish_start_time
 
             logger.info("result written to output queue")
             if self._metrics_url != "":

@@ -1,11 +1,10 @@
 import argparse
-from pathlib import Path
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
 
-import io
-from PIL import Image
+from io import BytesIO
+from tasks.common import image_io
 
 from tasks.common.request_client import (
     TEXT_REQUEST_QUEUE,
@@ -33,13 +32,14 @@ def process_image():
     """
 
     try:
-        # decode and open as a PIL Image
-        im = Image.open(io.BytesIO(request.data))
+        # open the image from the supplied byte stream
+        bytes_io = BytesIO(request.data)
+        image = image_io.load_pil_image_stream(bytes_io)
 
         # use the hash as the doc id since we don't have a filename
         doc_id = sha1(request.data).hexdigest()
 
-        input = PipelineInput(image=im, raster_id=doc_id)
+        input = PipelineInput(image=image, raster_id=doc_id)
 
         results = pipeline.run(input)
         if len(results) == 0:
