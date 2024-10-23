@@ -1,5 +1,5 @@
 from tasks.text_extraction.entities import Point
-
+from enum import Enum
 from typing import List, Optional, Tuple
 from pydantic import BaseModel
 
@@ -16,13 +16,13 @@ RMSE_OUTPUT_KEY = "rmse"
 ERROR_SCALE_OUTPUT_KEY = "error_scale"
 KEYPOINTS_OUTPUT_KEY = "keypoints"
 GEOREFERENCING_OUTPUT_KEY = "georeferencing"
+ROI_MAP_OUTPUT_KEY = "map_roi"
 
 SOURCE_LAT_LON = "lat-lon parser"
 SOURCE_STATE_PLANE = "state plane parser"
 SOURCE_UTM = "utm parser"
 SOURCE_GEOCODE = "geocoder"
 SOURCE_INFERENCE = "inference"
-ROI_MAP_OUTPUT_KEY = "map_roi"
 
 
 class MapROI(BaseModel):
@@ -31,10 +31,18 @@ class MapROI(BaseModel):
     buffer_inner: List[Tuple[float, float]]
 
 
+class GeoFenceType(str, Enum):
+    COUNTRY = "country"
+    STATE = "state"
+    GEO_BOUNDS = "geo_bounds"
+    CLUE = "clue"
+    DEFAULT = "default"
+
+
 class GeoFence(BaseModel):
     lat_minmax: List[float]
     lon_minmax: List[float]
-    defaulted: bool
+    region_type: GeoFenceType
 
 
 class DocGeoFence(BaseModel):

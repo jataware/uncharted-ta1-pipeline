@@ -4,7 +4,12 @@ from copy import deepcopy
 from geopy.distance import distance as geo_distance
 
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.geo_referencing.entities import DocGeoFence, GeoFence, GEOFENCE_OUTPUT_KEY
+from tasks.geo_referencing.entities import (
+    DocGeoFence,
+    GeoFence,
+    GeoFenceType,
+    GEOFENCE_OUTPUT_KEY,
+)
 from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
     GEOCODED_PLACES_OUTPUT_KEY,
@@ -69,7 +74,7 @@ class GeoFencer(Task):
             geofence=GeoFence(
                 lat_minmax=lat_minmax,
                 lon_minmax=lon_minmax,
-                defaulted=False,
+                region_type=GeoFenceType.CLUE,
             ),
         )
 
@@ -87,7 +92,7 @@ class GeoFencer(Task):
         self, input: TaskInput, geocoded: DocGeocodedPlaces
     ) -> Tuple[DocGeoFence, List[str]]:
         # use default if nothing geocoded
-        if geocoded is None or len(geocoded.places) == None:
+        if geocoded is None or len(geocoded.places) == 0:
             logger.info("geofence built using defaults")
             return self._create_default_geofence(input), []
 
@@ -97,7 +102,6 @@ class GeoFencer(Task):
             logger.info("geofence built using states")
             return geofence, places
 
-        logger.info("geofence built using country")
         return self._get_country_geofence(input, geocoded)
 
     def _create_default_geofence(self, input: TaskInput) -> DocGeoFence:
@@ -112,7 +116,7 @@ class GeoFencer(Task):
             geofence=GeoFence(
                 lat_minmax=deepcopy(lat_minmax),
                 lon_minmax=deepcopy(lon_minmax),
-                defaulted=True,
+                region_type=GeoFenceType.DEFAULT,
             ),
         )
 
@@ -125,6 +129,7 @@ class GeoFencer(Task):
                 p.place_location_restriction is None
                 or p.place_location_restriction == ""
             ):
+                logger.info("geofence built using country")
                 return DocGeoFence(
                     map_id=geocoded.map_id,
                     geofence=GeoFence(
@@ -136,10 +141,11 @@ class GeoFencer(Task):
                             p.results[0].coordinates[0].geo_x,
                             p.results[0].coordinates[2].geo_x,
                         ],
-                        defaulted=False,
+                        region_type=GeoFenceType.COUNTRY,
                     ),
                 ), [p.place_name]
 
+        logger.info("geofence built using defaults")
         return self._create_default_geofence(input), []
 
     def _get_state_geofence(
@@ -174,7 +180,7 @@ class GeoFencer(Task):
                 geofence=GeoFence(
                     lat_minmax=[min(lats), max(lats)],
                     lon_minmax=[min(lons), max(lons)],
-                    defaulted=False,
+                    region_type=GeoFenceType.STATE,
                 ),
             ),
             places,

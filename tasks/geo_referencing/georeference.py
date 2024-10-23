@@ -15,6 +15,7 @@ from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
+    GeoFenceType,
     GEOFENCE_OUTPUT_KEY,
     MapROI,
     ROI_MAP_OUTPUT_KEY,
@@ -274,6 +275,29 @@ class GeoReference(Task):
 
         rmse, scale_error = self._score_query_points(query_pts, scale_value)
 
+        # dgdg TEMP
+        # GEOFENCE TESTING
+        clue_point_temp = input.get_request_info("clue_point_temp")  # lon,lat
+        if clue_point_temp:
+            lon_mmgf = geofence.geofence.lon_minmax
+            lat_mmgf = geofence.geofence.lat_minmax
+            geof_dia_size_km = geodesic(
+                (lat_mmgf[0], lon_mmgf[0]), (lat_mmgf[1], lon_mmgf[1])
+            ).km
+            latlon_c_gf = (
+                (lat_mmgf[1] + lat_mmgf[0]) / 2,
+                (lon_mmgf[1] + lon_mmgf[0]) / 2,
+            )
+            geof_diff_km = geodesic(
+                (clue_point_temp[1], clue_point_temp[0]), latlon_c_gf
+            ).km
+
+        else:
+            geof_dia_size_km = 0.0
+            geof_diff_km = 0.0
+
+            # err_dist = geodesic(latlon_gtruth, latlon).km
+
         result = super()._create_result(input)
         result.output[QUERY_POINTS_OUTPUT_KEY] = results
         result.output[RMSE_OUTPUT_KEY] = rmse
@@ -282,6 +306,7 @@ class GeoReference(Task):
             self.EXTERNAL_QUERY_POINT_CRS if external_query_pts else crs
         )
         result.output[KEYPOINTS_OUTPUT_KEY] = keypoint_stats
+        result.output["geofence_debug"] = (geof_diff_km, geof_dia_size_km)  # dgdg
         return result
 
     def _count_keypoints(
@@ -432,7 +457,10 @@ class GeoReference(Task):
         geofence: DocGeoFence = input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
-        if geofence is not None and not geofence.geofence.defaulted:
+        if (
+            geofence is not None
+            and not geofence.geofence.region_type == GeoFenceType.DEFAULT
+        ):
             # check if longitude min and max are both in the same hemisphere
             if (
                 geofence.geofence.lon_minmax[0] <= 0
@@ -613,7 +641,10 @@ class GeoReference(Task):
         geofence: DocGeoFence = input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
-        if geofence is not None and not geofence.geofence.defaulted:
+        if (
+            geofence is not None
+            and not geofence.geofence.region_type == GeoFenceType.DEFAULT
+        ):
             lon_minmax = geofence.geofence.lon_minmax
             lat_minmax = geofence.geofence.lat_minmax
             logger.debug(

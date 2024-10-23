@@ -16,6 +16,7 @@ from tasks.geo_referencing.coordinates_extractor import (
 from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
+    GeoFenceType,
     GEOFENCE_OUTPUT_KEY,
     SOURCE_GEOCODE,
 )
@@ -46,7 +47,7 @@ class Geocoder(CoordinatesExtractor):
     ) -> List[GeocodedPlace]:
         places = [p for p in geocoded.places if p.place_type in self._place_types]
         places_filtered = []
-        if geofence_raw.geofence.defaulted:
+        if geofence_raw.geofence.region_type == GeoFenceType.DEFAULT:
             places_filtered = places
         else:
             lon_minmax = geofence_raw.geofence.lon_minmax
