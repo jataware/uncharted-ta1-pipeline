@@ -70,6 +70,8 @@ services:
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     {%- endif %}
+    deploy:
+      replicas: {{ writer_replicas  }}
     depends_on:
       rabbitmq:
         condition: service_healthy

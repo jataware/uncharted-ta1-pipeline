@@ -14,5 +14,6 @@
     "georef_replicas": 1,
     "points_replicas": 1,
     "segmentation_replicas": 1,
-    "metadata_replicas": 1
+    "metadata_replicas": 1,
+    "writer_replicas": 1
 }
