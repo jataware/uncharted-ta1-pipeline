@@ -107,18 +107,21 @@ class GeoReference(Task):
         return self._run_label_georef(input)
 
     def _run_label_georef(self, input: TaskInput) -> TaskResult:
+
+        geofence: DocGeoFence = input.parse_data(
+            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
+        )
         lon_minmax = input.get_request_info("lon_minmax", [0, 180])
         lat_minmax = input.get_request_info("lat_minmax", [0, 90])
-        logger.debug(f"initial lon_minmax: {lon_minmax}")
+        if geofence:
+            lon_minmax = geofence.geofence.lon_minmax
+            lat_minmax = geofence.geofence.lat_minmax
+
         lon_pts = input.get_data("lons", {})
         lat_pts = input.get_data("lats", {})
 
         scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
-
-        geofence: DocGeoFence = input.parse_data(
-            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
-        )
 
         roi_xy = []
         if ROI_MAP_OUTPUT_KEY in input.data:
@@ -155,14 +158,10 @@ class GeoReference(Task):
             lon_check = list(map(lambda x: x[0], lon_pts))
             lat_check = list(map(lambda x: x[0], lat_pts))
             num_keypoints = min(len(lon_pts), len(lat_pts))
-            # use the geofence if it has 2 values
+
             lon_minmax_geofence = lon_minmax
             lat_minmax_geofence = lat_minmax
-            if (
-                geofence is not None
-                and len(geofence.geofence.lat_minmax) == 2
-                and len(geofence.geofence.lon_minmax) == 2
-            ):
+            if geofence is not None:
                 lon_minmax_geofence, lat_minmax_geofence = self._get_fallback_geofence(
                     geofence
                 )

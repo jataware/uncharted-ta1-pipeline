@@ -165,16 +165,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
             return lon_pts, lat_pts
 
         logger.info(f"derived state plane zone: {state_plane_zone}")
-        self._add_param(
-            input.input,
-            str(uuid.uuid4()),
-            f"state-plane-zone",
-            {
-                "zone": state_plane_zone[0],
-                "source": state_plane_zone[1],
-            },
-            "extracted state plane zone",
-        )
 
         lat_minmax = copy.deepcopy(geofence_raw.geofence.lat_minmax)
         lon_minmax = copy.deepcopy(geofence_raw.geofence.lon_minmax)
@@ -400,7 +390,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
         # depending on parsed metadata, could either be 'US-STATE CODE' or STATE
         if len(state) == 5 and state.startswith("us"):
             return state[-2:]
-        return self._state_codes[state]
+        return self._state_codes.get(state, "")
 
     def _is_scale(self, text: str) -> bool:
         text = text.lower()
@@ -548,20 +538,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 )
                 x_pixel, y_pixel = coord.get_pixel_alignment()
                 lat_results[(latlon_pt[0], y_pixel)] = coord
-                self._add_param(
-                    input.input,
-                    str(uuid.uuid4()),
-                    f"coordinate-{coord.get_type()}",
-                    {
-                        "bounds": ocr_to_coordinates(coord.get_bounds()),
-                        "text": coord.get_text(),
-                        "parsed": coord.get_parsed_degree(),
-                        "type": "latitude" if coord.is_lat() else "longitude",
-                        "pixel_alignment": coord.get_pixel_alignment(),
-                        "confidence": coord.get_confidence(),
-                    },
-                    "extracted northing state plane coordinate",
-                )
+
             else:
                 logger.debug("Excluding candidate northing point: {}".format(n))
 
@@ -588,20 +565,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
             )
             x_pixel, y_pixel = coord.get_pixel_alignment()
             lon_results[(latlon_pt[1], x_pixel)] = coord
-            self._add_param(
-                input.input,
-                str(uuid.uuid4()),
-                f"coordinate-{coord.get_type()}",
-                {
-                    "bounds": ocr_to_coordinates(coord.get_bounds()),
-                    "text": coord.get_text(),
-                    "parsed": coord.get_parsed_degree(),
-                    "type": "latitude" if coord.is_lat() else "longitude",
-                    "pixel_alignment": coord.get_pixel_alignment(),
-                    "confidence": coord.get_confidence(),
-                },
-                "extracted easting state plane coordinate",
-            )
 
         return (lon_results, lat_results)
 

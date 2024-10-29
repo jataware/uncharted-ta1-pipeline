@@ -28,17 +28,6 @@ class GeoFencer(Task):
             geofence = self._get_clue_point_geofence(
                 input.raster_id, clue_point, CLUE_POINT_GEOFENCE_RANGE
             )
-            self._add_param(
-                input,
-                "geo-fence-clue",
-                "geofence",
-                {
-                    "clue-point": clue_point,
-                    "geofence-lon": geofence.geofence.lon_minmax,
-                    "geofence-lat": geofence.geofence.lat_minmax,
-                },
-                "geofence derived from clue point",
-            )
             return self._create_result(input, geofence)
 
         geocoded: DocGeocodedPlaces = input.parse_data(
@@ -46,17 +35,6 @@ class GeoFencer(Task):
         )
 
         geofence, places = self._get_geofence(input, geocoded)
-        self._add_param(
-            input,
-            "geo-fence-derived",
-            "geofence",
-            {
-                "places": places,
-                "geofence-lon": geofence.geofence.lon_minmax,
-                "geofence-lat": geofence.geofence.lat_minmax,
-            },
-            "geofence derived from geocoded places",
-        )
 
         # TODO: NEED TO DETERMINE IF INPUT HAS BETTER GEOFENCE (MAYBE BY AREA) OR SKIP IF RELATIVELY SMALL GEOFENCE
 
@@ -123,8 +101,12 @@ class GeoFencer(Task):
         return self._get_country_geofence(input, geocoded)
 
     def _create_default_geofence(self, input: TaskInput) -> DocGeoFence:
-        lon_minmax = input.get_request_info("lon_minmax", [0, 180])
-        lat_minmax = input.get_request_info("lat_minmax", [0, 90])
+        """
+        Create geofence from the default ranges (as specified as pipeline input parameters),
+        or alternatively, set to the geofence to the whole world
+        """
+        lon_minmax = input.get_request_info("lon_minmax", [-180, 180])
+        lat_minmax = input.get_request_info("lat_minmax", [-90, 90])
         return DocGeoFence(
             map_id=input.raster_id,
             geofence=GeoFence(

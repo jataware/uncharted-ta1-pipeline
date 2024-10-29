@@ -158,27 +158,7 @@ class OutlierFilter(FilterAxisCoordinates):
             # arbitrary test to flag outliers
             # having a floor to the test prevents removing datapoints when the error is low due to points lining up correctly
             if test > 0.1 and reduced[i] < 0.5 * test:
-                self._add_param(
-                    input,
-                    str(uuid.uuid4()),
-                    "coordinate-excluded",
-                    {
-                        "bounds": ocr_to_coordinates(
-                            coords_representation[i].get_bounds()
-                        ),
-                        "text": coords_representation[i].get_text(),
-                        "type": (
-                            "latitude"
-                            if coords_representation[i].is_lat()
-                            else "longitude"
-                        ),
-                        "pixel_alignment": coords_representation[
-                            i
-                        ].get_pixel_alignment(),
-                        "confidence": coords_representation[i].get_confidence(),
-                    },
-                    "excluded due to regression outlier detection",
-                )
+                continue
             else:
                 key, _ = coords_representation[i].to_deg_result()
                 results[key] = coords_representation[i]
@@ -475,20 +455,6 @@ class NaiveFilter(FilterAxisCoordinates):
         for k, v in coords.items():
             if v.get_parsed_degree() in max_cluster:
                 filtered_coords[k] = v
-            else:
-                self._add_param(
-                    input,
-                    str(uuid.uuid4()),
-                    "coordinate-excluded",
-                    {
-                        "bounds": ocr_to_coordinates(v.get_bounds()),
-                        "text": v.get_text(),
-                        "type": ("latitude" if v.is_lat() else "longitude"),
-                        "pixel_alignment": v.get_pixel_alignment(),
-                        "confidence": v.get_confidence(),
-                    },
-                    "excluded due to naive outlier detection",
-                )
         return filtered_coords
 
 

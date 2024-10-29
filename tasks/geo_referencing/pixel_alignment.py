@@ -67,21 +67,6 @@ class TickDetector(Task):
                         # adjust the pixel alignment
                         c.set_pixel_alignment(new_alignment)
 
-                        # add the adjusted coordinate to the params
-                        self._add_param(
-                            input,
-                            str(uuid.uuid4()),
-                            f"coordinate-{c.get_type()}-{c.get_derivation()}",
-                            {
-                                "bounds": ocr_to_coordinates(c.get_bounds()),
-                                "text": c.get_text(),
-                                "parsed": c.get_parsed_degree(),
-                                "type": "latitude" if c.is_lat() else "longitude",
-                                "pixel_alignment": c.get_pixel_alignment(),
-                                "confidence": c.get_confidence(),
-                            },
-                            "extracted aligned coordinate",
-                        )
             output[c.to_deg_result()[0]] = c
 
         return output

@@ -89,17 +89,6 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         utm_zone = self._determine_utm_zone(
             metadata, population_centres, geofence_raw, clue_point, lon_pts, lat_pts
         )
-        self._add_param(
-            input.input,
-            str(uuid.uuid4()),
-            f"utm-zone",
-            {
-                "number": utm_zone[0],
-                "northern": utm_zone[1],
-                "source": utm_zone[2],
-            },
-            "extracted utm zone",
-        )
 
         # lon_minmax = input.input.get_request_info("lon_minmax", [0, 180])
         # lat_minmax = input.input.get_request_info("lat_minmax", [-80, 84])
@@ -427,18 +416,6 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                         utm_dist
                     )
                 )
-                self._add_param(
-                    input.input,
-                    str(uuid.uuid4()),
-                    "coordinate-excluded-utm",
-                    {
-                        "bounds": ocr_to_coordinates(
-                            ocr_text_blocks.extractions[idx].bounds
-                        ),
-                        "text": ocr_text_blocks.extractions[idx].text,
-                    },
-                    "excluded due to some coordinates being over utm easting limit",
-                )
                 continue
 
             is_northing = self._is_northing_point(
@@ -488,20 +465,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                 )
                 x_pixel, y_pixel = coord.get_pixel_alignment()
                 lat_results[(latlon_pt[0], y_pixel)] = coord
-                self._add_param(
-                    input.input,
-                    str(uuid.uuid4()),
-                    f"coordinate-{coord.get_type()}",
-                    {
-                        "bounds": ocr_to_coordinates(coord.get_bounds()),
-                        "text": coord.get_text(),
-                        "parsed": coord.get_parsed_degree(),
-                        "type": "latitude" if coord.is_lat() else "longitude",
-                        "pixel_alignment": coord.get_pixel_alignment(),
-                        "confidence": coord.get_confidence(),
-                    },
-                    "extracted northing utm coordinate",
-                )
+
             else:
                 logger.debug(
                     "Excluding candidate northing point due to being out of range: {}".format(
@@ -534,19 +498,5 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             )
             x_pixel, y_pixel = coord.get_pixel_alignment()
             lon_results[(latlon_pt[1], x_pixel)] = coord
-            self._add_param(
-                input.input,
-                str(uuid.uuid4()),
-                f"coordinate-{coord.get_type()}",
-                {
-                    "bounds": ocr_to_coordinates(coord.get_bounds()),
-                    "text": coord.get_text(),
-                    "parsed": coord.get_parsed_degree(),
-                    "type": "latitude" if coord.is_lat() else "longitude",
-                    "pixel_alignment": coord.get_pixel_alignment(),
-                    "confidence": coord.get_confidence(),
-                },
-                "extracted easting utm coordinate",
-            )
 
         return (lon_results, lat_results)
