@@ -15,6 +15,7 @@ from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
+    GeoFenceType,
     GEOFENCE_OUTPUT_KEY,
     MapROI,
     ROI_MAP_OUTPUT_KEY,
