@@ -12,6 +12,8 @@ from tasks.geo_referencing.entities import (
 )
 from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
+    GeoPlaceType,
+    GeoFeatureType,
     GEOCODED_PLACES_OUTPUT_KEY,
 )
 
@@ -39,7 +41,7 @@ class GeoFencer(Task):
             GEOCODED_PLACES_OUTPUT_KEY, DocGeocodedPlaces.model_validate
         )
 
-        geofence, places = self._get_geofence(input, geocoded)
+        geofence = self._get_geofence(input, geocoded)
 
         # TODO: NEED TO DETERMINE IF INPUT HAS BETTER GEOFENCE (MAYBE BY AREA) OR SKIP IF RELATIVELY SMALL GEOFENCE
 
@@ -90,76 +92,63 @@ class GeoFencer(Task):
 
     def _get_geofence(
         self, input: TaskInput, geocoded: DocGeocodedPlaces
-    ) -> Tuple[DocGeoFence, List[str]]:
+    ) -> DocGeoFence:
+        """
+        Main geofence extraction function
+        Try to construct using counties, then states, then the whole country
+        """
         # use default if nothing geocoded
         if geocoded is None or len(geocoded.places) == 0:
-            logger.info("geofence built using defaults")
-            return self._create_default_geofence(input), []
+            return DocGeoFence(
+                map_id=input.raster_id, geofence=self._create_default_geofence()
+            )
 
-        # for now, geofence should be either the widest possible to accomodate all states or if none present the country
-        geofence, places = self._get_state_geofence(input, geocoded)
-        if geofence is not None:
-            logger.info("geofence built using states")
-            return geofence, places
+        # --- 1. using counties
+        geofence = self._create_geofence(geocoded, GeoFeatureType.COUNTY)
 
-        return self._get_country_geofence(input, geocoded)
+        # --- 2. using states
+        if not geofence:
+            geofence = self._create_geofence(geocoded, GeoFeatureType.STATE)
 
-    def _create_default_geofence(self, input: TaskInput) -> DocGeoFence:
+        # --- 3. using country
+        if not geofence:
+            geofence = self._create_geofence(geocoded, GeoFeatureType.COUNTRY)
+
+        if geofence:
+            return DocGeoFence(map_id=input.raster_id, geofence=geofence)
+        else:
+            return DocGeoFence(
+                map_id=input.raster_id, geofence=self._create_default_geofence()
+            )
+
+    def _create_default_geofence(self) -> GeoFence:
         """
         Create geofence from the default ranges (as specified as pipeline input parameters),
         or alternatively, set to the geofence to the whole world
         """
         lon_minmax = input.get_request_info("lon_minmax", [-180, 180])
         lat_minmax = input.get_request_info("lat_minmax", [-90, 90])
-        return DocGeoFence(
-            map_id=input.raster_id,
-            geofence=GeoFence(
-                lat_minmax=deepcopy(lat_minmax),
-                lon_minmax=deepcopy(lon_minmax),
-                region_type=GeoFenceType.DEFAULT,
-            ),
+        logger.info("Geofence created using defaults")
+        return GeoFence(
+            lat_minmax=deepcopy(lat_minmax),
+            lon_minmax=deepcopy(lon_minmax),
+            region_type=GeoFenceType.DEFAULT,
         )
 
-    def _get_country_geofence(
-        self, input: TaskInput, geocoded: DocGeocodedPlaces
-    ) -> Tuple[DocGeoFence, List[str]]:
-        # country geofence is the one item with no restriction
-        for p in geocoded.places:
-            if (
-                p.place_location_restriction is None
-                or p.place_location_restriction == ""
-            ):
-                logger.info("geofence built using country")
-                return DocGeoFence(
-                    map_id=geocoded.map_id,
-                    geofence=GeoFence(
-                        lat_minmax=[
-                            p.results[0].coordinates[0].geo_y,
-                            p.results[0].coordinates[2].geo_y,
-                        ],
-                        lon_minmax=[
-                            p.results[0].coordinates[0].geo_x,
-                            p.results[0].coordinates[2].geo_x,
-                        ],
-                        region_type=GeoFenceType.COUNTRY,
-                    ),
-                ), [p.place_name]
-
-        logger.info("geofence built using defaults")
-        return self._create_default_geofence(input), []
-
-    def _get_state_geofence(
-        self, input: TaskInput, geocoded: DocGeocodedPlaces
-    ) -> Tuple[Optional[DocGeoFence], List[str]]:
-        # for now, assume states have a restriction to the country
+    def _create_geofence(
+        self, geocoded: DocGeocodedPlaces, geo_feature_type: GeoFeatureType
+    ) -> Optional[GeoFence]:
+        """
+        Create a geofence based on a given geo-feature-type (county, state, or country)
+        """
         lats = []
         lons = []
         places = []
         for p in geocoded.places:
             if (
-                p.place_location_restriction is not None
-                and p.place_location_restriction != ""
-            ) and p.place_type == "bound":
+                p.place_type == GeoPlaceType.BOUND
+                and p.feature_type == geo_feature_type
+            ):
                 # extract all lat and lon
                 lats = lats + [
                     p.results[0].coordinates[0].geo_y,
@@ -170,18 +159,21 @@ class GeoFencer(Task):
                     p.results[0].coordinates[2].geo_x,
                 ]
                 places.append(p.place_name)
-        if len(lats) == 0:
-            return None, []
+        if len(lats) != 0:
 
-        # geofence is the widest possible box
-        return (
-            DocGeoFence(
-                map_id=input.raster_id,
-                geofence=GeoFence(
-                    lat_minmax=[min(lats), max(lats)],
-                    lon_minmax=[min(lons), max(lons)],
-                    region_type=GeoFenceType.STATE,
-                ),
-            ),
-            places,
-        )
+            fence_type = GeoFenceType.DEFAULT
+            if geo_feature_type == GeoFeatureType.COUNTY:
+                fence_type = GeoFenceType.COUNTY
+            elif geo_feature_type == GeoFeatureType.STATE:
+                fence_type = GeoFenceType.STATE
+            elif geo_feature_type == GeoFeatureType.COUNTRY:
+                fence_type = GeoFenceType.COUNTRY
+
+            logger.info(f"Geofence created using these places: {places}")
+            return GeoFence(
+                lat_minmax=[min(lats), max(lats)],
+                lon_minmax=[min(lons), max(lons)],
+                region_type=fence_type,
+            )
+        else:
+            return None

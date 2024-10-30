@@ -40,6 +40,7 @@ from tasks.geo_referencing.geocode import PointGeocoder, BoxGeocoder
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.inference import InferenceCoordinateExtractor
 from tasks.geo_referencing.roi_extractor import ROIExtractor
+from tasks.metadata_extraction.entities import GeoPlaceType
 from tasks.metadata_extraction.geocoder import Geocoder
 from tasks.metadata_extraction.geocoding_service import NominatimGeocoder
 from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
@@ -226,12 +227,14 @@ class GeoreferencingPipeline(Pipeline):
             # Generate georeferencing points from the full set of place and population centre geo coordinates
             PointGeocoder(
                 "geocoded point transformation",
-                ["point", "population"],
+                [GeoPlaceType.POINT, GeoPlaceType.POPULATION],
                 geocoder_thresh,
             ),
             # Generate georeferencing points from the extent of the place and population centre geo coordinates
             BoxGeocoder(
-                "geocoded box transformation", ["point", "population"], geocoder_thresh
+                "geocoded box transformation",
+                [GeoPlaceType.POINT, GeoPlaceType.POPULATION],
+                geocoder_thresh,
             ),
             # Extract corner points from the map area
             CornerPointExtractor("corner point extractor"),

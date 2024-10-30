@@ -22,9 +22,23 @@ class MapColorType(str, Enum):
     UNKNOWN = "unknown"
 
 
+class GeoPlaceType(str, Enum):
+    BOUND = "bound"
+    POPULATION = "population"
+    POINT = "point"
+
+
+class GeoFeatureType(str, Enum):
+    COUNTRY = "country"
+    STATE = "state"
+    COUNTY = "county"
+    CITY = "city"
+    SETTLEMENT = "settlement"
+    NOT_SET = ""
+
+
 class MetadataExtraction(BaseModel):
     model_config = ConfigDict(coerce_numbers_to_str=True)
-
     map_id: str
     title: str
     authors: List[str]
@@ -68,10 +82,10 @@ class GeocodedResult(BaseModel):
 
 class GeocodedPlace(BaseModel):
     model_config = ConfigDict(coerce_numbers_to_str=True)
-
     place_name: str
-    place_location_restriction: str  # restrict the search space when geocoding to the country or the state to reduce noise
-    place_type: str  # either bound for places that are not on the map but restrict the coordinate space, or point / line / polygon
+    parent_country: str  # restrict the search space when geocoding to the parent country to reduce noise
+    place_type: GeoPlaceType  # either bound for places that are not on the map but restrict the coordinate space, or point / line / polygon
+    feature_type: GeoFeatureType  # type of place (country, state, county, etc)
     results: List[
         GeocodedResult
     ]  # bounds will not have the pixel coordinates defined, with each geocoding option a separate list of coordinates

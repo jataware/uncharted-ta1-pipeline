@@ -24,6 +24,7 @@ from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
     GeocodedPlace,
     GeocodedCoordinate,
+    GeoPlaceType,
     GEOCODED_PLACES_OUTPUT_KEY,
 )
 
@@ -35,7 +36,7 @@ logger = logging.getLogger("geocode")
 
 
 class Geocoder(CoordinatesExtractor):
-    def __init__(self, task_id: str, place_types: List[str]):
+    def __init__(self, task_id: str, place_types: List[GeoPlaceType]):
         super().__init__(task_id)
         self._place_types = place_types
 
@@ -170,7 +171,7 @@ class Geocoder(CoordinatesExtractor):
 
 
 class PointGeocoder(Geocoder):
-    def __init__(self, task_id: str, place_types: List[str], run_limit: int):
+    def __init__(self, task_id: str, place_types: List[GeoPlaceType], run_limit: int):
         super().__init__(task_id, place_types)
         self._run_limit = run_limit
 
@@ -235,7 +236,9 @@ class PointGeocoder(Geocoder):
 
 
 class BoxGeocoder(Geocoder):
-    def __init__(self, task_id: str, place_types: List[str], run_limit: int = 10):
+    def __init__(
+        self, task_id: str, place_types: List[GeoPlaceType], run_limit: int = 10
+    ):
         super().__init__(task_id, place_types)
         self._run_limit = run_limit
 

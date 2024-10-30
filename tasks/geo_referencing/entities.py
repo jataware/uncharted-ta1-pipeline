@@ -34,6 +34,7 @@ class MapROI(BaseModel):
 class GeoFenceType(str, Enum):
     COUNTRY = "country"
     STATE = "state"
+    COUNTY = "county"
     GEO_BOUNDS = "geo_bounds"
     CLUE = "clue"
     DEFAULT = "default"
