@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     # init segmenter
     metadata_extraction = MetadataExtractorPipeline(
-        p.workdir, p.model, cdr_schema=p.cdr_schema, model=p.llm, gpu=not p.no_gpu
+        p.workdir, p.model, cdr_schema=p.cdr_schema, model=p.llm, gpu=not p.no_gpu, metrics_url=p.metrics_url
     )
 
     metadata_result_key = (
