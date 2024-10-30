@@ -464,14 +464,10 @@ class MetadataExtractor(Task):
 
             if self._metrics_url != "":
                 requests.post(
-                    self._metrics_url
-                    + "/counter/total_tokens?step="
-                    + str(num_tokens)
+                    self._metrics_url + "/counter/total_tokens?step=" + str(num_tokens)
                 )
                 requests.post(
-                    self._metrics_url
-                    + "/gauge/tokens?value="
-                    + str(num_tokens)
+                    self._metrics_url + "/gauge/tokens?value=" + str(num_tokens)
                 )
 
             # generate the response
