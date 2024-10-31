@@ -2,19 +2,21 @@ import json
 import csv
 import logging
 import os
-
 from abc import ABC, abstractmethod
 from copy import deepcopy
-
 from geopy.geocoders import Nominatim
-
 from tasks.metadata_extraction.entities import (
     GeocodedCoordinate,
     GeocodedPlace,
     GeocodedResult,
 )
-
-
+from tasks.common.io import (
+    JSONFileReader,
+    JSONFileWriter,
+    Mode,
+    bucket_exists,
+    get_file_source,
+)
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -50,12 +52,16 @@ class NominatimGeocoder(GeocodingService):
         state_code_filename: str = "",
         geocoded_places_filename: str = "",
     ) -> None:
+
         self._service = Nominatim(
             timeout=timeout, user_agent="uncharted-lara-geocoder"  # type: ignore
         )
-        self._limit_hits = limit_hits
-        self._cache = self._load_cache(cache_location)
+        self._cache_file_reader = JSONFileReader()
+        self._cache_file_writer = JSONFileWriter()
         self._cache_location = cache_location
+        self._cache = self._load_cache()
+
+        self._limit_hits = limit_hits
         self._country_to_code = self._build_placecode_lookup(country_code_filename)
         self._code_to_country = {v: k for k, v in self._country_to_code.items()}
         self._code_to_state = {
@@ -97,27 +103,47 @@ class NominatimGeocoder(GeocodingService):
             )
             return {}
 
-    def _load_cache(self, cache_location: str) -> Dict[Any, Any]:
+    def _load_cache(self) -> Dict[str, Any]:
+        """
+        Load geocoding cache
+        (JSON file of cached geocoded locations)
+        """
         cache = {}
-
-        # assume the cache is just a json file
         try:
-            if os.path.isfile(cache_location):
-                with open(cache_location, "rb") as f:
-                    cache = json.load(f)
-            return cache
+            cache_mode = get_file_source(self._cache_location)
+            if cache_mode == Mode.FILE:
+                dirname = os.path.dirname(self._cache_location)
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
+            elif cache_mode == Mode.S3_URI or Mode.URL:
+                if not bucket_exists(self._cache_location):
+                    raise Exception(
+                        f"S3 cache bucket {self._cache_location} does not exist"
+                    )
+            else:
+                raise Exception(f"Invalid cache location {self._cache_location}")
+            cache = self._cache_file_reader.process(self._cache_location)
         except Exception as e:
-            logger.error(
-                f"EXCEPTION loading geocoder cache at {cache_location}; reverting cache to empty dict"
+            logger.warning(
+                f"Unable to load geocoder cache at {self._cache_location}; reverting cache to empty dict -- {repr(e)}"
             )
-            logger.error(e)
-            return {}
+            cache = {}
+        return cache
 
     def _cache_doc(self, key: str, doc: Any):
+        """
+        Append geocoding record to in-memory cache
+        and also save to file location
+        """
         self._cache[key] = doc
-
-        with open(self._cache_location, "w") as f:
-            json.dump(self._cache, f)
+        if not self._cache_location:
+            return
+        try:
+            self._cache_file_writer.process(self._cache_location, self._cache)
+        except Exception as e:
+            logger.error(
+                f"EXCEPTION saving geocoder cache at {self._cache_location} -- {repr(e)}"
+            )
 
     def geocode(
         self,

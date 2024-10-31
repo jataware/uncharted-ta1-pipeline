@@ -148,7 +148,7 @@ class ImageFileInputIterator(Iterator[Tuple[str, PILImage]]):
 class JSONFileWriter:
     """Writes a BaseModel as a JSON file to either the local file system or an s3 bucket"""
 
-    def process(self, output_location: str, data: BaseModel) -> None:
+    def process(self, output_location: str, data: BaseModel | Dict) -> None:
         """Writes metadata to a json file on the local file system or to an s3 bucket based
         on the output location format"""
 
@@ -160,7 +160,7 @@ class JSONFileWriter:
             self._write_to_file(data, Path(output_location))
 
     @staticmethod
-    def _write_to_file(data: BaseModel, output_location: Path) -> None:
+    def _write_to_file(data: BaseModel | Dict, output_location: Path) -> None:
         """Writes metadata to a json file"""
 
         # get the director of the file
@@ -173,10 +173,11 @@ class JSONFileWriter:
 
         # write the data to the output file
         with open(output_location, "w") as outfile:
-            json.dump(data.model_dump(), outfile)
+            data_to_write = data.model_dump() if isinstance(data, BaseModel) else data
+            json.dump(data_to_write, outfile)
 
     @staticmethod
-    def _write_to_s3(data: BaseModel, output_uri: str) -> None:
+    def _write_to_s3(data: BaseModel | Dict, output_uri: str) -> None:
         """Writes metadata to an s3 bucket"""
 
         # create s3 client based on the mode
@@ -193,7 +194,9 @@ class JSONFileWriter:
         bucket, key = parse_s3_reference(output_uri, mode)
 
         # write data to the bucket
-        json_model = data.model_dump_json()
+        json_model = (
+            data.model_dump_json() if isinstance(data, BaseModel) else json.dumps(data)
+        )
         client.put_object(
             Body=bytes(json_model.encode("utf-8")),
             Bucket=bucket,
