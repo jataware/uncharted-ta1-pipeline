@@ -141,28 +141,27 @@ def start_server():
     parser.add_argument(
         "--country_code_filename",
         type=str,
-        default="./data/country_codes.csv",
+        default="data/country_codes.csv",
     )
-    # TODO: DEFAULT VALUES SHOULD POINT TO PROPER FOLDER IN CONTAINER!
     parser.add_argument(
         "--state_plane_lookup_filename",
         type=str,
-        default="./data/state_plane_reference.csv",
+        default="data/state_plane_reference.csv",
     )
     parser.add_argument(
         "--state_plane_zone_filename",
         type=str,
-        default="./data/USA_State_Plane_Zones_NAD27.geojson",
+        default="data/USA_State_Plane_Zones_NAD27.geojson",
     )
     parser.add_argument(
         "--state_code_filename",
         type=str,
-        default="./data/state_codes.csv",
+        default="data/state_codes.csv",
     )
     parser.add_argument(
         "--geocoded_places_filename",
         type=str,
-        default="./data/geocoded_places_reference.json",
+        default="data/geocoded_places_reference.json",
     )
     parser.add_argument(
         "--ocr_gamma_correction",
