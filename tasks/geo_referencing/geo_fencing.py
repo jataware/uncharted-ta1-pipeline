@@ -21,7 +21,8 @@ from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-CLUE_POINT_GEOFENCE_RANGE = 500
+# minmimum field-of-view for geo-fence
+FOV_RANGE_KM = 600
 
 
 class GeoFencer(Task):
@@ -33,7 +34,7 @@ class GeoFencer(Task):
         clue_point = input.get_request_info("clue_point")
         if clue_point is not None:
             geofence = self._get_clue_point_geofence(
-                input.raster_id, clue_point, CLUE_POINT_GEOFENCE_RANGE
+                input.raster_id, clue_point, FOV_RANGE_KM
             )
             return self._create_result(input, geofence)
 
@@ -49,19 +50,12 @@ class GeoFencer(Task):
         return self._create_result(input, geofence)
 
     def _get_clue_point_geofence(
-        self, raster_id: str, clue_point: Tuple[float, float], fov_range_km
+        self, raster_id: str, clue_point: Tuple[float, float], fov_range_km: int
     ) -> DocGeoFence:
-        dist_km = (
-            fov_range_km / 2.0
-        )  # distance from clue pt in all directions (N,E,S,W)
-        fov_pt_north = geo_distance(kilometers=dist_km).destination(
-            (clue_point[1], clue_point[0]), bearing=0
+
+        fov_degrange_lon, fov_degrange_lat = self._calc_fov_degree_ranges(
+            clue_point, fov_range_km
         )
-        fov_pt_east = geo_distance(kilometers=dist_km).destination(
-            (clue_point[1], clue_point[0]), bearing=90
-        )
-        fov_degrange_lon = abs(fov_pt_east[1] - clue_point[0])
-        fov_degrange_lat = abs(fov_pt_north[0] - clue_point[1])
         lon_minmax = [
             clue_point[0] - fov_degrange_lon,
             clue_point[0] + fov_degrange_lon,
@@ -100,7 +94,7 @@ class GeoFencer(Task):
         # use default if nothing geocoded
         if geocoded is None or len(geocoded.places) == 0:
             return DocGeoFence(
-                map_id=input.raster_id, geofence=self._create_default_geofence()
+                map_id=input.raster_id, geofence=self._create_default_geofence(input)
             )
 
         # --- 1. using counties
@@ -110,6 +104,10 @@ class GeoFencer(Task):
         if not geofence:
             geofence = self._create_geofence(geocoded, GeoFeatureType.STATE)
 
+        if geofence:
+            # double-check that the geofence isn't too small (if based on counties or states)
+            geofence = self._check_geofence_fov(geofence, FOV_RANGE_KM)
+
         # --- 3. using country
         if not geofence:
             geofence = self._create_geofence(geocoded, GeoFeatureType.COUNTRY)
@@ -118,10 +116,10 @@ class GeoFencer(Task):
             return DocGeoFence(map_id=input.raster_id, geofence=geofence)
         else:
             return DocGeoFence(
-                map_id=input.raster_id, geofence=self._create_default_geofence()
+                map_id=input.raster_id, geofence=self._create_default_geofence(input)
             )
 
-    def _create_default_geofence(self) -> GeoFence:
+    def _create_default_geofence(self, input: TaskInput) -> GeoFence:
         """
         Create geofence from the default ranges (as specified as pipeline input parameters),
         or alternatively, set to the geofence to the whole world
@@ -177,3 +175,47 @@ class GeoFencer(Task):
             )
         else:
             return None
+
+    def _check_geofence_fov(self, geo_fence: GeoFence, fov_range_km: int) -> GeoFence:
+        """
+        ensure the geo-fence field-of-view is not too small
+        """
+        # centre-point of existing geofence
+        centre_lonlat = (
+            (geo_fence.lon_minmax[0] + geo_fence.lon_minmax[1]) / 2,
+            (geo_fence.lat_minmax[0] + geo_fence.lat_minmax[1]) / 2,
+        )
+
+        fov_degrange_lon, fov_degrange_lat = self._calc_fov_degree_ranges(
+            centre_lonlat, fov_range_km
+        )
+
+        lat_minmax = geo_fence.lat_minmax
+        lat_minmax[0] = min(lat_minmax[0], centre_lonlat[1] - fov_degrange_lat)
+        lat_minmax[1] = max(lat_minmax[1], centre_lonlat[1] + fov_degrange_lat)
+        geo_fence.lat_minmax = lat_minmax
+
+        lon_minmax = geo_fence.lon_minmax
+        lon_minmax[0] = min(lon_minmax[0], centre_lonlat[0] - fov_degrange_lon)
+        lon_minmax[1] = max(lon_minmax[1], centre_lonlat[0] + fov_degrange_lon)
+        geo_fence.lon_minmax = lon_minmax
+
+        return geo_fence
+
+    def _calc_fov_degree_ranges(
+        self, centre_lonlat: Tuple[float, float], fov_range_km: int
+    ) -> Tuple[float, float]:
+        """
+        calculate the desired field-of-view lon and lat degree range for a given KM range
+        """
+
+        dist_km = fov_range_km / 2.0
+        fov_pt_north = geo_distance(kilometers=dist_km).destination(
+            (centre_lonlat[1], centre_lonlat[0]), bearing=0
+        )
+        fov_pt_east = geo_distance(kilometers=dist_km).destination(
+            (centre_lonlat[1], centre_lonlat[0]), bearing=90
+        )
+        fov_degrange_lon = abs(fov_pt_east[1] - centre_lonlat[0])
+        fov_degrange_lat = abs(fov_pt_north[0] - centre_lonlat[1])
+        return (fov_degrange_lon, fov_degrange_lat)
