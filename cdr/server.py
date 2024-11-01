@@ -5,6 +5,7 @@ import json
 import logging
 import ngrok
 import os
+import requests
 
 from flask import Flask, request, Response
 
@@ -224,6 +225,7 @@ def main():
     parser.add_argument("--input", type=str, default=None)
     parser.add_argument("--cdr_host", type=str, default=CDR_HOST)
     parser.add_argument("--cogdir", type=str, default=COG_PATH)
+    parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument(
         "--sequence",
         nargs="*",
@@ -293,6 +295,8 @@ def main():
                 for line in f:
                     cog_id = line.strip()
                     process_image(cog_id, request_publisher)
+                    if p.metrics_url != "":
+                        requests.post(p.metrics_url + "/counter/jobs_submitted?step=1")
         else:
             process_image(p.cog_id, request_publisher)
 
