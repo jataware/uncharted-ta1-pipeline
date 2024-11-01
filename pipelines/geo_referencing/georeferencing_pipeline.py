@@ -75,11 +75,11 @@ class GeoreferencingPipeline(Pipeline):
         gpu_enabled: bool,
         metrics_url: str = "",
     ):
-        geocoding_cache_bounds = os.path.join(
+        geocoding_cache_bounds = append_to_cache_location(
             working_dir, "geocoding_cache_bounds.json"
         )
 
-        geocoding_cache_points = os.path.join(
+        geocoding_cache_points = append_to_cache_location(
             working_dir, "geocoding_cache_points.json"
         )
 
