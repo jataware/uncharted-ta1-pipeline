@@ -296,9 +296,7 @@ def main():
                     cog_id = line.strip()
                     process_image(cog_id, request_publisher)
                     if p.metrics_url != "":
-                        requests.post(
-                            p.metrics_url + "/counter/jobs_submitted?step=1"
-                        )
+                        requests.post(p.metrics_url + "/counter/jobs_submitted?step=1")
         else:
             process_image(p.cog_id, request_publisher)
 
