@@ -22,7 +22,7 @@ from typing import List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 # minmimum field-of-view for geo-fence
-FOV_RANGE_KM = 600
+FOV_RANGE_KM = 500
 
 
 class GeoFencer(Task):
