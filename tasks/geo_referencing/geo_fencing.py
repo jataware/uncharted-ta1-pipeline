@@ -97,19 +97,19 @@ class GeoFencer(Task):
                 map_id=input.raster_id, geofence=self._create_default_geofence(input)
             )
 
-        # --- 1. using counties
-        geofence = self._create_geofence(geocoded, GeoFeatureType.COUNTY)
-
-        # --- 2. using states
-        if not geofence:
-            geofence = self._create_geofence(geocoded, GeoFeatureType.STATE)
-
+        # --- 1. geofence using states
+        geofence = self._create_geofence(geocoded, GeoFeatureType.STATE)
         if geofence:
-            # double-check that the geofence isn't too small (if based on counties or states)
-            geofence = self._check_geofence_fov(geofence, FOV_RANGE_KM)
+            # --- 2. try to narrow the geofence using county names, if available
+            geofence_county = self._create_geofence(geocoded, GeoFeatureType.COUNTY)
+            if geofence_county:
+                # double-check that the narrowed geofence isn't too small
+                geofence = self._check_geofence_fov(
+                    geofence_county, geofence, FOV_RANGE_KM
+                )
 
-        # --- 3. using country
         if not geofence:
+            # --- 3. geofence using country
             geofence = self._create_geofence(geocoded, GeoFeatureType.COUNTRY)
 
         if geofence:
@@ -176,31 +176,56 @@ class GeoFencer(Task):
         else:
             return None
 
-    def _check_geofence_fov(self, geo_fence: GeoFence, fov_range_km: int) -> GeoFence:
+    def _check_geofence_fov(
+        self, geo_fence_narrow: GeoFence, geo_fence: GeoFence, fov_range_km: int
+    ) -> GeoFence:
         """
-        ensure the geo-fence field-of-view is not too small
+        ensure the narrowed geo-fence field-of-view is not too small,
+        and it is inside the wider geo-fence
         """
-        # centre-point of existing geofence
+        if (
+            geo_fence_narrow.lon_minmax[0] < geo_fence.lon_minmax[0]
+            or geo_fence_narrow.lon_minmax[1] > geo_fence.lon_minmax[1]
+            or geo_fence_narrow.lat_minmax[0] < geo_fence.lat_minmax[0]
+            or geo_fence_narrow.lat_minmax[1] > geo_fence.lat_minmax[1]
+        ):
+            logger.info("Narrowed geofence is outside its parent; using wider geofence")
+            return geo_fence
+
+        # centre-point of geofence
         centre_lonlat = (
-            (geo_fence.lon_minmax[0] + geo_fence.lon_minmax[1]) / 2,
-            (geo_fence.lat_minmax[0] + geo_fence.lat_minmax[1]) / 2,
+            (geo_fence_narrow.lon_minmax[0] + geo_fence_narrow.lon_minmax[1]) / 2,
+            (geo_fence_narrow.lat_minmax[0] + geo_fence_narrow.lat_minmax[1]) / 2,
         )
 
         fov_degrange_lon, fov_degrange_lat = self._calc_fov_degree_ranges(
             centre_lonlat, fov_range_km
         )
 
-        lat_minmax = geo_fence.lat_minmax
-        lat_minmax[0] = min(lat_minmax[0], centre_lonlat[1] - fov_degrange_lat)
-        lat_minmax[1] = max(lat_minmax[1], centre_lonlat[1] + fov_degrange_lat)
-        geo_fence.lat_minmax = lat_minmax
+        # ensure the narrowed geo-fence's FOV is not too small, but doesn't extend beyond the 'parent' geo_fence
+        lat_minmax = geo_fence_narrow.lat_minmax
+        lat_minmax[0] = max(
+            min(lat_minmax[0], centre_lonlat[1] - fov_degrange_lat),
+            geo_fence.lat_minmax[0],
+        )
+        lat_minmax[1] = min(
+            max(lat_minmax[1], centre_lonlat[1] + fov_degrange_lat),
+            geo_fence.lat_minmax[1],
+        )
+        geo_fence_narrow.lat_minmax = lat_minmax
 
-        lon_minmax = geo_fence.lon_minmax
-        lon_minmax[0] = min(lon_minmax[0], centre_lonlat[0] - fov_degrange_lon)
-        lon_minmax[1] = max(lon_minmax[1], centre_lonlat[0] + fov_degrange_lon)
-        geo_fence.lon_minmax = lon_minmax
+        lon_minmax = geo_fence_narrow.lon_minmax
+        lon_minmax[0] = max(
+            min(lon_minmax[0], centre_lonlat[0] - fov_degrange_lon),
+            geo_fence.lon_minmax[0],
+        )
+        lon_minmax[1] = min(
+            max(lon_minmax[1], centre_lonlat[0] + fov_degrange_lon),
+            geo_fence.lon_minmax[1],
+        )
+        geo_fence_narrow.lon_minmax = lon_minmax
 
-        return geo_fence
+        return geo_fence_narrow
 
     def _calc_fov_degree_ranges(
         self, centre_lonlat: Tuple[float, float], fov_range_km: int

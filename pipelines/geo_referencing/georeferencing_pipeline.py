@@ -185,29 +185,12 @@ class GeoreferencingPipeline(Pipeline):
                 class_threshold=0,
                 should_run=self._run_step,
             ),
-            # Run metadata extraction on the map area text only
-            MetadataExtractor(
-                "metadata map area extractor",
-                model,
-                "map_area_filter",
-                self._run_step,
-                include_place_bounds=True,
-            ),
             # Geocode the places extracted from the map area
             Geocoder(
-                "place geocoder",
+                "places / population centers geocoder",
                 points_geocoder,
                 run_bounds=False,
                 run_points=True,
-                run_centres=False,
-                should_run=self._run_step,
-            ),
-            # Geo code the population centres extracted from the map area
-            Geocoder(
-                "population center geocoder",
-                bounds_geocoder,
-                run_bounds=False,
-                run_points=False,
                 run_centres=True,
                 should_run=self._run_step,
             ),

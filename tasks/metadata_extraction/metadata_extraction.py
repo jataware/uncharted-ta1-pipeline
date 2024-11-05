@@ -21,6 +21,7 @@ from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
+from tasks.geo_referencing.entities import MapROI, ROI_MAP_OUTPUT_KEY
 from tasks.segmentation.entities import SEGMENTATION_OUTPUT_KEY, MapSegmentation
 from tasks.text_extraction.entities import (
     DocTextExtraction,
@@ -28,13 +29,15 @@ from tasks.text_extraction.entities import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.common.pipeline import Task
-from typing import Callable, List, Dict, Any, Optional, Tuple
+from shapely import Polygon
+from typing import Callable, List, Optional, Tuple
 import hashlib
 
 
 logger = logging.getLogger("metadata_extractor")
 
 PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
+METADATA_CODE_VER = "0.0.1"
 
 
 class LLM(str, Enum):
@@ -340,8 +343,14 @@ class MetadataExtractor(Task):
             # normalize scale
             metadata.scale = self._normalize_scale(metadata.scale)
 
-            # # extract places
-            point_locations = self._extract_point_locations(doc_text)
+            # get the map region-of-interest, if available
+            map_roi = input.parse_data(ROI_MAP_OUTPUT_KEY, MapROI.model_validate)
+            map_text = self._roi_filtering(doc_text.extractions, map_roi)
+
+            # extract point-based places from map ROI
+            point_locations = self._extract_point_locations(
+                DocTextExtraction(doc_id=input.raster_id, extractions=map_text)
+            )
             if not self._include_place_bounds:
                 metadata.places = [p.text for p in point_locations.places]
                 metadata.population_centres = [
@@ -397,6 +406,7 @@ class MetadataExtractor(Task):
         attributes = "_".join(
             [
                 "metadata",
+                METADATA_CODE_VER,
                 task_input.raster_id,
                 self._model,
                 str(self._include_place_bounds),
@@ -404,7 +414,7 @@ class MetadataExtractor(Task):
             ]
         )
         doc_key = hashlib.sha256(attributes.encode()).hexdigest()
-        return f"{doc_key}_{task_input.raster_id}"
+        return f"{task_input.raster_id}_{doc_key}"
 
     def _process_doc_text_extraction(
         self, doc_text_extraction: DocTextExtraction
@@ -487,6 +497,30 @@ class MetadataExtractor(Task):
                 exc_info=True,
             )
             return self._create_empty_extraction(doc_text_extraction.doc_id)
+
+    def _roi_filtering(
+        self, text_extractions: List[TextExtraction], map_roi: Optional[MapROI]
+    ) -> List[TextExtraction]:
+        """
+        Prune text blocks if their pixel location isn't in the map ROI
+        """
+        if not map_roi:
+            logger.warning("No map ROI available, skipping ROI filteirng of text")
+            return text_extractions
+
+        try:
+            map_poly = Polygon(map_roi.map_bounds)
+            filtered_text = []
+            for t in text_extractions:
+                text_bounds_list = [(point.x, point.y) for point in t.bounds]
+                text_poly = Polygon(text_bounds_list)
+                if text_poly.intersects(map_poly):
+                    filtered_text.append(t)
+            return filtered_text
+
+        except Exception as e:
+            logger.error(f"Exception with _roi_filtering: {repr(e)}")
+            return text_extractions
 
     def _extract_point_locations(
         self,
