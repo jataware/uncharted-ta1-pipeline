@@ -15,6 +15,7 @@ from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
+    GeoFenceType,
     GEOFENCE_OUTPUT_KEY,
     MapROI,
     ROI_MAP_OUTPUT_KEY,
@@ -432,7 +433,10 @@ class GeoReference(Task):
         geofence: DocGeoFence = input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
-        if geofence is not None and not geofence.geofence.defaulted:
+        if (
+            geofence is not None
+            and not geofence.geofence.region_type == GeoFenceType.DEFAULT
+        ):
             # check if longitude min and max are both in the same hemisphere
             if (
                 geofence.geofence.lon_minmax[0] <= 0
@@ -613,7 +617,10 @@ class GeoReference(Task):
         geofence: DocGeoFence = input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
-        if geofence is not None and not geofence.geofence.defaulted:
+        if (
+            geofence is not None
+            and not geofence.geofence.region_type == GeoFenceType.DEFAULT
+        ):
             lon_minmax = geofence.geofence.lon_minmax
             lat_minmax = geofence.geofence.lat_minmax
             logger.debug(

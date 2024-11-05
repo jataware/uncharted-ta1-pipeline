@@ -16,6 +16,7 @@ from tasks.geo_referencing.coordinates_extractor import (
 from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
+    GeoFenceType,
     GEOFENCE_OUTPUT_KEY,
     SOURCE_GEOCODE,
 )
@@ -23,6 +24,7 @@ from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
     GeocodedPlace,
     GeocodedCoordinate,
+    GeoPlaceType,
     GEOCODED_PLACES_OUTPUT_KEY,
 )
 
@@ -34,7 +36,7 @@ logger = logging.getLogger("geocode")
 
 
 class Geocoder(CoordinatesExtractor):
-    def __init__(self, task_id: str, place_types: List[str]):
+    def __init__(self, task_id: str, place_types: List[GeoPlaceType]):
         super().__init__(task_id)
         self._place_types = place_types
 
@@ -46,7 +48,7 @@ class Geocoder(CoordinatesExtractor):
     ) -> List[GeocodedPlace]:
         places = [p for p in geocoded.places if p.place_type in self._place_types]
         places_filtered = []
-        if geofence_raw.geofence.defaulted:
+        if geofence_raw.geofence.region_type == GeoFenceType.DEFAULT:
             places_filtered = places
         else:
             lon_minmax = geofence_raw.geofence.lon_minmax
@@ -169,7 +171,7 @@ class Geocoder(CoordinatesExtractor):
 
 
 class PointGeocoder(Geocoder):
-    def __init__(self, task_id: str, place_types: List[str], run_limit: int):
+    def __init__(self, task_id: str, place_types: List[GeoPlaceType], run_limit: int):
         super().__init__(task_id, place_types)
         self._run_limit = run_limit
 
@@ -234,7 +236,9 @@ class PointGeocoder(Geocoder):
 
 
 class BoxGeocoder(Geocoder):
-    def __init__(self, task_id: str, place_types: List[str], run_limit: int = 10):
+    def __init__(
+        self, task_id: str, place_types: List[GeoPlaceType], run_limit: int = 10
+    ):
         super().__init__(task_id, place_types)
         self._run_limit = run_limit
 

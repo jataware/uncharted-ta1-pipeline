@@ -4,9 +4,16 @@ from copy import deepcopy
 from geopy.distance import distance as geo_distance
 
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.geo_referencing.entities import DocGeoFence, GeoFence, GEOFENCE_OUTPUT_KEY
+from tasks.geo_referencing.entities import (
+    DocGeoFence,
+    GeoFence,
+    GeoFenceType,
+    GEOFENCE_OUTPUT_KEY,
+)
 from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
+    GeoPlaceType,
+    GeoFeatureType,
     GEOCODED_PLACES_OUTPUT_KEY,
 )
 
@@ -14,7 +21,8 @@ from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-CLUE_POINT_GEOFENCE_RANGE = 500
+# minmimum field-of-view for geo-fence
+FOV_RANGE_KM = 500
 
 
 class GeoFencer(Task):
@@ -26,7 +34,7 @@ class GeoFencer(Task):
         clue_point = input.get_request_info("clue_point")
         if clue_point is not None:
             geofence = self._get_clue_point_geofence(
-                input.raster_id, clue_point, CLUE_POINT_GEOFENCE_RANGE
+                input.raster_id, clue_point, FOV_RANGE_KM
             )
             return self._create_result(input, geofence)
 
@@ -34,7 +42,7 @@ class GeoFencer(Task):
             GEOCODED_PLACES_OUTPUT_KEY, DocGeocodedPlaces.model_validate
         )
 
-        geofence, places = self._get_geofence(input, geocoded)
+        geofence = self._get_geofence(input, geocoded)
 
         # TODO: NEED TO DETERMINE IF INPUT HAS BETTER GEOFENCE (MAYBE BY AREA) OR SKIP IF RELATIVELY SMALL GEOFENCE
 
@@ -42,19 +50,12 @@ class GeoFencer(Task):
         return self._create_result(input, geofence)
 
     def _get_clue_point_geofence(
-        self, raster_id: str, clue_point: Tuple[float, float], fov_range_km
+        self, raster_id: str, clue_point: Tuple[float, float], fov_range_km: int
     ) -> DocGeoFence:
-        dist_km = (
-            fov_range_km / 2.0
-        )  # distance from clue pt in all directions (N,E,S,W)
-        fov_pt_north = geo_distance(kilometers=dist_km).destination(
-            (clue_point[1], clue_point[0]), bearing=0
+
+        fov_degrange_lon, fov_degrange_lat = self._calc_fov_degree_ranges(
+            clue_point, fov_range_km
         )
-        fov_pt_east = geo_distance(kilometers=dist_km).destination(
-            (clue_point[1], clue_point[0]), bearing=90
-        )
-        fov_degrange_lon = abs(fov_pt_east[1] - clue_point[0])
-        fov_degrange_lat = abs(fov_pt_north[0] - clue_point[1])
         lon_minmax = [
             clue_point[0] - fov_degrange_lon,
             clue_point[0] + fov_degrange_lon,
@@ -69,7 +70,7 @@ class GeoFencer(Task):
             geofence=GeoFence(
                 lat_minmax=lat_minmax,
                 lon_minmax=lon_minmax,
-                defaulted=False,
+                region_type=GeoFenceType.CLUE,
             ),
         )
 
@@ -85,75 +86,67 @@ class GeoFencer(Task):
 
     def _get_geofence(
         self, input: TaskInput, geocoded: DocGeocodedPlaces
-    ) -> Tuple[DocGeoFence, List[str]]:
+    ) -> DocGeoFence:
+        """
+        Main geofence extraction function
+        Try to construct using counties, then states, then the whole country
+        """
         # use default if nothing geocoded
-        if geocoded is None or len(geocoded.places) == None:
-            logger.info("geofence built using defaults")
-            return self._create_default_geofence(input), []
+        if geocoded is None or len(geocoded.places) == 0:
+            return DocGeoFence(
+                map_id=input.raster_id, geofence=self._create_default_geofence(input)
+            )
 
-        # for now, geofence should be either the widest possible to accomodate all states or if none present the country
-        geofence, places = self._get_state_geofence(input, geocoded)
-        if geofence is not None:
-            logger.info("geofence built using states")
-            return geofence, places
+        # --- 1. geofence using states
+        geofence = self._create_geofence(geocoded, GeoFeatureType.STATE)
+        if geofence:
+            # --- 2. try to narrow the geofence using county names, if available
+            geofence_county = self._create_geofence(geocoded, GeoFeatureType.COUNTY)
+            if geofence_county:
+                # double-check that the narrowed geofence isn't too small
+                geofence = self._check_geofence_fov(
+                    geofence_county, geofence, FOV_RANGE_KM
+                )
 
-        logger.info("geofence built using country")
-        return self._get_country_geofence(input, geocoded)
+        if not geofence:
+            # --- 3. geofence using country
+            geofence = self._create_geofence(geocoded, GeoFeatureType.COUNTRY)
 
-    def _create_default_geofence(self, input: TaskInput) -> DocGeoFence:
+        if geofence:
+            return DocGeoFence(map_id=input.raster_id, geofence=geofence)
+        else:
+            return DocGeoFence(
+                map_id=input.raster_id, geofence=self._create_default_geofence(input)
+            )
+
+    def _create_default_geofence(self, input: TaskInput) -> GeoFence:
         """
         Create geofence from the default ranges (as specified as pipeline input parameters),
         or alternatively, set to the geofence to the whole world
         """
         lon_minmax = input.get_request_info("lon_minmax", [-180, 180])
         lat_minmax = input.get_request_info("lat_minmax", [-90, 90])
-        return DocGeoFence(
-            map_id=input.raster_id,
-            geofence=GeoFence(
-                lat_minmax=deepcopy(lat_minmax),
-                lon_minmax=deepcopy(lon_minmax),
-                defaulted=True,
-            ),
+        logger.info("Geofence created using defaults")
+        return GeoFence(
+            lat_minmax=deepcopy(lat_minmax),
+            lon_minmax=deepcopy(lon_minmax),
+            region_type=GeoFenceType.DEFAULT,
         )
 
-    def _get_country_geofence(
-        self, input: TaskInput, geocoded: DocGeocodedPlaces
-    ) -> Tuple[DocGeoFence, List[str]]:
-        # country geofence is the one item with no restriction
-        for p in geocoded.places:
-            if (
-                p.place_location_restriction is None
-                or p.place_location_restriction == ""
-            ):
-                return DocGeoFence(
-                    map_id=geocoded.map_id,
-                    geofence=GeoFence(
-                        lat_minmax=[
-                            p.results[0].coordinates[0].geo_y,
-                            p.results[0].coordinates[2].geo_y,
-                        ],
-                        lon_minmax=[
-                            p.results[0].coordinates[0].geo_x,
-                            p.results[0].coordinates[2].geo_x,
-                        ],
-                        defaulted=False,
-                    ),
-                ), [p.place_name]
-
-        return self._create_default_geofence(input), []
-
-    def _get_state_geofence(
-        self, input: TaskInput, geocoded: DocGeocodedPlaces
-    ) -> Tuple[Optional[DocGeoFence], List[str]]:
-        # for now, assume states have a restriction to the country
+    def _create_geofence(
+        self, geocoded: DocGeocodedPlaces, geo_feature_type: GeoFeatureType
+    ) -> Optional[GeoFence]:
+        """
+        Create a geofence based on a given geo-feature-type (county, state, or country)
+        """
         lats = []
         lons = []
         places = []
         for p in geocoded.places:
             if (
-                p.place_location_restriction is not None
-                and p.place_location_restriction != ""
-            ) and p.place_type == "bound":
+                p.place_type == GeoPlaceType.BOUND
+                and p.feature_type == geo_feature_type
+            ):
                 # extract all lat and lon
                 lats = lats + [
                     p.results[0].coordinates[0].geo_y,
@@ -164,18 +157,90 @@ class GeoFencer(Task):
                     p.results[0].coordinates[2].geo_x,
                 ]
                 places.append(p.place_name)
-        if len(lats) == 0:
-            return None, []
+        if len(lats) != 0:
 
-        # geofence is the widest possible box
-        return (
-            DocGeoFence(
-                map_id=input.raster_id,
-                geofence=GeoFence(
-                    lat_minmax=[min(lats), max(lats)],
-                    lon_minmax=[min(lons), max(lons)],
-                    defaulted=False,
-                ),
-            ),
-            places,
+            fence_type = GeoFenceType.DEFAULT
+            if geo_feature_type == GeoFeatureType.COUNTY:
+                fence_type = GeoFenceType.COUNTY
+            elif geo_feature_type == GeoFeatureType.STATE:
+                fence_type = GeoFenceType.STATE
+            elif geo_feature_type == GeoFeatureType.COUNTRY:
+                fence_type = GeoFenceType.COUNTRY
+
+            logger.info(f"Geofence created using these places: {places}")
+            return GeoFence(
+                lat_minmax=[min(lats), max(lats)],
+                lon_minmax=[min(lons), max(lons)],
+                region_type=fence_type,
+            )
+        else:
+            return None
+
+    def _check_geofence_fov(
+        self, geo_fence_narrow: GeoFence, geo_fence: GeoFence, fov_range_km: int
+    ) -> GeoFence:
+        """
+        ensure the narrowed geo-fence field-of-view is not too small,
+        and it is inside the wider geo-fence
+        """
+        if (
+            geo_fence_narrow.lon_minmax[0] < geo_fence.lon_minmax[0]
+            or geo_fence_narrow.lon_minmax[1] > geo_fence.lon_minmax[1]
+            or geo_fence_narrow.lat_minmax[0] < geo_fence.lat_minmax[0]
+            or geo_fence_narrow.lat_minmax[1] > geo_fence.lat_minmax[1]
+        ):
+            logger.info("Narrowed geofence is outside its parent; using wider geofence")
+            return geo_fence
+
+        # centre-point of geofence
+        centre_lonlat = (
+            (geo_fence_narrow.lon_minmax[0] + geo_fence_narrow.lon_minmax[1]) / 2,
+            (geo_fence_narrow.lat_minmax[0] + geo_fence_narrow.lat_minmax[1]) / 2,
         )
+
+        fov_degrange_lon, fov_degrange_lat = self._calc_fov_degree_ranges(
+            centre_lonlat, fov_range_km
+        )
+
+        # ensure the narrowed geo-fence's FOV is not too small, but doesn't extend beyond the 'parent' geo_fence
+        lat_minmax = geo_fence_narrow.lat_minmax
+        lat_minmax[0] = max(
+            min(lat_minmax[0], centre_lonlat[1] - fov_degrange_lat),
+            geo_fence.lat_minmax[0],
+        )
+        lat_minmax[1] = min(
+            max(lat_minmax[1], centre_lonlat[1] + fov_degrange_lat),
+            geo_fence.lat_minmax[1],
+        )
+        geo_fence_narrow.lat_minmax = lat_minmax
+
+        lon_minmax = geo_fence_narrow.lon_minmax
+        lon_minmax[0] = max(
+            min(lon_minmax[0], centre_lonlat[0] - fov_degrange_lon),
+            geo_fence.lon_minmax[0],
+        )
+        lon_minmax[1] = min(
+            max(lon_minmax[1], centre_lonlat[0] + fov_degrange_lon),
+            geo_fence.lon_minmax[1],
+        )
+        geo_fence_narrow.lon_minmax = lon_minmax
+
+        return geo_fence_narrow
+
+    def _calc_fov_degree_ranges(
+        self, centre_lonlat: Tuple[float, float], fov_range_km: int
+    ) -> Tuple[float, float]:
+        """
+        calculate the desired field-of-view lon and lat degree range for a given KM range
+        """
+
+        dist_km = fov_range_km / 2.0
+        fov_pt_north = geo_distance(kilometers=dist_km).destination(
+            (centre_lonlat[1], centre_lonlat[0]), bearing=0
+        )
+        fov_pt_east = geo_distance(kilometers=dist_km).destination(
+            (centre_lonlat[1], centre_lonlat[0]), bearing=90
+        )
+        fov_degrange_lon = abs(fov_pt_east[1] - centre_lonlat[0])
+        fov_degrange_lat = abs(fov_pt_north[0] - centre_lonlat[1])
+        return (fov_degrange_lon, fov_degrange_lat)

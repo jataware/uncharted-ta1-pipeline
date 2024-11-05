@@ -219,10 +219,13 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             coord = utm.from_latlon(clue_point[1], clue_point[0])
             return coord[2], clue_point[1] > 0, "clue point"
 
+        # UTM is limited to the range of 80 south to 84 north
+        lat_minmax = raw_geofence.geofence.lat_minmax
+        lat_minmax[0] = max(lat_minmax[0], -80)
+        lat_minmax[1] = min(lat_minmax[1], 84)
+
         # figure out centre of geofence for mapping purposes
-        centre_lat = (
-            raw_geofence.geofence.lat_minmax[0] + raw_geofence.geofence.lat_minmax[1]
-        ) / 2.0
+        centre_lat = (lat_minmax[0] + lat_minmax[1]) / 2.0
         centre_lon = (
             raw_geofence.geofence.lon_minmax[0] + raw_geofence.geofence.lon_minmax[1]
         ) / 2.0
@@ -284,15 +287,9 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         # use geofence to determine the zone
         # set direction properly if min and max latitudes are in same hemisphere
         if not northern_determined:
-            unique_hemi = (
-                raw_geofence.geofence.lat_minmax[0]
-                * raw_geofence.geofence.lat_minmax[1]
-            )
+            unique_hemi = lat_minmax[0] * lat_minmax[1]
             if unique_hemi >= 0:
-                hemi = (
-                    raw_geofence.geofence.lat_minmax[0]
-                    + raw_geofence.geofence.lat_minmax[1]
-                )
+                hemi = lat_minmax[0] + lat_minmax[1]
                 northern = hemi > 0
                 northern_determined = True
 
@@ -302,10 +299,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         # use the lon min & max to get the zone, and if only 1 is possible then it is resolved
         if not zone_number_determined:
             utm_min = utm.from_latlon(
-                raw_geofence.geofence.lat_minmax[0], raw_geofence.geofence.lon_minmax[0]
+                lat_minmax[0], raw_geofence.geofence.lon_minmax[0]
             )
             utm_max = utm.from_latlon(
-                raw_geofence.geofence.lat_minmax[1], raw_geofence.geofence.lon_minmax[1]
+                lat_minmax[1], raw_geofence.geofence.lon_minmax[1]
             )
             if utm_min[2] == utm_max[2]:
                 zone_number = utm_min[2]

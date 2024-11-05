@@ -3,7 +3,12 @@ import io
 
 from tasks.text_extraction.entities import Point
 from tasks.common.task import TaskInput
-from tasks.geo_referencing.entities import DocGeoFence, GEOFENCE_OUTPUT_KEY, Coordinate
+from tasks.geo_referencing.entities import (
+    DocGeoFence,
+    GEOFENCE_OUTPUT_KEY,
+    Coordinate,
+    GeoFenceType,
+)
 from tasks.metadata_extraction.entities import MetadataExtraction
 from tasks.geo_referencing.entities import GroundControlPoint as LARAGroundControlPoint
 
@@ -59,7 +64,7 @@ def get_input_geofence(input: TaskInput) -> Tuple[List[float], List[float], bool
     return (
         absolute_minmax(geofence.geofence.lon_minmax),
         absolute_minmax(geofence.geofence.lat_minmax),
-        geofence.geofence.defaulted,
+        geofence.geofence.region_type == GeoFenceType.DEFAULT,
     )
 
 
