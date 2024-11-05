@@ -5,6 +5,7 @@ import json
 import logging
 import ngrok
 import os
+import requests
 
 from flask import Flask, request, Response
 
@@ -215,8 +216,6 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("process", "host"), required=True)
-    parser.add_argument("--workdir", type=str, required=True)
-    parser.add_argument("--imagedir", type=str, required=True)
     parser.add_argument("--cog_id", type=str, required=False)
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--rabbit_port", type=int, default=5672)
@@ -224,9 +223,9 @@ def main():
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
     parser.add_argument("--input", type=str, default=None)
-    parser.add_argument("--output", type=str, default=None)
     parser.add_argument("--cdr_host", type=str, default=CDR_HOST)
     parser.add_argument("--cogdir", type=str, default=COG_PATH)
+    parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument(
         "--sequence",
         nargs="*",
@@ -239,9 +238,6 @@ def main():
     settings.cdr_api_token = CDR_API_TOKEN
     settings.cdr_host = p.cdr_host
     settings.cogdir = p.cogdir
-    settings.workdir = p.workdir
-    settings.imagedir = p.imagedir
-    settings.output = p.output
     settings.callback_secret = CDR_CALLBACK_SECRET
     settings.sequence = p.sequence
 
@@ -279,9 +275,6 @@ def main():
         LARA_RESULT_QUEUE_NAME,
         settings.cdr_host,
         settings.cdr_api_token,
-        settings.output,
-        settings.workdir,
-        settings.imagedir,
         host=p.host,
         port=p.rabbit_port,
         vhost=p.rabbit_vhost,
@@ -302,6 +295,8 @@ def main():
                 for line in f:
                     cog_id = line.strip()
                     process_image(cog_id, request_publisher)
+                    if p.metrics_url != "":
+                        requests.post(p.metrics_url + "/counter/jobs_submitted?step=1")
         else:
             process_image(p.cog_id, request_publisher)
 

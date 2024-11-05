@@ -15,6 +15,7 @@ from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.georeference import GeoreferenceResults
 from schema.cdr_schemas.metadata import CogMetaData
 from schema.mappers.cdr import GeoreferenceMapper, get_mapper
+from tasks.common.image_cache import ImageCache
 from tasks.common.io import BytesIOFileWriter, ImageFileReader, JSONFileWriter
 from tasks.common.request_client import OutputType, RequestResult
 from tasks.common.result_subscriber import LaraResultSubscriber
@@ -50,9 +51,6 @@ class WriteResultSubscriber(LaraResultSubscriber):
             result_queue,
             cdr_host,
             cdr_token,
-            output,
-            workdir,
-            imagedir,
             host=host,
             port=port,
             vhost=vhost,
@@ -60,6 +58,10 @@ class WriteResultSubscriber(LaraResultSubscriber):
             pwd=pwd,
         )
         self._metrics_url = metrics_url
+        self._output = output
+        self._workdir = workdir
+        self._image_cache = ImageCache(imagedir)
+        self._image_cache._init_cache()
 
     def _process_lara_result(
         self,

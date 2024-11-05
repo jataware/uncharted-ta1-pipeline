@@ -43,6 +43,7 @@ class MetadataExtractorPipeline(Pipeline):
         cdr_schema=False,
         model=LLM.GPT_4_O,
         gpu=True,
+        metrics_url: str = "",
     ):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
@@ -82,6 +83,7 @@ class MetadataExtractorPipeline(Pipeline):
                 "metadata_extractor",
                 model=model,
                 cache_location=append_to_cache_location(cache_location, "metadata"),
+                metrics_url=metrics_url,
             ),
         ]
 

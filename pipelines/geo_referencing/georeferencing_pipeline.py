@@ -74,12 +74,13 @@ class GeoreferencingPipeline(Pipeline):
         projected: bool,
         diagnostics: bool,
         gpu_enabled: bool,
+        metrics_url: str = "",
     ):
-        geocoding_cache_bounds = os.path.join(
+        geocoding_cache_bounds = append_to_cache_location(
             working_dir, "geocoding_cache_bounds.json"
         )
 
-        geocoding_cache_points = os.path.join(
+        geocoding_cache_points = append_to_cache_location(
             working_dir, "geocoding_cache_points.json"
         )
 
@@ -152,6 +153,7 @@ class GeoreferencingPipeline(Pipeline):
                 model,
                 "filtered_ocr_text",
                 cache_location=metadata_cache,
+                metrics_url=metrics_url,
             ),
             # Creates geo locations for country and state of the map area based on the metadata
             Geocoder(

@@ -32,6 +32,7 @@ from tasks.common.pipeline import Task
 from shapely import Polygon
 from typing import Callable, List, Optional, Tuple
 import hashlib
+import requests
 
 
 logger = logging.getLogger("metadata_extractor")
@@ -277,6 +278,7 @@ class MetadataExtractor(Task):
         should_run: Optional[Callable] = None,
         cache_location: str = "",
         include_place_bounds: bool = True,
+        metrics_url: str = "",
     ):
         super().__init__(id, cache_location)
 
@@ -287,6 +289,7 @@ class MetadataExtractor(Task):
         self._text_key = text_key
         self._include_place_bounds = include_place_bounds
         self._should_run = should_run
+        self._metrics_url = metrics_url
 
         logger.info(f"Using model: {self._model.value}")
 
@@ -468,6 +471,14 @@ class MetadataExtractor(Task):
                     f"Token count after filtering exceeds limit - reducing max text length to {max_text_length}"
                 )
             logger.info(f"Processing {num_tokens} tokens.")
+
+            if self._metrics_url != "":
+                requests.post(
+                    self._metrics_url + "/counter/total_tokens?step=" + str(num_tokens)
+                )
+                requests.post(
+                    self._metrics_url + "/gauge/tokens?value=" + str(num_tokens)
+                )
 
             # generate the response
             if input_prompt is not None:
