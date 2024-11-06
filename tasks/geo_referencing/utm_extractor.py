@@ -3,8 +3,6 @@ import logging
 import re
 import statistics
 import utm
-import uuid
-
 from copy import deepcopy
 
 from tasks.geo_referencing.coordinates_extractor import (
@@ -16,7 +14,8 @@ from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
     GEOFENCE_OUTPUT_KEY,
-    SOURCE_UTM,
+    CoordType,
+    CoordSource,
 )
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
@@ -26,12 +25,10 @@ from tasks.metadata_extraction.entities import (
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.geo_referencing.util import (
-    ocr_to_coordinates,
     get_bounds_bounding_box,
     is_in_range,
     get_min_max_count,
 )
-
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("utm_extractor")
@@ -451,10 +448,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     else (span[0] / float(span[2]), span[1] / float(span[2]))
                 )
                 coord = Coordinate(
-                    "lat keypoint",
+                    CoordType.KEYPOINT,
                     ocr_text_blocks.extractions[idx].text,
                     latlon_pt[0],
-                    SOURCE_UTM,
+                    CoordSource.UTM,
                     True,
                     ocr_text_blocks.extractions[idx].bounds,
                     x_ranges=x_ranges,
@@ -484,10 +481,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             )
             # latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
             coord = Coordinate(
-                "lon keypoint",
+                CoordType.KEYPOINT,
                 ocr_text_blocks.extractions[idx].text,
                 latlon_pt[1],
-                SOURCE_UTM,
+                CoordSource.UTM,
                 False,
                 ocr_text_blocks.extractions[idx].bounds,
                 x_ranges=x_ranges,

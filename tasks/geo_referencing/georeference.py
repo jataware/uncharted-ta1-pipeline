@@ -1,6 +1,5 @@
 import logging
 import math
-
 from geopy.distance import geodesic
 
 from tasks.geo_referencing.entities import (
@@ -19,6 +18,8 @@ from tasks.geo_referencing.entities import (
     GEOFENCE_OUTPUT_KEY,
     MapROI,
     ROI_MAP_OUTPUT_KEY,
+    CoordType,
+    CoordSource,
 )
 from tasks.geo_referencing.geo_projection import GeoProjection
 from tasks.geo_referencing.util import get_input_geofence
@@ -27,10 +28,7 @@ from tasks.metadata_extraction.entities import (
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.metadata_extraction.scale import SCALE_VALUE_OUTPUT_KEY
-
 from typing import Any, Dict, List, Optional, Tuple
-
-import rasterio.transform as riot
 from pyproj import Transformer
 
 
@@ -178,10 +176,10 @@ class GeoReference(Task):
                 lat_pts.clear()
                 for a in anchors:
                     coord = Coordinate(
-                        "lat keypoint",
+                        CoordType.DERIVED_KEYPOINT,
                         f"fallback {a.geo_coord}",
                         a.geo_coord,
-                        "anchor",
+                        CoordSource.ANCHOR,
                         True,
                         pixel_alignment=(
                             (roi_xy_minmax[0][0] + roi_xy_minmax[0][1]) / 2,
@@ -199,10 +197,10 @@ class GeoReference(Task):
                 lon_pts.clear()
                 for a in anchors:
                     coord = Coordinate(
-                        "lon keypoint",
+                        CoordType.DERIVED_KEYPOINT,
                         f"fallback {a.geo_coord}",
                         a.geo_coord,
-                        "anchor",
+                        CoordSource.ANCHOR,
                         False,
                         pixel_alignment=(
                             a.pixel_coord,
@@ -290,7 +288,7 @@ class GeoReference(Task):
     ) -> Dict[str, int]:
         counts = {}
         for _, c in points.items():
-            source = c.get_source()
+            source = str(c.get_source().value)
             if source not in counts:
                 counts[source] = 0
             counts[source] = counts[source] + 1

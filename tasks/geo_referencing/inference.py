@@ -8,9 +8,10 @@ from tasks.geo_referencing.coordinates_extractor import (
 )
 from tasks.geo_referencing.entities import (
     Coordinate,
-    SOURCE_INFERENCE,
     MapROI,
     ROI_MAP_OUTPUT_KEY,
+    CoordType,
+    CoordSource,
 )
 from tasks.geo_referencing.util import ocr_to_coordinates
 
@@ -81,10 +82,10 @@ class InferenceCoordinateExtractor(CoordinatesExtractor):
             )
             coord_update = lon_pts
             new_coord = Coordinate(
-                "lon keypoint",
+                CoordType.DERIVED_KEYPOINT,
                 "",
                 new_lon.degree,
-                SOURCE_INFERENCE,
+                CoordSource.INFERENCE,
                 False,
                 pixel_alignment=(new_lon.pixel, lon[1].get_pixel_alignment()[1]),
                 confidence=0.5,
@@ -107,10 +108,10 @@ class InferenceCoordinateExtractor(CoordinatesExtractor):
             )
             coord_update = lat_pts
             new_coord = Coordinate(
-                "lat keypoint",
+                CoordType.DERIVED_KEYPOINT,
                 "",
                 new_lat.degree,
-                SOURCE_INFERENCE,
+                CoordSource.INFERENCE,
                 True,
                 pixel_alignment=(lat[1].get_pixel_alignment()[0], new_lat.pixel),
                 confidence=0.5,

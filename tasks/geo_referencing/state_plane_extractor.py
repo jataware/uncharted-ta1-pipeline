@@ -4,9 +4,7 @@ import logging
 import re
 import stateplane
 import statistics
-import uuid
 import numpy as np
-
 from shapely import Point as sPoint
 from shapely.geometry import shape
 from sklearn.cluster import DBSCAN
@@ -26,8 +24,8 @@ from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
     GEOFENCE_OUTPUT_KEY,
-    SOURCE_STATE_PLANE,
-    SOURCE_LAT_LON,
+    CoordType,
+    CoordSource,
 )
 from tasks.geo_referencing.util import is_nad_83
 from tasks.metadata_extraction.entities import (
@@ -35,14 +33,11 @@ from tasks.metadata_extraction.entities import (
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.geo_referencing.util import (
-    ocr_to_coordinates,
     get_bounds_bounding_box,
     is_in_range,
     get_min_max_count,
 )
-
 from util.json import read_json_file
-
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("state_plane_extractor")
@@ -340,10 +335,10 @@ class StatePlaneExtractor(CoordinatesExtractor):
             raw_geofence.geofence.lon_minmax[0] + raw_geofence.geofence.lon_minmax[1]
         ) / 2
         min_lon, max_lon, count_lon = get_min_max_count(
-            lons, centre_lon < 0, [SOURCE_LAT_LON]
+            lons, centre_lon < 0, [CoordSource.LAT_LON]
         )
         min_lat, max_lat, count_lat = get_min_max_count(
-            lats, centre_lat < 0, [SOURCE_LAT_LON]
+            lats, centre_lat < 0, [CoordSource.LAT_LON]
         )
         if count_lon > 0 and count_lat > 0:
             return (
@@ -527,10 +522,10 @@ class StatePlaneExtractor(CoordinatesExtractor):
                     else (span[0] / float(span[2]), span[1] / float(span[2]))
                 )
                 coord = Coordinate(
-                    "lat keypoint",
+                    CoordType.KEYPOINT,
                     ocr_text_blocks.extractions[idx].text,
                     latlon_pt[0],
-                    SOURCE_STATE_PLANE,
+                    CoordSource.STATE_PLANE,
                     True,
                     ocr_text_blocks.extractions[idx].bounds,
                     x_ranges=x_ranges,
@@ -554,10 +549,10 @@ class StatePlaneExtractor(CoordinatesExtractor):
             latlon_pt = stateplane.to_latlon(e, northing_clue, epsg=state_plane_zone)
             # latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
             coord = Coordinate(
-                "lon keypoint",
+                CoordType.KEYPOINT,
                 ocr_text_blocks.extractions[idx].text,
                 latlon_pt[1],
-                SOURCE_STATE_PLANE,
+                CoordSource.STATE_PLANE,
                 False,
                 ocr_text_blocks.extractions[idx].bounds,
                 x_ranges=x_ranges,

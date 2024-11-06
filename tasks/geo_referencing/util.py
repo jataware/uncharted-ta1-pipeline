@@ -10,7 +10,10 @@ from tasks.geo_referencing.entities import (
     GeoFenceType,
 )
 from tasks.metadata_extraction.entities import MetadataExtraction
-from tasks.geo_referencing.entities import GroundControlPoint as LARAGroundControlPoint
+from tasks.geo_referencing.entities import (
+    CoordSource,
+    GroundControlPoint as LARAGroundControlPoint,
+)
 
 from util.coordinate import absolute_minmax
 
@@ -109,7 +112,7 @@ def is_nad_83(metadata: MetadataExtraction) -> bool:
 def get_min_max_count(
     coordinates: Dict[Tuple[float, float], Coordinate],
     is_negative_hemisphere: bool,
-    sources: List[str] = [],
+    sources: List[CoordSource] = [],
 ) -> Tuple[float, float, int]:
     coords = get_points(coordinates, sources).items()
     if len(coords) == 0:
@@ -126,7 +129,7 @@ def get_min_max_count(
 
 
 def get_points(
-    coordinates: Dict[Tuple[float, float], Coordinate], sources: List[str] = []
+    coordinates: Dict[Tuple[float, float], Coordinate], sources: List[CoordSource] = []
 ) -> Dict[Tuple[float, float], Coordinate]:
 
     if coordinates is None or len(coordinates) == 0:

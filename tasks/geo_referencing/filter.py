@@ -1,16 +1,10 @@
 import logging
-import uuid
 import numpy as np
 from copy import deepcopy
 from sklearn.cluster import DBSCAN
 from shapely import Polygon, box
 
-from tasks.geo_referencing.entities import (
-    Coordinate,
-    SOURCE_STATE_PLANE,
-    SOURCE_UTM,
-    SOURCE_LAT_LON,
-)
+from tasks.geo_referencing.entities import Coordinate, CoordSource, CoordType
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.geo_projection import PolyRegression
 from tasks.geo_referencing.util import ocr_to_coordinates
@@ -340,10 +334,10 @@ class UTMStatePlaneFilter(FilterCoordinates):
     ]:
 
         # get the count and confidence of state plane and utm coordinates
-        lon_count_sp, lon_conf_sp = self._get_score(lon_coords, SOURCE_STATE_PLANE)
-        lon_count_utm, lon_conf_utm = self._get_score(lon_coords, SOURCE_UTM)
-        lat_count_sp, lat_conf_sp = self._get_score(lat_coords, SOURCE_STATE_PLANE)
-        lat_count_utm, lat_conf_utm = self._get_score(lat_coords, SOURCE_UTM)
+        lon_count_sp, lon_conf_sp = self._get_score(lon_coords, CoordSource.STATE_PLANE)
+        lon_count_utm, lon_conf_utm = self._get_score(lon_coords, CoordSource.UTM)
+        lat_count_sp, lat_conf_sp = self._get_score(lat_coords, CoordSource.STATE_PLANE)
+        lat_count_utm, lat_conf_utm = self._get_score(lat_coords, CoordSource.UTM)
 
         # if no utm or no state plane coordinates exist then nothing to filter
         if lon_count_sp + lat_count_sp == 0:
@@ -352,29 +346,29 @@ class UTMStatePlaneFilter(FilterCoordinates):
             return lon_coords, lat_coords
 
         # if one has coordinates in both directions while the other doesnt then keep that one
-        source_filter = ""
+        source_filter = None
         if (
             min(lon_count_utm, lat_count_utm) > 0
             and min(lon_count_sp, lat_count_sp) == 0
         ):
             logger.debug("removing state plane coordinates since one axis has none")
-            source_filter = SOURCE_STATE_PLANE
+            source_filter = CoordSource.STATE_PLANE
         elif (
             min(lon_count_utm, lat_count_utm) == 0
             and min(lon_count_sp, lat_count_sp) > 0
         ):
             logger.debug("removing utm coordinates since one axis has none")
-            source_filter = SOURCE_UTM
+            source_filter = CoordSource.UTM
 
         # if still unsure then retain the one with the highest confidence
         # by this point both utm and state plane have coordinates in one or two directions
-        if source_filter == "":
-            source_filter = SOURCE_UTM
+        if not source_filter:
+            source_filter = CoordSource.UTM
             if max(lon_conf_utm, lat_conf_utm) > max(lon_conf_sp, lat_conf_sp):
                 logger.debug(
                     "removing state plane coordinates since utm coordinates have higher confidence"
                 )
-                source_filter = SOURCE_STATE_PLANE
+                source_filter = CoordSource.STATE_PLANE
             else:
                 logger.debug(
                     "removing utm coordinates since state plane coordinates have higher confidence"
@@ -387,7 +381,7 @@ class UTMStatePlaneFilter(FilterCoordinates):
         )
 
     def _get_score(
-        self, coords: Dict[Tuple[float, float], Coordinate], source: str
+        self, coords: Dict[Tuple[float, float], Coordinate], source: CoordSource
     ) -> Tuple[int, float]:
         conf = -1
         count = 0
@@ -400,7 +394,7 @@ class UTMStatePlaneFilter(FilterCoordinates):
         return (count, conf)
 
     def _filter_source(
-        self, source: str, coords: Dict[Tuple[float, float], Coordinate]
+        self, source: CoordSource, coords: Dict[Tuple[float, float], Coordinate]
     ) -> Dict[Tuple[float, float], Coordinate]:
         coords_filtered = {}
         for k, c in coords.items():
@@ -612,10 +606,10 @@ class ROIFilter(FilterCoordinates):
                 new_y = 0 if lat_pt[0][1] > im_size[1] / 2 else im_size[1] - 1
                 new_lat = -deg_per_pxl * (new_y - lat_pt[0][1]) + lat_pt[0][0]
                 coord = Coordinate(
-                    "lat keypoint",
+                    CoordType.DERIVED_KEYPOINT,
                     "",
                     new_lat,
-                    SOURCE_LAT_LON,
+                    CoordSource.LAT_LON,
                     True,
                     pixel_alignment=(lat_pt[1].to_deg_result()[1], new_y),
                     confidence=0.6,
@@ -640,10 +634,10 @@ class ROIFilter(FilterCoordinates):
                 new_x = 0 if lon_pt[0][1] > im_size[0] / 2 else im_size[0] - 1
                 new_lon = -deg_per_pxl * (new_x - lon_pt[0][1]) + lon_pt[0][0]
                 coord = Coordinate(
-                    "lon keypoint",
+                    CoordType.DERIVED_KEYPOINT,
                     "",
                     new_lon,
-                    SOURCE_LAT_LON,
+                    CoordSource.LAT_LON,
                     False,
                     pixel_alignment=(new_x, lon_pt[1].to_deg_result()[1]),
                     confidence=0.6,
