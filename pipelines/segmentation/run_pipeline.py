@@ -2,7 +2,12 @@ import argparse
 import logging
 import os
 from PIL.Image import Image as PILImage
-from tasks.common.pipeline import PipelineInput, BaseModelOutput, ImageOutput
+from tasks.common.pipeline import (
+    EmptyOutput,
+    PipelineInput,
+    BaseModelOutput,
+    ImageOutput,
+)
 from pipelines.segmentation.segmentation_pipeline import SegmentationPipeline
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
 
@@ -64,6 +69,8 @@ def main():
                 path = os.path.join(p.output, f"{doc_id}_map_segmentation.png")
                 assert isinstance(output_data.data, PILImage)
                 image_writer.process(path, output_data.data)
+            elif isinstance(output_data, EmptyOutput):
+                logger.info(f"Empty {output_type} output for {doc_id}")
             else:
                 logger.warning(f"Unknown output type: {type(output_data)}")
                 continue
