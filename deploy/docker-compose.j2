@@ -78,7 +78,7 @@ services:
       {%- if local %}
       "--workdir", "/workdir",
       "--imagedir", "/imagedir",
-      {% else %}
+      {%- else %}
       "--workdir", {{ work_dir }},
       "--imagedir", {{ image_dir }},
       {%- endif %}
@@ -86,7 +86,12 @@ services:
       "--model", "pipelines/segmentation_weights",
       "--result_queue", "lara_result_queue"]
     environment:
+      {%- if azure_openai_api_key %}
+      - AZURE_OPENAI_API_KEY={{ azure_openai_api_key }}
+      - AZURE_OPENAI_ENDPOINT={{ azure_openai_endpoint }}
+      {%- else %}
       - OPENAI_API_KEY={{ openai_api_key }}
+      {%- endif %}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_application_credentials.json
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
@@ -113,7 +118,7 @@ services:
       {%- if local %}
       "--workdir", "/workdir",
       "--imagedir", "/imagedir",
-      {% else %}
+      {%- else %}
       "--workdir", {{ work_dir }},
       "--imagedir", {{ image_dir }},
       {%- endif %}
@@ -129,7 +134,7 @@ services:
       {%- endif %}
     volumes:
       - {{ google_application_credentials_dir }}:/credentials
-    {%-if local %}
+    {%- if local %}
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     {%- endif %}
@@ -156,7 +161,7 @@ services:
       {%- if local %}
       "--workdir", "/workdir",
       "--imagedir", "/imagedir",
-      {% else %}
+      {%- else %}
       "--workdir", {{ work_dir }},
       "--imagedir", {{ image_dir }},
       {%- endif %}
@@ -190,7 +195,7 @@ services:
       {%- if local %}
       "--workdir", "/workdir",
       "--imagedir", "/imagedir",
-      {% else %}
+      {%- else %}
       "--workdir", {{ work_dir }},
       "--imagedir", {{ image_dir }},
       {%- endif %}
@@ -198,7 +203,12 @@ services:
       "--model", "pipelines/segmentation_weights",
       "--result_queue", "lara_result_queue"]
     environment:
+      {%- if azure_openai_api_key %}
+      - AZURE_OPENAI_API_KEY={{ azure_openai_api_key }}
+      - AZURE_OPENAI_ENDPOINT= {{ azure_openai_endpoint }}
+      {%- else %}
       - OPENAI_API_KEY={{ openai_api_key }}
+      {%- endif %}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_application_credentials.json
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
