@@ -525,7 +525,7 @@ class RequestClient:
             ValueError: If the image cannot be downloaded from the provided URL.
         """
         # check cache for the iamge
-        image_path = self._image_cache._get_cache_doc_path(image_id)
+        image_path = self._image_cache._get_cache_doc_path(f"{image_id}.tif")
         image = self._image_cache.fetch_cached_result(f"{image_id}.tif")
         if not image:
             # not cached - download from s3 and cache - we assume no credentials are needed

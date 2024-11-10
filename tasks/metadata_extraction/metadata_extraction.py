@@ -3,14 +3,13 @@ from dataclasses import dataclass
 import logging
 import re
 from enum import Enum
-from langchain_openai import ChatOpenAI
 import cv2
 import numpy as np
 from PIL.Image import Image as PILImage
 from langchain.schema import SystemMessage, PromptValue
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.output_parsers import PydanticOutputParser
-from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from pydantic import BaseModel, Field
 import tiktoken
 from tasks.common.image_io import pil_to_cv_image
@@ -41,12 +40,23 @@ PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
 METADATA_CODE_VER = "0.0.1"
 
 
+OPENAI_API_VERSION = "2024-10-21"
+
+
 class LLM(str, Enum):
     GPT_3_5_TURBO = "gpt-3.5-turbo"
     GPT_4_TURBO = "gpt-4-turbo"
     GPT_4 = "gpt-4"
     GPT_4_O = "gpt-4o"
     GPT_4_O_MINI = "gpt-4o-mini"
+
+    def __str__(self):
+        return self.value
+
+
+class LLM_PROVIDER(str, Enum):
+    OPENAI = "openai"
+    AZURE = "azure"
 
     def __str__(self):
         return self.value
@@ -274,6 +284,7 @@ class MetadataExtractor(Task):
         self,
         id: str,
         model=LLM.GPT_4_O,
+        provider=LLM_PROVIDER.OPENAI,
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
         cache_location: str = "",
@@ -282,16 +293,22 @@ class MetadataExtractor(Task):
     ):
         super().__init__(id, cache_location)
 
-        self._chat_model = ChatOpenAI(
-            model=model, temperature=0.1
-        )  # reads OPEN_AI_API_KEY from environment
+        if provider == LLM_PROVIDER.AZURE:
+            # autor reads AZURE_CHAT_API_KEY,
+            self._chat_model = AzureChatOpenAI(
+                model=model, temperature=0.1, api_version=OPENAI_API_VERSION
+            )
+        else:
+            # auto reads OPEN_AI_API_KEY from environment
+            self._chat_model = ChatOpenAI(model=model, temperature=0.1)
+
         self._model = model
         self._text_key = text_key
         self._include_place_bounds = include_place_bounds
         self._should_run = should_run
         self._metrics_url = metrics_url
 
-        logger.info(f"Using model: {self._model.value}")
+        logger.info(f"Using model: {self._model.value} from provider {provider.value}")
 
     def run(self, input: TaskInput) -> TaskResult:
         """

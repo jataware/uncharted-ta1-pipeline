@@ -71,6 +71,7 @@ class GeoreferencingPipeline(Pipeline):
         geocoded_places_filename: str,
         ocr_gamma_correction: float,
         model: LLM,
+        provider: LLM_PROVIDER,
         projected: bool,
         diagnostics: bool,
         gpu_enabled: bool,
@@ -151,6 +152,7 @@ class GeoreferencingPipeline(Pipeline):
             MetadataExtractor(
                 "metadata_extractor",
                 model,
+                provider,
                 "filtered_ocr_text",
                 cache_location=metadata_cache,
                 metrics_url=metrics_url,
