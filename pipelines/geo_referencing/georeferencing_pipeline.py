@@ -43,7 +43,11 @@ from tasks.geo_referencing.roi_extractor import ROIExtractor
 from tasks.metadata_extraction.entities import GeoPlaceType
 from tasks.metadata_extraction.geocoder import Geocoder
 from tasks.metadata_extraction.geocoding_service import NominatimGeocoder
-from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
+from tasks.metadata_extraction.metadata_extraction import (
+    LLM_PROVIDER,
+    MetadataExtractor,
+    LLM,
+)
 from tasks.metadata_extraction.scale import ScaleExtractor
 from tasks.metadata_extraction.text_filter import (
     FilterMode,

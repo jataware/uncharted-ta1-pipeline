@@ -199,6 +199,7 @@ def start_server():
         p.geocoded_places_filename,
         p.ocr_gamma_correction,
         p.llm,
+        p.llm_provider,
         p.project,
         p.diagnostics,
         not p.no_gpu,
