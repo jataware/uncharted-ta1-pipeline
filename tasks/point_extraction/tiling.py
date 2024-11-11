@@ -107,7 +107,7 @@ class Tiler(Task):
                 (x_min, y_min, x_max, y_max) = [int(b) for b in poly_map.bounds]
                 roi_bounds = [x_min, y_min, x_max, y_max]
             elif self.skip_if_no_map:
-                logger.info(
+                logger.warning(
                     "No map segment found; forcing tiler to create 0 map tiles for point extraction."
                 )
                 roi_bounds = []

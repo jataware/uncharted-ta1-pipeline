@@ -1,8 +1,6 @@
 import os
 import logging
 
-from pathlib import Path
-
 from pipelines.geo_referencing.output import (
     GeoreferencingOutput,
     GCPOutput,
@@ -13,7 +11,7 @@ from pipelines.geo_referencing.output import (
 )
 from tasks.common.io import append_to_cache_location
 from tasks.common.pipeline import OutputCreator, Pipeline
-from tasks.common.task import Task, TaskInput
+from tasks.common.task import EvaluateHalt, Task, TaskInput
 from tasks.geo_referencing.coordinates_extractor import (
     GeoCoordinatesExtractor,
 )
@@ -41,12 +39,15 @@ from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.geocode import PointGeocoder, BoxGeocoder
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.inference import InferenceCoordinateExtractor
-from tasks.geo_referencing.roi_extractor import (
-    ModelROIExtractor,
-    buffer_fixed,
+from tasks.geo_referencing.roi_extractor import ROIExtractor
+from tasks.metadata_extraction.entities import GeoPlaceType
+from tasks.metadata_extraction.geocoder import Geocoder
+from tasks.metadata_extraction.geocoding_service import NominatimGeocoder
+from tasks.metadata_extraction.metadata_extraction import (
+    LLM_PROVIDER,
+    MetadataExtractor,
+    LLM,
 )
-from tasks.metadata_extraction.geocoder import Geocoder, NominatimGeocoder
-from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.scale import ScaleExtractor
 from tasks.metadata_extraction.text_filter import (
     FilterMode,
@@ -54,7 +55,8 @@ from tasks.metadata_extraction.text_filter import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
-from tasks.text_extraction.text_extractor import ResizeTextExtractor, TileTextExtractor
+from tasks.segmentation.segmenter_utils import map_missing
+from tasks.text_extraction.text_extractor import TileTextExtractor
 
 from typing import List
 
@@ -70,28 +72,41 @@ class GeoreferencingPipeline(Pipeline):
         state_plane_zone_filename: str,
         state_code_filename: str,
         country_code_filename: str,
+        geocoded_places_filename: str,
         ocr_gamma_correction: float,
         model: LLM,
+        provider: LLM_PROVIDER,
         projected: bool,
         diagnostics: bool,
         gpu_enabled: bool,
+        metrics_url: str = "",
     ):
-        geocoding_cache_bounds = os.path.join(
+        geocoding_cache_bounds = append_to_cache_location(
             working_dir, "geocoding_cache_bounds.json"
         )
 
-        geocoding_cache_points = os.path.join(
+        geocoding_cache_points = append_to_cache_location(
             working_dir, "geocoding_cache_points.json"
         )
 
         # Nominatim geocoder service for bounds
         bounds_geocoder = NominatimGeocoder(
-            10, geocoding_cache_bounds, 1, country_code_filename=country_code_filename
+            10,
+            geocoding_cache_bounds,
+            1,
+            country_code_filename=country_code_filename,
+            state_code_filename=state_code_filename,
+            geocoded_places_filename=geocoded_places_filename,
         )
 
         # Nominatim geocoder service for points
         points_geocoder = NominatimGeocoder(
-            10, geocoding_cache_points, 5, country_code_filename=country_code_filename
+            10,
+            geocoding_cache_points,
+            5,
+            country_code_filename=country_code_filename,
+            state_code_filename=state_code_filename,
+            geocoded_places_filename=geocoded_places_filename,
         )
 
         segmentation_cache = append_to_cache_location(working_dir, "segmentation")
@@ -100,13 +115,6 @@ class GeoreferencingPipeline(Pipeline):
         geocoder_thresh = 10
 
         tasks: List[Task] = [
-            # Extracts text from the tiled image
-            TileTextExtractor(
-                "tiled text extractor",
-                text_cache,
-                6000,
-                gamma_correction=ocr_gamma_correction,
-            ),
             # Segments the image into map,legend and cross section
             DetectronSegmenter(
                 "segmenter",
@@ -115,30 +123,43 @@ class GeoreferencingPipeline(Pipeline):
                 confidence_thres=0.25,
                 gpu=gpu_enabled,
             ),
+            # terminate the pipeline if the map region is not found - this will immediately return empty outputs
+            EvaluateHalt(
+                "map_presence_check",
+                map_missing,
+            ),
+            # Extracts text from the tiled image
+            TileTextExtractor(
+                "tiled text extractor",
+                text_cache,
+                6000,
+                gamma_correction=ocr_gamma_correction,
+            ),
             # Defines an allowed region for cooredinates to occupy by buffering
             # the extracted map area polyline by a fixed amount
-            ModelROIExtractor(
-                "fixed region of interest extractor",
-                buffer_fixed,
-            ),
+            ROIExtractor("region of interest extractor"),
             # Filters out any text that is in the cross section or the legend areas of the
             # map
             TextFilter(
                 "metadata text filter",
+                FilterMode.EXCLUDE,
                 output_key="filtered_ocr_text",
                 classes=[
                     "cross_section",
                     "legend_points_lines",
                     "legend_polygons",
                 ],
+                class_threshold=100,
             ),
             # Runs metadata extraction on the text remaining after the text filter above
             # is applied
             MetadataExtractor(
                 "metadata_extractor",
                 model,
+                provider,
                 "filtered_ocr_text",
                 cache_location=metadata_cache,
+                metrics_url=metrics_url,
             ),
             # Creates geo locations for country and state of the map area based on the metadata
             Geocoder(
@@ -169,31 +190,15 @@ class GeoreferencingPipeline(Pipeline):
                 TEXT_EXTRACTION_OUTPUT_KEY,
                 "map_area_filter",
                 ["map"],
-                self._run_step,
-            ),
-            # Run metadata extraction on the map area text only
-            MetadataExtractor(
-                "metadata map area extractor",
-                model,
-                "map_area_filter",
-                self._run_step,
-                include_place_bounds=True,
+                class_threshold=0,
+                should_run=self._run_step,
             ),
             # Geocode the places extracted from the map area
             Geocoder(
-                "place geocoder",
+                "places / population centers geocoder",
                 points_geocoder,
                 run_bounds=False,
                 run_points=True,
-                run_centres=False,
-                should_run=self._run_step,
-            ),
-            # Geo code the population centres extracted from the map area
-            Geocoder(
-                "population center geocoder",
-                bounds_geocoder,
-                run_bounds=False,
-                run_points=False,
                 run_centres=True,
                 should_run=self._run_step,
             ),
@@ -213,12 +218,14 @@ class GeoreferencingPipeline(Pipeline):
             # Generate georeferencing points from the full set of place and population centre geo coordinates
             PointGeocoder(
                 "geocoded point transformation",
-                ["point", "population"],
+                [GeoPlaceType.POINT, GeoPlaceType.POPULATION],
                 geocoder_thresh,
             ),
             # Generate georeferencing points from the extent of the place and population centre geo coordinates
             BoxGeocoder(
-                "geocoded box transformation", ["point", "population"], geocoder_thresh
+                "geocoded box transformation",
+                [GeoPlaceType.POINT, GeoPlaceType.POPULATION],
+                geocoder_thresh,
             ),
             # Extract corner points from the map area
             CornerPointExtractor("corner point extractor"),

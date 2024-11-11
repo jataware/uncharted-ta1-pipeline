@@ -165,16 +165,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
             return lon_pts, lat_pts
 
         logger.info(f"derived state plane zone: {state_plane_zone}")
-        self._add_param(
-            input.input,
-            str(uuid.uuid4()),
-            f"state-plane-zone",
-            {
-                "zone": state_plane_zone[0],
-                "source": state_plane_zone[1],
-            },
-            "extracted state plane zone",
-        )
 
         lat_minmax = copy.deepcopy(geofence_raw.geofence.lat_minmax)
         lon_minmax = copy.deepcopy(geofence_raw.geofence.lon_minmax)
@@ -368,9 +358,9 @@ class StatePlaneExtractor(CoordinatesExtractor):
         states = [s for s in metadata.states if not s == "NULL"]
         if len(states) > 0:
             state = states[0].lower()
-            logger.info(f"narrowing state plane zone to state {state}")
+            logger.debug(f"narrowing state plane zone to state {state}")
             state_code = self._get_state_code(state)
-            logger.info(f"narrowing state plane zone to state code {state_code}")
+            logger.debug(f"narrowing state plane zone to state code {state_code}")
             if state_code in self._code_lookup[projection]:
                 possible = self._code_lookup[projection][state_code]
                 if len(possible) == 1:
@@ -400,7 +390,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
         # depending on parsed metadata, could either be 'US-STATE CODE' or STATE
         if len(state) == 5 and state.startswith("us"):
             return state[-2:]
-        return self._state_codes[state]
+        return self._state_codes.get(state, "")
 
     def _is_scale(self, text: str) -> bool:
         text = text.lower()
@@ -426,7 +416,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
         if not ocr_text_blocks_raw or len(ocr_text_blocks_raw.extractions) == 0:
-            logger.info("WARNING! No ocr text blocks available!")
+            logger.warning("No ocr text blocks available!")
             return ({}, {})
 
         ocr_text_blocks = deepcopy(ocr_text_blocks_raw)
@@ -444,7 +434,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
 
         # get utm coords and zone of clue coords
         # utm_clue = (easting, northing, zone number, zone letter)
-        logger.info(f"lat clue: {lat_clue}\tlon clue: {lon_clue}")
+        logger.debug(f"lat clue: {lat_clue}\tlon clue: {lon_clue}")
         utm_clue = stateplane.from_latlon(lat_clue, lon_clue)
         easting_clue = utm_clue[0]
         northing_clue = utm_clue[1]
@@ -548,22 +538,9 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 )
                 x_pixel, y_pixel = coord.get_pixel_alignment()
                 lat_results[(latlon_pt[0], y_pixel)] = coord
-                self._add_param(
-                    input.input,
-                    str(uuid.uuid4()),
-                    f"coordinate-{coord.get_type()}",
-                    {
-                        "bounds": ocr_to_coordinates(coord.get_bounds()),
-                        "text": coord.get_text(),
-                        "parsed": coord.get_parsed_degree(),
-                        "type": "latitude" if coord.is_lat() else "longitude",
-                        "pixel_alignment": coord.get_pixel_alignment(),
-                        "confidence": coord.get_confidence(),
-                    },
-                    "extracted northing state plane coordinate",
-                )
+
             else:
-                logger.info("Excluding candidate northing point: {}".format(n))
+                logger.debug("Excluding candidate northing point: {}".format(n))
 
         if len(northings) > 0:
             northing_clue = statistics.median(map(lambda x: x[0], northings))
@@ -588,22 +565,6 @@ class StatePlaneExtractor(CoordinatesExtractor):
             )
             x_pixel, y_pixel = coord.get_pixel_alignment()
             lon_results[(latlon_pt[1], x_pixel)] = coord
-            self._add_param(
-                input.input,
-                str(uuid.uuid4()),
-                f"coordinate-{coord.get_type()}",
-                {
-                    "bounds": ocr_to_coordinates(coord.get_bounds()),
-                    "text": coord.get_text(),
-                    "parsed": coord.get_parsed_degree(),
-                    "type": "latitude" if coord.is_lat() else "longitude",
-                    "pixel_alignment": coord.get_pixel_alignment(),
-                    "confidence": coord.get_confidence(),
-                },
-                "extracted easting state plane coordinate",
-            )
-
-        logger.info("done state plane coordinate extraction")
 
         return (lon_results, lat_results)
 

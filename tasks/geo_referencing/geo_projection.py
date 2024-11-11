@@ -143,7 +143,7 @@ class GeoProjection:
             )  # new j value (far from the others)
             new_i = pxl_i + 1  # jitter by 1 pixel
             deg_results[(deg, new_i)] = new_j
-            logger.info(
+            logger.debug(
                 "Adding an anchor keypoint (assume no skew): deg: {}, i,j: {},{}".format(
                     deg, new_i, new_j
                 )
@@ -173,7 +173,7 @@ class GeoProjection:
                 i_offset = 1  # jitter by 1 pixel (at least)
             new_i = max(min(pxl_i + i_offset, i_max - 1), 0)
             deg_results[(deg, new_i)] = new_j
-            logger.info(
+            logger.debug(
                 "Adding an anchor keypoint (minimal skew): deg: {}, i,j: {},{}".format(
                     deg, new_i, new_j
                 )

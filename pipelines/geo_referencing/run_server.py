@@ -2,17 +2,15 @@ import argparse
 import base64
 import json
 import logging
-import os
-from pathlib import Path
 
 from flask import Flask, request, Response
 from hashlib import sha1
 from io import BytesIO
 from PIL.Image import Image as PILImage
 from PIL import Image
-from pyproj import Proj
 
 from pipelines.geo_referencing.georeferencing_pipeline import GeoreferencingPipeline
+from pipelines.geo_referencing.pipeline_input_utils import get_geofence_defaults
 from pipelines.geo_referencing.output import (
     GeoreferencingOutput,
     ProjectedMapOutput,
@@ -23,18 +21,19 @@ from tasks.common.pipeline import (
     OutputCreator,
     PipelineInput,
 )
-from tasks.common.queue import (
+from tasks.common.request_client import (
     GEO_REFERENCE_REQUEST_QUEUE,
     GEO_REFERENCE_RESULT_QUEUE,
-    RequestQueue,
+    RequestClient,
     OutputType,
 )
+from tasks.common import image_io
 from typing import List, Tuple
 from tasks.geo_referencing.entities import (
     GEOREFERENCING_OUTPUT_KEY,
     PROJECTED_MAP_OUTPUT_KEY,
 )
-from tasks.metadata_extraction.metadata_extraction import LLM
+from tasks.metadata_extraction.metadata_extraction import LLM, LLM_PROVIDER
 from util import logging as logging_util
 
 Image.MAX_IMAGE_PIXELS = 400000000
@@ -44,38 +43,14 @@ app = Flask(__name__)
 georef_pipeline: GeoreferencingPipeline
 
 
-def get_geofence(
-    lon_limits: Tuple[float, float] = (-66.0, -180.0),
-    lat_limits: Tuple[float, float] = (24.0, 73.0),
-    use_abs: bool = True,
-):
-    lon_minmax = lon_limits
-    lat_minmax = lat_limits
-    lon_sign_factor = 1.0
-
-    if (
-        use_abs
-    ):  # use abs of lat/lon geo-fence? (since parsed OCR values don't usually include sign)
-        if lon_minmax[0] < 0.0:
-            lon_sign_factor = (
-                -1.0
-            )  # to account for -ve longitude values being forced to abs
-            # (used when finalizing lat/lon results for query points)
-        lon_minmax = [abs(x) for x in lon_minmax]
-        lat_minmax = [abs(x) for x in lat_minmax]
-
-        lon_minmax = [min(lon_minmax), max(lon_minmax)]
-        lat_minmax = [min(lat_minmax), max(lat_minmax)]
-
-    return (lon_minmax, lat_minmax, lon_sign_factor)
-
-
-def create_input(raster_id: str, image: PILImage) -> PipelineInput:
+def create_input(
+    raster_id: str, image: PILImage, geofence_region: str = "world"
+) -> PipelineInput:
     input = PipelineInput()
     input.image = image
     input.raster_id = raster_id
 
-    lon_minmax, lat_minmax, lon_sign_factor = get_geofence()
+    lon_minmax, lat_minmax, lon_sign_factor = get_geofence_defaults(geofence_region)
     input.params["lon_minmax"] = lon_minmax
     input.params["lat_minmax"] = lat_minmax
     input.params["lon_sign_factor"] = lon_sign_factor
@@ -89,7 +64,7 @@ def process_image():
     try:
         # open the image from the supplied byte stream
         bytes_io = BytesIO(request.data)
-        image = Image.open(bytes_io)
+        image = image_io.load_pil_image_stream(bytes_io)
 
         # use the hash as the doc id since we don't have a filename
         doc_id = sha1(request.data).hexdigest()
@@ -103,11 +78,14 @@ def process_image():
             return (msg, 500)
 
         result_json = ""
-        result = outputs[GEOREFERENCING_OUTPUT_KEY]
-        if isinstance(result, BaseModelOutput):
-            result_dict = result.data.model_dump()
+        result_dict = {}
+        if GEOREFERENCING_OUTPUT_KEY in outputs:
+            result = outputs[GEOREFERENCING_OUTPUT_KEY]
+            if isinstance(result, BaseModelOutput):
+                result_dict = result.data.model_dump()
 
-            # get the projected map if its present and convert to base64
+        # get the projected map if its present and convert to base64
+        if PROJECTED_MAP_OUTPUT_KEY in outputs:
             map = outputs[PROJECTED_MAP_OUTPUT_KEY]
             if isinstance(map, BytesOutput):
                 map_str = base64.b64encode(map.data.getvalue()).decode()
@@ -145,7 +123,7 @@ def start_server():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--imagedir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--min_confidence", type=float, default=0.25)
     parser.add_argument("--debug", type=float, default=False)
@@ -155,6 +133,7 @@ def start_server():
     parser.add_argument("--rabbit_vhost", type=str, default="/")
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
+    parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument(
         "--request_queue", type=str, default=GEO_REFERENCE_REQUEST_QUEUE
     )
@@ -162,23 +141,27 @@ def start_server():
     parser.add_argument(
         "--country_code_filename",
         type=str,
-        default="./data/country_codes.csv",
+        default="data/country_codes.csv",
     )
-    # TODO: DEFAULT VALUES SHOULD POINT TO PROPER FOLDER IN CONTAINER!
     parser.add_argument(
         "--state_plane_lookup_filename",
         type=str,
-        default="./data/state_plane_reference.csv",
+        default="data/state_plane_reference.csv",
     )
     parser.add_argument(
         "--state_plane_zone_filename",
         type=str,
-        default="./data/USA_State_Plane_Zones_NAD27.geojson",
+        default="data/USA_State_Plane_Zones_NAD27.geojson",
     )
     parser.add_argument(
         "--state_code_filename",
         type=str,
-        default="./data/state_codes.csv",
+        default="data/state_codes.csv",
+    )
+    parser.add_argument(
+        "--geocoded_places_filename",
+        type=str,
+        default="data/geocoded_places_reference.json",
     )
     parser.add_argument(
         "--ocr_gamma_correction",
@@ -186,6 +169,12 @@ def start_server():
         default=0.5,
     )
     parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
+    parser.add_argument(
+        "--llm_provider",
+        type=LLM_PROVIDER,
+        choices=list(LLM_PROVIDER),
+        default=LLM_PROVIDER.OPENAI,
+    )
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--project", action="store_true")
     parser.add_argument("--diagnostics", action="store_true")
@@ -207,11 +196,14 @@ def start_server():
         p.state_plane_zone_filename,
         p.state_code_filename,
         p.country_code_filename,
+        p.geocoded_places_filename,
         p.ocr_gamma_correction,
         p.llm,
+        p.llm_provider,
         p.project,
         p.diagnostics,
         not p.no_gpu,
+        metrics_url=p.metrics_url,
     )
 
     #### start flask server or startup up the message queue
@@ -221,22 +213,23 @@ def start_server():
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        client = RequestClient(
             georef_pipeline,
             p.request_queue,
             p.result_queue,
             GEOREFERENCING_OUTPUT_KEY,
             OutputType.GEOREFERENCING,
-            p.workdir,
             p.imagedir,
             host=p.rabbit_host,
             port=p.rabbit_port,
             vhost=p.rabbit_vhost,
             uid=p.rabbit_uid,
             pwd=p.rabbit_pwd,
+            metrics_url=p.metrics_url,
+            metrics_type="georef",
         )
-        queue.start_request_queue()
-        queue.start_result_queue()
+        client.start_request_queue()
+        client.start_result_queue()
 
 
 if __name__ == "__main__":

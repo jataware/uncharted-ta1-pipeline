@@ -4,13 +4,19 @@ import logging
 import os
 
 from PIL.Image import Image as PILImage
+from numpy import isin
 
-from tasks.common.pipeline import PipelineInput, BaseModelOutput, ImageOutput
+from tasks.common.pipeline import (
+    EmptyOutput,
+    PipelineInput,
+    BaseModelOutput,
+    ImageOutput,
+)
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
 from tasks.common.io import ImageFileInputIterator, ImageFileWriter, JSONFileWriter
-from tasks.metadata_extraction.metadata_extraction import LLM
+from tasks.metadata_extraction.metadata_extraction import LLM, LLM_PROVIDER
 from util import logging as logging_util
 
 
@@ -27,6 +33,12 @@ def main():
     parser.add_argument("--cdr_schema", action="store_true")
     parser.add_argument("--debug_images", action="store_true")
     parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
+    parser.add_argument(
+        "--llm_provider",
+        type=LLM_PROVIDER,
+        choices=list(LLM_PROVIDER),
+        default=LLM_PROVIDER.OPENAI,
+    )
     parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
@@ -41,7 +53,13 @@ def main():
 
     # create the pipeline
     pipeline = MetadataExtractorPipeline(
-        p.workdir, p.model, p.debug_images, p.cdr_schema, p.llm, not p.no_gpu
+        p.workdir,
+        p.model,
+        p.debug_images,
+        p.cdr_schema,
+        p.llm,
+        p.llm_provider,
+        not p.no_gpu,
     )
 
     # run the extraction pipeline
@@ -65,6 +83,8 @@ def main():
                 path = os.path.join(p.output, f"{doc_id}_metadata_extraction.png")
                 assert isinstance(output_data.data, PILImage)
                 image_writer.process(path, output_data.data)
+            elif isinstance(output_data, EmptyOutput):
+                logger.info(f"Empty {output_type} output for {doc_id}")
             else:
                 logger.warning(f"Unknown output type: {type(output_data)}")
                 continue

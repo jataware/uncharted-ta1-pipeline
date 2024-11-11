@@ -19,7 +19,6 @@ class TickDetector(Task):
         self._coordinates_file = coordinates_file
 
     def run(self, input: TaskInput) -> TaskResult:
-        logger.info(f"running tick detector with id {self._task_id}")
 
         # get coordinates so far
         lon_pts = input.get_data("lons")
@@ -51,7 +50,7 @@ class TickDetector(Task):
         for _, c in coordinates.items():
             deg_str = f"{c.get_parsed_degree()}"
             if deg_str in coordinates_actual:
-                logger.info(
+                logger.debug(
                     f"checking for alignment correction since {deg_str} found in corrected alignment list"
                 )
                 for ca in coordinates_actual[deg_str]:
@@ -62,27 +61,12 @@ class TickDetector(Task):
                     c_x, c_y = c.get_pixel_alignment()
                     if abs(c_x - ca_x) < 10 and abs(c_y - ca_y) < 10:
                         new_alignment = (ca["x_actual"], ca["y_actual"])
-                        logger.info(
+                        logger.debug(
                             f"adjusting pixel from {(c_x, c_y)} to {new_alignment}"
                         )
                         # adjust the pixel alignment
                         c.set_pixel_alignment(new_alignment)
 
-                        # add the adjusted coordinate to the params
-                        self._add_param(
-                            input,
-                            str(uuid.uuid4()),
-                            f"coordinate-{c.get_type()}-{c.get_derivation()}",
-                            {
-                                "bounds": ocr_to_coordinates(c.get_bounds()),
-                                "text": c.get_text(),
-                                "parsed": c.get_parsed_degree(),
-                                "type": "latitude" if c.is_lat() else "longitude",
-                                "pixel_alignment": c.get_pixel_alignment(),
-                                "confidence": c.get_confidence(),
-                            },
-                            "extracted aligned coordinate",
-                        )
             output[c.to_deg_result()[0]] = c
 
         return output

@@ -9,7 +9,6 @@ from copy import deepcopy
 
 from sklearn.cluster import DBSCAN
 
-from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.coordinates_extractor import (
     CoordinatesExtractor,
     CoordinateInput,
@@ -17,7 +16,7 @@ from tasks.geo_referencing.coordinates_extractor import (
 from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
-    GeoFence,
+    GeoFenceType,
     GEOFENCE_OUTPUT_KEY,
     SOURCE_GEOCODE,
 )
@@ -25,10 +24,11 @@ from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
     GeocodedPlace,
     GeocodedCoordinate,
+    GeoPlaceType,
     GEOCODED_PLACES_OUTPUT_KEY,
 )
 
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import Dict, List, Tuple, Callable
 
 COORDINATE_CONFIDENCE_GEOCODE = 0.8
 
@@ -36,7 +36,7 @@ logger = logging.getLogger("geocode")
 
 
 class Geocoder(CoordinatesExtractor):
-    def __init__(self, task_id: str, place_types: List[str]):
+    def __init__(self, task_id: str, place_types: List[GeoPlaceType]):
         super().__init__(task_id)
         self._place_types = place_types
 
@@ -48,7 +48,7 @@ class Geocoder(CoordinatesExtractor):
     ) -> List[GeocodedPlace]:
         places = [p for p in geocoded.places if p.place_type in self._place_types]
         places_filtered = []
-        if geofence_raw.geofence.defaulted:
+        if geofence_raw.geofence.region_type == GeoFenceType.DEFAULT:
             places_filtered = places
         else:
             lon_minmax = geofence_raw.geofence.lon_minmax
@@ -65,7 +65,7 @@ class Geocoder(CoordinatesExtractor):
                     pc.results = coords
                     places_filtered.append(pc)
                 else:
-                    logger.info(
+                    logger.debug(
                         f"removing {pc.place_name} from location set since no coordinates fall within the geofence"
                     )
         return places_filtered
@@ -171,7 +171,7 @@ class Geocoder(CoordinatesExtractor):
 
 
 class PointGeocoder(Geocoder):
-    def __init__(self, task_id: str, place_types: List[str], run_limit: int):
+    def __init__(self, task_id: str, place_types: List[GeoPlaceType], run_limit: int):
         super().__init__(task_id, place_types)
         self._run_limit = run_limit
 
@@ -196,7 +196,7 @@ class PointGeocoder(Geocoder):
         places_filtered = self._filter_coordinates(geofence_raw, geocoded)
 
         # TODO: CHECK FOR SPREAD ACROSS MAP AREA
-        logger.info(
+        logger.debug(
             f"point geocoder to run if {len(places_filtered)} < {self._run_limit}"
         )
         return len(places_filtered) < self._run_limit
@@ -231,25 +231,14 @@ class PointGeocoder(Geocoder):
             if c.is_lat():
                 d = lat_pts
             d[c.to_deg_result()[0]] = c
-            self._add_param(
-                input.input,
-                str(uuid.uuid4()),
-                f"coordinate-{c.get_type()}-geocoded",
-                {
-                    "text": c.get_text(),
-                    "parsed": c.get_parsed_degree(),
-                    "type": "latitude" if c.is_lat() else "longitude",
-                    "pixel_alignment": c.get_pixel_alignment(),
-                    "confidence": c.get_confidence(),
-                },
-                "geocoded coordinate",
-            )
 
         return lon_pts, lat_pts
 
 
 class BoxGeocoder(Geocoder):
-    def __init__(self, task_id: str, place_types: List[str], run_limit: int = 10):
+    def __init__(
+        self, task_id: str, place_types: List[GeoPlaceType], run_limit: int = 10
+    ):
         super().__init__(task_id, place_types)
         self._run_limit = run_limit
 
@@ -274,7 +263,7 @@ class BoxGeocoder(Geocoder):
         places_filtered = self._filter_coordinates(geofence_raw, geocoded)
 
         # TODO: CHECK FOR SPREAD ACROSS MAP AREA
-        logger.info(
+        logger.debug(
             f"box geocoder to run if {len(places_filtered)} >= {self._run_limit}"
         )
         return len(places_filtered) >= self._run_limit
@@ -301,12 +290,14 @@ class BoxGeocoder(Geocoder):
 
         # cluster to figure out which geocodings to consider
         coordinates = self._get_coordinates(places_filtered)
-        logger.info(f"got {len(coordinates)} geocoded coordinates for box geocoding")
+        logger.debug(f"got {len(coordinates)} geocoded coordinates for box geocoding")
 
         # keep the middle 80% of each direction roughly
         # a point dropped for one direction cannot be used for the other direction
         # TODO: SHOULD PROBABLY BE MORE BOX AND WHISKER STYLE OUTLIER FILTERING
-        logger.info(f"removing outlier coordinates via iqr from each end and direction")
+        logger.debug(
+            f"removing outlier coordinates via iqr from each end and direction"
+        )
         coordinates_lons = self._remove_outliers(
             list(filter(lambda x: not x.is_lat(), coordinates)),
             lambda x: x.get_parsed_degree(),
@@ -340,20 +331,20 @@ class BoxGeocoder(Geocoder):
                     coordinates_lats.append(c)
                 else:
                     coordinates_lons.append(c)
-        logger.info(
+        logger.debug(
             f"after harmonizing removals {len(coordinates_lons)} lons and {len(coordinates_lats)} lats remain"
         )
 
         # determine the pixel range and rough latitude / longitude range (assume x -> lon, y -> lat)
         min_lon, max_lon = self._get_min_max(coordinates_lons)
         min_lat, max_lat = self._get_min_max(coordinates_lats)
-        logger.info("obtained the coordinates covering the target range")
+        logger.debug("obtained the coordinates covering the target range")
         coordinates_all = coordinates_lons + coordinates_lats
         vals_x = [c.get_pixel_alignment()[0] for c in coordinates_all]
         vals_y = [c.get_pixel_alignment()[1] for c in coordinates_all]
         min_x, max_x = min(vals_x), max(vals_x)
         min_y, max_y = min(vals_y), max(vals_y)
-        logger.info(
+        logger.debug(
             f"creating coordinates between pixels x ({min_x}, {max_x}) and y ({min_y}, {max_y}) using lons {min_lon.get_parsed_degree()}, {max_lon.get_parsed_degree()} and lats {min_lat.get_parsed_degree()}, {max_lat.get_parsed_degree()}"
         )
 
@@ -362,19 +353,6 @@ class BoxGeocoder(Geocoder):
             (min_x, max_x), (min_y, max_y), (min_lon, max_lon), (min_lat, max_lat)
         )
         for c in coords:
-            self._add_param(
-                input.input,
-                str(uuid.uuid4()),
-                f"coordinate-{c.get_type()}-geocoded",
-                {
-                    "text": c.get_text(),
-                    "parsed": c.get_parsed_degree(),
-                    "type": "latitude" if c.is_lat() else "longitude",
-                    "pixel_alignment": c.get_pixel_alignment(),
-                    "confidence": c.get_confidence(),
-                },
-                "geocoded coordinate",
-            )
             if c.is_lat():
                 lat_pts[c.to_deg_result()[0]] = c
             else:

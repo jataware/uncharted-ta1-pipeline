@@ -100,6 +100,29 @@ class TaskResult:
         self.output[key] = data
 
 
+class HaltPipeline(TaskResult):
+    """
+    HaltPipeline is a task result which flags a request to immediately halt pipeline execution.  This
+    is useful for stopping a pipeline when some necessary condition is not met, such as no map being
+    present in a supplied image.
+
+    Attributes:
+        task_id (str): The unique identifier for the task.
+        reason (str): The reason for halting the pipeline.
+        output (dict): An empty dictionary to store output data.
+        parameters (list): An empty list to store parameters.
+
+    Methods:
+        __init__(task_id: str, reason: str): Initializes the HaltPipeline instance with the given task ID and reason.
+    """
+
+    def __init__(self, task_id: str, reason: str):
+        super().__init__(task_id)
+        self.output = {}
+        self.parameters = []
+        self.reason = reason
+
+
 class Task:
     _task_id = ""
 
@@ -187,3 +210,45 @@ class Task:
             return
         doc_path = self._get_cache_doc_path(doc_key)
         self._json_file_writer.process(doc_path, json_model)
+
+
+class EvaluateHalt(Task):
+    """
+    EvaluateHalt is a Task that evaluates a supplied halt condition.
+
+    Attributes:
+        _eval_halt (Callable[[TaskInput], bool]): A callable that takes a TaskInput and returns a boolean indicating whether to halt the pipeline.
+    """
+
+    def __init__(
+        self,
+        task_id: str,
+        eval_halt: Callable[[TaskInput], bool],
+        cache_location: str = "",
+    ):
+        """
+        Initialize a new task instance.
+        Args:
+            task_id (str): The unique identifier for the task.
+            eval_halt (Callable[[TaskInput], bool]): A callable that determines
+                whether the task should halt based on the given TaskInput.
+            cache_location (str, optional): The location to cache task data.
+                Defaults to an empty string.
+        """
+
+        super().__init__(task_id, cache_location)
+        self._eval_halt = eval_halt
+
+    def run(self, input: TaskInput) -> TaskResult:
+        """
+        Executes the task with the given input and returns the result.
+        Args:
+            input (TaskInput): The input data required to run the task.
+        Returns:
+            TaskResult: The result of the task execution. If the halt condition is met,
+                        returns a HaltPipeline instance indicating the task should be halted.
+        """
+        logger.info("Running EvaluateHalt task")
+        if self._eval_halt(input) is True:
+            return HaltPipeline(self._task_id, f"Halt condition met - {self._task_id}")
+        return TaskResult(self._task_id)

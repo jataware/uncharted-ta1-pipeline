@@ -1,4 +1,3 @@
-from anyio import Path
 from flask import Flask, request, Response
 import logging, json
 import argparse
@@ -8,10 +7,10 @@ from io import BytesIO
 from pipelines.segmentation.segmentation_pipeline import SegmentationPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
-from tasks.common.queue import (
+from tasks.common.request_client import (
     SEGMENTATION_REQUEST_QUEUE,
     SEGMENTATION_RESULT_QUEUE,
-    RequestQueue,
+    RequestClient,
     OutputType,
 )
 from tasks.segmentation.ditod.table_evaluation.evaluate import PATH
@@ -87,7 +86,7 @@ if __name__ == "__main__":
     # parse command line args
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--imagedir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--min_confidence", type=float, default=0.25)
     parser.add_argument("--debug", action="store_true")
@@ -98,6 +97,7 @@ if __name__ == "__main__":
     parser.add_argument("--rabbit_vhost", type=str, default="/")
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
+    parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument("--request_queue", type=str, default=SEGMENTATION_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=SEGMENTATION_RESULT_QUEUE)
     parser.add_argument("--no_gpu", action="store_true")
@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
     # init segmenter
     segmentation_pipeline = SegmentationPipeline(
-        p.model, p.workdir, p.min_confidence, gpu=not p.no_gpu
+        p.model, p.workdir, p.min_confidence, cdr_schema=p.cdr_schema, gpu=not p.no_gpu
     )
 
     # get ta1 schema output or internal output format
@@ -121,19 +121,20 @@ if __name__ == "__main__":
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        client = RequestClient(
             segmentation_pipeline,
             p.request_queue,
             p.result_queue,
             result_key,
             OutputType.SEGMENTATION,
-            p.workdir,
             p.imagedir,
             host=p.rabbit_host,
             port=p.rabbit_port,
             vhost=p.rabbit_vhost,
             uid=p.rabbit_uid,
             pwd=p.rabbit_pwd,
+            metrics_url=p.metrics_url,
+            metrics_type="segmentation",
         )
-        queue.start_request_queue()
-        queue.start_result_queue()
+        client.start_request_queue()
+        client.start_result_queue()

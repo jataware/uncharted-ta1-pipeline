@@ -64,7 +64,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
-        logger.info("extracting utm coordinates")
+
         geofence_raw: DocGeoFence = input.input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
@@ -88,17 +88,6 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
 
         utm_zone = self._determine_utm_zone(
             metadata, population_centres, geofence_raw, clue_point, lon_pts, lat_pts
-        )
-        self._add_param(
-            input.input,
-            str(uuid.uuid4()),
-            f"utm-zone",
-            {
-                "number": utm_zone[0],
-                "northern": utm_zone[1],
-                "source": utm_zone[2],
-            },
-            "extracted utm zone",
         )
 
         # lon_minmax = input.input.get_request_info("lon_minmax", [0, 180])
@@ -230,10 +219,13 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             coord = utm.from_latlon(clue_point[1], clue_point[0])
             return coord[2], clue_point[1] > 0, "clue point"
 
+        # UTM is limited to the range of 80 south to 84 north
+        lat_minmax = raw_geofence.geofence.lat_minmax
+        lat_minmax[0] = max(lat_minmax[0], -80)
+        lat_minmax[1] = min(lat_minmax[1], 84)
+
         # figure out centre of geofence for mapping purposes
-        centre_lat = (
-            raw_geofence.geofence.lat_minmax[0] + raw_geofence.geofence.lat_minmax[1]
-        ) / 2.0
+        centre_lat = (lat_minmax[0] + lat_minmax[1]) / 2.0
         centre_lon = (
             raw_geofence.geofence.lon_minmax[0] + raw_geofence.geofence.lon_minmax[1]
         ) / 2.0
@@ -295,15 +287,9 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         # use geofence to determine the zone
         # set direction properly if min and max latitudes are in same hemisphere
         if not northern_determined:
-            unique_hemi = (
-                raw_geofence.geofence.lat_minmax[0]
-                * raw_geofence.geofence.lat_minmax[1]
-            )
+            unique_hemi = lat_minmax[0] * lat_minmax[1]
             if unique_hemi >= 0:
-                hemi = (
-                    raw_geofence.geofence.lat_minmax[0]
-                    + raw_geofence.geofence.lat_minmax[1]
-                )
+                hemi = lat_minmax[0] + lat_minmax[1]
                 northern = hemi > 0
                 northern_determined = True
 
@@ -313,10 +299,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         # use the lon min & max to get the zone, and if only 1 is possible then it is resolved
         if not zone_number_determined:
             utm_min = utm.from_latlon(
-                raw_geofence.geofence.lat_minmax[0], raw_geofence.geofence.lon_minmax[0]
+                lat_minmax[0], raw_geofence.geofence.lon_minmax[0]
             )
             utm_max = utm.from_latlon(
-                raw_geofence.geofence.lat_minmax[1], raw_geofence.geofence.lon_minmax[1]
+                lat_minmax[1], raw_geofence.geofence.lon_minmax[1]
             )
             if utm_min[2] == utm_max[2]:
                 zone_number = utm_min[2]
@@ -362,7 +348,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
         if not ocr_text_blocks_raw or len(ocr_text_blocks_raw.extractions) == 0:
-            logger.info("WARNING! No ocr text blocks available!")
+            logger.warning("No ocr text blocks available!")
             return ({}, {})
 
         ocr_text_blocks = deepcopy(ocr_text_blocks_raw)
@@ -380,7 +366,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
 
         # get utm coords and zone of clue coords
         # utm_clue = (easting, northing, zone number, zone letter)
-        logger.info(f"lat clue: {lat_clue}\tlon clue: {lon_clue}")
+        logger.debug(f"lat clue: {lat_clue}\tlon clue: {lon_clue}")
         utm_clue = utm.from_latlon(lat_clue, lon_clue)
         easting_clue = utm_clue[0]
         northing_clue = utm_clue[1]
@@ -422,22 +408,10 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                 continue
 
             if not valid_parsings:
-                logger.info(
+                logger.debug(
                     "Excluding candidate utm point due to invalid easting point: {}".format(
                         utm_dist
                     )
-                )
-                self._add_param(
-                    input.input,
-                    str(uuid.uuid4()),
-                    "coordinate-excluded-utm",
-                    {
-                        "bounds": ocr_to_coordinates(
-                            ocr_text_blocks.extractions[idx].bounds
-                        ),
-                        "text": ocr_text_blocks.extractions[idx].text,
-                    },
-                    "excluded due to some coordinates being over utm easting limit",
                 )
                 continue
 
@@ -453,7 +427,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                 if utm_dist < MAX_EASTING:
                     eastings.append((utm_dist, span, idx))
                 else:
-                    logger.info(
+                    logger.debug(
                         "Excluding candidate easting point: {}".format(utm_dist)
                     )
         # convert from utm to lat/lon, using average values of northing and easting for the mapping coordinate
@@ -488,22 +462,9 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                 )
                 x_pixel, y_pixel = coord.get_pixel_alignment()
                 lat_results[(latlon_pt[0], y_pixel)] = coord
-                self._add_param(
-                    input.input,
-                    str(uuid.uuid4()),
-                    f"coordinate-{coord.get_type()}",
-                    {
-                        "bounds": ocr_to_coordinates(coord.get_bounds()),
-                        "text": coord.get_text(),
-                        "parsed": coord.get_parsed_degree(),
-                        "type": "latitude" if coord.is_lat() else "longitude",
-                        "pixel_alignment": coord.get_pixel_alignment(),
-                        "confidence": coord.get_confidence(),
-                    },
-                    "extracted northing utm coordinate",
-                )
+
             else:
-                logger.info(
+                logger.debug(
                     "Excluding candidate northing point due to being out of range: {}".format(
                         n
                     )
@@ -534,21 +495,5 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             )
             x_pixel, y_pixel = coord.get_pixel_alignment()
             lon_results[(latlon_pt[1], x_pixel)] = coord
-            self._add_param(
-                input.input,
-                str(uuid.uuid4()),
-                f"coordinate-{coord.get_type()}",
-                {
-                    "bounds": ocr_to_coordinates(coord.get_bounds()),
-                    "text": coord.get_text(),
-                    "parsed": coord.get_parsed_degree(),
-                    "type": "latitude" if coord.is_lat() else "longitude",
-                    "pixel_alignment": coord.get_pixel_alignment(),
-                    "confidence": coord.get_confidence(),
-                },
-                "extracted easting utm coordinate",
-            )
-
-        logger.info("done utm")
 
         return (lon_results, lat_results)

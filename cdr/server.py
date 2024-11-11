@@ -1,18 +1,17 @@
 import argparse
 import atexit
-from pathlib import Path
 import httpx
 import json
 import logging
 import ngrok
 import os
+import requests
 
 from flask import Flask, request, Response
 
+from cdr.chaining_result_subscriber import ChainingResultSubscriber
 from cdr.request_publisher import LaraRequestPublisher
-from cdr.result_subscriber import LaraResultSubscriber
-from tasks.common.io import download_file
-from tasks.common.queue import (
+from tasks.common.request_client import (
     GEO_REFERENCE_REQUEST_QUEUE,
     METADATA_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,
@@ -33,9 +32,9 @@ app = Flask(__name__)
 
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 CDR_HOST = "https://api.cdr.land"
+COG_PATH = "https://s3.amazonaws.com/public.cdr.land/cogs"
 CDR_CALLBACK_SECRET = "maps rock"
 APP_PORT = 5001
-CDR_EVENT_LOG = "events.log"
 
 LARA_RESULT_QUEUE_NAME = "lara_result_queue"
 
@@ -48,6 +47,7 @@ BLOCKED_CONNECTION_TIMEOUT = 600
 class Settings:
     cdr_api_token: str
     cdr_host: str
+    cogdir: str
     workdir: str
     imagedir: str
     output: str
@@ -55,25 +55,7 @@ class Settings:
     callback_url: str
     registration_id: Dict[str, str] = {}
     rabbitmq_host: str
-    serial: bool
     sequence: List[str] = []
-
-
-def prefetch_image(working_dir: Path, image_id: str, image_url: str) -> None:
-    """
-    Prefetches the image from the CDR for use by the pipelines.
-    """
-    # check working dir for the image
-    filename = working_dir / f"{image_id}.tif"
-
-    if not os.path.exists(filename):
-        # download image
-        image_data = download_file(image_url)
-
-        # write it to working dir, creating the directory if necessary
-        filename.parent.mkdir(parents=True, exist_ok=True)
-        with open(filename, "wb") as file:
-            file.write(image_data)
 
 
 @app.route("/process_event", methods=["POST"])
@@ -91,34 +73,6 @@ def process_cdr_event():
             case "map.process":
                 logger.info("Received map event")
                 map_event = MapEventPayload.model_validate(evt["payload"])
-                lara_reqs[GEO_REFERENCE_REQUEST_QUEUE] = Request(
-                    id=evt["id"],
-                    task="georeference",
-                    image_id=map_event.cog_id,
-                    image_url=map_event.cog_url,
-                    output_format="cdr",
-                )
-                lara_reqs[POINTS_REQUEST_QUEUE] = Request(
-                    id=evt["id"],
-                    task="points",
-                    image_id=map_event.cog_id,
-                    image_url=map_event.cog_url,
-                    output_format="cdr",
-                )
-                lara_reqs[SEGMENTATION_REQUEST_QUEUE] = Request(
-                    id=evt["id"],
-                    task="segments",
-                    image_id=map_event.cog_id,
-                    image_url=map_event.cog_url,
-                    output_format="cdr",
-                )
-                lara_reqs[METADATA_REQUEST_QUEUE] = Request(
-                    id=evt["id"],
-                    task="metadata",
-                    image_id=map_event.cog_id,
-                    image_url=map_event.cog_url,
-                    output_format="cdr",
-                )
             case _:
                 logger.info(f"received unsupported {evt['event']} event")
 
@@ -130,85 +84,34 @@ def process_cdr_event():
         # assume ping or ignored event type
         return Response({"ok": "success"}, status=200, mimetype="application/json")
 
-    # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
-    # imagedir arg that should be configured to point at this location.
-    prefetch_image(Path(settings.imagedir), map_event.cog_id, map_event.cog_url)
-
-    if settings.serial:
-        first_task = settings.sequence[0]
-        first_queue = LaraResultSubscriber.PIPELINE_QUEUES[first_task]
-        first_request = LaraResultSubscriber.next_request(
-            first_task, map_event.cog_id, map_event.cog_url
-        )
-        request_publisher.publish_lara_request(first_request, first_queue)
-    else:
-        for queue_name, lara_req in lara_reqs.items():
-            request_publisher.publish_lara_request(lara_req, queue_name)
+    first_task = settings.sequence[0]
+    first_queue = ChainingResultSubscriber.PIPELINE_QUEUES[first_task]
+    first_request = ChainingResultSubscriber.next_request(
+        first_task, map_event.cog_id, map_event.cog_url
+    )
+    request_publisher.publish_lara_request(first_request, first_queue)
 
     return Response({"ok": "success"}, status=200, mimetype="application/json")
 
 
 def process_image(image_id: str, request_publisher: LaraRequestPublisher):
     logger.info(f"processing image with id {image_id}")
-
-    image_url = f"https://s3.amazonaws.com/public.cdr.land/cogs/{image_id}.cog.tif"
-
-    # build the request
-    lara_reqs: Dict[str, Request] = {}
-    lara_reqs[GEO_REFERENCE_REQUEST_QUEUE] = Request(
-        id="mock-georeference",
-        task="georeference",
-        image_id=image_id,
-        image_url=image_url,
-        output_format="cdr",
-    )
-    lara_reqs[POINTS_REQUEST_QUEUE] = Request(
-        id="mock-points",
-        task="points",
-        image_id=image_id,
-        image_url=image_url,
-        output_format="cdr",
-    )
-    lara_reqs[SEGMENTATION_REQUEST_QUEUE] = Request(
-        id="mock-segments",
-        task="segments",
-        image_id=image_id,
-        image_url=image_url,
-        output_format="cdr",
-    )
-    lara_reqs[METADATA_REQUEST_QUEUE] = Request(
-        id="mock-metadata",
-        task="metadata",
-        image_id=image_id,
-        image_url=image_url,
-        output_format="cdr",
-    )
-
-    # Pre-fetch the image from th CDR for use by the pipelines.  The pipelines have an
-    # imagedir arg that should be configured to point at this location.
-    prefetch_image(Path(settings.imagedir), image_id, image_url)
+    image_url = f"{settings.cogdir}/{image_id}.cog.tif"
 
     # push the request onto the queue
-    if settings.serial:
-        first_task = settings.sequence[0]
-        first_queue = LaraResultSubscriber.PIPELINE_QUEUES[first_task]
-        first_request = LaraResultSubscriber.next_request(
-            first_task, image_id, image_url
-        )
-        request_publisher.publish_lara_request(first_request, first_queue)
-    else:
-        for queue_name, request in lara_reqs.items():
-            logger.info(
-                f"publishing request for image {image_id} to {queue_name} task: {request.task}"
-            )
-            request_publisher.publish_lara_request(request, queue_name)
+    first_task = settings.sequence[0]
+    first_queue = ChainingResultSubscriber.PIPELINE_QUEUES[first_task]
+    first_request = ChainingResultSubscriber.next_request(
+        first_task, image_id, image_url
+    )
+    request_publisher.publish_lara_request(first_request, first_queue)
 
 
 def register_cdr_system():
 
     for i, pipeline in enumerate(settings.sequence):
-        system_name = LaraResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]
-        system_version = LaraResultSubscriber.PIPELINE_SYSTEM_VERSIONS[pipeline]
+        system_name = ChainingResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]
+        system_version = ChainingResultSubscriber.PIPELINE_SYSTEM_VERSIONS[pipeline]
         logger.info(f"registering system {system_name} with cdr")
         headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
 
@@ -281,7 +184,10 @@ def cdr_startup(host: str):
     if len(registrations) > 0:
         for r in registrations:
             for pipeline in settings.sequence:
-                if r["name"] == LaraResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]:
+                if (
+                    r["name"]
+                    == ChainingResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]
+                ):
                     logger.info(f"unregistering system {r['name']} with cdr")
                     cdr_unregister(r["id"])
                     break
@@ -310,31 +216,29 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("process", "host"), required=True)
-    parser.add_argument("--workdir", type=str, required=True)
-    parser.add_argument("--imagedir", type=str, required=True)
     parser.add_argument("--cog_id", type=str, required=False)
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--rabbit_port", type=int, default=5672)
     parser.add_argument("--rabbit_vhost", type=str, default="/")
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
-    parser.add_argument("--cdr_event_log", type=str, default=CDR_EVENT_LOG)
     parser.add_argument("--input", type=str, default=None)
-    parser.add_argument("--output", type=str, default=None)
+    parser.add_argument("--cdr_host", type=str, default=CDR_HOST)
+    parser.add_argument("--cogdir", type=str, default=COG_PATH)
+    parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument(
-        "--sequence", nargs="*", default=LaraResultSubscriber.DEFAULT_PIPELINE_SEQUENCE
+        "--sequence",
+        nargs="*",
+        default=ChainingResultSubscriber.DEFAULT_PIPELINE_SEQUENCE,
     )
     p = parser.parse_args()
 
     global settings
     settings = Settings()
     settings.cdr_api_token = CDR_API_TOKEN
-    settings.cdr_host = CDR_HOST
-    settings.workdir = p.workdir
-    settings.imagedir = p.imagedir
-    settings.output = p.output
+    settings.cdr_host = p.cdr_host
+    settings.cogdir = p.cogdir
     settings.callback_secret = CDR_CALLBACK_SECRET
-    settings.serial = True
     settings.sequence = p.sequence
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
@@ -366,15 +270,16 @@ def main():
     request_publisher.start_lara_request_queue()
 
     # start the listener for the results
-    publisher = request_publisher if settings.serial else None
-    result_subscriber = LaraResultSubscriber(
-        publisher,
+    result_subscriber = ChainingResultSubscriber(
+        request_publisher,
         LARA_RESULT_QUEUE_NAME,
         settings.cdr_host,
         settings.cdr_api_token,
-        settings.output,
-        settings.workdir,
         host=p.host,
+        port=p.rabbit_port,
+        vhost=p.rabbit_vhost,
+        uid=p.rabbit_uid,
+        pwd=p.rabbit_pwd,
         pipeline_sequence=settings.sequence,
     )
     result_subscriber.start_lara_result_queue()
@@ -390,6 +295,8 @@ def main():
                 for line in f:
                     cog_id = line.strip()
                     process_image(cog_id, request_publisher)
+                    if p.metrics_url != "":
+                        requests.post(p.metrics_url + "/counter/jobs_submitted?step=1")
         else:
             process_image(p.cog_id, request_publisher)
 

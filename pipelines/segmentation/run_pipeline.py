@@ -1,12 +1,15 @@
 import argparse
 import logging
 import os
-
-from cv2 import log
-
-from tasks.common.pipeline import PipelineInput, BaseModelOutput
+from PIL.Image import Image as PILImage
+from tasks.common.pipeline import (
+    EmptyOutput,
+    PipelineInput,
+    BaseModelOutput,
+    ImageOutput,
+)
 from pipelines.segmentation.segmentation_pipeline import SegmentationPipeline
-from tasks.common.io import ImageFileInputIterator, JSONFileWriter
+from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
 
 from util import logging as logging_util
 
@@ -23,6 +26,7 @@ def main():
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--min_confidence", type=float, default=0.25)
     parser.add_argument("--cdr_schema", action="store_true")
+    parser.add_argument("--debug_images", action="store_true")
     parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
 
@@ -31,11 +35,13 @@ def main():
 
     # setup an output writer
     file_writer = JSONFileWriter()
+    image_writer = ImageFileWriter()
 
     # create the pipeline
     pipeline = SegmentationPipeline(
         p.model,
         p.workdir,
+        p.debug_images,
         p.cdr_schema,
         p.min_confidence,
         not p.no_gpu,
@@ -58,6 +64,13 @@ def main():
                     file_writer.process(path, output_data.data)
                 else:
                     logger.warning(f"Unknown output type: {output_type}")
+            elif isinstance(output_data, ImageOutput):
+                # write out the image
+                path = os.path.join(p.output, f"{doc_id}_map_segmentation.png")
+                assert isinstance(output_data.data, PILImage)
+                image_writer.process(path, output_data.data)
+            elif isinstance(output_data, EmptyOutput):
+                logger.info(f"Empty {output_type} output for {doc_id}")
             else:
                 logger.warning(f"Unknown output type: {type(output_data)}")
                 continue

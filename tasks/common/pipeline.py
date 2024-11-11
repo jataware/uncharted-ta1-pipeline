@@ -1,7 +1,7 @@
 import io
 import logging
-from .task import Task, TaskInput, TaskResult
-from typing import Optional, List, Dict, Any, Sequence
+from .task import HaltPipeline, Task, TaskInput, TaskResult
+from typing import Optional, Dict, Any, Sequence
 from PIL.Image import Image as PILImage
 from pydantic import BaseModel
 
@@ -120,6 +120,11 @@ class BaseModelListOutput(Output):
         self.data = data
 
 
+class EmptyOutput(Output):
+    def __init__(self):
+        super().__init__("", "")
+
+
 class OutputCreator:
     id = ""
 
@@ -156,6 +161,11 @@ class Pipeline:
             count = count + 1
             try:
                 task_result = t.run(task_input)
+                if isinstance(task_result, HaltPipeline):
+                    logger.info(
+                        f"pipeline halted at step {t.get_task_id()} ({task_input.task_index}) for raster {input.raster_id}: {task_result.reason}"
+                    )
+                    return self._produce_empty_outputs()
                 pipeline_result = self._merge_result(pipeline_result, task_result)
             except Exception as e:
                 logger.exception(
@@ -192,6 +202,12 @@ class Pipeline:
         outputs: Dict[str, Output] = {}
         for oc in self._output:
             outputs[oc.id] = oc.create_output(pipeline_result)
+        return outputs
+
+    def _produce_empty_outputs(self) -> Dict[str, Output]:
+        outputs: Dict[str, Output] = {}
+        for oc in self._output:
+            outputs[oc.id] = EmptyOutput()
         return outputs
 
     def _create_task_input(

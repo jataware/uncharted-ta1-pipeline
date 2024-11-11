@@ -292,14 +292,12 @@ def legend_items_use_ontology(leg_point_items: LegendPointItems) -> bool:
         for leg_item in leg_point_items.items:
             if not leg_item.class_name:
                 logger.info(
-                    "Point ontology labels are missing for some of the legend items. Proceeding with tiling and further analysis of legend area..."
+                    "Point ontology labels are missing for some of the legend items."
                 )
                 class_labels_ok = False
                 break
         if class_labels_ok:
-            logger.info(
-                f"*** Point ontology labels are available for ALL legend items. Skipping further legend item analysis."
-            )
+            logger.info(f"Point ontology labels are available for ALL legend items.")
     return class_labels_ok
 
 

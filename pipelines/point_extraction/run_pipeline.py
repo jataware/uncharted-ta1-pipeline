@@ -3,7 +3,12 @@ import json
 import logging
 import os
 
-from tasks.common.pipeline import PipelineInput, BaseModelOutput, ImageDictOutput
+from tasks.common.pipeline import (
+    EmptyOutput,
+    PipelineInput,
+    BaseModelOutput,
+    ImageDictOutput,
+)
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
 from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
 from tasks.point_extraction.legend_item_utils import (
@@ -134,6 +139,8 @@ def main():
                         bitmasks_out_dir, f"{doc_id}_{pt_label}.tif"
                     )
                     image_writer.process(raster_path, pil_im)
+            elif isinstance(output_data, EmptyOutput):
+                logger.info(f"Empty {output_type} output for {doc_id}")
             else:
                 logger.warning(f"Unknown output data: {output_data}")
 

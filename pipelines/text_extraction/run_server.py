@@ -1,16 +1,15 @@
 import argparse
-from pathlib import Path
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
 
-import io
-from PIL import Image
+from io import BytesIO
+from tasks.common import image_io
 
-from tasks.common.queue import (
+from tasks.common.request_client import (
     TEXT_REQUEST_QUEUE,
     TEXT_RESULT_QUEUE,
-    RequestQueue,
+    RequestClient,
     OutputType,
 )
 
@@ -33,13 +32,14 @@ def process_image():
     """
 
     try:
-        # decode and open as a PIL Image
-        im = Image.open(io.BytesIO(request.data))
+        # open the image from the supplied byte stream
+        bytes_io = BytesIO(request.data)
+        image = image_io.load_pil_image_stream(bytes_io)
 
         # use the hash as the doc id since we don't have a filename
         doc_id = sha1(request.data).hexdigest()
 
-        input = PipelineInput(image=im, raster_id=doc_id)
+        input = PipelineInput(image=image, raster_id=doc_id)
 
         results = pipeline.run(input)
         if len(results) == 0:
@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--imagedir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--cdr_schema", action="store_true")
     parser.add_argument("--tile", action=argparse.BooleanOptionalAction, default=True)
@@ -92,6 +92,7 @@ if __name__ == "__main__":
     parser.add_argument("--rabbit_vhost", type=str, default="/")
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
+    parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument("--request_queue", type=str, default=TEXT_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=TEXT_RESULT_QUEUE)
     p = parser.parse_args()
@@ -114,19 +115,20 @@ if __name__ == "__main__":
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        client = RequestClient(
             pipeline,
             p.request_queue,
             p.result_queue,
             result_key,
             OutputType.TEXT,
-            p.workdir,
             p.imagedir,
             host=p.rabbit_host,
             port=p.rabbit_port,
             vhost=p.rabbit_vhost,
             uid=p.rabbit_uid,
             pwd=p.rabbit_pwd,
+            metrics_url=p.metrics_url,
+            metrics_type="text",
         )
-        queue.start_request_queue()
-        queue.start_result_queue()
+        client.start_request_queue()
+        client.start_result_queue()

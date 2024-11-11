@@ -1,19 +1,14 @@
 import logging
-
 from random import randint
-
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.geo_referencing.entities import QUERY_POINTS_OUTPUT_KEY
-from tasks.geo_referencing.georeference import QueryPoint
-from tasks.segmentation.entities import (
-    MapSegmentation,
-    SEGMENTATION_OUTPUT_KEY,
-    SEGMENT_MAP_CLASS,
+from tasks.geo_referencing.entities import (
+    QUERY_POINTS_OUTPUT_KEY,
+    MapROI,
+    ROI_MAP_OUTPUT_KEY,
 )
-from tasks.segmentation.segmenter_utils import get_segment_bounds
-
+from tasks.geo_referencing.georeference import QueryPoint
 from typing import List, Tuple, Dict
-from shapely import Point, Polygon, MultiPolygon, concave_hull
+from shapely import Point, Polygon
 from shapely.ops import nearest_points
 
 GEOCOORD_DIST_THRES = 30
@@ -28,9 +23,7 @@ class CreateGroundControlPoints(Task):
         super().__init__(task_id)
 
     def run(self, input: TaskInput) -> TaskResult:
-        logger.info(
-            f"running ground control point creation at task index {input.task_index} with id {self._task_id}"
-        )
+
         # check if query points already defined
         query_pts = None
         if QUERY_POINTS_OUTPUT_KEY in input.request:
@@ -40,22 +33,23 @@ class CreateGroundControlPoints(Task):
             return self._create_result(input)
 
         # no query points exist, so create them...
-        # get map segmentation ROI as a shapely polygon (without any dilation buffering)
-        poly_map = []
-        if SEGMENTATION_OUTPUT_KEY in input.data:
-            segmentation = MapSegmentation.model_validate(
-                input.data[SEGMENTATION_OUTPUT_KEY]
-            )
-            poly_map = get_segment_bounds(segmentation, SEGMENT_MAP_CLASS)
+        roi_xy = []
+        if ROI_MAP_OUTPUT_KEY in input.data:
+            # get map ROI bounds (without inner/outer buffering)
+            map_roi = MapROI.model_validate(input.data[ROI_MAP_OUTPUT_KEY])
+            roi_xy = map_roi.map_bounds
 
-        if self.create_random_pts or not poly_map:
+        if self.create_random_pts or not roi_xy:
             # create random GCPs...
-            query_pts = self._create_random_query_points(input, num_pts=NUM_PTS)
+            roi_xy = [0, 0, input.image.size[0], input.image.size[1]]
+            query_pts = self._create_random_query_points(
+                input.raster_id, roi_xy, num_pts=NUM_PTS
+            )
             logger.info(f"created {len(query_pts)} random ground control points")
         else:
             # create GCPs based on geo-coord pixel locations...
             # use 1st (highest ranked) map segment
-            poly_map = poly_map[0]
+            poly_map = Polygon(roi_xy)
             # get extracted lat and lon coords
             lon_pts = input.get_data("lons", {})
             lat_pts = input.get_data("lats", {})
@@ -72,7 +66,9 @@ class CreateGroundControlPoints(Task):
                     f"Also creating {num_inner_gcps} random ground control points"
                 )
                 query_pts.extend(
-                    self._create_random_query_points(input, num_pts=num_inner_gcps)
+                    self._create_random_query_points(
+                        input.raster_id, list(poly_map.bounds), num_pts=num_inner_gcps
+                    )
                 )
 
         # add them to the output
@@ -82,27 +78,16 @@ class CreateGroundControlPoints(Task):
         return result
 
     def _create_random_query_points(
-        self, input: TaskInput, num_pts=10
+        self, raster_id: str, roi_bbox: List, num_pts=10
     ) -> List[QueryPoint]:
         """
         create N random ground control points roughly around the middle of the ROI (or failing that the middle of the image)
         """
-        min_x = min_y = max_x = max_y = 0
-        roi = input.get_data("roi")
-        if roi and len(roi) > 0:
-            roi_x = list(map(lambda x: x[0], roi))
-            roi_y = list(map(lambda x: x[1], roi))
-
-            max_x, max_y = max(roi_x), max(roi_y)
-            min_x, min_y = min(roi_x), min(roi_y)
-        else:
-            max_x, max_y = input.image.size
+        [min_x, min_y, max_x, max_y] = roi_bbox
 
         coords = self._create_random_coordinates(min_x, min_y, max_x, max_y, n=num_pts)
         return [
-            QueryPoint(
-                input.raster_id, (c[0], c[1]), None, properties={"label": "random"}
-            )
+            QueryPoint(raster_id, (c[0], c[1]), None, properties={"label": "random"})
             for c in coords
         ]
 

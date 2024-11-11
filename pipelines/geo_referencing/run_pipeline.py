@@ -1,18 +1,26 @@
 import argparse
 import logging
 import os
-
 from PIL.Image import Image as PILIMAGE
 from PIL import Image
 
 from pipelines.geo_referencing.georeferencing_pipeline import GeoreferencingPipeline
+from pipelines.geo_referencing.pipeline_input_utils import (
+    parse_query_file,
+    get_geofence_defaults,
+)
 from pipelines.geo_referencing.output import CSVWriter, JSONWriter
 from tasks.common.io import (
     BytesIOFileWriter,
     ImageFileInputIterator,
     JSONFileWriter,
 )
-from tasks.common.pipeline import BaseModelOutput, BytesOutput, PipelineInput
+from tasks.common.pipeline import (
+    BaseModelOutput,
+    BytesOutput,
+    EmptyOutput,
+    PipelineInput,
+)
 from tasks.geo_referencing.entities import (
     LEVERS_OUTPUT_KEY,
     PROJECTED_MAP_OUTPUT_KEY,
@@ -21,10 +29,9 @@ from tasks.geo_referencing.entities import (
     SUMMARY_OUTPUT_KEY,
     GEOREFERENCING_OUTPUT_KEY,
 )
-from tasks.geo_referencing.georeference import QueryPoint
-from tasks.metadata_extraction.metadata_extraction import LLM
+
+from tasks.metadata_extraction.metadata_extraction import LLM, LLM_PROVIDER
 from util import logging as logging_util
-from typing import List, Optional, Tuple
 
 IMG_FILE_EXT = "tif"
 
@@ -47,22 +54,27 @@ def main():
     parser.add_argument(
         "--state_plane_lookup_filename",
         type=str,
-        default="./data/state_plane_reference.csv",
+        default="data/state_plane_reference.csv",
     )
     parser.add_argument(
         "--state_plane_zone_filename",
         type=str,
-        default="./data/USA_State_Plane_Zones_NAD27.geojson",
+        default="data/USA_State_Plane_Zones_NAD27.geojson",
     )
     parser.add_argument(
         "--state_code_filename",
         type=str,
-        default="./data/state_codes.csv",
+        default="data/state_codes.csv",
     )
     parser.add_argument(
         "--country_code_filename",
         type=str,
-        default="./data/country_codes.csv",
+        default="data/country_codes.csv",
+    )
+    parser.add_argument(
+        "--geocoded_places_filename",
+        type=str,
+        default="data/geocoded_places_reference.json",
     )
     parser.add_argument(
         "--ocr_gamma_correction",
@@ -70,6 +82,12 @@ def main():
         default=0.5,
     )
     parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
+    parser.add_argument(
+        "--llm_provider",
+        type=LLM_PROVIDER,
+        choices=list(LLM_PROVIDER),
+        default=LLM_PROVIDER.OPENAI,
+    )
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--project", action="store_true")
     parser.add_argument("--diagnostics", action="store_true")
@@ -81,10 +99,20 @@ def main():
     run_pipeline(p, input)
 
 
-def create_input(raster_id: str, image: PILIMAGE, query_path: str) -> PipelineInput:
+def create_input(
+    raster_id: str,
+    image: PILIMAGE,
+    query_path: str,
+    geofence_region: str = "world",
+) -> PipelineInput:
     input = PipelineInput()
     input.image = image
     input.raster_id = raster_id
+
+    lon_minmax, lat_minmax, lon_sign_factor = get_geofence_defaults(geofence_region)
+    input.params["lon_minmax"] = lon_minmax
+    input.params["lat_minmax"] = lat_minmax
+    input.params["lon_sign_factor"] = lon_sign_factor
 
     # if a query path is specified, parse the query file and the contents to the
     # query points output key for consumption within the pipeline
@@ -105,8 +133,10 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
         parsed.state_plane_zone_filename,
         parsed.state_code_filename,
         parsed.country_code_filename,
+        parsed.geocoded_places_filename,
         parsed.ocr_gamma_correction,
         parsed.llm,
+        parsed.llm_provider,
         parsed.project,
         parsed.diagnostics,
         not parsed.no_gpu,
@@ -143,6 +173,10 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
         if isinstance(output_data, BaseModelOutput):
             path = os.path.join(parsed.output, f"{raster_id}_georeferencing.json")
             writer_json_file.process(path, output_data.data)
+        elif isinstance(output_data, EmptyOutput):
+            logger.info(
+                f"no georeferencing results for {raster_id}, skipping writing to file"
+            )
 
         # immediately write projected map to file - these are large so we don't want to accumulate them
         # in memory like the other results
@@ -161,6 +195,10 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
                 writer_bytes.process(
                     output_path,
                     map_output.data,
+                )
+            elif isinstance(map_output, EmptyOutput):
+                logger.info(
+                    f"no projected map for {raster_id}, skipping writing to file"
                 )
 
         # store the diagnostic info if present
@@ -190,61 +228,6 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
         results_gcps,
         {"path": os.path.join(parsed.output, f"gcps_{pipeline.id}.json")},
     )
-
-
-def parse_query_file(
-    csv_query_file: str, image_size: Optional[Tuple[float, float]] = None
-) -> List[QueryPoint]:
-    """
-    Expected schema is of the form:
-    raster_ID,row,col,NAD83_x,NAD83_y
-    GEO_0004,8250,12796,-105.72065081057087,43.40255034572461
-    ...
-    Note: NAD83* columns may not be present
-    row (y) and col (x) = pixel coordinates to query
-    NAD83* = (if present) are ground truth answers (lon and lat) for the query x,y pt
-    """
-
-    first_line = True
-    x_idx = 2
-    y_idx = 1
-    lon_idx = 3
-    lat_idx = 4
-    query_pts = []
-    try:
-        with open(csv_query_file) as f_in:
-            for line in f_in:
-                if line.startswith("raster_") or first_line:
-                    first_line = False
-                    continue  # header line, skip
-
-                rec = line.split(",")
-                if len(rec) < 3:
-                    continue
-                raster_id = rec[0]
-                x = int(rec[x_idx])
-                y = int(rec[y_idx])
-                if image_size is not None:
-                    # sanity check that query points are not > image dimensions!
-                    if x > image_size[0] or y > image_size[1]:
-                        err_msg = (
-                            "Query point {}, {} is outside image dimensions".format(
-                                x, y
-                            )
-                        )
-                        raise IOError(err_msg)
-                lonlat_gt = None
-                if len(rec) >= 5:
-                    lon = float(rec[lon_idx])
-                    lat = float(rec[lat_idx])
-                    if lon != 0 and lat != 0:
-                        lonlat_gt = (lon, lat)
-                query_pts.append(QueryPoint(raster_id, (x, y), lonlat_gt))
-
-    except Exception as e:
-        logger.exception(f"EXCEPTION parsing query file: {str(e)}", exc_info=True)
-
-    return query_pts
 
 
 if __name__ == "__main__":

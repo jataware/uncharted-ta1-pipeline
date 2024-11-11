@@ -4,13 +4,13 @@ import json
 from io import BytesIO
 from pathlib import Path
 from PIL import Image
-from cv2 import exp
 from pydantic import BaseModel
-from typing import Dict, List
 import boto3
 from moto import mock_aws
 from tasks.common.io import (
+    BytesIOFileWriter,
     ImageFileInputIterator,
+    ImageFileReader,
     JSONFileReader,
     JSONFileWriter,
     ImageFileWriter,
@@ -229,3 +229,77 @@ def test_json_file_reader_filesystem():
     assert data == test_data
 
     os.remove(output_location)
+
+    def test_bytes_io_file_writer_filesystem():
+        # Create a temporary directory and save some test bytes
+        test_dir = Path("tasks/common/test/data")
+        test_dir.mkdir(parents=True, exist_ok=True)
+        test_data = b"test data"
+        output_location = "tasks/common/test/data/test.bin"
+        writer = BytesIOFileWriter()
+        writer.process(output_location, BytesIO(test_data))
+
+        # read the bytes back from the file and verify it is the same
+        with open(output_location, "rb") as f:
+            data = f.read()
+            assert data == test_data
+
+        # clean up the temporary directory
+        os.remove(output_location)
+        test_dir.rmdir()
+
+
+@mock_aws
+def test_bytes_io_file_writer_s3():
+    # Create a temporary directory and save some test bytes
+    test_bucket = "test-bucket"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    bucket = conn.create_bucket(Bucket=test_bucket)
+
+    test_data = b"test data"
+    output_location = "s3://test-bucket/data/test.bin"
+    writer = BytesIOFileWriter()
+    writer.process(output_location, BytesIO(test_data))
+
+    # read the bytes back from s3 and verify it is the same
+    obj = bucket.Object("data/test.bin")
+    data = obj.get()["Body"].read()
+    assert data == test_data
+
+
+def test_image_file_reader_filesystem():
+    # Create a temporary directory and save a test image
+    test_dir = Path("tasks/common/test/data")
+    test_dir.mkdir(parents=True, exist_ok=True)
+    test_data = Image.new("RGB", (100, 100), color="red")
+    output_location = "tasks/common/test/data/test.png"
+    test_data.save(output_location)
+
+    reader = ImageFileReader()
+    image = reader.process(output_location)
+    assert image
+    assert image.tobytes() == test_data.tobytes()
+
+    # clean up the temporary directory
+    os.remove(output_location)
+    test_dir.rmdir()
+
+
+@mock_aws
+def test_image_file_reader_s3():
+    # Create a temporary directory and save a test image
+    test_bucket = "test-bucket"
+    conn = boto3.resource("s3", region_name="us-east-1")
+    bucket = conn.create_bucket(Bucket=test_bucket)
+
+    test_data = Image.new("RGB", (100, 100), color="red")
+    output_location = "s3://test-bucket/data/test.png"
+    buf = BytesIO()
+    test_data.save(buf, format="PNG")
+    buf.seek(0)
+    bucket.put_object(Body=buf, Key="data/test.png")
+
+    reader = ImageFileReader()
+    image = reader.process(output_location)
+    assert image
+    assert image.tobytes() == test_data.tobytes()

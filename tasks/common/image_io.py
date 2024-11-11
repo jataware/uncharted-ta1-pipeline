@@ -1,7 +1,6 @@
 from PIL import Image
 from PIL.Image import Image as PILImage
 import cv2
-import httpx
 import numpy as np
 import logging
 from io import BytesIO
@@ -10,26 +9,30 @@ from io import BytesIO
 # Generic image loading/saving and formatting functions
 #
 
-# TODO -- should these funcs be moved to a 'common' module?
-
 # https://stackoverflow.com/questions/51152059/pillow-in-python-wont-let-me-open-image-exceeds-limit
 Image.MAX_IMAGE_PIXELS = 400000000  # to allow PIL to load large images
 
 logger = logging.getLogger(__name__)
 
 
-def load_pil_image(path: str) -> PILImage:
+def load_pil_image(path: str, normalize=True) -> PILImage:
     """
     Loads an image into memory as a PIL image object
     """
-    return Image.open(path)
+    image = Image.open(path)
+    if normalize:
+        image = normalize_image_format(image)
+    return image
 
 
-def load_pil_image_stream(bytes_io: BytesIO) -> PILImage:
+def load_pil_image_stream(bytes_io: BytesIO, normalize=True) -> PILImage:
     """
     Loads an image into memory as a PIL image object from a byte-stream
     """
-    return Image.open(bytes_io)
+    image = Image.open(bytes_io)
+    if normalize:
+        image = normalize_image_format(image)
+    return image
 
 
 def load_cv_image(path: str) -> np.ndarray:

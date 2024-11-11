@@ -82,6 +82,9 @@ class GeoreferenceMapper(CDRMapper):
             )
             gcps.append(cdr_gcp)
 
+        # get the epsg number from the crs
+        epsg_num = model.crs.split(":")[1]
+
         return CDRGeoreferenceResults(
             cog_id=model.map_id,
             georeference_results=[
@@ -92,7 +95,7 @@ class GeoreferenceMapper(CDRMapper):
                         ProjectionResult(
                             crs=self.DEFAULT_OUTPUT_CRS,
                             gcp_ids=[gcp.gcp_id for gcp in gcps],
-                            file_name=f"lara-{model.map_id}.tif",
+                            file_name=f"{model.map_id}-{epsg_num}.tif",
                         )
                     ],
                 )

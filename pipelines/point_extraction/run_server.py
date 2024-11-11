@@ -8,11 +8,11 @@ from io import BytesIO
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
-from tasks.common.queue import (
+from tasks.common.request_client import (
     POINTS_REQUEST_QUEUE,
     POINTS_RESULT_QUEUE,
     OutputType,
-    RequestQueue,
+    RequestClient,
 )
 from util import logging as logging_util
 
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     # parse command line args
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--imagedir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model_point_extractor", type=str, required=True)
     parser.add_argument("--model_segmenter", type=str, default=None)
     parser.add_argument("--debug", action="store_true")
@@ -96,6 +96,7 @@ if __name__ == "__main__":
     parser.add_argument("--rabbit_vhost", type=str, default="/")
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
+    parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument("--request_queue", type=str, default=POINTS_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=POINTS_RESULT_QUEUE)
     parser.add_argument("--no_gpu", action="store_true")
@@ -124,19 +125,20 @@ if __name__ == "__main__":
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        client = RequestClient(
             point_extraction_pipeline,
             p.request_queue,
             p.result_queue,
             result_key,
             OutputType.POINTS,
-            p.workdir,
             p.imagedir,
             host=p.rabbit_host,
             port=p.rabbit_port,
             vhost=p.rabbit_vhost,
             uid=p.rabbit_uid,
             pwd=p.rabbit_pwd,
+            metrics_url=p.metrics_url,
+            metrics_type="points",
         )
-        queue.start_request_queue()
-        queue.start_result_queue()
+        client.start_request_queue()
+        client.start_result_queue()

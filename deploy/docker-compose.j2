@@ -13,22 +13,26 @@ services:
       timeout: 10s
       retries: 5
 
-  {% if cdr -%}
+  {%- if cdr %}
   cdr:
     image: uncharted/lara-cdr:{{ tag }}
     command: [
       "--mode", "host",
-      "--workdir", "/workdir",
-      "--imagedir", "/imagedir",
       "--host", "rabbitmq"]
     ports:
       - 5000:5000
     environment:
       - CDR_API_TOKEN={{ cdr_api_token }}
       - NGROK_AUTHTOKEN={{ ngrok_authtoken }}
+      {%- if not local %}
+      - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
+      - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      {%- endif %}
+    {%- if local %}
     volumes:
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
+    {%- endif %}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -37,21 +41,70 @@ services:
     restart: on-failure
   {%- endif %}
 
+  writer:
+    image: uncharted/lara-cdr-writer:{{ tag }}
+    command: [
+      {%- if local %}
+      "--workdir", "/workdir",
+      "--imagedir", "/imagedir",
+      {% else %}
+      "--workdir", {{ work_dir }},
+      "--imagedir", {{ image_dir }},
+      {%- endif %}
+      "--host", "rabbitmq"]
+    environment:
+      - CDR_API_TOKEN={{ cdr_api_token }}
+      {%- if not local %}
+      - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
+      - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      {%- endif %}
+    {%- if local %}
+    volumes:
+      - {{ work_dir }}:/workdir
+      - {{ image_dir }}:/imagedir
+    {%- endif %}
+    deploy:
+      replicas: {{ writer_replicas  }}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - lara
+    restart: on-failure
+
   georef:
     image: uncharted/lara-georef:{{ tag }}
     command: [
+      {%- if local %}
       "--workdir", "/workdir",
       "--imagedir", "/imagedir",
+      {%- else %}
+      "--workdir", {{ work_dir }},
+      "--imagedir", {{ image_dir }},
+      {%- endif %}
       "--rabbit_host", "rabbitmq",
       "--model", "pipelines/segmentation_weights",
       "--result_queue", "lara_result_queue"]
     environment:
+      {%- if azure_openai_api_key %}
+      - AZURE_OPENAI_API_KEY={{ azure_openai_api_key }}
+      - AZURE_OPENAI_ENDPOINT={{ azure_openai_endpoint }}
+      {%- else %}
       - OPENAI_API_KEY={{ openai_api_key }}
+      {%- endif %}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_application_credentials.json
+      {%- if not local %}
+      - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
+      - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      {%- endif %}
     volumes:
       - {{ google_application_credentials_dir }}:/credentials
+      {%- if local %}
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
+      {%- endif %}
+    deploy:
+      replicas: {{ georef_replicas  }}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -62,26 +115,38 @@ services:
   points:
     image: uncharted/lara-point-extract:{{ tag }}
     command: [
+      {%- if local %}
       "--workdir", "/workdir",
       "--imagedir", "/imagedir",
+      {%- else %}
+      "--workdir", {{ work_dir }},
+      "--imagedir", {{ image_dir }},
+      {%- endif %}
       "--rabbit_host", "rabbitmq",
       "--model_point_extractor", "pipelines/point_extraction_weights/points.pt",
       "--model_segmenter", "pipelines/segmentation_weights",
       "--result_queue", "lara_result_queue"]
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_application_credentials.json
+      {%- if not local %}
+      - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
+      - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      {%- endif %}
     volumes:
       - {{ google_application_credentials_dir }}:/credentials
+    {%- if local %}
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
+    {%- endif %}
     depends_on:
       rabbitmq:
         condition: service_healthy
     networks:
       - lara
     restart:  on-failure
-    {% if gpu -%}
+    {%- if gpu %}
     deploy:
+      replicas: {{ points_replicas  }}
       resources:
           reservations:
             devices:
@@ -93,17 +158,30 @@ services:
   segmentation:
     image: uncharted/lara-segmentation:{{ tag }}
     command: [
+      {%- if local %}
       "--workdir", "/workdir",
       "--imagedir", "/imagedir",
+      {%- else %}
+      "--workdir", {{ work_dir }},
+      "--imagedir", {{ image_dir }},
+      {%- endif %}
       "--rabbit_host", "rabbitmq",
       "--model", "pipelines/segmentation_weights",
       "--result_queue", "lara_result_queue"]
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_application_credentials.json
+      {%- if not local %}
+      - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
+      - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      {%- endif %}
     volumes:
       - {{ google_application_credentials_dir }}:/credentials
+    {%- if local %}
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
+    {%- endif %}
+    deploy:
+      replicas: {{ segmentation_replicas  }}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -114,18 +192,36 @@ services:
   metadata:
     image: uncharted/lara-metadata-extract:{{ tag }}
     command: [
+      {%- if local %}
       "--workdir", "/workdir",
       "--imagedir", "/imagedir",
+      {%- else %}
+      "--workdir", {{ work_dir }},
+      "--imagedir", {{ image_dir }},
+      {%- endif %}
       "--rabbit_host", "rabbitmq",
       "--model", "pipelines/segmentation_weights",
       "--result_queue", "lara_result_queue"]
     environment:
+      {%- if azure_openai_api_key %}
+      - AZURE_OPENAI_API_KEY={{ azure_openai_api_key }}
+      - AZURE_OPENAI_ENDPOINT= {{ azure_openai_endpoint }}
+      {%- else %}
       - OPENAI_API_KEY={{ openai_api_key }}
+      {%- endif %}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_application_credentials.json
+      {%- if not local %}
+      - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
+      - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      {%- endif %}
     volumes:
       - {{ google_application_credentials_dir }}:/credentials
+    {%- if local %}
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
+    {%- endif %}
+    deploy:
+      replicas: {{ metadata_replicas  }}
     depends_on:
       rabbitmq:
         condition: service_healthy

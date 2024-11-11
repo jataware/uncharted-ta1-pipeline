@@ -8,14 +8,19 @@ from io import BytesIO
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
-from tasks.common.queue import (
+from tasks.common.request_client import (
     OutputType,
-    RequestQueue,
+    RequestClient,
     METADATA_REQUEST_QUEUE,
     METADATA_RESULT_QUEUE,
 )
-from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
-from tasks.metadata_extraction.metadata_extraction import LLM
+from tasks.common.pipeline import (
+    EmptyOutput,
+    PipelineInput,
+    BaseModelOutput,
+    BaseModelListOutput,
+)
+from tasks.metadata_extraction.metadata_extraction import LLM, LLM_PROVIDER
 from tasks.common import image_io
 from tasks.metadata_extraction.entities import METADATA_EXTRACTION_OUTPUT_KEY
 from util import logging as logging_util
@@ -57,8 +62,12 @@ def process_image():
         elif isinstance(metadata_result, BaseModelListOutput):
             result_json = json.dumps([d.model_dump() for d in metadata_result.data])
             return Response(result_json, status=200, mimetype="application/json")
-        else:
+        elif isinstance(metadata_result, EmptyOutput):
             msg = "No metadata extracted"
+            logging.info(msg)
+            return (msg, 200)
+        else:
+            msg = "No metadata extracted - unknown output type"
             logging.warning(msg)
             return (msg, 500)
 
@@ -85,7 +94,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
-    parser.add_argument("--imagedir", type=Path, default="tmp/lara/workdir")
+    parser.add_argument("--imagedir", type=str, default="tmp/lara/workdir")
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--debug", action="store_true")
     parser.add_argument(
@@ -94,12 +103,19 @@ if __name__ == "__main__":
         help="Output results as TA1 json schema format",
     )
     parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
+    parser.add_argument(
+        "--llm_provider",
+        type=LLM_PROVIDER,
+        choices=list(LLM_PROVIDER),
+        default=LLM_PROVIDER.OPENAI,
+    )
     parser.add_argument("--rest", action="store_true")
     parser.add_argument("--rabbit_host", type=str, default="localhost")
     parser.add_argument("--rabbit_port", type=int, default=5672)
     parser.add_argument("--rabbit_vhost", type=str, default="/")
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
+    parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument("--request_queue", type=str, default=METADATA_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=METADATA_RESULT_QUEUE)
     parser.add_argument("--no_gpu", action="store_true")
@@ -107,7 +123,12 @@ if __name__ == "__main__":
 
     # init segmenter
     metadata_extraction = MetadataExtractorPipeline(
-        p.workdir, p.model, cdr_schema=p.cdr_schema, model=p.llm, gpu=not p.no_gpu
+        p.workdir,
+        p.model,
+        cdr_schema=p.cdr_schema,
+        model=p.llm,
+        gpu=not p.no_gpu,
+        metrics_url=p.metrics_url,
     )
 
     metadata_result_key = (
@@ -122,19 +143,20 @@ if __name__ == "__main__":
         else:
             app.run(host="0.0.0.0", port=5000)
     else:
-        queue = RequestQueue(
+        client = RequestClient(
             metadata_extraction,
             p.request_queue,
             p.result_queue,
             metadata_result_key,
             OutputType.METADATA,
-            p.workdir,
             p.imagedir,
             host=p.rabbit_host,
             port=p.rabbit_port,
             vhost=p.rabbit_vhost,
             uid=p.rabbit_uid,
             pwd=p.rabbit_pwd,
+            metrics_url=p.metrics_url,
+            metrics_type="metadata",
         )
-        queue.start_request_queue()
-        queue.start_result_queue()
+        client.start_request_queue()
+        client.start_result_queue()

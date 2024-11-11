@@ -6,9 +6,10 @@
 docker network ls | grep -q 'lara' || docker network create lara
 docker run \
     --rm \
-    --name cdr \
+    --name cdr_writer \
     -e CDR_API_TOKEN=$CDR_API_TOKEN \
-    -e NGROK_AUTHTOKEN=$NGROK_AUTHTOKEN \
+    -v $1:/workdir \
+    -v $2:/imagedir \
     --net lara \
     -p 5000:5000 \
-    uncharted/lara-cdr:latest --mode host
+    uncharted/lara-cdr-writer:latest --workdir $1 --imagedir $2
