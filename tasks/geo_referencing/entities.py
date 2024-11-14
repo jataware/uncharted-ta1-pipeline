@@ -17,6 +17,7 @@ ERROR_SCALE_OUTPUT_KEY = "error_scale"
 KEYPOINTS_OUTPUT_KEY = "keypoints"
 GEOREFERENCING_OUTPUT_KEY = "georeferencing"
 ROI_MAP_OUTPUT_KEY = "map_roi"
+MAP_SCALE_OUTPUT_KEY = "map_scale"
 
 
 class MapROI(BaseModel):
@@ -38,11 +39,20 @@ class GeoFence(BaseModel):
     lat_minmax: List[float]
     lon_minmax: List[float]
     region_type: GeoFenceType
+    lonlat_hemispheres: Tuple[int, int]
 
 
 class DocGeoFence(BaseModel):
     map_id: str
     geofence: GeoFence
+
+
+class MapScale(BaseModel):
+    scale_raw: str
+    dpi: int
+    scale_pixels: float
+    km_per_pixel: float
+    degrees_per_pixel: float
 
 
 class GroundControlPoint(BaseModel):
@@ -79,10 +89,10 @@ class CoordSource(str, Enum):
 
 
 class CoordStatus(str, Enum):
-    INCLUDED = "included"
-    EXCLUDED_MAP_ROI = "excluded_map_roi"
-    EXCLUDED_GEOFENCE = "excluded_geofence"
-    EXCLUDED_OUTLIER = "excluded_outlier"
+    OK = "ok"
+    OUTSIDE_MAP_ROI = "outside_map_roi"
+    OUTSIDE_GEOFENCE = "outside_geofence"
+    OUTLIER = "outlier"
 
 
 class Coordinate:
@@ -114,7 +124,7 @@ class Coordinate:
         font_height: float = 0.0,
         confidence: float = 0.0,
         priority: int = 1,
-        status: CoordStatus = CoordStatus.INCLUDED,
+        status: CoordStatus = CoordStatus.OK,
     ):
         self._type = type
         self._text = text

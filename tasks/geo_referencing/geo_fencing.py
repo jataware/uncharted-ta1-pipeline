@@ -44,8 +44,6 @@ class GeoFencer(Task):
 
         geofence = self._get_geofence(input, geocoded)
 
-        # TODO: NEED TO DETERMINE IF INPUT HAS BETTER GEOFENCE (MAYBE BY AREA) OR SKIP IF RELATIVELY SMALL GEOFENCE
-
         # update the coordinates list
         return self._create_result(input, geofence)
 
@@ -64,6 +62,8 @@ class GeoFencer(Task):
             clue_point[1] - fov_degrange_lat,
             clue_point[1] + fov_degrange_lat,
         ]
+        lon_hemisphere = self._calc_hemisphere_multiplier(lon_minmax[0], lon_minmax[1])
+        lat_hemisphere = self._calc_hemisphere_multiplier(lat_minmax[0], lat_minmax[1])
 
         return DocGeoFence(
             map_id=raster_id,
@@ -71,6 +71,7 @@ class GeoFencer(Task):
                 lat_minmax=lat_minmax,
                 lon_minmax=lon_minmax,
                 region_type=GeoFenceType.CLUE,
+                lonlat_hemispheres=(lon_hemisphere, lat_hemisphere),
             ),
         )
 
@@ -131,6 +132,7 @@ class GeoFencer(Task):
             lat_minmax=deepcopy(lat_minmax),
             lon_minmax=deepcopy(lon_minmax),
             region_type=GeoFenceType.DEFAULT,
+            lonlat_hemispheres=(1, 1),
         )
 
     def _create_geofence(
@@ -167,11 +169,15 @@ class GeoFencer(Task):
             elif geo_feature_type == GeoFeatureType.COUNTRY:
                 fence_type = GeoFenceType.COUNTRY
 
+            lon_hemisphere = self._calc_hemisphere_multiplier(min(lons), min(lons))
+            lat_hemisphere = self._calc_hemisphere_multiplier(min(lats), max(lats))
+
             logger.info(f"Geofence created using these places: {places}")
             return GeoFence(
                 lat_minmax=[min(lats), max(lats)],
                 lon_minmax=[min(lons), max(lons)],
                 region_type=fence_type,
+                lonlat_hemispheres=(lon_hemisphere, lat_hemisphere),
             )
         else:
             return None
@@ -244,3 +250,13 @@ class GeoFencer(Task):
         fov_degrange_lon = abs(fov_pt_east[1] - centre_lonlat[0])
         fov_degrange_lat = abs(fov_pt_north[0] - centre_lonlat[1])
         return (fov_degrange_lon, fov_degrange_lat)
+
+    def _calc_hemisphere_multiplier(self, coord_mid: float, coord_max: float) -> int:
+        """
+        Returns +1 for Northern latitudes or Eastern longitudes,
+        returns -1 for Southern latitudes or Western longitudes
+        """
+        # TODO -- could improve this to handle international dateline (cyclic math)
+        # and/or crossing the equator
+        mid_pt = (coord_mid + coord_max) / 2
+        return 1 if mid_pt >= 0.0 else -1

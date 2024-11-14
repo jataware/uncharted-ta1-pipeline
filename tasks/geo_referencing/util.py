@@ -1,5 +1,6 @@
 from typing import List, Tuple, Dict
 import io
+import math
 
 from tasks.text_extraction.entities import Point
 from tasks.common.task import TaskInput
@@ -27,6 +28,33 @@ from pyproj import Transformer
 
 from PIL.Image import Image as PILImage
 import logging
+
+
+def sign(number: float) -> int:
+    """
+    sign function, returns 1 or -1
+    """
+    return int(math.copysign(1, number))
+
+
+def get_distinct_degrees(coords: Dict[Tuple[float, float], Coordinate]) -> int:
+    """
+    Get the number of unique degree values for extracted coord values
+    """
+    coords_distinct = set(map(lambda x: x[1].get_parsed_degree(), coords.items()))
+    return len(coords_distinct)
+
+
+def is_coord_from_source(
+    coords: Dict[Tuple[float, float], Coordinate], sources: List[CoordSource]
+) -> bool:
+    """
+    Check if any coords were extracted from target CoordSources
+    """
+    for key, c in coords.items():
+        if c.get_source() in sources:
+            return True
+    return False
 
 
 def ocr_to_coordinates(bounds: List[Point]) -> List[List[int]]:

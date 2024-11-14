@@ -87,9 +87,6 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             metadata, population_centres, geofence_raw, clue_point, lon_pts, lat_pts
         )
 
-        # lon_minmax = input.input.get_request_info("lon_minmax", [0, 180])
-        # lat_minmax = input.input.get_request_info("lat_minmax", [-80, 84])
-        # lon_minmax, lat_minmax, _ = self._get_input_geofence(input)
         lat_minmax = copy.deepcopy(geofence_raw.geofence.lat_minmax)
         lat_minmax = [min(lat_minmax), max(lat_minmax)]
         lon_minmax = copy.deepcopy(geofence_raw.geofence.lon_minmax)
