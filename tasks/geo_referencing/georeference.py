@@ -22,12 +22,10 @@ from tasks.geo_referencing.entities import (
     CoordSource,
 )
 from tasks.geo_referencing.geo_projection import GeoProjection
-from tasks.geo_referencing.util import get_input_geofence
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
-from tasks.metadata_extraction.scale import SCALE_VALUE_OUTPUT_KEY
 from typing import Any, Dict, List, Optional, Tuple
 from pyproj import Transformer
 
@@ -119,7 +117,9 @@ class GeoReference(Task):
         lon_pts = input.get_data("lons", {})
         lat_pts = input.get_data("lats", {})
 
-        scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
+        # TODO -- this scale_value has always been 0, due to the old ScaleExtractor being disabled
+        # try using the new scale analysis result here
+        scale_value = 0
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
 
         roi_xy = []
@@ -137,9 +137,6 @@ class GeoReference(Task):
         else:
             # since no roi, use whole image as minmax values
             roi_xy_minmax = ([0, input.image.size[1]], [0, input.image.size[0]])
-
-        if not scale_value:
-            scale_value = 0
 
         query_pts = None
         external_query_pts = False
