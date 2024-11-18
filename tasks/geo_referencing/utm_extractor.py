@@ -3,8 +3,6 @@ import logging
 import re
 import statistics
 import utm
-import uuid
-
 from copy import deepcopy
 
 from tasks.geo_referencing.coordinates_extractor import (
@@ -16,7 +14,8 @@ from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
     GEOFENCE_OUTPUT_KEY,
-    SOURCE_UTM,
+    CoordType,
+    CoordSource,
 )
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
@@ -26,12 +25,10 @@ from tasks.metadata_extraction.entities import (
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.geo_referencing.util import (
-    ocr_to_coordinates,
     get_bounds_bounding_box,
     is_in_range,
     get_min_max_count,
 )
-
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("utm_extractor")
@@ -90,9 +87,6 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             metadata, population_centres, geofence_raw, clue_point, lon_pts, lat_pts
         )
 
-        # lon_minmax = input.input.get_request_info("lon_minmax", [0, 180])
-        # lat_minmax = input.input.get_request_info("lat_minmax", [-80, 84])
-        # lon_minmax, lat_minmax, _ = self._get_input_geofence(input)
         lat_minmax = copy.deepcopy(geofence_raw.geofence.lat_minmax)
         lat_minmax = [min(lat_minmax), max(lat_minmax)]
         lon_minmax = copy.deepcopy(geofence_raw.geofence.lon_minmax)
@@ -441,27 +435,27 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             latlon_pt = utm.to_latlon(
                 easting_clue, n, utm_zone[0], northern=utm_zone[1]
             )
-            # latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
-            # if lat_minmax[0] <= latlon_pt[0] <= lat_minmax[1]:
             if is_in_range(latlon_pt[0], lat_minmax):
-                # valid latitude point
+                # --- valid latitude point
+                # save abs of degree value (hemisphere +/- signs are applied during final georeference stage)
+                parsed_degree = abs(latlon_pt[0])
                 x_ranges = (
                     (0.0, 1.0)
                     if span[2] == 0
                     else (span[0] / float(span[2]), span[1] / float(span[2]))
                 )
                 coord = Coordinate(
-                    "lat keypoint",
+                    CoordType.KEYPOINT,
                     ocr_text_blocks.extractions[idx].text,
-                    latlon_pt[0],
-                    SOURCE_UTM,
+                    parsed_degree,
+                    CoordSource.UTM,
                     True,
                     ocr_text_blocks.extractions[idx].bounds,
                     x_ranges=x_ranges,
                     confidence=0 if utm_zone[2] == UTM_ZONE_DEFAULT else 0.75,
                 )
                 x_pixel, y_pixel = coord.get_pixel_alignment()
-                lat_results[(latlon_pt[0], y_pixel)] = coord
+                lat_results[(parsed_degree, y_pixel)] = coord
 
             else:
                 logger.debug(
@@ -473,6 +467,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
         if len(northings) > 0:
             northing_clue = statistics.median(map(lambda x: x[0], northings))
         for e, span, idx in eastings:
+            # TODO -- do we need to call "is_in_range" here (as done above for latitude coords)?
             x_ranges = (
                 (0.0, 1.0)
                 if span[2] == 0
@@ -482,18 +477,19 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
             latlon_pt = utm.to_latlon(
                 e, northing_clue, utm_zone[0], northern=utm_zone[1]
             )
-            # latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
+            # save abs of degree value (hemisphere +/- signs are applied during final georeference stage)
+            parsed_degree = abs(latlon_pt[1])
             coord = Coordinate(
-                "lon keypoint",
+                CoordType.KEYPOINT,
                 ocr_text_blocks.extractions[idx].text,
-                latlon_pt[1],
-                SOURCE_UTM,
+                parsed_degree,
+                CoordSource.UTM,
                 False,
                 ocr_text_blocks.extractions[idx].bounds,
                 x_ranges=x_ranges,
                 confidence=0 if utm_zone[2] == UTM_ZONE_DEFAULT else 0.75,
             )
             x_pixel, y_pixel = coord.get_pixel_alignment()
-            lon_results[(latlon_pt[1], x_pixel)] = coord
+            lon_results[(parsed_degree, x_pixel)] = coord
 
         return (lon_results, lat_results)

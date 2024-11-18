@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 
-from tasks.geo_referencing.entities import Coordinate
+from tasks.geo_referencing.entities import Coordinate, CoordType
 
 from typing import Dict, List, Tuple
 
@@ -70,7 +70,9 @@ class GeoProjection:
         lat_results = self._map_coordinates(lat_coords)
 
         # get number of corners (only need to iterate over lats or lons, since a corner includes a lat/lon pair)
-        num_corners = sum([1 if x._is_corner else 0 for x in lon_coords])
+        num_corners = sum(
+            [1 if x.get_type() == CoordType.CORNER else 0 for x in lon_coords]
+        )
         if num_corners < 3:
             # only do the 'finalize_keypoints' if a few corners found
             lon_results = self.finalize_keypoints(lon_results, im_size[0], im_size[1])

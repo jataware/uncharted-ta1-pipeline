@@ -1,8 +1,5 @@
 import logging
-import os
 import re
-import uuid
-
 from copy import deepcopy
 
 from tasks.common.task import Task, TaskInput, TaskResult
@@ -12,15 +9,14 @@ from tasks.text_extraction.entities import (
 )
 from tasks.geo_referencing.entities import (
     Coordinate,
-    SOURCE_LAT_LON,
+    CoordType,
+    CoordSource,
 )
 from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
 from tasks.geo_referencing.util import (
-    ocr_to_coordinates,
     get_bounds_bounding_box,
     get_input_geofence,
 )
-
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("coordinates_extractor")
@@ -138,6 +134,11 @@ class CoordinatesExtractor(Task):
         return result
 
     def _should_run(self, input: CoordinateInput) -> bool:
+
+        # TODO: could check the number of lats and lons with status == OK
+        # lats = list(filter(lambda c: c._status == CoordStatus.OK, lats.values()))
+        # lons = list(filter(lambda c: c._status == CoordStatus.OK, lons.values()))
+
         lats = input.input.get_data("lats", {})
         lons = input.input.get_data("lons", {})
         num_keypoints = min(len(lons), len(lats))
@@ -353,10 +354,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         else (span[0] / float(span[2]), span[1] / float(span[2]))
                     )
                     coord = Coordinate(
-                        "lat keypoint",
+                        CoordType.KEYPOINT,
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
-                        SOURCE_LAT_LON,
+                        CoordSource.LAT_LON,
                         True,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -382,10 +383,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         else (span[0] / float(span[2]), span[1] / float(span[2]))
                     )
                     coord = Coordinate(
-                        "lon keypoint",
+                        CoordType.KEYPOINT,
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
-                        SOURCE_LAT_LON,
+                        CoordSource.LAT_LON,
                         False,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -430,10 +431,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         else (span[0] / float(span[2]), span[1] / float(span[2]))
                     )
                     coord = Coordinate(
-                        "lat keypoint",
+                        CoordType.KEYPOINT,
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
-                        SOURCE_LAT_LON,
+                        CoordSource.LAT_LON,
                         True,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -457,10 +458,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         else (span[0] / float(span[2]), span[1] / float(span[2]))
                     )
                     coord = Coordinate(
-                        "lon keypoint",
+                        CoordType.KEYPOINT,
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
-                        SOURCE_LAT_LON,
+                        CoordSource.LAT_LON,
                         False,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -541,10 +542,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         else (span[0] / float(span[2]), span[1] / float(span[2]))
                     )
                     coord = Coordinate(
-                        "lat keypoint",
+                        CoordType.KEYPOINT,
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
-                        SOURCE_LAT_LON,
+                        CoordSource.LAT_LON,
                         True,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,
@@ -568,10 +569,10 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         else (span[0] / float(span[2]), span[1] / float(span[2]))
                     )
                     coord = Coordinate(
-                        "lon keypoint",
+                        CoordType.KEYPOINT,
                         ocr_text_blocks.extractions[idx].text,
                         deg_decimal,
-                        SOURCE_LAT_LON,
+                        CoordSource.LAT_LON,
                         False,
                         ocr_text_blocks.extractions[idx].bounds,
                         x_ranges=x_ranges,

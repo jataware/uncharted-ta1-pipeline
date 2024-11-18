@@ -1,6 +1,5 @@
 import logging
 import math
-
 from geopy.distance import geodesic
 
 from tasks.geo_referencing.entities import (
@@ -19,18 +18,15 @@ from tasks.geo_referencing.entities import (
     GEOFENCE_OUTPUT_KEY,
     MapROI,
     ROI_MAP_OUTPUT_KEY,
+    CoordType,
+    CoordSource,
 )
 from tasks.geo_referencing.geo_projection import GeoProjection
-from tasks.geo_referencing.util import get_input_geofence
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
-from tasks.metadata_extraction.scale import SCALE_VALUE_OUTPUT_KEY
-
 from typing import Any, Dict, List, Optional, Tuple
-
-import rasterio.transform as riot
 from pyproj import Transformer
 
 
@@ -121,7 +117,9 @@ class GeoReference(Task):
         lon_pts = input.get_data("lons", {})
         lat_pts = input.get_data("lats", {})
 
-        scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
+        # TODO -- this scale_value has always been 0, due to the old ScaleExtractor being disabled
+        # try using the new scale analysis result here
+        scale_value = 0
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
 
         roi_xy = []
@@ -139,9 +137,6 @@ class GeoReference(Task):
         else:
             # since no roi, use whole image as minmax values
             roi_xy_minmax = ([0, input.image.size[1]], [0, input.image.size[0]])
-
-        if not scale_value:
-            scale_value = 0
 
         query_pts = None
         external_query_pts = False
@@ -178,10 +173,10 @@ class GeoReference(Task):
                 lat_pts.clear()
                 for a in anchors:
                     coord = Coordinate(
-                        "lat keypoint",
+                        CoordType.DERIVED_KEYPOINT,
                         f"fallback {a.geo_coord}",
                         a.geo_coord,
-                        "anchor",
+                        CoordSource.ANCHOR,
                         True,
                         pixel_alignment=(
                             (roi_xy_minmax[0][0] + roi_xy_minmax[0][1]) / 2,
@@ -199,10 +194,10 @@ class GeoReference(Task):
                 lon_pts.clear()
                 for a in anchors:
                     coord = Coordinate(
-                        "lon keypoint",
+                        CoordType.DERIVED_KEYPOINT,
                         f"fallback {a.geo_coord}",
                         a.geo_coord,
-                        "anchor",
+                        CoordSource.ANCHOR,
                         False,
                         pixel_alignment=(
                             a.pixel_coord,
@@ -290,7 +285,7 @@ class GeoReference(Task):
     ) -> Dict[str, int]:
         counts = {}
         for _, c in points.items():
-            source = c.get_source()
+            source = str(c.get_source().value)
             if source not in counts:
                 counts[source] = 0
             counts[source] = counts[source] + 1

@@ -1,4 +1,3 @@
-import os
 import logging
 
 from pipelines.geo_referencing.output import (
@@ -26,15 +25,13 @@ from tasks.geo_referencing.entities import (
 )
 from tasks.geo_referencing.state_plane_extractor import StatePlaneExtractor
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
+from tasks.geo_referencing.outlier_filter import OutlierFilter
 from tasks.geo_referencing.filter import (
-    NaiveFilter,
-    OutlierFilter,
     ROIFilter,
     UTMStatePlaneFilter,
-    DistinctDegreeOutlierFilter,
-    HighQualityCoordinateFilter,
 )
 from tasks.geo_referencing.geo_fencing import GeoFencer
+from tasks.geo_referencing.scale_analyzer import ScaleAnalyzer
 from tasks.geo_referencing.georeference import GeoReference
 from tasks.geo_referencing.geocode import PointGeocoder, BoxGeocoder
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
@@ -48,11 +45,9 @@ from tasks.metadata_extraction.metadata_extraction import (
     MetadataExtractor,
     LLM,
 )
-from tasks.metadata_extraction.scale import ScaleExtractor
 from tasks.metadata_extraction.text_filter import (
     FilterMode,
     TextFilter,
-    TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.segmentation.segmenter_utils import map_missing
@@ -171,28 +166,14 @@ class GeoreferencingPipeline(Pipeline):
             ),
             # Creates a geofence based on the country and state geocoded locations
             GeoFencer("country / state geofence"),
+            # Extract and analyze map scale info
+            ScaleAnalyzer("scale analyzer", dpi=300),
             # Extracts all the possible geo coordinates from the UNFILTERED text
             GeoCoordinatesExtractor("geo coordinates extractor"),
             # Filters out any coordinates that are not in the buffered region of interest (ie. around the outside of the map poly)
             ROIFilter("region of interest coord filter"),
-            # Remove coordinates that are duplicates but don't appear to be part of the main map area (ie. from an inset map)
-            DistinctDegreeOutlierFilter("uniqueness coord filter"),
-            # Remove low confidence coordinates if there are high confidence coordinates nearby (in pixel space)
-            HighQualityCoordinateFilter("quality coord filter"),
             # Test for outliers in each of the X and Y directions independently using linear regression
-            OutlierFilter("regression outlier coord filter"),
-            # Cluster based on geo locations and remove those that are outliers
-            NaiveFilter("naive geo-space coord filter"),
-            # Filter out any of the original text that is not inside the map area
-            TextFilter(
-                "map area text retainer",
-                FilterMode.INCLUDE,
-                TEXT_EXTRACTION_OUTPUT_KEY,
-                "map_area_filter",
-                ["map"],
-                class_threshold=0,
-                should_run=self._run_step,
-            ),
+            OutlierFilter("lat/lon outlier filter"),
             # Geocode the places extracted from the map area
             Geocoder(
                 "places / population centers geocoder",
@@ -231,8 +212,6 @@ class GeoreferencingPipeline(Pipeline):
             CornerPointExtractor("corner point extractor"),
             # Infer addtional points in a given direction if there are insufficient points in that direction
             InferenceCoordinateExtractor("coordinate inference"),
-            # This step doesn't seem to be doing anything given a lack of scale file being supplied
-            # ScaleExtractor("scaler", ""),
             # Create ground control points for use in downstream tasks
             CreateGroundControlPoints("gcp  creation", create_random_pts=False),
             # Run the final georeferencing step using either the regression-based inference method, or the corner point
@@ -273,6 +252,10 @@ class GeoreferencingPipeline(Pipeline):
         """
         lats = input.get_data("lats", {})
         lons = input.get_data("lons", {})
+
+        # TODO -- could filter on Coords with status OK?
+        # lats = list(filter(lambda c: c._status == CoordStatus.OK, lats.values()))
+        # lons = list(filter(lambda c: c._status == CoordStatus.OK, lons.values()))
 
         lats_distinct = set(map(lambda x: x[1].get_parsed_degree(), lats.items()))
         lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lons.items()))
