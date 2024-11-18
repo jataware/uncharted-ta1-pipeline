@@ -134,14 +134,16 @@ class CoordinatesExtractor(Task):
         return result
 
     def _should_run(self, input: CoordinateInput) -> bool:
+
+        # TODO: could check the number of lats and lons with status == OK
+        # lats = list(filter(lambda c: c._status == CoordStatus.OK, lats.values()))
+        # lons = list(filter(lambda c: c._status == CoordStatus.OK, lons.values()))
+
         lats = input.input.get_data("lats", {})
         lons = input.input.get_data("lons", {})
         num_keypoints = min(len(lons), len(lats))
         return num_keypoints < 2
 
-        # TODO: could check the number of lats and lons with status == OK
-        # lats = list(filter(lambda c: c._status == CoordStatus.OK, lats.values()))
-        # lons = list(filter(lambda c: c._status == CoordStatus.OK, lons.values()))
 
 class GeoCoordinatesExtractor(CoordinatesExtractor):
     def __init__(self, task_id: str):
