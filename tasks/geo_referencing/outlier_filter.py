@@ -291,7 +291,7 @@ class OutlierFilter(Task):
             return regressor.inlier_mask_
 
         slope = regressor.estimator_.coef_[0]  # type: ignore
-        intercept = regressor.estimator_.intercept_
+        intercept = regressor.estimator_.intercept_  # type: ignore
         if not slope:
             return regressor.inlier_mask_
 
