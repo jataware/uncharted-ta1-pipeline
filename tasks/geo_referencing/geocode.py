@@ -67,7 +67,12 @@ class Geocoder(CoordinatesExtractor):
         return places_filtered
 
     def _get_coordinates(self, places: List[GeocodedPlace]) -> List[Coordinate]:
-        # cluster points using the geographic coordinates
+        """
+        cluster points using the geographic coordinates
+
+        Note: results use the abs of lat/lon values (hemisphere +/- signs are applied during final georeference stage)
+        """
+
         if len(places) == 0:
             return []
         coords = []
@@ -110,7 +115,7 @@ class Geocoder(CoordinatesExtractor):
                     Coordinate(
                         CoordType.GEOCODED_POINT,
                         c[1][0].place_name,
-                        c[0][1],
+                        abs(c[0][1]),
                         CoordSource.GEOCODER,
                         True,
                         pixel_alignment=pixel_alignment,
@@ -121,7 +126,7 @@ class Geocoder(CoordinatesExtractor):
                     Coordinate(
                         CoordType.GEOCODED_POINT,
                         c[1][0].place_name,
-                        c[0][0],
+                        abs(c[0][0]),
                         CoordSource.GEOCODER,
                         False,
                         pixel_alignment=pixel_alignment,
@@ -397,6 +402,12 @@ class BoxGeocoder(Geocoder):
         minmax_lon: Tuple[Coordinate, Coordinate],
         minmax_lat: Tuple[Coordinate, Coordinate],
     ) -> List[Coordinate]:
+        """
+        Create the Coordinate results for the BoxGeocoder
+
+        Note: results use the abs of lat/lon values (hemisphere +/- signs are applied during final georeference stage)
+        """
+
         # for lon, min and max x always map together
         pixels_x = minmax_x
 
@@ -408,7 +419,7 @@ class BoxGeocoder(Geocoder):
             Coordinate(
                 CoordType.DERIVED_KEYPOINT,
                 minmax_lon[0].get_text(),
-                minmax_lon[0].get_parsed_degree(),
+                abs(minmax_lon[0].get_parsed_degree()),
                 CoordSource.GEOCODER,
                 False,
                 pixel_alignment=(pixels_x[0], pixels_y[1]),
@@ -417,7 +428,7 @@ class BoxGeocoder(Geocoder):
             Coordinate(
                 CoordType.DERIVED_KEYPOINT,
                 minmax_lon[1].get_text(),
-                minmax_lon[1].get_parsed_degree(),
+                abs(minmax_lon[1].get_parsed_degree()),
                 CoordSource.GEOCODER,
                 False,
                 pixel_alignment=(pixels_x[1], pixels_y[0]),
@@ -426,7 +437,7 @@ class BoxGeocoder(Geocoder):
             Coordinate(
                 CoordType.DERIVED_KEYPOINT,
                 minmax_lat[0].get_text(),
-                minmax_lat[0].get_parsed_degree(),
+                abs(minmax_lat[0].get_parsed_degree()),
                 CoordSource.GEOCODER,
                 True,
                 pixel_alignment=(pixels_x[0], pixels_y[0]),
@@ -435,7 +446,7 @@ class BoxGeocoder(Geocoder):
             Coordinate(
                 CoordType.DERIVED_KEYPOINT,
                 minmax_lat[1].get_text(),
-                minmax_lat[1].get_parsed_degree(),
+                abs(minmax_lat[1].get_parsed_degree()),
                 CoordSource.GEOCODER,
                 True,
                 pixel_alignment=(pixels_x[1], pixels_y[1]),

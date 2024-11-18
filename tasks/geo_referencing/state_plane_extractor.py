@@ -516,6 +516,8 @@ class StatePlaneExtractor(CoordinatesExtractor):
             latlon_pt = stateplane.to_latlon(easting_clue, n, epsg=state_plane_zone)
             if is_in_range(latlon_pt[0], lat_minmax):
                 # valid latitude point
+                # save abs of degree value (hemisphere +/- signs are applied during final georeference stage)
+                parsed_degree = abs(latlon_pt[0])
                 x_ranges = (
                     (0.0, 1.0)
                     if span[2] == 0
@@ -524,7 +526,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 coord = Coordinate(
                     CoordType.KEYPOINT,
                     ocr_text_blocks.extractions[idx].text,
-                    latlon_pt[0],
+                    parsed_degree,
                     CoordSource.STATE_PLANE,
                     True,
                     ocr_text_blocks.extractions[idx].bounds,
@@ -532,7 +534,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                     confidence=0.75,
                 )
                 x_pixel, y_pixel = coord.get_pixel_alignment()
-                lat_results[(latlon_pt[0], y_pixel)] = coord
+                lat_results[(parsed_degree, y_pixel)] = coord
 
             else:
                 logger.debug("Excluding candidate northing point: {}".format(n))
@@ -547,11 +549,12 @@ class StatePlaneExtractor(CoordinatesExtractor):
             )
             # convert extracted easting value to longitude and save keypoint result
             latlon_pt = stateplane.to_latlon(e, northing_clue, epsg=state_plane_zone)
-            # latlon_pt = (abs(latlon_pt[0]), abs(latlon_pt[1]))
+            # save abs of degree value (hemisphere +/- signs are applied during final georeference stage)
+            parsed_degree = abs(latlon_pt[1])
             coord = Coordinate(
                 CoordType.KEYPOINT,
                 ocr_text_blocks.extractions[idx].text,
-                latlon_pt[1],
+                parsed_degree,
                 CoordSource.STATE_PLANE,
                 False,
                 ocr_text_blocks.extractions[idx].bounds,
@@ -559,7 +562,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 confidence=0.75,
             )
             x_pixel, y_pixel = coord.get_pixel_alignment()
-            lon_results[(latlon_pt[1], x_pixel)] = coord
+            lon_results[(parsed_degree, x_pixel)] = coord
 
         return (lon_results, lat_results)
 
