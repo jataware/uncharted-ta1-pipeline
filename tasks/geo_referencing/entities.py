@@ -108,7 +108,6 @@ class Coordinate:
     _bounds: List[Point]  # pixel bounds of extracted coordinate
     _pixel_alignment: Tuple[float, float]  # centroid pixel
     _confidence: float  # extraction confidence
-    _priority: int  # extraction priority for a given CoordSource
     _status: CoordStatus  # included/excluded status of this extraction
 
     def __init__(
@@ -123,7 +122,6 @@ class Coordinate:
         x_ranges: Tuple[float, float] = (0, 1),
         font_height: float = 0.0,
         confidence: float = 0.0,
-        priority: int = 1,
         status: CoordStatus = CoordStatus.OK,
     ):
         self._type = type
@@ -133,7 +131,6 @@ class Coordinate:
         self._parsed_degree = parsed_degree
         self._is_lat = is_lat
         self._confidence = confidence
-        self._priority = priority
         self._status = status
 
         if pixel_alignment:

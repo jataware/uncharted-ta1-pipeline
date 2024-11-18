@@ -11,7 +11,9 @@ from pipelines.geo_referencing.output import (
 from tasks.common.io import append_to_cache_location
 from tasks.common.pipeline import OutputCreator, Pipeline
 from tasks.common.task import EvaluateHalt, Task, TaskInput
-from tasks.geo_referencing.latlon_extractor import LatLonExtractor
+from tasks.geo_referencing.coordinates_extractor import (
+    GeoCoordinatesExtractor,
+)
 from tasks.geo_referencing.corner_point_extractor import CornerPointExtractor
 from tasks.geo_referencing.entities import (
     GEOREFERENCING_OUTPUT_KEY,
@@ -20,13 +22,12 @@ from tasks.geo_referencing.entities import (
     QUERY_POINTS_OUTPUT_KEY,
     SCORING_OUTPUT_KEY,
     SUMMARY_OUTPUT_KEY,
-    CoordSource,
 )
 from tasks.geo_referencing.state_plane_extractor import StatePlaneExtractor
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
-from tasks.geo_referencing.roi_filter import ROIFilter
 from tasks.geo_referencing.outlier_filter import OutlierFilter
 from tasks.geo_referencing.filter import (
+    ROIFilter,
     UTMStatePlaneFilter,
 )
 from tasks.geo_referencing.geo_fencing import GeoFencer
@@ -43,7 +44,6 @@ from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
 from tasks.metadata_extraction.text_filter import (
     FilterMode,
     TextFilter,
-    TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.segmentation.detectron_segmenter import DetectronSegmenter
 from tasks.segmentation.segmenter_utils import map_missing
@@ -162,38 +162,12 @@ class GeoreferencingPipeline(Pipeline):
             GeoFencer("country / state geofence"),
             # Extract and analyze map scale info
             ScaleAnalyzer("scale analyzer", dpi=300),
-            # --- LAT-LON COORDINATES
-            # Extracts all the possible lat/lon coordinates from the UNFILTERED text
-            LatLonExtractor("lat-lon extractor"),
+            # Extracts all the possible geo coordinates from the UNFILTERED text
+            GeoCoordinatesExtractor("geo coordinates extractor"),
             # Filters out any coordinates that are not in the buffered region of interest (ie. around the outside of the map poly)
-            ROIFilter("region-of-interest filter"),
-            # Test for outliers in each of the X and Y directions independently using regression analysis
-            OutlierFilter("lat-lon outlier filter"),
-            # Extract lat/lon corner points from the map area
-            CornerPointExtractor("corner point extractor"),
-            # --- UTM / STATE-PLANE COORDINATES
-            # Extract any UTM coordinates that are present - UTM zone will be inferred
-            UTMCoordinatesExtractor("utm coordinates extractor"),
-            # Extract any state plane coordinates that are present
-            StatePlaneExtractor(
-                "state plane coordinate extractor",
-                state_plane_lookup_filename,
-                state_plane_zone_filename,
-                state_code_filename,
-            ),
-            # Filters out any UTM or State-Plane coordinates that are not in the buffered region of interest
-            ROIFilter(
-                "UTM region-of-interest filter",
-                coord_source_check=[CoordSource.UTM, CoordSource.STATE_PLANE],
-            ),
-            # Test for UTM or State-Plane outliers in each of the X and Y directions independently using regression analysis
-            OutlierFilter(
-                "UTM outlier filter",
-                coord_source_check=[CoordSource.UTM, CoordSource.STATE_PLANE],
-            ),
-            # Filter out UTM or state plane coords if sufficient lat/lon coords are present
-            UTMStatePlaneFilter("UTM / state plane coordinate filter"),
-            # --- GEOCODING COORDINATES
+            ROIFilter("region of interest coord filter"),
+            # Test for outliers in each of the X and Y directions independently using linear regression
+            OutlierFilter("lat/lon outlier filter"),
             # Geocode the places extracted from the map area
             Geocoder(
                 "places / population centers geocoder",
@@ -203,6 +177,19 @@ class GeoreferencingPipeline(Pipeline):
                 run_centres=True,
                 should_run=self._run_step,
             ),
+            # Exract any UTM coordinates that are present - UTM zone will be inferred
+            UTMCoordinatesExtractor("utm coordinates extractor"),
+            # Extract any state plane coordinates that are present
+            StatePlaneExtractor(
+                "state plane coordinate extractor",
+                state_plane_lookup_filename,
+                state_plane_zone_filename,
+                state_code_filename,
+            ),
+            # Test UTM coords for outliers in each of the X and Y directions independently using linear regression
+            OutlierFilter("UTM outlier filter"),
+            # Filter out UTM or state plane coords if sufficient lat/lon coords are present
+            UTMStatePlaneFilter("UTM / state plane coordinate filter"),
             # Generate georeferencing points from the full set of place and population centre geo coordinates
             PointGeocoder(
                 "geocoded point transformation",
@@ -215,16 +202,12 @@ class GeoreferencingPipeline(Pipeline):
                 [GeoPlaceType.POINT, GeoPlaceType.POPULATION],
                 geocoder_thresh,
             ),
-            # Test for Geocoder outliers in each of the X and Y directions independently using regression analysis
-            OutlierFilter(
-                "Geocoder outlier filter",
-                coord_source_check=[CoordSource.GEOCODER],
-            ),
+            # Extract corner points from the map area
+            CornerPointExtractor("corner point extractor"),
             # Infer addtional points in a given direction if there are insufficient points in that direction
             InferenceCoordinateExtractor("coordinate inference"),
-            # --- GCP CREATION and GEOREFERENCING
             # Create ground control points for use in downstream tasks
-            CreateGroundControlPoints("gcp creation", create_random_pts=False),
+            CreateGroundControlPoints("gcp  creation", create_random_pts=False),
             # Run the final georeferencing step using either the regression-based inference method, or the corner point
             # methood if there are sufficient corner points
             GeoReference("georeference", 1),
@@ -271,4 +254,5 @@ class GeoreferencingPipeline(Pipeline):
         lats_distinct = set(map(lambda x: x[1].get_parsed_degree(), lats.items()))
         lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lons.items()))
         num_keypoints = min(len(lons_distinct), len(lats_distinct))
+        logger.info(f"running step due to insufficient key points: {num_keypoints < 2}")
         return num_keypoints < 2
