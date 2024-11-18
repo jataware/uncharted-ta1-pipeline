@@ -40,7 +40,11 @@ from tasks.geo_referencing.roi_extractor import ROIExtractor
 from tasks.metadata_extraction.entities import GeoPlaceType
 from tasks.metadata_extraction.geocoder import Geocoder
 from tasks.metadata_extraction.geocoding_service import NominatimGeocoder
-from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
+from tasks.metadata_extraction.metadata_extraction import (
+    LLM_PROVIDER,
+    MetadataExtractor,
+    LLM,
+)
 from tasks.metadata_extraction.text_filter import (
     FilterMode,
     TextFilter,
@@ -66,6 +70,7 @@ class GeoreferencingPipeline(Pipeline):
         geocoded_places_filename: str,
         ocr_gamma_correction: float,
         model: LLM,
+        provider: LLM_PROVIDER,
         projected: bool,
         diagnostics: bool,
         gpu_enabled: bool,
@@ -146,6 +151,7 @@ class GeoreferencingPipeline(Pipeline):
             MetadataExtractor(
                 "metadata_extractor",
                 model,
+                provider,
                 "filtered_ocr_text",
                 cache_location=metadata_cache,
                 metrics_url=metrics_url,

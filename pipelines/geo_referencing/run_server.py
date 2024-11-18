@@ -33,7 +33,7 @@ from tasks.geo_referencing.entities import (
     GEOREFERENCING_OUTPUT_KEY,
     PROJECTED_MAP_OUTPUT_KEY,
 )
-from tasks.metadata_extraction.metadata_extraction import LLM
+from tasks.metadata_extraction.metadata_extraction import LLM, LLM_PROVIDER
 from util import logging as logging_util
 
 Image.MAX_IMAGE_PIXELS = 400000000
@@ -169,6 +169,12 @@ def start_server():
         default=0.5,
     )
     parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
+    parser.add_argument(
+        "--llm_provider",
+        type=LLM_PROVIDER,
+        choices=list(LLM_PROVIDER),
+        default=LLM_PROVIDER.OPENAI,
+    )
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--project", action="store_true")
     parser.add_argument("--diagnostics", action="store_true")
@@ -193,6 +199,7 @@ def start_server():
         p.geocoded_places_filename,
         p.ocr_gamma_correction,
         p.llm,
+        p.llm_provider,
         p.project,
         p.diagnostics,
         not p.no_gpu,

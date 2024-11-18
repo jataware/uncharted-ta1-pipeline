@@ -63,8 +63,8 @@ def process_cdr_event():
     logger.info("event callback started")
     evt = request.get_json(force=True)
     logger.info(f"event data received {evt['event']}")
-    lara_reqs: Dict[str, Request] = {}
 
+    map_event: Optional[MapEventPayload] = None
     try:
         # handle event directly or create lara request
         match evt["event"]:
@@ -80,7 +80,7 @@ def process_cdr_event():
         logger.error(f"exception processing {evt['event']} event")
         raise
 
-    if len(lara_reqs) == 0:
+    if not map_event:
         # assume ping or ignored event type
         return Response({"ok": "success"}, status=200, mimetype="application/json")
 

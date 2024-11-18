@@ -20,7 +20,7 @@ from tasks.common.pipeline import (
     BaseModelOutput,
     BaseModelListOutput,
 )
-from tasks.metadata_extraction.metadata_extraction import LLM
+from tasks.metadata_extraction.metadata_extraction import LLM, LLM_PROVIDER
 from tasks.common import image_io
 from tasks.metadata_extraction.entities import METADATA_EXTRACTION_OUTPUT_KEY
 from util import logging as logging_util
@@ -103,6 +103,12 @@ if __name__ == "__main__":
         help="Output results as TA1 json schema format",
     )
     parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
+    parser.add_argument(
+        "--llm_provider",
+        type=LLM_PROVIDER,
+        choices=list(LLM_PROVIDER),
+        default=LLM_PROVIDER.OPENAI,
+    )
     parser.add_argument("--rest", action="store_true")
     parser.add_argument("--rabbit_host", type=str, default="localhost")
     parser.add_argument("--rabbit_port", type=int, default=5672)

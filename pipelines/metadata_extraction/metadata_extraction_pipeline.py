@@ -2,7 +2,11 @@ from typing import List
 from PIL import ImageDraw
 from tasks.common.io import append_to_cache_location
 from tasks.segmentation.segmenter_utils import map_missing
-from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
+from tasks.metadata_extraction.metadata_extraction import (
+    LLM_PROVIDER,
+    MetadataExtractor,
+    LLM,
+)
 from tasks.metadata_extraction.text_filter import TextFilter, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
@@ -42,6 +46,7 @@ class MetadataExtractorPipeline(Pipeline):
         debug_images=False,
         cdr_schema=False,
         model=LLM.GPT_4_O,
+        provider=LLM_PROVIDER.OPENAI,
         gpu=True,
         metrics_url: str = "",
     ):
@@ -82,6 +87,7 @@ class MetadataExtractorPipeline(Pipeline):
             MetadataExtractor(
                 "metadata_extractor",
                 model=model,
+                provider=provider,
                 cache_location=append_to_cache_location(cache_location, "metadata"),
                 metrics_url=metrics_url,
             ),
