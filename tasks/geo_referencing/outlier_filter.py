@@ -212,7 +212,7 @@ class OutlierFilter(Task):
                         coords_excluded[excl_key] = excl_c
 
             # get the best-fit slope of the regression
-            slope = regressor.estimator_.coef_[0]
+            slope = regressor.estimator_.coef_[0]  # type: ignore
 
         except Exception as ex:
             logger.warning(
@@ -290,7 +290,7 @@ class OutlierFilter(Task):
             # no need to check
             return regressor.inlier_mask_
 
-        slope = regressor.estimator_.coef_[0]
+        slope = regressor.estimator_.coef_[0]  # type: ignore
         intercept = regressor.estimator_.intercept_
         if not slope:
             return regressor.inlier_mask_
