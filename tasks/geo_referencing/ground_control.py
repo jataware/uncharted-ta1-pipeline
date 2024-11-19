@@ -5,6 +5,7 @@ from tasks.geo_referencing.entities import (
     QUERY_POINTS_OUTPUT_KEY,
     MapROI,
     ROI_MAP_OUTPUT_KEY,
+    CoordType,
 )
 from tasks.geo_referencing.georeference import QueryPoint
 from typing import List, Tuple, Dict
@@ -105,7 +106,7 @@ class CreateGroundControlPoints(Task):
 
             pt = Point(coord.get_pixel_alignment())
 
-            if coord.is_corner():
+            if coord.get_type() == CoordType.CORNER:
                 # is a corner-pt, no need to adjust GCP location
                 if not self._do_pts_overlap(pt, gcp_pts):
                     gcp_pts.append(pt)
@@ -130,7 +131,7 @@ class CreateGroundControlPoints(Task):
 
             pt = Point(coord.get_pixel_alignment())
 
-            if coord.is_corner():
+            if coord.get_type() == CoordType.CORNER:
                 # is a corner-pt, no need to adjust GCP location
                 if not self._do_pts_overlap(pt, gcp_pts):
                     gcp_pts.append(pt)
