@@ -195,10 +195,6 @@ class ROIFilter(FilterCoordinates):
             )
             lats = self._adjust_filter(lats, lat_coords, roi_poly)
 
-        # ---
-        # TODO: this should be re-factored/merged with other similar geo-ref tasks
-        lons, lats = self._validate_lonlat_extractions(lons, lats, input.image.size)
-
         return lons, lats
 
     def _adjust_filter(
@@ -251,88 +247,6 @@ class ROIFilter(FilterCoordinates):
         lats_distinct = set(map(lambda x: x[1].get_parsed_degree(), lat_coords.items()))
         lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lon_coords.items()))
         return len(lons_distinct), len(lats_distinct)
-
-    def _validate_lonlat_extractions(
-        self,
-        lon_results: Dict[Tuple[float, float], Coordinate],
-        lat_results: Dict[Tuple[float, float], Coordinate],
-        im_size: Tuple[float, float],
-    ) -> Tuple[
-        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
-    ]:
-        """
-        Add an inferred anchor lat/lon pt. if needed
-        """
-        # TODO: this should be re-factored/merged with other similar geo-ref tasks
-
-        num_lat_pts = len(lat_results)
-        num_lon_pts = len(lon_results)
-        logger.debug(
-            f"point count after exclusion lat,lon: {num_lat_pts},{num_lon_pts}"
-        )
-
-        # check number of unique lat and lon values
-        num_lat_pts = len(set([x[0] for x in lat_results]))
-        num_lon_pts = len(set([x[0] for x in lon_results]))
-        logger.debug(f"distinct after roi lat,lon: {num_lat_pts},{num_lon_pts}")
-
-        if num_lon_pts >= 2 and num_lat_pts == 1:
-            # estimate additional lat pt (based on lon pxl resolution)
-            lst = [
-                (k[0], k[1], v.get_pixel_alignment()[1]) for k, v in lon_results.items()
-            ]
-            max_pt = max(lst, key=lambda p: p[1])
-            min_pt = min(lst, key=lambda p: p[1])
-            pxl_range = max_pt[1] - min_pt[1]
-            deg_range = max_pt[0] - min_pt[0]
-            if deg_range != 0 and pxl_range != 0:
-                deg_per_pxl = abs(
-                    deg_range / pxl_range
-                )  # TODO could use geodesic dist here?
-                lat_pt = list(lat_results.items())[0]
-                # new_y = im_size[1]-1
-                new_y = 0 if lat_pt[0][1] > im_size[1] / 2 else im_size[1] - 1
-                new_lat = -deg_per_pxl * (new_y - lat_pt[0][1]) + lat_pt[0][0]
-                coord = Coordinate(
-                    CoordType.DERIVED_KEYPOINT,
-                    "",
-                    new_lat,
-                    CoordSource.LAT_LON,
-                    True,
-                    pixel_alignment=(lat_pt[1].to_deg_result()[1], new_y),
-                    confidence=0.6,
-                )
-                lat_results[(new_lat, new_y)] = coord
-
-        elif num_lat_pts >= 2 and num_lon_pts == 1:
-            # estimate additional lon pt (based on lat pxl resolution)
-            lst = [
-                (k[0], k[1], v.get_pixel_alignment()[0]) for k, v in lat_results.items()
-            ]
-            max_pt = max(lst, key=lambda p: p[1])
-            min_pt = min(lst, key=lambda p: p[1])
-            pxl_range = max_pt[1] - min_pt[1]
-            deg_range = max_pt[0] - min_pt[0]
-            if deg_range != 0 and pxl_range != 0:
-                deg_per_pxl = abs(
-                    deg_range / pxl_range
-                )  # TODO could use geodesic dist here?
-                lon_pt = list(lon_results.items())[0]
-                # new_x = im_size[0]-1
-                new_x = 0 if lon_pt[0][1] > im_size[0] / 2 else im_size[0] - 1
-                new_lon = -deg_per_pxl * (new_x - lon_pt[0][1]) + lon_pt[0][0]
-                coord = Coordinate(
-                    CoordType.DERIVED_KEYPOINT,
-                    "",
-                    new_lon,
-                    CoordSource.LAT_LON,
-                    False,
-                    pixel_alignment=(new_x, lon_pt[1].to_deg_result()[1]),
-                    confidence=0.6,
-                )
-                lon_results[(new_lon, new_x)] = coord
-
-        return (lon_results, lat_results)
 
     def _filter_roi(
         self,

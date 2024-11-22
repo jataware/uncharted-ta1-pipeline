@@ -230,7 +230,6 @@ class GeoReference(Task):
             geo_projn.estimate_pxl2geo_mapping(
                 list(map(lambda x: x[1], lon_pts.items())),
                 list(map(lambda x: x[1], lat_pts.items())),
-                input.image.size,
             )
             keypoint_stats["lats"] = self._count_keypoints(lat_pts)
             keypoint_stats["lons"] = self._count_keypoints(lon_pts)
@@ -505,18 +504,6 @@ class GeoReference(Task):
                 )
 
         return query_pts
-
-    def _update_hemispheres_corners(
-        self,
-        corner_points: List[GroundControlPoint],
-        lon_multiplier: float,
-        lat_multiplier: float,
-    ) -> List[GroundControlPoint]:
-        for cp in corner_points:
-            cp.longitude = abs(cp.longitude) * lon_multiplier
-            cp.latitude = abs(cp.latitude) * lat_multiplier
-
-        return corner_points
 
     def _determine_crs(self, input: TaskInput) -> str:
         # parse extracted metadata
