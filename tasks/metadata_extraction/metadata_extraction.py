@@ -39,19 +39,8 @@ logger = logging.getLogger("metadata_extractor")
 PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
 METADATA_CODE_VER = "0.0.1"
 
-
-OPENAI_API_VERSION = "2024-10-21"
-
-
-class LLM(str, Enum):
-    GPT_3_5_TURBO = "gpt-3.5-turbo"
-    GPT_4_TURBO = "gpt-4-turbo"
-    GPT_4 = "gpt-4"
-    GPT_4_O = "gpt-4o"
-    GPT_4_O_MINI = "gpt-4o-mini"
-
-    def __str__(self):
-        return self.value
+DEFAULT_OPENAI_API_VERSION = "2024-10-21"
+DEFAULT_GPT_MODEL = "gpt-4o"
 
 
 class LLM_PROVIDER(str, Enum):
@@ -283,7 +272,8 @@ class MetadataExtractor(Task):
     def __init__(
         self,
         id: str,
-        model=LLM.GPT_4_O,
+        model=DEFAULT_GPT_MODEL,
+        model_api_version=DEFAULT_OPENAI_API_VERSION,
         provider=LLM_PROVIDER.OPENAI,
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
@@ -294,12 +284,13 @@ class MetadataExtractor(Task):
         super().__init__(id, cache_location)
 
         if provider == LLM_PROVIDER.AZURE:
-            # autor reads AZURE_CHAT_API_KEY,
+            # auto reads AZURE_CHAT_API_KEY,
             self._chat_model = AzureChatOpenAI(
-                model=model, temperature=0.1, api_version=OPENAI_API_VERSION
+                model=model, temperature=0.1, api_version=model_api_version
             )
         else:
             # auto reads OPEN_AI_API_KEY from environment
+            # doesn't accept api version as an arg
             self._chat_model = ChatOpenAI(model=model, temperature=0.1)
 
         self._model = model
@@ -308,7 +299,7 @@ class MetadataExtractor(Task):
         self._should_run = should_run
         self._metrics_url = metrics_url
 
-        logger.info(f"Using model: {self._model.value} from provider {provider.value}")
+        logger.info(f"Using model: {self._model} from provider {provider.value}")
 
     def run(self, input: TaskInput) -> TaskResult:
         """
