@@ -213,6 +213,7 @@ class GeoReference(Task):
         lat_check = list(map(lambda x: x[0], lat_pts))
         num_keypoints = min(len(lon_pts), len(lat_pts))
         keypoint_stats = {}
+        geo_projn: Optional[GeoProjection] = None
         if (
             num_keypoints < 2
             or (abs(max(lon_check) - min(lon_check)) > 20)
@@ -227,11 +228,13 @@ class GeoReference(Task):
             confidence = self._calculate_confidence(lon_pts, lat_pts)
             logger.info(f"confidence of projection is {confidence}")
             geo_projn = GeoProjection(self._poly_order)
-            geo_projn.estimate_pxl2geo_mapping(
+            projn_ok = geo_projn.estimate_pxl2geo_mapping(
                 list(map(lambda x: x[1], lon_pts.items())),
                 list(map(lambda x: x[1], lat_pts.items())),
-                input.image.size,
             )
+            if not projn_ok:
+                logger.warning("geo projection calc was unsuccessful! Forcing to None")
+                geo_projn = None
             keypoint_stats["lats"] = self._count_keypoints(lat_pts)
             keypoint_stats["lons"] = self._count_keypoints(lon_pts)
 
@@ -505,18 +508,6 @@ class GeoReference(Task):
                 )
 
         return query_pts
-
-    def _update_hemispheres_corners(
-        self,
-        corner_points: List[GroundControlPoint],
-        lon_multiplier: float,
-        lat_multiplier: float,
-    ) -> List[GroundControlPoint]:
-        for cp in corner_points:
-            cp.longitude = abs(cp.longitude) * lon_multiplier
-            cp.latitude = abs(cp.latitude) * lat_multiplier
-
-        return corner_points
 
     def _determine_crs(self, input: TaskInput) -> str:
         # parse extracted metadata

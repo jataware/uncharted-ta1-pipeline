@@ -682,55 +682,6 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
 
         return deg_results
 
-    def _filter_secondary_map(
-        self, coord_result: Dict[Tuple[float, float], Coordinate]
-    ) -> Tuple[
-        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
-    ]:
-        # remove lat & lon points that are part of a secondary map
-        if len(coord_result) == 0:
-            return coord_result, {}
-
-        # determine the min & max lon and lat values
-        min_coord, max_coord = min(coord_result, key=lambda x: x[1]), max(
-            coord_result, key=lambda x: x[1]
-        )
-
-        # flag points whose pixel coordinate change from min don't at all match expectations given the range
-        # they could be negative (which would imply a secondary map coordinate) or increasing way too fast
-        # TODO: need to handle skewed maps somehow
-        coord_filtered = {}
-        coord_dropped = {}
-        if min_coord != max_coord:
-            # some may be outliers due to being a secondary map or similar reason
-            # use the widest range possible to determine the ratio of pixels to degrees
-            delta_deg = min_coord[0] - max_coord[0]
-            if delta_deg == 0:
-                return coord_result, {}
-
-            delta_pixel = max_coord[1] - min_coord[1]
-            delta_pixel_deg = delta_pixel / delta_deg
-            logger.debug(f"min coord: {min_coord}\tmax coord: {max_coord}")
-            logger.debug(
-                f"delta pixel: {delta_pixel}\tdelta deg:{delta_deg}\tratio: {delta_pixel_deg}"
-            )
-            for r in coord_result:
-                delta_deg_pt = min_coord[0] - r[0]
-                if delta_deg_pt == 0:
-                    coord_filtered[r] = coord_result[r]
-                    continue
-
-                delta_pixel_pt = r[1] - min_coord[1]
-                delta_ratio = (delta_pixel_pt / delta_deg_pt) / delta_pixel_deg
-
-                # arbitrary limit for expected ratio of pixels to degrees
-                if delta_ratio > 0.5:
-                    coord_filtered[r] = coord_result[r]
-                else:
-                    logger.debug(f"dropping {r} due to being part of secondary map")
-                    coord_dropped[r] = coord_result[r]
-        return coord_filtered, coord_dropped
-
     def _get_geofence(
         self,
         geofence: List[List[float]],

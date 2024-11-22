@@ -14,7 +14,12 @@ from tasks.geo_referencing.entities import (
     CoordStatus,
     CoordSource,
 )
-from tasks.geo_referencing.util import sign, is_coord_from_source
+
+from tasks.geo_referencing.util import (
+    sign,
+    is_coord_from_source,
+    calc_lonlat_slope_signs,
+)
 from tasks.common.task import Task, TaskInput, TaskResult
 from typing import Dict, List, Tuple, Optional
 
@@ -72,7 +77,7 @@ class OutlierFilter(Task):
         slope_expected = map_scale.degrees_per_pixel if map_scale else 0.0
         lonlat_slope_signs = (0, 0)
         if geofence and not geofence.geofence.region_type == GeoFenceType.DEFAULT:
-            lonlat_slope_signs = self._calc_slope_signs(
+            lonlat_slope_signs = calc_lonlat_slope_signs(
                 geofence.geofence.lonlat_hemispheres
             )
         # estimate the lon and lat max skew thresholds
@@ -221,29 +226,6 @@ class OutlierFilter(Task):
             return (coords, coords_excluded, None)
 
         return (coords, coords_excluded, slope)
-
-    def _calc_slope_signs(self, lonlat_hemispheres: Tuple[int, int]):
-        """
-        Calculates the expected slope direction for degrees-to-pixels
-        for latitudes and longitudes
-        NOTE: Assumes raw degree values extracted from a map are absolute values
-        """
-
-        # --- longitudes (x pixel direction; +ve left->right)
-        # eastern hemisphere, longitude values are +ve; abs values are increasing left->right on a map
-        lon_slope_sign = 1
-        if lonlat_hemispheres[0] < 0:
-            # western hemisphere, longitude values are -ve; abs values are decreasing left->right on a map
-            lon_slope_sign = -1
-
-        # --- latitudes (y pixel direction; +ve top->bottem)
-        # northern hemisphere, latitude values are +ve; abs values are decreasing top->bottem on a map
-        lat_slope_sign = -1
-        if lonlat_hemispheres[1] < 0:
-            # southern hemisphere, latitude values are -ve; abs values are increasing top->bottem on a map
-            lat_slope_sign = 1
-
-        return (lon_slope_sign, lat_slope_sign)
 
     def _calc_skew_thresholds(self, map_roi: Optional[MapROI]) -> Tuple[float, float]:
         """

@@ -37,6 +37,7 @@ from tasks.geo_referencing.geocode import PointGeocoder, BoxGeocoder
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.inference import InferenceCoordinateExtractor
 from tasks.geo_referencing.roi_extractor import ROIExtractor
+from tasks.geo_referencing.finalize_coordinates import FinalizeCoordinates
 from tasks.metadata_extraction.entities import GeoPlaceType
 from tasks.metadata_extraction.geocoder import Geocoder
 from tasks.metadata_extraction.geocoding_service import NominatimGeocoder
@@ -174,15 +175,10 @@ class GeoreferencingPipeline(Pipeline):
             ROIFilter("region of interest coord filter"),
             # Test for outliers in each of the X and Y directions independently using linear regression
             OutlierFilter("lat/lon outlier filter"),
-            # Geocode the places extracted from the map area
-            Geocoder(
-                "places / population centers geocoder",
-                points_geocoder,
-                run_bounds=False,
-                run_points=True,
-                run_centres=True,
-                should_run=self._run_step,
-            ),
+            # Infer addtional points in a given direction if there are insufficient points in that direction
+            InferenceCoordinateExtractor("lat/lon inference"),
+            # Extract corner points from the map area
+            CornerPointExtractor("corner point extractor"),
             # Exract any UTM coordinates that are present - UTM zone will be inferred
             UTMCoordinatesExtractor("utm coordinates extractor"),
             # Extract any state plane coordinates that are present
@@ -196,6 +192,17 @@ class GeoreferencingPipeline(Pipeline):
             OutlierFilter("UTM outlier filter"),
             # Filter out UTM or state plane coords if sufficient lat/lon coords are present
             UTMStatePlaneFilter("UTM / state plane coordinate filter"),
+            # Infer addtional points in a given direction if there are insufficient points in that direction
+            InferenceCoordinateExtractor("UTM inference"),
+            # Geocode the places extracted from the map area
+            Geocoder(
+                "places / population centers geocoder",
+                points_geocoder,
+                run_bounds=False,
+                run_points=True,
+                run_centres=True,
+                should_run=self._run_step,
+            ),
             # Generate georeferencing points from the full set of place and population centre geo coordinates
             PointGeocoder(
                 "geocoded point transformation",
@@ -208,14 +215,11 @@ class GeoreferencingPipeline(Pipeline):
                 [GeoPlaceType.POINT, GeoPlaceType.POPULATION],
                 geocoder_thresh,
             ),
-            # Extract corner points from the map area
-            CornerPointExtractor("corner point extractor"),
-            # Infer addtional points in a given direction if there are insufficient points in that direction
-            InferenceCoordinateExtractor("coordinate inference"),
+            # Finalize coordinate extractions (ie checks for co-linear or ill-conditioned coord spacing)
+            FinalizeCoordinates("finalize coordinates"),
             # Create ground control points for use in downstream tasks
-            CreateGroundControlPoints("gcp  creation", create_random_pts=False),
-            # Run the final georeferencing step using either the regression-based inference method, or the corner point
-            # methood if there are sufficient corner points
+            CreateGroundControlPoints("gcp creation", create_random_pts=False),
+            # Run the final georeferencing step using either the regression-based inference method
             GeoReference("georeference", 1),
         ]
 

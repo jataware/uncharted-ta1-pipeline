@@ -57,6 +57,30 @@ def is_coord_from_source(
     return False
 
 
+def calc_lonlat_slope_signs(lonlat_hemispheres: Tuple[int, int]):
+    """
+    Calculates the expected slope direction for degrees-to-pixels
+    for latitudes and longitudes
+    NOTE: Assumes raw degree values extracted from a map are absolute values
+    """
+
+    # --- longitudes (x pixel direction; +ve left->right)
+    # eastern hemisphere, longitude values are +ve; abs values are increasing left->right on a map
+    lon_slope_sign = 1
+    if lonlat_hemispheres[0] < 0:
+        # western hemisphere, longitude values are -ve; abs values are decreasing left->right on a map
+        lon_slope_sign = -1
+
+    # --- latitudes (y pixel direction; +ve top->bottem)
+    # northern hemisphere, latitude values are +ve; abs values are decreasing top->bottem on a map
+    lat_slope_sign = -1
+    if lonlat_hemispheres[1] < 0:
+        # southern hemisphere, latitude values are -ve; abs values are increasing top->bottem on a map
+        lat_slope_sign = 1
+
+    return (lon_slope_sign, lat_slope_sign)
+
+
 def ocr_to_coordinates(bounds: List[Point]) -> List[List[int]]:
     mapped = []
     for v in bounds:
