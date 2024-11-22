@@ -55,13 +55,19 @@ class FinalizeCoordinates(Task):
             return self._create_result(input)
         map_poly = Polygon(map_roi.map_bounds)
 
-        # check if all coords are too co-linear, and if so, infer an additional anchor coord
-        lon_pts = self._check_colinearity(lon_pts, map_poly, input.image.size)
-        lat_pts = self._check_colinearity(lat_pts, map_poly, input.image.size)
+        try:
+            # check if all coords are too co-linear, and if so, infer an additional anchor coord
+            lon_pts = self._check_colinearity(lon_pts, map_poly, input.image.size)
+            lat_pts = self._check_colinearity(lat_pts, map_poly, input.image.size)
 
-        # an additional check to infer a 3rd anchor point, if needed
-        lon_pts = self._infer_third_coord(lon_pts, map_poly, input.image.size)
-        lat_pts = self._infer_third_coord(lat_pts, map_poly, input.image.size)
+            # an additional check to infer a 3rd anchor point, if needed
+            lon_pts = self._infer_third_coord(lon_pts, map_poly, input.image.size)
+            lat_pts = self._infer_third_coord(lat_pts, map_poly, input.image.size)
+
+        except Exception as e:
+            logger.warning(
+                f"Exception with finalizing coordinates; discarding any inferred coords - {repr(e)}"
+            )
 
         # update the coordinates lists
         result = self._create_result(input)

@@ -31,12 +31,8 @@ class PolyRegression:
     def fit_polynomial_regression(
         self, inputs_pts: List[List[float]], target_outputs: List[float]
     ):
-        # self.polyreg = PolynomialFeatures(degree=order, include_bias=False)
-        # self.polyreg_model = LinearRegression()
         poly_features = self.polyreg.fit_transform(np.array(inputs_pts))
         self.polyreg_model.fit(poly_features, target_outputs)
-
-        # TODO try/catch here?
 
     def predict_pts(self, inputs_pts: List[Tuple[float, float]]) -> List[float]:
         predicted_outputs = self.polyreg_model.predict(
@@ -57,7 +53,7 @@ class GeoProjection:
         self,
         lon_coords: List[Coordinate],
         lat_coords: List[Coordinate],
-    ):
+    ) -> bool:
         # Use polynomial regression to
         # estimate x-pxl -> longitude and y-pxl -> latitude mapping, independently
         # BUT each mapping may depend on both x,y values for a given lon or lat value, respectively
@@ -81,11 +77,17 @@ class GeoProjection:
             lat_xy.append([x, y])
             lat_pts.append(lat)
 
-        # do polynomial regression for x->longitude
-        self.regression_X.fit_polynomial_regression(lon_xy, lon_pts)
+        try:
+            # do polynomial regression for x->longitude
+            self.regression_X.fit_polynomial_regression(lon_xy, lon_pts)
 
-        # do polynomial regression for y->latitude
-        self.regression_Y.fit_polynomial_regression(lat_xy, lat_pts)
+            # do polynomial regression for y->latitude
+            self.regression_Y.fit_polynomial_regression(lat_xy, lat_pts)
+
+        except Exception as e:
+            logger.warning(f"Exception with estmating pxl2geo transform {repr(e)}")
+            return False
+        return True
 
     #
     # predict_xy_pts
