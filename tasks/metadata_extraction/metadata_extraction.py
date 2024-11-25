@@ -111,9 +111,9 @@ class MetdataLLM(BaseModel):
     )
     crs: str = Field(
         description="The coordinate reference system (CRS) of the map expressed as an EPSG code. "
-        + "It can be inferred from some combination of the base map information, coordinate system, datum and "
-        + "UTM zone if available.  If that is not possible, it can also be inferred from the map's location and basemap years."
-        + "Examples: EPSG:4267, EPSG:4326, EPSG:3857",
+        + "It can be inferred from some combination of the location, base map years, coordinate systems and datum "
+        + "if available.  If that is not possible, it can also be inferred from the map's location and year."
+        + "Examples: EPSG:4267, EPSG:4326, EPSG:3857."
     )
     utm_zone: int = Field(
         description="The UTM zone of the map.  This can be inferred from location information, and "
@@ -212,9 +212,9 @@ class StateCountryLLM(BaseModel):
 class CRSLLM(BaseModel):
     crs: str = Field(
         description="The coordinate reference system (CRS) of the map expressed as an EPSG code. "
-        + "It can be inferred from some combination of the base map information, coordinate system, datum and "
-        + "UTM zone if available.  If that is not possible, it can also be inferred from the map's location and basemap years."
-        + "Examples: EPSG:4267, EPSG:4326, EPSG:3857",
+        + "It can be inferred from some combination of the location, base map years, coordinate system and datum "
+        + "if available.  If that is not possible, it can also be inferred from the map's location and year(s)."
+        + "Examples: EPSG:4267, EPSG:4326, EPSG:3857."
     )
 
 

@@ -1,5 +1,7 @@
+import gc
 import logging
 import math
+from pyproj import CRS as pyproj_CRS
 from geopy.distance import geodesic
 
 from tasks.geo_referencing.entities import (
@@ -255,18 +257,18 @@ class GeoReference(Task):
         # results = self._clip_query_pts(query_pts, lon_minmax, lat_minmax)
         results = self._update_hemispheres(query_pts, lon_multiplier, lat_multiplier)
 
-        crs = self._determine_crs(input)
-        logger.info(f"extracted CRS: {crs}")
+        source_crs = self._determine_crs(input)
+        logger.info(f"extracted CRS: {source_crs}")
 
         # perform a datum shift if we're using externally supplied
         # query points (ie. eval scenario where we are passed query points from a file)
-        if crs != self.EXTERNAL_QUERY_POINT_CRS and external_query_pts:
+        if source_crs != self.EXTERNAL_QUERY_POINT_CRS and external_query_pts:
             logger.info(
-                f"performing datum shift from {crs} to {self.EXTERNAL_QUERY_POINT_CRS}"
+                f"performing datum shift from {source_crs} to {self.EXTERNAL_QUERY_POINT_CRS}"
             )
             for qp in query_pts:
                 proj = Transformer.from_crs(
-                    crs, self.EXTERNAL_QUERY_POINT_CRS, always_xy=True
+                    source_crs, self.EXTERNAL_QUERY_POINT_CRS, always_xy=True
                 )
                 x_p, y_p = proj.transform(qp.lonlat[0], qp.lonlat[1])
                 qp.lonlat = (x_p, y_p)
@@ -278,7 +280,7 @@ class GeoReference(Task):
         result.output[RMSE_OUTPUT_KEY] = rmse
         result.output[ERROR_SCALE_OUTPUT_KEY] = scale_error
         result.output[CRS_OUTPUT_KEY] = (
-            self.EXTERNAL_QUERY_POINT_CRS if external_query_pts else crs
+            self.EXTERNAL_QUERY_POINT_CRS if external_query_pts else source_crs
         )
         result.output[KEYPOINTS_OUTPUT_KEY] = keypoint_stats
         return result
@@ -519,34 +521,38 @@ class GeoReference(Task):
         if not metadata:
             return self.EXTERNAL_QUERY_POINT_CRS
 
-        # grab the year from the metadata if present
-        try:
-            year = int(metadata.year)
-        except:
-            year = -1
+        # get the computed CRS from the metadata if it exists
+        crs = metadata.crs
+        if crs is not None and crs != "NULL":
+            try:
+                # strip "EPSG:" from the CRS if present
+                crs_num = int(crs.replace("EPSG:", ""))
 
-        # we we assume geographic coordinates and combine that with the datum to
-        # come up with a CRS
-        datum = metadata.datum.upper()
-        if datum is not None and datum != "NULL":
-            if "NAD" in datum or "NORTH AMERICAN" in datum:
-                if "27" or "1927" in datum:
-                    return "EPSG:4267"
-                if "83" or "1983" in datum:
-                    return "EPSG:4269"
-                if year >= 1985:
-                    return "EPSG:4269"
-                if year >= 1930:
-                    return "EPSG:4267"
-            # default to a WGS84 CRS
-            return "EPSG:4326"
+                # get the geographic CRS info
+                pcrs = pyproj_CRS.from_epsg(crs_num)
+                if pcrs.is_projected:
+                    gcrs = pcrs.geodetic_crs
+                    if gcrs:
+                        crs_num = gcrs.to_epsg()
+                return str(f"EPSG:{crs_num}")
+            except:
+                logger.exception(
+                    f"failed to extract geographic CRS from metadata CRS: {crs}"
+                )
+                crs = "NULL"
 
-        # no datum info in the metadata so we will use the country and year
-        if not datum or datum == "NULL" or len(datum) == 0:
+        # no crs info in the metadata so we will use the country and year
+        if not crs or crs == "NULL" or len(crs) == 0:
+            # grab the year from the metadata if present
+            try:
+                year = int(metadata.year)
+            except:
+                year = -1
+
             if metadata.country != "NULL" and (
                 metadata.country == "US" or metadata.country == "CA"
             ):
-                if year >= 1985:
+                if year >= 1990:
                     return "EPSG:4269"
                 if year >= 1930:
                     return "EPSG:4267"
