@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+from pyexpat import model
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
@@ -20,7 +21,11 @@ from tasks.common.pipeline import (
     BaseModelOutput,
     BaseModelListOutput,
 )
-from tasks.metadata_extraction.metadata_extraction import LLM, LLM_PROVIDER
+from tasks.metadata_extraction.metadata_extraction import (
+    DEFAULT_GPT_MODEL,
+    DEFAULT_OPENAI_API_VERSION,
+    LLM_PROVIDER,
+)
 from tasks.common import image_io
 from tasks.metadata_extraction.entities import METADATA_EXTRACTION_OUTPUT_KEY
 from util import logging as logging_util
@@ -102,7 +107,10 @@ if __name__ == "__main__":
         action="store_true",
         help="Output results as TA1 json schema format",
     )
-    parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
+    parser.add_argument("--llm", type=str, default=DEFAULT_GPT_MODEL)
+    parser.add_argument(
+        "--llm_api_version", type=str, default=DEFAULT_OPENAI_API_VERSION
+    )
     parser.add_argument(
         "--llm_provider",
         type=LLM_PROVIDER,
@@ -127,6 +135,8 @@ if __name__ == "__main__":
         p.model,
         cdr_schema=p.cdr_schema,
         model=p.llm,
+        model_api_version=p.llm_api_version,
+        provider=p.llm_provider,
         gpu=not p.no_gpu,
         metrics_url=p.metrics_url,
     )

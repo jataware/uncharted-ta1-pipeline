@@ -44,7 +44,6 @@ from tasks.metadata_extraction.geocoding_service import NominatimGeocoder
 from tasks.metadata_extraction.metadata_extraction import (
     LLM_PROVIDER,
     MetadataExtractor,
-    LLM,
 )
 from tasks.metadata_extraction.text_filter import (
     FilterMode,
@@ -70,7 +69,8 @@ class GeoreferencingPipeline(Pipeline):
         country_code_filename: str,
         geocoded_places_filename: str,
         ocr_gamma_correction: float,
-        model: LLM,
+        model: str,
+        api_version: str,
         provider: LLM_PROVIDER,
         projected: bool,
         diagnostics: bool,
@@ -152,6 +152,7 @@ class GeoreferencingPipeline(Pipeline):
             MetadataExtractor(
                 "metadata_extractor",
                 model,
+                api_version,
                 provider,
                 "filtered_ocr_text",
                 cache_location=metadata_cache,

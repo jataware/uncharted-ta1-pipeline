@@ -33,7 +33,11 @@ from tasks.geo_referencing.entities import (
     GEOREFERENCING_OUTPUT_KEY,
     PROJECTED_MAP_OUTPUT_KEY,
 )
-from tasks.metadata_extraction.metadata_extraction import LLM, LLM_PROVIDER
+from tasks.metadata_extraction.metadata_extraction import (
+    DEFAULT_GPT_MODEL,
+    DEFAULT_OPENAI_API_VERSION,
+    LLM_PROVIDER,
+)
 from util import logging as logging_util
 
 Image.MAX_IMAGE_PIXELS = 400000000
@@ -168,7 +172,10 @@ def start_server():
         type=float,
         default=0.5,
     )
-    parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
+    parser.add_argument("--llm", type=str, default=DEFAULT_GPT_MODEL)
+    parser.add_argument(
+        "--llm_api_version", type=str, default=DEFAULT_OPENAI_API_VERSION
+    )
     parser.add_argument(
         "--llm_provider",
         type=LLM_PROVIDER,
@@ -199,6 +206,7 @@ def start_server():
         p.geocoded_places_filename,
         p.ocr_gamma_correction,
         p.llm,
+        p.llm_api_version,
         p.llm_provider,
         p.project,
         p.diagnostics,
