@@ -27,6 +27,8 @@ logger = logging.getLogger("outlier_filter")
 
 # max skew (in degrees) of a map to account for during outlier detection
 MAX_SKEW_DEFAULT = 20
+# multiplier to check the expected degrees-to-pixel scale
+DEG2PIXEL_VALIDITY_FACTOR = 5
 
 
 class OutlierFilter(Task):
@@ -74,7 +76,7 @@ class OutlierFilter(Task):
                 return self._create_result(input)
 
         # get expected sign of the regression slope(s) (pixels to degrees)
-        slope_expected = map_scale.degrees_per_pixel if map_scale else 0.0
+        lonlat_slopes_expected = map_scale.lonlat_per_pixel if map_scale else (0.0, 0.0)
         lonlat_slope_signs = (0, 0)
         if geofence and not geofence.geofence.region_type == GeoFenceType.DEFAULT:
             lonlat_slope_signs = calc_lonlat_slope_signs(
@@ -87,7 +89,7 @@ class OutlierFilter(Task):
         lons, lons_excluded, lons_slope = self._regression_analysis(
             lons,
             lons_excluded,
-            slope_expected,
+            lonlat_slopes_expected[0],
             lonlat_slope_signs[1],
             lonlat_skew_thresholds[1],
         )
@@ -96,7 +98,7 @@ class OutlierFilter(Task):
         lats, lats_excluded, lats_slope = self._regression_analysis(
             lats,
             lats_excluded,
-            slope_expected,
+            lonlat_slopes_expected[1],
             lonlat_slope_signs[0],
             lonlat_skew_thresholds[0],
         )
@@ -145,8 +147,8 @@ class OutlierFilter(Task):
                 if slope_expected != 0.0:
                     ok = (
                         sign(slope_sign) == sign(lin_slope)
-                        and slope_expected / 5 < abs(lin_slope)
-                        and slope_expected * 5 > abs(lin_slope)
+                        and slope_expected / DEG2PIXEL_VALIDITY_FACTOR < abs(lin_slope)
+                        and slope_expected * DEG2PIXEL_VALIDITY_FACTOR > abs(lin_slope)
                     )
                     return ok
                 else:

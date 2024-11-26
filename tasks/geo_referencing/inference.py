@@ -12,6 +12,7 @@ from tasks.geo_referencing.entities import (
     CoordType,
 )
 from tasks.geo_referencing.util import calc_lonlat_slope_signs
+from tasks.geo_referencing.scale_analyzer import ScaleAnalyzer
 from tasks.common.task import Task, TaskInput, TaskResult
 
 logger = logging.getLogger("inference_extractor")
@@ -77,12 +78,17 @@ class InferenceCoordinateExtractor(Task):
                 # get lat_pts with min/max y-pixel values
                 max_pt = max(deg_xy_pts, key=lambda p: p[1][1])
                 min_pt = min(deg_xy_pts, key=lambda p: p[1][1])
-                # estimate degree-per-pixel
+                # get existing lon pt
+                existing_lon_pt = next(iter(lon_pts.values()))
+                # estimate the lonlat-per-km resolution
+                lonlat_per_km = ScaleAnalyzer.calc_deg_per_km(
+                    (existing_lon_pt.get_parsed_degree(), max_pt[0])
+                )
                 pxl_range = max_pt[1][1] - min_pt[1][1]
                 deg_range = max_pt[0] - min_pt[0]
                 if deg_range != 0 and pxl_range != 0:
-                    deg_per_pxl = abs(deg_range / pxl_range)
-                    existing_lon_pt = next(iter(lon_pts.values()))
+                    # estimate the km-per-pixel
+                    km_per_pxl = abs((deg_range / lonlat_per_km[1]) / pxl_range)
                     map_pxl_mid = (map_poly.bounds[0] + map_poly.bounds[2]) / 2
                     # put inferred x pixel value in one of the map corners
                     new_x_pxl = (
@@ -94,7 +100,8 @@ class InferenceCoordinateExtractor(Task):
                     new_y_pxl = max(existing_lon_pt.get_pixel_alignment()[1] - 1, 0)
                     new_lon = (
                         lonlat_slope_signs[0]
-                        * deg_per_pxl
+                        * km_per_pxl
+                        * lonlat_per_km[0]
                         * (new_x_pxl - existing_lon_pt.get_pixel_alignment()[0])
                         + existing_lon_pt.get_parsed_degree()
                     )
@@ -124,12 +131,17 @@ class InferenceCoordinateExtractor(Task):
                 # get lon_pts with min/max x-pixel values
                 max_pt = max(deg_xy_pts, key=lambda p: p[1][0])
                 min_pt = min(deg_xy_pts, key=lambda p: p[1][0])
-                # estimate degree-per-pixel
+                # get existing lon pt
+                existing_lat_pt = next(iter(lon_pts.values()))
+                # estimate the lonlat-per-km resolution
+                lonlat_per_km = ScaleAnalyzer.calc_deg_per_km(
+                    (max_pt[0], existing_lat_pt.get_parsed_degree())
+                )
                 pxl_range = max_pt[1][0] - min_pt[1][0]
                 deg_range = max_pt[0] - min_pt[0]
                 if deg_range != 0 and pxl_range != 0:
-                    deg_per_pxl = abs(deg_range / pxl_range)
-                    existing_lat_pt = next(iter(lat_pts.values()))
+                    # estimate the km-per-pixel
+                    km_per_pxl = abs((deg_range / lonlat_per_km[0]) / pxl_range)
                     map_pxl_mid = (map_poly.bounds[1] + map_poly.bounds[3]) / 2
                     # put inferred y pixel value in one of the map corners
                     new_y_pxl = (
@@ -141,7 +153,8 @@ class InferenceCoordinateExtractor(Task):
                     new_x_pxl = max(existing_lat_pt.get_pixel_alignment()[0] - 1, 0)
                     new_lat = (
                         lonlat_slope_signs[1]
-                        * deg_per_pxl
+                        * km_per_pxl
+                        * lonlat_per_km[1]
                         * (new_y_pxl - existing_lat_pt.get_pixel_alignment()[1])
                         + existing_lat_pt.get_parsed_degree()
                     )

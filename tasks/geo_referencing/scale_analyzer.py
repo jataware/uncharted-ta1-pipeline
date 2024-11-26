@@ -51,7 +51,8 @@ class ScaleAnalyzer(Task):
         scale_raw = ""
         scale_pixels = 0.0
         km_per_pixel = 0.0
-        deg_per_pixel = 0.0
+        lon_per_km = 0.0
+        lat_per_km = 0.0
         if metadata:
             # normalize the extracted scale
             scale_raw = metadata.scale.lower().strip()
@@ -75,7 +76,7 @@ class ScaleAnalyzer(Task):
                         + geofence.geofence.lat_minmax[1]
                     ) / 2
                 # calc expected degrees per pixel
-                deg_per_pixel = self._calc_deg_per_pixel((lon_c, lat_c), km_per_pixel)
+                lon_per_km, lat_per_km = ScaleAnalyzer.calc_deg_per_km((lon_c, lat_c))
 
         # generate the map scale result
         scale_result = MapScale(
@@ -83,7 +84,7 @@ class ScaleAnalyzer(Task):
             dpi=self._dpi,
             scale_pixels=scale_pixels,
             km_per_pixel=km_per_pixel,
-            degrees_per_pixel=deg_per_pixel,
+            lonlat_per_pixel=(lon_per_km * km_per_pixel, lat_per_km * km_per_pixel),
         )
         result = self._create_result(input)
         result.add_output(MAP_SCALE_OUTPUT_KEY, scale_result.model_dump())
@@ -111,11 +112,11 @@ class ScaleAnalyzer(Task):
             return 0.0
         return scale
 
-    def _calc_deg_per_pixel(
-        self, lonlat_pt: Tuple[float, float], km_per_pixel: float
-    ) -> float:
+    @staticmethod
+    def calc_deg_per_km(lonlat_pt: Tuple[float, float]) -> Tuple[float, float]:
         """
-        Estimate the degrees-per-pixel resolution for a map given a lon/lat point of interest
+        Estimate the degrees-per-km resolution for a lon/lat point of interest
+        Returns a tuple: (lon_per_km, lat_per_km)
         """
         try:
             pt_north = geo_distance(kilometers=1).destination(
@@ -124,13 +125,11 @@ class ScaleAnalyzer(Task):
             pt_east = geo_distance(kilometers=1).destination(
                 (lonlat_pt[1], lonlat_pt[0]), bearing=90
             )
-            # degrees per km is avg of lat and lon differences at the pt of interest
-            deg_per_km = (
-                abs(pt_north.latitude - lonlat_pt[1])
-                + abs(pt_east.longitude - lonlat_pt[0])
-            ) / 2
 
-            return km_per_pixel * deg_per_km
+            lon_per_km = abs(pt_east.longitude - lonlat_pt[0])
+            lat_per_km = abs(pt_north.latitude - lonlat_pt[1])
+
+            return (lon_per_km, lat_per_km)
         except Exception as e:
-            logger.warning(f"Exception calculating degrees-per-pixel: {repr(e)}")
-            return 0
+            logger.warning(f"Exception calculating degrees-per-km: {repr(e)}")
+            return (0.0, 0.0)
