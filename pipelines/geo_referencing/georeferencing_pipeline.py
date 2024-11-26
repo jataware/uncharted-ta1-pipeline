@@ -36,7 +36,7 @@ from tasks.geo_referencing.filter import (
 )
 from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.georeference import GeoReference
-from tasks.geo_referencing.point_geocoder import PointGeocoder
+from tasks.geo_referencing.geocode import PointGeocoder, BoxGeocoder
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.inference import InferenceCoordinateExtractor
 from tasks.geo_referencing.roi_extractor import ROIExtractor
@@ -96,7 +96,7 @@ class GeoreferencingPipeline(Pipeline):
         points_geocoder = NominatimGeocoder(
             10,
             geocoding_cache_points,
-            4,
+            5,
             country_code_filename=country_code_filename,
             state_code_filename=state_code_filename,
             geocoded_places_filename=geocoded_places_filename,
@@ -105,6 +105,7 @@ class GeoreferencingPipeline(Pipeline):
         segmentation_cache = append_to_cache_location(working_dir, "segmentation")
         text_cache = append_to_cache_location(working_dir, "text")
         metadata_cache = append_to_cache_location(working_dir, "metadata")
+        geocoder_thresh = 10
 
         tasks: List[Task] = [
             # Segments the image into map,legend and cross section
@@ -183,12 +184,29 @@ class GeoreferencingPipeline(Pipeline):
                 class_threshold=0,
                 should_run=self._run_step,
             ),
-            # Geocode point-based places and population centres
+            # Run metadata extraction on the map area text only
+            MetadataExtractor(
+                "metadata map area extractor",
+                model,
+                "map_area_filter",
+                self._run_step,
+                include_place_bounds=True,
+            ),
+            # Geocode the places extracted from the map area
             Geocoder(
-                "points / centres geocoder",
+                "place geocoder",
                 points_geocoder,
                 run_bounds=False,
                 run_points=True,
+                run_centres=False,
+                should_run=self._run_step,
+            ),
+            # Geo code the population centres extracted from the map area
+            Geocoder(
+                "population center geocoder",
+                bounds_geocoder,
+                run_bounds=False,
+                run_points=False,
                 run_centres=True,
                 should_run=self._run_step,
             ),
@@ -205,8 +223,16 @@ class GeoreferencingPipeline(Pipeline):
             OutlierFilter("UTM outlier filter"),
             # Filter out UTM or state plane coords if sufficient lat/lon coords are present
             UTMStatePlaneFilter("UTM / state plane coordinate filter"),
-            # Generate georeferencing points from the extracted place and population centre geo coordinates
-            PointGeocoder("geocoded point transformation", ["point", "population"]),
+            # Generate georeferencing points from the full set of place and population centre geo coordinates
+            PointGeocoder(
+                "geocoded point transformation",
+                ["point", "population"],
+                geocoder_thresh,
+            ),
+            # Generate georeferencing points from the extent of the place and population centre geo coordinates
+            BoxGeocoder(
+                "geocoded box transformation", ["point", "population"], geocoder_thresh
+            ),
             # Extract corner points from the map area
             CornerPointExtractor("corner point extractor"),
             # Infer addtional points in a given direction if there are insufficient points in that direction
