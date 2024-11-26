@@ -1,4 +1,4 @@
-FROM docker-hub.uncharted.software/python:3.10-slim
+FROM python:3.10-slim
 
 RUN mkdir /app
 RUN mkdir /workdir
