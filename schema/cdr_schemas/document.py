@@ -66,9 +66,7 @@ class Document(BaseModel):
     pages: int = Field(..., description="Document page count")
     size: int = Field(..., description="Document size in bytes")
 
-    provenance: list[DocumentProvenance] = Field(
-        ..., description="provenance list", default_factory=list
-    )
+    provenance: list[DocumentProvenance] = Field([], description="provenance list")
     metadata: Optional[DocumentMetaData] = Field(None, description="document metadata")
 
     system: str = Field(
@@ -89,7 +87,9 @@ class DocumentExtraction(BaseModel):
     """JSON model for user-facing document metadata"""
 
     id: str | None = Field(None, description="The internal ID of the xtraction")
-    document_id: str = Field(None, description="The internal ID of the source document")
+    document_id: str | None = Field(
+        None, description="The internal ID of the source document"
+    )
     extraction_type: str = Field(
         ..., description="The type of model that produced the extraction"
     )

@@ -2,19 +2,23 @@ import json
 import csv
 import logging
 import os
-
 from abc import ABC, abstractmethod
 from copy import deepcopy
-
 from geopy.geocoders import Nominatim
-
 from tasks.metadata_extraction.entities import (
     GeocodedCoordinate,
     GeocodedPlace,
     GeocodedResult,
+    GeoPlaceType,
+    GeoFeatureType,
 )
-
-
+from tasks.common.io import (
+    JSONFileReader,
+    JSONFileWriter,
+    Mode,
+    bucket_exists,
+    get_file_source,
+)
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -31,6 +35,18 @@ class GeocodingService(ABC):
         place: GeocodedPlace,
         geofence: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None,
     ) -> Tuple[GeocodedPlace, bool]:
+        pass
+
+    @abstractmethod
+    def normalize_country(self, country: str) -> Tuple:
+        pass
+
+    @abstractmethod
+    def normalize_state(self, state: str) -> Tuple:
+        pass
+
+    @abstractmethod
+    def normalize_county(self, county: str, state: str) -> str:
         pass
 
 
@@ -50,12 +66,16 @@ class NominatimGeocoder(GeocodingService):
         state_code_filename: str = "",
         geocoded_places_filename: str = "",
     ) -> None:
+
         self._service = Nominatim(
             timeout=timeout, user_agent="uncharted-lara-geocoder"  # type: ignore
         )
-        self._limit_hits = limit_hits
-        self._cache = self._load_cache(cache_location)
+        self._cache_file_reader = JSONFileReader()
+        self._cache_file_writer = JSONFileWriter()
         self._cache_location = cache_location
+        self._cache = self._load_cache()
+
+        self._limit_hits = limit_hits
         self._country_to_code = self._build_placecode_lookup(country_code_filename)
         self._code_to_country = {v: k for k, v in self._country_to_code.items()}
         self._code_to_state = {
@@ -97,27 +117,47 @@ class NominatimGeocoder(GeocodingService):
             )
             return {}
 
-    def _load_cache(self, cache_location: str) -> Dict[Any, Any]:
+    def _load_cache(self) -> Dict[str, Any]:
+        """
+        Load geocoding cache
+        (JSON file of cached geocoded locations)
+        """
         cache = {}
-
-        # assume the cache is just a json file
         try:
-            if os.path.isfile(cache_location):
-                with open(cache_location, "rb") as f:
-                    cache = json.load(f)
-            return cache
+            cache_mode = get_file_source(self._cache_location)
+            if cache_mode == Mode.FILE:
+                dirname = os.path.dirname(self._cache_location)
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
+            elif cache_mode == Mode.S3_URI or Mode.URL:
+                if not bucket_exists(self._cache_location):
+                    raise Exception(
+                        f"S3 cache bucket {self._cache_location} does not exist"
+                    )
+            else:
+                raise Exception(f"Invalid cache location {self._cache_location}")
+            cache = self._cache_file_reader.process(self._cache_location)
         except Exception as e:
-            logger.error(
-                f"EXCEPTION loading geocoder cache at {cache_location}; reverting cache to empty dict"
+            logger.warning(
+                f"Unable to load geocoder cache at {self._cache_location}; reverting cache to empty dict -- {repr(e)}"
             )
-            logger.error(e)
-            return {}
+            cache = {}
+        return cache
 
     def _cache_doc(self, key: str, doc: Any):
+        """
+        Append geocoding record to in-memory cache
+        and also save to file location
+        """
         self._cache[key] = doc
-
-        with open(self._cache_location, "w") as f:
-            json.dump(self._cache, f)
+        if not self._cache_location:
+            return
+        try:
+            self._cache_file_writer.process(self._cache_location, self._cache)
+        except Exception as e:
+            logger.error(
+                f"EXCEPTION saving geocoder cache at {self._cache_location} -- {repr(e)}"
+            )
 
     def geocode(
         self,
@@ -179,26 +219,6 @@ class NominatimGeocoder(GeocodingService):
             )
         return place_copy, True
 
-    def _get_countrystate_codes(self, place: GeocodedPlace) -> Tuple:
-        """
-        Parse and normalize the country and state codes for a given place
-        """
-        country_code = None
-        state_code = None
-        # try to parse country code from 'place_location_restriction'
-        parent_country = place.place_location_restriction.lower()
-        # could already be a code
-        if len(parent_country) == 2:
-            country_code = parent_country
-        elif parent_country in self._country_to_code:
-            country_code = self._country_to_code[parent_country]
-
-        # try to parse state code from 'place_name', if of the form (US-MI)
-        countrystate = place.place_name.lower().split("-")
-        if len(countrystate) == 2 and len(countrystate[1]) == 2:
-            state_code = countrystate[1]
-        return country_code, state_code
-
     def _get_geocode(
         self,
         place: GeocodedPlace,
@@ -209,34 +229,23 @@ class NominatimGeocoder(GeocodingService):
         (either via Nominatim query or from LARA's geocoding cache)
         """
 
-        if place.place_name in self._geocoded_places_reference:
+        if place.place_name.lower() in self._geocoded_places_reference:
             # a reference geocoded result already exists for this place-name
-            res = self._geocoded_places_reference[place.place_name]
+            res = self._geocoded_places_reference[place.place_name.lower()]
             display_name = ""
             if not res["featuretype"] == "country":
                 display_name = self._get_state(res["display_name"])
             return [(res["boundingbox"], display_name)]
 
-        featuretype = ""
-        if place.place_type == "bound" and place.place_location_restriction == "":
-            featuretype = "country"
-            # force the parent country code = None if this place represents a country
-            parent_country_code = None
-            state_code = None
-        else:
-            parent_country_code, state_code = self._get_countrystate_codes(place)
-
-        # use full country or state name when geo-coding (prevents noisy results with Nominatim)
         place_name = place.place_name
-        if featuretype == "country":
-            place_name = self._code_to_country.get(place_name.lower(), place_name)
-        elif (
-            (parent_country_code == "us" or parent_country_code == "ca")
-            and state_code
-            and state_code in self._code_to_state
-        ):
-            featuretype = "state"
-            place_name = self._code_to_state.get(state_code, place_name)
+        featuretype = ""
+        parent_country_code = None
+        if place.feature_type == GeoFeatureType.COUNTRY:
+            featuretype = "country"
+        else:
+            parent_country_code = place.parent_country
+            if place.feature_type == GeoFeatureType.STATE:
+                featuretype = "state"
 
         key = f"{place_name}|{self._limit_hits}|{parent_country_code}|{geofence}|{featuretype}"
 
@@ -270,6 +279,59 @@ class NominatimGeocoder(GeocodingService):
         self._cache_doc(key, {"boundingbox": results})
 
         return results
+
+    def normalize_country(self, country: str) -> Tuple:
+        """
+        Normalize the country name for a given place
+        returns a Tuple of country name, country code
+        """
+        country_code = None
+        country_name = None
+        country = country.lower()
+        # could already be a code
+        if country in self._code_to_country:
+            country_name = self._code_to_country[country]
+            country_code = country
+        elif country in self._country_to_code:
+            country_name = self._country_to_code[country]
+            country_code = country
+        else:
+            country_name = country
+        return country_name, country_code
+
+    def normalize_state(self, state: str) -> Tuple:
+        """
+        Parse and normalize the state code and name for a given place
+        """
+        state_code = None
+        state_name = None
+        state = state.lower()
+        # could already be a code
+        if state in self._code_to_state:
+            state_code = state
+            state_name = self._code_to_state[state]
+        else:
+            # try to parse state code from 'place_name', if of the form (US-MI)
+            countrystate = state.split("-")
+            if len(countrystate) == 2 and len(countrystate[1]) == 2:
+                state_code = countrystate[1]
+                state_name = self._code_to_state.get(state_code, state_code)
+            else:
+                state_name = state
+        return state_name, state_code
+
+    def normalize_county(self, county: str, state: str) -> str:
+        """
+        Normalize county name
+        """
+        if not county:
+            return county
+        county = county.lower()
+        if not county.endswith("county"):
+            county = county.strip() + " county"
+        if state:
+            county += ", " + state
+        return county
 
     def _get_state(self, display_name: str) -> str:
         parts = display_name.split(",")

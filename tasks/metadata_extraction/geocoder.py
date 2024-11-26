@@ -9,6 +9,8 @@ from tasks.metadata_extraction.entities import (
     GeocodedCoordinate,
     GeocodedPlace,
     GeocodedResult,
+    GeoFeatureType,
+    GeoPlaceType,
     MetadataExtraction,
     GEOCODED_PLACES_OUTPUT_KEY,
     METADATA_EXTRACTION_OUTPUT_KEY,
@@ -104,7 +106,7 @@ class Geocoder(Task):
 
             filtered_places = []
             for p in places:
-                if self._run_points and p.place_type == "point":
+                if self._run_points and p.place_type == GeoPlaceType.POINT:
                     # assuming singular point; check if pixel loc is inside map ROI
                     point = Point(
                         p.results[0].coordinates[0].pixel_x,
@@ -112,7 +114,7 @@ class Geocoder(Task):
                     )
                     if point.intersects(map_poly):
                         filtered_places.append(p)
-                elif self._run_centres and p.place_type == "population":
+                elif self._run_centres and p.place_type == GeoPlaceType.POPULATION:
                     # assuming singular point; check if pixel loc is inside map ROI
                     point = Point(
                         p.results[0].coordinates[0].pixel_x,
@@ -177,16 +179,21 @@ class Geocoder(Task):
 
         places: List[GeocodedPlace] = []
         country = ""
+        country_code = ""
+        state = ""
         if metadata.country and not metadata.country == "NULL":
-            country = metadata.country
+            country, country_code = self._geocoding_service.normalize_country(
+                metadata.country
+            )
         if self._run_bounds:
             # init 'bounds' type geo-places (countries, states)
             if country:
                 places.append(
                     GeocodedPlace(
                         place_name=country,
-                        place_location_restriction="",
-                        place_type="bound",
+                        parent_country="",
+                        place_type=GeoPlaceType.BOUND,
+                        feature_type=GeoFeatureType.COUNTRY,
                         results=[
                             GeocodedResult(
                                 place_region="",
@@ -202,11 +209,13 @@ class Geocoder(Task):
 
             for s in metadata.states:
                 if s and not s == "NULL":
+                    state, state_code = self._geocoding_service.normalize_state(s)
                     places.append(
                         GeocodedPlace(
-                            place_name=s,
-                            place_location_restriction=country,
-                            place_type="bound",
+                            place_name=state,
+                            parent_country=country_code,
+                            place_type=GeoPlaceType.BOUND,
+                            feature_type=GeoFeatureType.STATE,
                             results=[
                                 GeocodedResult(
                                     place_region="",
@@ -219,6 +228,29 @@ class Geocoder(Task):
                             ],
                         )
                     )
+            if metadata.counties and len(metadata.states) == 1:
+                # TODO -- could add support for counties across multiple states
+                for s in metadata.counties:
+                    if s and not s == "NULL":
+                        county = self._geocoding_service.normalize_county(s, state)
+                        places.append(
+                            GeocodedPlace(
+                                place_name=county,
+                                parent_country=country_code,
+                                place_type=GeoPlaceType.BOUND,
+                                feature_type=GeoFeatureType.COUNTY,
+                                results=[
+                                    GeocodedResult(
+                                        place_region="",
+                                        coordinates=[
+                                            GeocodedCoordinate(
+                                                geo_x=0, geo_y=0, pixel_x=0, pixel_y=0
+                                            )
+                                        ],
+                                    )
+                                ],
+                            )
+                        )
 
         if self._run_points:
             for p in metadata.places:
@@ -228,8 +260,9 @@ class Geocoder(Task):
                 places.append(
                     GeocodedPlace(
                         place_name=p.text,
-                        place_location_restriction=country,
-                        place_type="point",
+                        parent_country=country_code,
+                        place_type=GeoPlaceType.POINT,
+                        feature_type=GeoFeatureType.NOT_SET,
                         results=[
                             GeocodedResult(
                                 place_region="",
@@ -247,8 +280,9 @@ class Geocoder(Task):
                 places.append(
                     GeocodedPlace(
                         place_name=p.text,
-                        place_location_restriction=country,
-                        place_type="population",
+                        parent_country=country_code,
+                        place_type=GeoPlaceType.POPULATION,
+                        feature_type=GeoFeatureType.NOT_SET,
                         results=[
                             GeocodedResult(
                                 place_region="",
@@ -271,7 +305,9 @@ class Geocoder(Task):
         geocode bound places (eg countries, states)
         """
         geocoded_places = []
-        bound_places_only = list(filter(lambda x: x.place_type == "bound", places))
+        bound_places_only = list(
+            filter(lambda x: x.place_type == GeoPlaceType.BOUND, places)
+        )
         for p in bound_places_only:
             g, s = self._geocoding_service.geocode(p)
             if s:
@@ -287,7 +323,9 @@ class Geocoder(Task):
         geocode population centres
         """
         geocoded_places = []
-        pop_centres_only = list(filter(lambda x: x.place_type == "population", places))
+        pop_centres_only = list(
+            filter(lambda x: x.place_type == GeoPlaceType.POPULATION, places)
+        )
         for p in pop_centres_only:
             g, s = self._geocoding_service.geocode(p, geofence=geofence)
             if s:
@@ -303,7 +341,7 @@ class Geocoder(Task):
         geocode point places
         """
         geocoded_places = []
-        points_only = list(filter(lambda x: x.place_type == "point", places))
+        points_only = list(filter(lambda x: x.place_type == GeoPlaceType.POINT, places))
         limit = min(200, len(points_only))
         places_to_geocode = random.sample(points_only, limit)
         for p in places_to_geocode:

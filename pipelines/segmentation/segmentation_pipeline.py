@@ -6,6 +6,7 @@ from collections import defaultdict
 from tasks.common.io import append_to_cache_location, get_file_source
 from tasks.segmentation.entities import MapSegmentation, SEGMENTATION_OUTPUT_KEY
 from tasks.common.pipeline import (
+    EmptyOutput,
     Pipeline,
     PipelineResult,
     Output,
@@ -92,9 +93,11 @@ class MapSegmentationOutput(OutputCreator):
         Returns:
             MapSegmentation: The map segmentation extraction object.
         """
-        map_segmentation = MapSegmentation.model_validate(
-            pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
-        )
+        result = pipeline_result.data.get(SEGMENTATION_OUTPUT_KEY, None)
+        if result is None:
+            return EmptyOutput()
+
+        map_segmentation = MapSegmentation.model_validate(result)
         return BaseModelOutput(
             pipeline_result.pipeline_id,
             pipeline_result.pipeline_name,
@@ -126,9 +129,11 @@ class CDROutput(OutputCreator):
         Returns:
             Output: The output of the pipeline.
         """
-        map_segmentation = MapSegmentation.model_validate(
-            pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
-        )
+        result = pipeline_result.data.get(SEGMENTATION_OUTPUT_KEY, None)
+        if result is None:
+            return EmptyOutput()
+
+        map_segmentation = MapSegmentation.model_validate(result)
         mapper = SegmentationMapper(MODEL_NAME, MODEL_VERSION)
 
         cdr_segmentation = mapper.map_to_cdr(map_segmentation)
@@ -161,9 +166,11 @@ class DebugImagesOutput(OutputCreator):
         poly_line_width = 16
         font = ImageFont.load_default(font_size)
 
-        map_segmentation = MapSegmentation.model_validate(
-            pipeline_result.data[SEGMENTATION_OUTPUT_KEY]
-        )
+        result = pipeline_result.data.get(SEGMENTATION_OUTPUT_KEY, None)
+        if result is None:
+            return EmptyOutput()
+
+        map_segmentation = MapSegmentation.model_validate(result)
         if pipeline_result.image is None:
             raise ValueError("Pipeline result image is None")
         debug_image = pipeline_result.image.copy()

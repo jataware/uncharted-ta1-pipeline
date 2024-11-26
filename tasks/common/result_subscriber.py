@@ -52,9 +52,6 @@ class LaraResultSubscriber(ABC):
         result_queue: str,
         cdr_host: str,
         cdr_token: str,
-        output: str,
-        workdir: str,
-        imagedir: str,
         host="localhost",
         port=5672,
         vhost="/",
@@ -66,16 +63,11 @@ class LaraResultSubscriber(ABC):
         self._result_queue = result_queue
         self._cdr_host = cdr_host
         self._cdr_token = cdr_token
-        self._workdir = workdir
-        self._imagedir = imagedir
-        self._output = output
         self._host = host
         self._port = port
         self._vhost = vhost
         self._uid = uid
         self._pwd = pwd
-        self._image_cache = ImageCache(imagedir)
-        self._image_cache._init_cache()
 
     def start_lara_result_queue(self):
         threading.Thread(

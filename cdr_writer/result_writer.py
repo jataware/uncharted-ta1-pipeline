@@ -31,6 +31,7 @@ def main():
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
     parser.add_argument("--cdr_host", type=str, default=CDR_HOST)
+    parser.add_argument("--metrics_url", type=str, default="")
     p = parser.parse_args()
 
     result_subscriber = WriteResultSubscriber(
@@ -45,6 +46,7 @@ def main():
         vhost=p.rabbit_vhost,
         uid=p.rabbit_uid,
         pwd=p.rabbit_pwd,
+        metrics_url=p.metrics_url,
     )
     result_subscriber.start_lara_result_queue()
 

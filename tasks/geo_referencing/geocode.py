@@ -1,12 +1,7 @@
 import logging
-import uuid
-
 import numpy as np
-
 from statistics import median
-
 from copy import deepcopy
-
 from sklearn.cluster import DBSCAN
 
 from tasks.geo_referencing.coordinates_extractor import (
@@ -18,12 +13,14 @@ from tasks.geo_referencing.entities import (
     DocGeoFence,
     GeoFenceType,
     GEOFENCE_OUTPUT_KEY,
-    SOURCE_GEOCODE,
+    CoordType,
+    CoordSource,
 )
 from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
     GeocodedPlace,
     GeocodedCoordinate,
+    GeoPlaceType,
     GEOCODED_PLACES_OUTPUT_KEY,
 )
 
@@ -35,7 +32,7 @@ logger = logging.getLogger("geocode")
 
 
 class Geocoder(CoordinatesExtractor):
-    def __init__(self, task_id: str, place_types: List[str]):
+    def __init__(self, task_id: str, place_types: List[GeoPlaceType]):
         super().__init__(task_id)
         self._place_types = place_types
 
@@ -70,7 +67,12 @@ class Geocoder(CoordinatesExtractor):
         return places_filtered
 
     def _get_coordinates(self, places: List[GeocodedPlace]) -> List[Coordinate]:
-        # cluster points using the geographic coordinates
+        """
+        cluster points using the geographic coordinates
+
+        Note: results use the abs of lat/lon values (hemisphere +/- signs are applied during final georeference stage)
+        """
+
         if len(places) == 0:
             return []
         coords = []
@@ -111,26 +113,24 @@ class Geocoder(CoordinatesExtractor):
             if pixel_alignment not in pixels:
                 coordinates.append(
                     Coordinate(
-                        "point derived lat",
+                        CoordType.GEOCODED_POINT,
                         c[1][0].place_name,
-                        c[0][1],
-                        SOURCE_GEOCODE,
+                        abs(c[0][1]),
+                        CoordSource.GEOCODER,
                         True,
                         pixel_alignment=pixel_alignment,
                         confidence=COORDINATE_CONFIDENCE_GEOCODE,
-                        derivation="geocoded",
                     )
                 )
                 coordinates.append(
                     Coordinate(
-                        "point derived lon",
+                        CoordType.GEOCODED_POINT,
                         c[1][0].place_name,
-                        c[0][0],
-                        SOURCE_GEOCODE,
+                        abs(c[0][0]),
+                        CoordSource.GEOCODER,
                         False,
                         pixel_alignment=pixel_alignment,
                         confidence=COORDINATE_CONFIDENCE_GEOCODE,
-                        derivation="geocoded",
                     )
                 )
                 pixels[pixel_alignment] = 1
@@ -170,7 +170,7 @@ class Geocoder(CoordinatesExtractor):
 
 
 class PointGeocoder(Geocoder):
-    def __init__(self, task_id: str, place_types: List[str], run_limit: int):
+    def __init__(self, task_id: str, place_types: List[GeoPlaceType], run_limit: int):
         super().__init__(task_id, place_types)
         self._run_limit = run_limit
 
@@ -235,7 +235,9 @@ class PointGeocoder(Geocoder):
 
 
 class BoxGeocoder(Geocoder):
-    def __init__(self, task_id: str, place_types: List[str], run_limit: int = 10):
+    def __init__(
+        self, task_id: str, place_types: List[GeoPlaceType], run_limit: int = 10
+    ):
         super().__init__(task_id, place_types)
         self._run_limit = run_limit
 
@@ -400,6 +402,12 @@ class BoxGeocoder(Geocoder):
         minmax_lon: Tuple[Coordinate, Coordinate],
         minmax_lat: Tuple[Coordinate, Coordinate],
     ) -> List[Coordinate]:
+        """
+        Create the Coordinate results for the BoxGeocoder
+
+        Note: results use the abs of lat/lon values (hemisphere +/- signs are applied during final georeference stage)
+        """
+
         # for lon, min and max x always map together
         pixels_x = minmax_x
 
@@ -409,43 +417,39 @@ class BoxGeocoder(Geocoder):
         # create the four new coordinates mapping pixels to degrees
         return [
             Coordinate(
-                "box derived lon",
+                CoordType.DERIVED_KEYPOINT,
                 minmax_lon[0].get_text(),
-                minmax_lon[0].get_parsed_degree(),
-                SOURCE_GEOCODE,
+                abs(minmax_lon[0].get_parsed_degree()),
+                CoordSource.GEOCODER,
                 False,
                 pixel_alignment=(pixels_x[0], pixels_y[1]),
                 confidence=COORDINATE_CONFIDENCE_GEOCODE,
-                derivation="geocoded",
             ),
             Coordinate(
-                "box derived lon",
+                CoordType.DERIVED_KEYPOINT,
                 minmax_lon[1].get_text(),
-                minmax_lon[1].get_parsed_degree(),
-                SOURCE_GEOCODE,
+                abs(minmax_lon[1].get_parsed_degree()),
+                CoordSource.GEOCODER,
                 False,
                 pixel_alignment=(pixels_x[1], pixels_y[0]),
                 confidence=COORDINATE_CONFIDENCE_GEOCODE,
-                derivation="geocoded",
             ),
             Coordinate(
-                "box derived lat",
+                CoordType.DERIVED_KEYPOINT,
                 minmax_lat[0].get_text(),
-                minmax_lat[0].get_parsed_degree(),
-                SOURCE_GEOCODE,
+                abs(minmax_lat[0].get_parsed_degree()),
+                CoordSource.GEOCODER,
                 True,
                 pixel_alignment=(pixels_x[0], pixels_y[0]),
                 confidence=COORDINATE_CONFIDENCE_GEOCODE,
-                derivation="geocoded",
             ),
             Coordinate(
-                "box derived lat",
+                CoordType.DERIVED_KEYPOINT,
                 minmax_lat[1].get_text(),
-                minmax_lat[1].get_parsed_degree(),
-                SOURCE_GEOCODE,
+                abs(minmax_lat[1].get_parsed_degree()),
+                CoordSource.GEOCODER,
                 True,
                 pixel_alignment=(pixels_x[1], pixels_y[1]),
                 confidence=COORDINATE_CONFIDENCE_GEOCODE,
-                derivation="geocoded",
             ),
         ]

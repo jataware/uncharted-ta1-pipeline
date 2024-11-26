@@ -3,14 +3,13 @@ from dataclasses import dataclass
 import logging
 import re
 from enum import Enum
-from langchain_openai import ChatOpenAI
 import cv2
 import numpy as np
 from PIL.Image import Image as PILImage
 from langchain.schema import SystemMessage, PromptValue
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.output_parsers import PydanticOutputParser
-from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from pydantic import BaseModel, Field
 import tiktoken
 from tasks.common.image_io import pil_to_cv_image
@@ -21,6 +20,7 @@ from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
+from tasks.geo_referencing.entities import MapROI, ROI_MAP_OUTPUT_KEY
 from tasks.segmentation.entities import SEGMENTATION_OUTPUT_KEY, MapSegmentation
 from tasks.text_extraction.entities import (
     DocTextExtraction,
@@ -28,21 +28,24 @@ from tasks.text_extraction.entities import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from tasks.common.pipeline import Task
-from typing import Callable, List, Dict, Any, Optional, Tuple
+from shapely import Polygon
+from typing import Callable, List, Optional, Tuple
 import hashlib
+import requests
 
 
 logger = logging.getLogger("metadata_extractor")
 
 PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
+METADATA_CODE_VER = "0.0.1"
+
+DEFAULT_OPENAI_API_VERSION = "2024-10-21"
+DEFAULT_GPT_MODEL = "gpt-4o"
 
 
-class LLM(str, Enum):
-    GPT_3_5_TURBO = "gpt-3.5-turbo"
-    GPT_4_TURBO = "gpt-4-turbo"
-    GPT_4 = "gpt-4"
-    GPT_4_O = "gpt-4o"
-    GPT_4_O_MINI = "gpt-4o-mini"
+class LLM_PROVIDER(str, Enum):
+    OPENAI = "openai"
+    AZURE = "azure"
 
     def __str__(self):
         return self.value
@@ -269,23 +272,34 @@ class MetadataExtractor(Task):
     def __init__(
         self,
         id: str,
-        model=LLM.GPT_4_O,
+        model=DEFAULT_GPT_MODEL,
+        model_api_version=DEFAULT_OPENAI_API_VERSION,
+        provider=LLM_PROVIDER.OPENAI,
         text_key=TEXT_EXTRACTION_OUTPUT_KEY,
         should_run: Optional[Callable] = None,
         cache_location: str = "",
         include_place_bounds: bool = True,
+        metrics_url: str = "",
     ):
         super().__init__(id, cache_location)
 
-        self._chat_model = ChatOpenAI(
-            model=model, temperature=0.1
-        )  # reads OPEN_AI_API_KEY from environment
+        if provider == LLM_PROVIDER.AZURE:
+            # auto reads AZURE_CHAT_API_KEY,
+            self._chat_model = AzureChatOpenAI(
+                model=model, temperature=0.1, api_version=model_api_version
+            )
+        else:
+            # auto reads OPEN_AI_API_KEY from environment
+            # doesn't accept api version as an arg
+            self._chat_model = ChatOpenAI(model=model, temperature=0.1)
+
         self._model = model
         self._text_key = text_key
         self._include_place_bounds = include_place_bounds
         self._should_run = should_run
+        self._metrics_url = metrics_url
 
-        logger.info(f"Using model: {self._model.value}")
+        logger.info(f"Using model: {self._model} from provider {provider.value}")
 
     def run(self, input: TaskInput) -> TaskResult:
         """
@@ -340,8 +354,14 @@ class MetadataExtractor(Task):
             # normalize scale
             metadata.scale = self._normalize_scale(metadata.scale)
 
-            # # extract places
-            point_locations = self._extract_point_locations(doc_text)
+            # get the map region-of-interest, if available
+            map_roi = input.parse_data(ROI_MAP_OUTPUT_KEY, MapROI.model_validate)
+            map_text = self._roi_filtering(doc_text.extractions, map_roi)
+
+            # extract point-based places from map ROI
+            point_locations = self._extract_point_locations(
+                DocTextExtraction(doc_id=input.raster_id, extractions=map_text)
+            )
             if not self._include_place_bounds:
                 metadata.places = [p.text for p in point_locations.places]
                 metadata.population_centres = [
@@ -397,6 +417,7 @@ class MetadataExtractor(Task):
         attributes = "_".join(
             [
                 "metadata",
+                METADATA_CODE_VER,
                 task_input.raster_id,
                 self._model,
                 str(self._include_place_bounds),
@@ -404,7 +425,7 @@ class MetadataExtractor(Task):
             ]
         )
         doc_key = hashlib.sha256(attributes.encode()).hexdigest()
-        return f"{doc_key}_{task_input.raster_id}"
+        return f"{task_input.raster_id}_{doc_key}"
 
     def _process_doc_text_extraction(
         self, doc_text_extraction: DocTextExtraction
@@ -459,6 +480,14 @@ class MetadataExtractor(Task):
                 )
             logger.info(f"Processing {num_tokens} tokens.")
 
+            if self._metrics_url != "":
+                requests.post(
+                    self._metrics_url + "/counter/total_tokens?step=" + str(num_tokens)
+                )
+                requests.post(
+                    self._metrics_url + "/gauge/tokens?value=" + str(num_tokens)
+                )
+
             # generate the response
             if input_prompt is not None:
                 logger.debug("Prompt string:\n")
@@ -487,6 +516,30 @@ class MetadataExtractor(Task):
                 exc_info=True,
             )
             return self._create_empty_extraction(doc_text_extraction.doc_id)
+
+    def _roi_filtering(
+        self, text_extractions: List[TextExtraction], map_roi: Optional[MapROI]
+    ) -> List[TextExtraction]:
+        """
+        Prune text blocks if their pixel location isn't in the map ROI
+        """
+        if not map_roi:
+            logger.warning("No map ROI available, skipping ROI filteirng of text")
+            return text_extractions
+
+        try:
+            map_poly = Polygon(map_roi.map_bounds)
+            filtered_text = []
+            for t in text_extractions:
+                text_bounds_list = [(point.x, point.y) for point in t.bounds]
+                text_poly = Polygon(text_bounds_list)
+                if text_poly.intersects(map_poly):
+                    filtered_text.append(t)
+            return filtered_text
+
+        except Exception as e:
+            logger.error(f"Exception with _roi_filtering: {repr(e)}")
+            return text_extractions
 
     def _extract_point_locations(
         self,

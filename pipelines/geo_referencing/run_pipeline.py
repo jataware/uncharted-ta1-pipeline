@@ -30,9 +30,12 @@ from tasks.geo_referencing.entities import (
     GEOREFERENCING_OUTPUT_KEY,
 )
 
-from tasks.metadata_extraction.metadata_extraction import LLM
+from tasks.metadata_extraction.metadata_extraction import (
+    DEFAULT_GPT_MODEL,
+    DEFAULT_OPENAI_API_VERSION,
+    LLM_PROVIDER,
+)
 from util import logging as logging_util
-from typing import List, Optional, Tuple
 
 IMG_FILE_EXT = "tif"
 
@@ -55,34 +58,43 @@ def main():
     parser.add_argument(
         "--state_plane_lookup_filename",
         type=str,
-        default="./data/state_plane_reference.csv",
+        default="data/state_plane_reference.csv",
     )
     parser.add_argument(
         "--state_plane_zone_filename",
         type=str,
-        default="./data/USA_State_Plane_Zones_NAD27.geojson",
+        default="data/USA_State_Plane_Zones_NAD27.geojson",
     )
     parser.add_argument(
         "--state_code_filename",
         type=str,
-        default="./data/state_codes.csv",
+        default="data/state_codes.csv",
     )
     parser.add_argument(
         "--country_code_filename",
         type=str,
-        default="./data/country_codes.csv",
+        default="data/country_codes.csv",
     )
     parser.add_argument(
         "--geocoded_places_filename",
         type=str,
-        default="./data/geocoded_places_reference.json",
+        default="data/geocoded_places_reference.json",
     )
     parser.add_argument(
         "--ocr_gamma_correction",
         type=float,
         default=0.5,
     )
-    parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
+    parser.add_argument("--llm", type=str, default=DEFAULT_GPT_MODEL)
+    parser.add_argument(
+        "--llm_api_version", type=str, default=DEFAULT_OPENAI_API_VERSION
+    )
+    parser.add_argument(
+        "--llm_provider",
+        type=LLM_PROVIDER,
+        choices=list(LLM_PROVIDER),
+        default=LLM_PROVIDER.OPENAI,
+    )
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--project", action="store_true")
     parser.add_argument("--diagnostics", action="store_true")
@@ -131,6 +143,8 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
         parsed.geocoded_places_filename,
         parsed.ocr_gamma_correction,
         parsed.llm,
+        parsed.llm_api_version,
+        parsed.llm_provider,
         parsed.project,
         parsed.diagnostics,
         not parsed.no_gpu,

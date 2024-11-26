@@ -1,6 +1,5 @@
 import logging
 import math
-
 from geopy.distance import geodesic
 
 from tasks.geo_referencing.entities import (
@@ -19,18 +18,15 @@ from tasks.geo_referencing.entities import (
     GEOFENCE_OUTPUT_KEY,
     MapROI,
     ROI_MAP_OUTPUT_KEY,
+    CoordType,
+    CoordSource,
 )
 from tasks.geo_referencing.geo_projection import GeoProjection
-from tasks.geo_referencing.util import get_input_geofence
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
     METADATA_EXTRACTION_OUTPUT_KEY,
 )
-from tasks.metadata_extraction.scale import SCALE_VALUE_OUTPUT_KEY
-
 from typing import Any, Dict, List, Optional, Tuple
-
-import rasterio.transform as riot
 from pyproj import Transformer
 
 
@@ -121,7 +117,9 @@ class GeoReference(Task):
         lon_pts = input.get_data("lons", {})
         lat_pts = input.get_data("lats", {})
 
-        scale_value = input.get_data(SCALE_VALUE_OUTPUT_KEY)
+        # TODO -- this scale_value has always been 0, due to the old ScaleExtractor being disabled
+        # try using the new scale analysis result here
+        scale_value = 0
         im_resize_ratio = input.get_data("im_resize_ratio", 1)
 
         roi_xy = []
@@ -139,9 +137,6 @@ class GeoReference(Task):
         else:
             # since no roi, use whole image as minmax values
             roi_xy_minmax = ([0, input.image.size[1]], [0, input.image.size[0]])
-
-        if not scale_value:
-            scale_value = 0
 
         query_pts = None
         external_query_pts = False
@@ -178,10 +173,10 @@ class GeoReference(Task):
                 lat_pts.clear()
                 for a in anchors:
                     coord = Coordinate(
-                        "lat keypoint",
+                        CoordType.DERIVED_KEYPOINT,
                         f"fallback {a.geo_coord}",
                         a.geo_coord,
-                        "anchor",
+                        CoordSource.ANCHOR,
                         True,
                         pixel_alignment=(
                             (roi_xy_minmax[0][0] + roi_xy_minmax[0][1]) / 2,
@@ -199,10 +194,10 @@ class GeoReference(Task):
                 lon_pts.clear()
                 for a in anchors:
                     coord = Coordinate(
-                        "lon keypoint",
+                        CoordType.DERIVED_KEYPOINT,
                         f"fallback {a.geo_coord}",
                         a.geo_coord,
-                        "anchor",
+                        CoordSource.ANCHOR,
                         False,
                         pixel_alignment=(
                             a.pixel_coord,
@@ -218,6 +213,7 @@ class GeoReference(Task):
         lat_check = list(map(lambda x: x[0], lat_pts))
         num_keypoints = min(len(lon_pts), len(lat_pts))
         keypoint_stats = {}
+        geo_projn: Optional[GeoProjection] = None
         if (
             num_keypoints < 2
             or (abs(max(lon_check) - min(lon_check)) > 20)
@@ -232,11 +228,13 @@ class GeoReference(Task):
             confidence = self._calculate_confidence(lon_pts, lat_pts)
             logger.info(f"confidence of projection is {confidence}")
             geo_projn = GeoProjection(self._poly_order)
-            geo_projn.estimate_pxl2geo_mapping(
+            projn_ok = geo_projn.estimate_pxl2geo_mapping(
                 list(map(lambda x: x[1], lon_pts.items())),
                 list(map(lambda x: x[1], lat_pts.items())),
-                input.image.size,
             )
+            if not projn_ok:
+                logger.warning("geo projection calc was unsuccessful! Forcing to None")
+                geo_projn = None
             keypoint_stats["lats"] = self._count_keypoints(lat_pts)
             keypoint_stats["lons"] = self._count_keypoints(lon_pts)
 
@@ -275,29 +273,6 @@ class GeoReference(Task):
 
         rmse, scale_error = self._score_query_points(query_pts, scale_value)
 
-        # dgdg TEMP
-        # GEOFENCE TESTING
-        clue_point_temp = input.get_request_info("clue_point_temp")  # lon,lat
-        if clue_point_temp:
-            lon_mmgf = geofence.geofence.lon_minmax
-            lat_mmgf = geofence.geofence.lat_minmax
-            geof_dia_size_km = geodesic(
-                (lat_mmgf[0], lon_mmgf[0]), (lat_mmgf[1], lon_mmgf[1])
-            ).km
-            latlon_c_gf = (
-                (lat_mmgf[1] + lat_mmgf[0]) / 2,
-                (lon_mmgf[1] + lon_mmgf[0]) / 2,
-            )
-            geof_diff_km = geodesic(
-                (clue_point_temp[1], clue_point_temp[0]), latlon_c_gf
-            ).km
-
-        else:
-            geof_dia_size_km = 0.0
-            geof_diff_km = 0.0
-
-            # err_dist = geodesic(latlon_gtruth, latlon).km
-
         result = super()._create_result(input)
         result.output[QUERY_POINTS_OUTPUT_KEY] = results
         result.output[RMSE_OUTPUT_KEY] = rmse
@@ -306,7 +281,6 @@ class GeoReference(Task):
             self.EXTERNAL_QUERY_POINT_CRS if external_query_pts else crs
         )
         result.output[KEYPOINTS_OUTPUT_KEY] = keypoint_stats
-        result.output["geofence_debug"] = (geof_diff_km, geof_dia_size_km)  # dgdg
         return result
 
     def _count_keypoints(
@@ -314,7 +288,7 @@ class GeoReference(Task):
     ) -> Dict[str, int]:
         counts = {}
         for _, c in points.items():
-            source = c.get_source()
+            source = str(c.get_source().value)
             if source not in counts:
                 counts[source] = 0
             counts[source] = counts[source] + 1
@@ -534,18 +508,6 @@ class GeoReference(Task):
                 )
 
         return query_pts
-
-    def _update_hemispheres_corners(
-        self,
-        corner_points: List[GroundControlPoint],
-        lon_multiplier: float,
-        lat_multiplier: float,
-    ) -> List[GroundControlPoint]:
-        for cp in corner_points:
-            cp.longitude = abs(cp.longitude) * lon_multiplier
-            cp.latitude = abs(cp.latitude) * lat_multiplier
-
-        return corner_points
 
     def _determine_crs(self, input: TaskInput) -> str:
         # parse extracted metadata

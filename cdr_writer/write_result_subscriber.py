@@ -3,6 +3,8 @@ import logging
 import os
 from io import BytesIO
 from typing import List, Optional
+import requests
+import time
 
 import httpx
 import pika.spec as spec
@@ -13,6 +15,7 @@ from schema.cdr_schemas.feature_results import FeatureResults
 from schema.cdr_schemas.georeference import GeoreferenceResults
 from schema.cdr_schemas.metadata import CogMetaData
 from schema.mappers.cdr import GeoreferenceMapper, get_mapper
+from tasks.common.image_cache import ImageCache
 from tasks.common.io import BytesIOFileWriter, ImageFileReader, JSONFileWriter
 from tasks.common.request_client import OutputType, RequestResult
 from tasks.common.result_subscriber import LaraResultSubscriber
@@ -42,20 +45,23 @@ class WriteResultSubscriber(LaraResultSubscriber):
         vhost="/",
         uid="",
         pwd="",
+        metrics_url="",
     ):
         super().__init__(
             result_queue,
             cdr_host,
             cdr_token,
-            output,
-            workdir,
-            imagedir,
             host=host,
             port=port,
             vhost=vhost,
             uid=uid,
             pwd=pwd,
         )
+        self._metrics_url = metrics_url
+        self._output = output
+        self._workdir = workdir
+        self._image_cache = ImageCache(imagedir)
+        self._image_cache._init_cache()
 
     def _process_lara_result(
         self,
@@ -88,6 +94,11 @@ class WriteResultSubscriber(LaraResultSubscriber):
                 f"processing result for request {result.id} of type {result.output_type}"
             )
 
+            # add metric of job starting
+            if self._metrics_url != "":
+                requests.post(self._metrics_url + "/counter/writer_started?step=1")
+
+            start_time = time.perf_counter()
             match result.output_type:
                 case OutputType.SEGMENTATION:
                     logger.info("segmentation results received")
@@ -103,6 +114,12 @@ class WriteResultSubscriber(LaraResultSubscriber):
                     self._push_georeferencing(result)
                 case _:
                     logger.info("unsupported output type received from queue")
+            elasped_time = time.perf_counter() - start_time
+            if self._metrics_url != "":
+                requests.post(self._metrics_url + "/counter/writer_completed?step=1")
+                requests.post(
+                    self._metrics_url + "/histogram/writer?value=" + str(elasped_time)
+                )
 
         except Exception as e:
             logger.exception(f"Error processing lara result: {e}")

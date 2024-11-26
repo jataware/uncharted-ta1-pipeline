@@ -2,7 +2,12 @@ from typing import List
 from PIL import ImageDraw
 from tasks.common.io import append_to_cache_location
 from tasks.segmentation.segmenter_utils import map_missing
-from tasks.metadata_extraction.metadata_extraction import MetadataExtractor, LLM
+from tasks.metadata_extraction.metadata_extraction import (
+    DEFAULT_GPT_MODEL,
+    DEFAULT_OPENAI_API_VERSION,
+    LLM_PROVIDER,
+    MetadataExtractor,
+)
 from tasks.metadata_extraction.text_filter import TextFilter, TEXT_EXTRACTION_OUTPUT_KEY
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
@@ -41,8 +46,11 @@ class MetadataExtractorPipeline(Pipeline):
         model_data_path: str,
         debug_images=False,
         cdr_schema=False,
-        model=LLM.GPT_4_O,
+        model=DEFAULT_GPT_MODEL,
+        model_api_version=DEFAULT_OPENAI_API_VERSION,
+        provider=LLM_PROVIDER.OPENAI,
         gpu=True,
+        metrics_url: str = "",
     ):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
@@ -81,7 +89,10 @@ class MetadataExtractorPipeline(Pipeline):
             MetadataExtractor(
                 "metadata_extractor",
                 model=model,
+                model_api_version=model_api_version,
+                provider=provider,
                 cache_location=append_to_cache_location(cache_location, "metadata"),
+                metrics_url=metrics_url,
             ),
         ]
 
