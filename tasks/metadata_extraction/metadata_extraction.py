@@ -36,7 +36,7 @@ import requests
 
 logger = logging.getLogger("metadata_extractor")
 
-METADATA_CODE_VER = "0.0.1"
+METADATA_EXTRACT_VER = "0.0.2"
 
 DEFAULT_OPENAI_API_VERSION = "2024-10-21"
 DEFAULT_GPT_MODEL = "gpt-4o"
@@ -455,7 +455,7 @@ class MetadataExtractor(Task):
         attributes = "_".join(
             [
                 "metadata",
-                METADATA_CODE_VER,
+                METADATA_EXTRACT_VER,
                 task_input.raster_id,
                 self._model,
                 str(self._include_place_bounds),
