@@ -18,7 +18,13 @@ services:
     image: uncharted/lara-cdr:{{ tag }}
     command: [
       "--mode", "host",
-      "--host", "rabbitmq"]
+      "--host", "rabbitmq",
+      {%- if cdr_host %}
+      "--cdr_host", {{ cdr_host }},
+      {%- endif %}
+      {%- if cog_host %}
+      "--cog_host", {{ cog_host }},
+      {%- endif %}]
     ports:
       - 5000:5000
     environment:
@@ -47,9 +53,12 @@ services:
       {%- if local %}
       "--workdir", "/workdir",
       "--imagedir", "/imagedir",
-      {% else %}
+      {%- else %}
       "--workdir", {{ work_dir }},
       "--imagedir", {{ image_dir }},
+      {%- endif %}
+      {%- if cdr_host %}
+      "--cdr_host", {{ cdr_host }},
       {%- endif %}
       "--host", "rabbitmq"]
     environment:
