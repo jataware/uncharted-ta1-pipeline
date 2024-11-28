@@ -36,8 +36,7 @@ import requests
 
 logger = logging.getLogger("metadata_extractor")
 
-PLACE_EXTENSION_MAP = {"washington": "washington (state)"}
-METADATA_CODE_VER = "0.0.1"
+METADATA_EXTRACT_VER = "0.0.2"
 
 DEFAULT_OPENAI_API_VERSION = "2024-10-21"
 DEFAULT_GPT_MODEL = "gpt-4o"
@@ -52,6 +51,11 @@ class LLM_PROVIDER(str, Enum):
 
 
 class MetdataLLM(BaseModel):
+    """
+    Metadata extraction output structure that is populated by the LLM.  LangChain generates the prommpt from this
+    structure, and the LLM populates the fields.
+    """
+
     title: str = Field(
         description="The title of the map. If this includes state names, "
         + "county names or quadrangles, still include them in full title. "
@@ -105,11 +109,17 @@ class MetdataLLM(BaseModel):
         + "'Vidal (1949) Rice and Turtle Mountains (1954) Savahia Peak (1975)'",
         default="NULL",
     )
+    crs: str = Field(
+        description="The coordinate reference system (CRS) of the map expressed as an EPSG code. "
+        + "It can be inferred from some combination of the location, base map years, coordinate systems and datum "
+        + "if available.  If that is not possible, it can also be inferred from the map's location and year."
+        + "Examples: EPSG:4267, EPSG:4326, EPSG:3857."
+    )
     utm_zone: int = Field(
-        description="The UTM zone of the map.  If the UTM zone cannot be inferred, return 0.",
+        description="The UTM zone of the map.  This can be inferred from location information, and "
+        + "available coordinate system info.  If the UTM zone cannot be inferred from this information, return 0.",
         default=0,
     )
-
     counties: List[str] = Field(
         description="Counties covered by the map.  These are often listed in the title; "
         + "if they are not, they should be extracted from the map.",
@@ -173,7 +183,11 @@ class PointLocations:
 
 
 class UTMZoneLLM(BaseModel):
-    utm_zone: int = Field(description="The UTM zone of the map", default=0)
+    utm_zone: int = Field(
+        description="The UTM zone of the map.  This can be inferred from location information, and "
+        + "available coordinate system info.  If the UTM zone cannot be inferred from this information, return 0.",
+        default=0,
+    )
 
 
 class QuadranglesLLM(BaseModel):
@@ -192,6 +206,15 @@ class StateCountryLLM(BaseModel):
         description="Country covered by the map expressed using ISO 3166-1 codes."
         + "Examples: 'US', 'CA', 'GB'",
         default="NULL",
+    )
+
+
+class CRSLLM(BaseModel):
+    crs: str = Field(
+        description="The coordinate reference system (CRS) of the map expressed as an EPSG code. "
+        + "It can be inferred from some combination of the location, base map years, coordinate system and datum "
+        + "if available.  If that is not possible, it can also be inferred from the map's location and year(s)."
+        + "Examples: EPSG:4267, EPSG:4326, EPSG:3857."
     )
 
 
@@ -266,6 +289,19 @@ class MetadataExtractor(Task):
         + "{format}"
     )
 
+    CRS_TEMPLATE = (
+        "The following information was extracted from a map using an OCR process:\n"
+        + "country: {country}\n"
+        + "datum: {datum}\n"
+        + "projection: {projection}\n"
+        + "coordinate systems: {coordinate_systems}\n"
+        + "year: {year}\n"
+        + "utm_zone: {utm_zone}\n"
+        + "base map: {base_map}\n"
+        + "Infer the CRS from the fields above.\n"
+        + "{format}"
+    )
+
     # threshold for determining map shape - anything above is considered rectangular
     RECTANGULARITY_THRESHOLD = 0.9
 
@@ -330,6 +366,7 @@ class MetadataExtractor(Task):
         # use the cached result if available
         result = self.fetch_cached_result(doc_id)
         if result:
+            # pretty print the result
             metadata = MetadataExtraction.model_validate(result)
             logger.info(f"Using cached metadata extraction result for key {doc_id}")
             task_result.add_output(METADATA_EXTRACTION_OUTPUT_KEY, result)
@@ -346,10 +383,6 @@ class MetadataExtractor(Task):
 
         if metadata:
             logger.info("Post-processing metadata extraction result")
-            # map state names as needed
-            for i, p in enumerate(metadata.states):
-                if p.lower() in PLACE_EXTENSION_MAP:
-                    metadata.states[i] = PLACE_EXTENSION_MAP[p.lower()]
 
             # normalize scale
             metadata.scale = self._normalize_scale(metadata.scale)
@@ -384,6 +417,11 @@ class MetadataExtractor(Task):
             if int(metadata.utm_zone) == 0:
                 metadata.utm_zone = str(self._extract_utm_zone(metadata))
 
+            if not metadata.crs or metadata.crs == "NULL":
+                crs = self._extract_crs(metadata)
+                metadata.crs = crs
+            logger.info(f"Extracted CRS: {metadata.crs}")
+
             # compute map shape from the segmentation output
             segments = input.data.get(SEGMENTATION_OUTPUT_KEY, None)
             metadata.map_shape = self._compute_shape(segments)
@@ -417,7 +455,7 @@ class MetadataExtractor(Task):
         attributes = "_".join(
             [
                 "metadata",
-                METADATA_CODE_VER,
+                METADATA_EXTRACT_VER,
                 task_input.raster_id,
                 self._model,
                 str(self._include_place_bounds),
@@ -494,6 +532,7 @@ class MetadataExtractor(Task):
                 logger.debug(input_prompt.to_string())
                 chain = prompt_template | self._chat_model | parser
                 response = chain.invoke({"text_str": "\n".join(text)})
+
                 # add placeholders for fields we don't extract
                 response_dict = response.dict()
                 response_dict["quadrangles"] = []
@@ -644,7 +683,6 @@ class MetadataExtractor(Task):
         prompt_template = self._generate_prompt_template(parser, self.UTM_ZONE_TEMPLATE)
         chain = prompt_template | self._chat_model | parser
         response = chain.invoke(args)
-
         return response.utm_zone
 
     def _extract_quadrangles(self, metadata: MetadataExtraction) -> List[str]:
@@ -669,6 +707,41 @@ class MetadataExtractor(Task):
         response = chain.invoke(args)
 
         return self._normalize_quadrangles(response.quadrangles)
+
+    def _extract_crs(self, metadata: MetadataExtraction) -> str:
+        """
+        Infers the CRS from the given metadata using an LLM.
+
+        Args:
+            metadata (MetadataExtraction): The metadata object containing the necessary information.
+
+        Returns:
+            str: The extracted CRS.
+        """
+        logger.info(f"Secondary extraction of CRS")
+
+        args = {
+            "country": metadata.country,
+            "base_map": metadata.base_map,
+            "year": metadata.year,
+            "datum": metadata.datum,
+            "projection": metadata.projection,
+            "coordinate_systems": metadata.coordinate_systems,
+            "utm_zone": metadata.utm_zone,
+        }
+
+        parser = PydanticOutputParser(pydantic_object=CRSLLM)
+        prompt_template = self._generate_prompt_template(parser, self.CRS_TEMPLATE)
+        chain = prompt_template | self._chat_model | parser
+        response = chain.invoke(args)
+
+        # validate the returned CRS to ensure it follows the EPSG format
+        if not re.match(r"EPSG:\d+", response.crs):
+            logger.warning(
+                f"CRS returned from LLM does not follow EPSG format: {response.crs}"
+            )
+            return "NULL"
+        return response.crs
 
     def _extract_text_with_index(
         self, doc_text_extraction: DocTextExtraction
@@ -904,6 +977,7 @@ class MetadataExtractor(Task):
             datum="",
             projection="",
             coordinate_systems=[],
+            crs="",
             utm_zone="",
             base_map="",
             counties=[],
