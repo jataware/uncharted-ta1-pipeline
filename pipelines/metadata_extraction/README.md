@@ -3,7 +3,7 @@
 
 
 This pipeline extracts metadata such as title, year and scale from an input raster map image.  Extracted text is
-combined with a request for the fields of interest into a prompt, which is passed to an [OpenAI GPT-4.0](https://platform.openai.com/docs/models/gpt-4-0) for analysis and extraction.
+combined with a request for the fields of interest into a prompt, which is passed to an [OpenAI GPT-4o](https://platform.openai.com/docs/models/gpt-4o#gpt-4o) for analysis and extraction.
 
 See more info on pipeline tasks here: [../../tasks/README.md](../../tasks/README.md)
 
@@ -18,14 +18,17 @@ The following are the currently extracted fields along with an example of each:
 | Year | 1971 |
 | Scale | 1:24000 |
 | Quadrangle | Mount Union |
-| Vertical Datum | Vertical Datum of 1929 |
 | Coordinate Systems | Arizona Coordinate System, Central Zone |
 | Base Map String | U.S. Geological Survey, 1961 |
 | Projection | Polyconic |
 | Datum | NAD 1927 |
+| Coordinate Reference System (CRS) | EPSG:4267 |
 | Counties | Mariposa |
-| States | Arizona |
-| Country | United States |
+| States | US-AZ |
+| Country | US |
+| Places | Tin Cup Mine, Hickory Butte |
+| Population Centers | Davidson, Dalton's Corners |
+| Language | English |
 
 ### Installation
 
@@ -73,7 +76,7 @@ python3 -m pipelines.metadata_extraction.run_pipeline \
     --output /model/output/dir \
     --workdir /pipeline/working/dir (default is tmp/lara/workdir) \
     --model /path/to/segmentation/model/weights \
-    --llm gpt-4o (which gpt model version to use) \
+    --llm gpt-4o (gpt model string - see OpenAI model page for options) \
     --cdr_schema (if set, pipeline will also output CDR schema JSON objects) \
     --no_gpu (if set, pipeline will force CPU-only processing)
 ```
@@ -105,7 +108,7 @@ python3 -m pipelines.metadata_extraction.run_server \
     --cdr_schema (if set, pipeline will also output CDR schema JSON objects) \
     --no_gpu (if set, pipeline will force CPU-only processing) \
     --imagedir /pipeline/images/working/dir (only needed for request-queue mode) \
-    --rabbit_host (rabbitmq host; only needed for request-queue mode) 
+    --rabbit_host (rabbitmq host; only needed for request-queue mode)
 ```
 
 ### Dockerized deployment
@@ -117,8 +120,8 @@ cd deploy
 export GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_api_credentials.json
 export OPENAI_API_KEY=<OPEN API KEY>
 
-./run.sh /pipeline/working/dir /pipeline/images/working/dir
+./run.sh /pipeline/working/dir /pipeline/image/dir
 ```
 
-Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers. 
+Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers.
 
