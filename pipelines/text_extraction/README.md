@@ -71,7 +71,7 @@ python3 -m pipelines.text_extraction.run_server \
     --gamma_corr 1.0 \
     --rest (if set, run the server in REST mode, instead of resquest-queue mode) \
     --imagedir /pipeline/images/working/dir (only needed for request-queue mode) \
-    --rabbit_host (rabbitmq host; only needed for request-queue mode) 
+    --rabbit_host (rabbitmq host; only needed for request-queue mode)
 ```
 
 ### Dockerized deployment
@@ -85,6 +85,6 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google_api_credentials.json
 ./run.sh /model/working/dir /pipeline/images/working/dir
 ```
 
-Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers. 
+Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers.
 
 

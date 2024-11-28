@@ -28,10 +28,14 @@ logger = logging.getLogger("cdr")
 
 app = Flask(__name__)
 
+# Default CDR values
+DEFAULT_CDR_HOST = "https://api.cdr.land"
+DEFAULT_COG_HOST = "https://s3.amazonaws.com/public.cdr.land/cogs"
+DEFAULT_CDR_CALLBACK_SECRET = "maps rock"
+
+# CDR secrets
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
-CDR_HOST = "https://api.cdr.land"
-COG_PATH = "https://s3.amazonaws.com/public.cdr.land/cogs"
-CDR_CALLBACK_SECRET = "maps rock"
+
 APP_PORT = 5001
 
 LARA_RESULT_QUEUE_NAME = "lara_result_queue"
@@ -45,7 +49,7 @@ BLOCKED_CONNECTION_TIMEOUT = 600
 class Settings:
     cdr_api_token: str
     cdr_host: str
-    cogdir: str
+    cog_host: str
     workdir: str
     imagedir: str
     output: str
@@ -123,7 +127,7 @@ def process_image(image_id: str, request_publisher: LaraRequestPublisher):
     """
 
     logger.info(f"processing image with id {image_id}")
-    image_url = f"{settings.cogdir}/{image_id}.cog.tif"
+    image_url = f"{settings.cog_host}/{image_id}.cog.tif"
 
     # push the request onto the queue
     first_task = settings.sequence[0]
@@ -394,14 +398,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("process", "host"), required=True)
     parser.add_argument("--cog_id", type=str, required=False)
+    parser.add_argument("--cdr_host", type=str, default=DEFAULT_CDR_HOST)
+    parser.add_argument("--cog_host", type=str, default=DEFAULT_COG_HOST)
+    parser.add_argument(
+        "--cdr_callback_secret", type=str, default=DEFAULT_CDR_CALLBACK_SECRET
+    )
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--rabbit_port", type=int, default=5672)
     parser.add_argument("--rabbit_vhost", type=str, default="/")
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
     parser.add_argument("--input", type=str, default=None)
-    parser.add_argument("--cdr_host", type=str, default=CDR_HOST)
-    parser.add_argument("--cogdir", type=str, default=COG_PATH)
     parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument(
         "--sequence",
@@ -416,8 +423,8 @@ def main():
     settings = Settings()
     settings.cdr_api_token = CDR_API_TOKEN
     settings.cdr_host = p.cdr_host
-    settings.cogdir = p.cogdir
-    settings.callback_secret = CDR_CALLBACK_SECRET
+    settings.cog_host = p.cog_host
+    settings.callback_secret = p.cdr_callback_secret
     settings.sequence = p.sequence
     settings.replay_start = p.replay_start if hasattr(p, "replay_start") else None
     settings.replay_end = p.replay_end if hasattr(p, "replay_end") else None

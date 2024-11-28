@@ -48,6 +48,7 @@ class MetadataExtraction(BaseModel):
     datum: str
     projection: str
     coordinate_systems: List[str]
+    crs: str
     utm_zone: str
     base_map: str
     counties: List[str]
