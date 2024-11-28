@@ -37,6 +37,7 @@ pip install -e .[segmentation]
 cd ../pipelines/segmenation
 pip install -e .[segmentation]
 ```
+*Depending on the shell used, the brackets may need to be escaped.*
 
 ### Overview ###
 
@@ -91,7 +92,7 @@ python3 -m pipelines.segmentation.run_server \
     --cdr_schema (if set, pipeline will also output CDR schema JSON objects) \
     --no_gpu (if set, pipeline will force CPU-only processing) \
     --imagedir /pipeline/images/working/dir (only needed for request-queue mode) \
-    --rabbit_host (rabbitmq host; only needed for request-queue mode) 
+    --rabbit_host (rabbitmq host; only needed for request-queue mode)
 
 ```
 
@@ -107,4 +108,4 @@ export AWS_SECRET_ACCESS_KEY=<SECRET KEY>
 ./run.sh /pipeline/working/dir /pipeline/images/working/dir
 ```
 
-Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers. 
+Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers.

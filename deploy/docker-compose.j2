@@ -72,8 +72,10 @@ services:
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     {%- endif %}
+    {%- if writer_replicas %}
     deploy:
       replicas: {{ writer_replicas  }}
+    {%- endif %}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -112,8 +114,10 @@ services:
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
       {%- endif %}
+    {%- if georef_replicas %}
     deploy:
       replicas: {{ georef_replicas  }}
+    {%- endif %}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -153,16 +157,18 @@ services:
     networks:
       - lara
     restart:  on-failure
-    {%- if gpu %}
     deploy:
+      {%- if points_replicas %}
       replicas: {{ points_replicas  }}
+      {%- endif %}
+      {%- if gpu %}
       resources:
           reservations:
             devices:
               - driver: nvidia
                 count: all
                 capabilities: [gpu]
-    {%- endif %}
+      {%- endif %}
 
   segmentation:
     image: uncharted/lara-segmentation:{{ tag }}
@@ -189,8 +195,10 @@ services:
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     {%- endif %}
+    {%- if segmentation_replicas %}
     deploy:
       replicas: {{ segmentation_replicas  }}
+    {%- endif %}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -229,8 +237,10 @@ services:
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     {%- endif %}
+    {%- if metadata_replicas %}
     deploy:
       replicas: {{ metadata_replicas  }}
+    {%- endif %}
     depends_on:
       rabbitmq:
         condition: service_healthy

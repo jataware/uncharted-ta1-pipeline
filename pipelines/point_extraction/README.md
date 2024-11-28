@@ -138,7 +138,7 @@ python3 -m pipelines.point_extraction.run_server \
     --fetch_legend_items (if set, the pipeline will query the CDR for validated legend annotations for a given map input) \
     --no_gpu (if set, pipeline will force CPU-only processing) \
     --imagedir /pipeline/images/working/dir (only needed for request-queue mode) \
-    --rabbit_host (rabbitmq host; only needed for request-queue mode) 
+    --rabbit_host (rabbitmq host; only needed for request-queue mode)
 ```
 
 ### Dockerized deployment
@@ -157,4 +157,4 @@ export CDR_API_TOKEN=<SECRET TOKEN>
 
 The `deploy/build.sh` script can also be used to build the Docker image from source.
 
-Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers. 
+Alternatively, a [Makefile](../../Makefile) is available to handle the building and deploying the various LARA pipeline containers.
