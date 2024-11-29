@@ -12,5 +12,6 @@
     "azure_openai_endpoint": "https://azure/endpoint",
     "google_application_credentials_dir": "~/lara/credentials",
     "tag": "latest",
-    "cdr": true
+    "cdr": true,
+    "llm_provider": "azure"
 }

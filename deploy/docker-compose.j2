@@ -96,7 +96,9 @@ services:
       {%- endif %}
       "--rabbit_host", "rabbitmq",
       "--model", "pipelines/segmentation_weights",
-      "--result_queue", "lara_result_queue"]
+      "--result_queue", "lara_result_queue",
+      "--llm_provider", {{ llm_provider }}
+      ]
     environment:
       {%- if azure_openai_api_key %}
       - AZURE_OPENAI_API_KEY={{ azure_openai_api_key }}
@@ -222,7 +224,8 @@ services:
       {%- endif %}
       "--rabbit_host", "rabbitmq",
       "--model", "pipelines/segmentation_weights",
-      "--result_queue", "lara_result_queue"]
+      "--result_queue", "lara_result_queue",
+      "--llm_provider", {{ llm_provider }}]
     environment:
       {%- if azure_openai_api_key %}
       - AZURE_OPENAI_API_KEY={{ azure_openai_api_key }}
