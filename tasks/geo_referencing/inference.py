@@ -132,7 +132,7 @@ class InferenceCoordinateExtractor(Task):
                 max_pt = max(deg_xy_pts, key=lambda p: p[1][0])
                 min_pt = min(deg_xy_pts, key=lambda p: p[1][0])
                 # get existing lon pt
-                existing_lat_pt = next(iter(lon_pts.values()))
+                existing_lat_pt = next(iter(lat_pts.values()))
                 # estimate the lonlat-per-km resolution
                 lonlat_per_km = ScaleAnalyzer.calc_deg_per_km(
                     (max_pt[0], existing_lat_pt.get_parsed_degree())
