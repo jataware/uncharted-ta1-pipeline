@@ -1,19 +1,17 @@
 import logging
 from copy import deepcopy
 from shapely import box, Point, Polygon
-import numpy as np
 
-from tasks.geo_referencing.coordinates_extractor import (
-    CoordinatesExtractor,
-    CoordinateInput,
-)
+from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.geo_referencing.entities import (
     Coordinate,
     DocGeoFence,
     GeoFenceType,
+    CoordType,
+    CoordSource,
     GEOFENCE_OUTPUT_KEY,
-    SOURCE_GEOCODE,
 )
+from tasks.geo_referencing.util import get_num_keypoints
 from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
     GeocodedPlace,
@@ -21,16 +19,15 @@ from tasks.metadata_extraction.entities import (
     GEOCODED_PLACES_OUTPUT_KEY,
 )
 
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 COORDINATE_CONFIDENCE_GEOCODE = 0.8
 MIN_KEYPOINTS = 4
-IQR_FACTOR = 0.75  # 1.5  # interquartile range factor (for outlier analysis)
 
 logger = logging.getLogger(__name__)
 
 
-class PointGeocoder(CoordinatesExtractor):
+class PointGeocoder(Task):
     """
     Generate georeferencing lat and lon results from the extracted place and population centre geo coordinates
     """
@@ -47,22 +44,12 @@ class PointGeocoder(CoordinatesExtractor):
         self.points_thres = points_thres
         self._use_abs = use_abs  # use abs of lon/lat for geocoding results?
 
-    def _extract_coordinates(
-        self, input: CoordinateInput
-    ) -> Tuple[
-        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
-    ]:
+    def run(self, input: TaskInput) -> TaskResult:
         """
-        Main point geocoding extraction function
+        run the task
         """
-
-        # get any existing lat / lon extractions for this image
-        lon_pts: Dict[Tuple[float, float], Coordinate] = input.input.get_data("lons")
-        lat_pts: Dict[Tuple[float, float], Coordinate] = input.input.get_data("lats")
-        num_keypoints = min(len(lon_pts), len(lat_pts))
-
         # get existing geocoded places
-        geocoded: DocGeocodedPlaces = input.input.parse_data(
+        geocoded: DocGeocodedPlaces = input.parse_data(
             GEOCODED_PLACES_OUTPUT_KEY, DocGeocodedPlaces.model_validate
         )
         geoplaces = []
@@ -72,11 +59,24 @@ class PointGeocoder(CoordinatesExtractor):
                 p for p in geocoded.places if p.place_type in self._place_types
             ]
         if not geoplaces:
-            logger.info("No point-based geocoded places; skipping point geocoder")
-            return lon_pts, lat_pts
+            logger.info(
+                "No point-based geocoded places available; skipping PointGeocoder"
+            )
+            return self._create_result(input)
+
+        # get coordinates so far
+        lons = input.get_data("lons", {})
+        lats = input.get_data("lats", {})
+
+        num_keypoints = get_num_keypoints(lons, lats)
+        if num_keypoints >= 2:
+            logger.info(
+                f"Min number of keypoints = {num_keypoints}; skipping PointGeocoder"
+            )
+            return self._create_result(input)
 
         # get geofence
-        geofence: DocGeoFence = input.input.parse_data(
+        geofence: DocGeoFence = input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
         # prune places not inside the geofence
@@ -85,18 +85,12 @@ class PointGeocoder(CoordinatesExtractor):
             f"Number of geoplaces found within target geofence: {len(geoplaces)}"
         )
 
+        # rank any duplicate results
+        geoplaces = self._rank_duplicates(geoplaces)
+
         # get the coordinates for the geoplaces
         coord_tuples = self._convert_to_coordinates(geoplaces, self._use_abs)
 
-        # do quantile filtering
-        points_thres = self.points_thres
-        if (
-            geofence.geofence.region_type == GeoFenceType.DEFAULT
-            or geofence.geofence.region_type == GeoFenceType.COUNTRY
-        ):
-            # use a lower points threshold if the geofence is very coarse
-            points_thres = 5
-        coord_tuples = self._quantile_filtering(coord_tuples, points_thres)
         # do confidence filtering
         coord_tuples = self._confidence_filtering(coord_tuples, num_keypoints)
 
@@ -105,10 +99,15 @@ class PointGeocoder(CoordinatesExtractor):
             f"Number of final lat/lon coords found from point geocoding: {len(coord_tuples)}"
         )
         for lon_coord, lat_coord in coord_tuples:
-            lon_pts[lon_coord.to_deg_result()[0]] = lon_coord
-            lat_pts[lat_coord.to_deg_result()[0]] = lat_coord
+            lons[lon_coord.to_deg_result()[0]] = lon_coord
+            lats[lat_coord.to_deg_result()[0]] = lat_coord
 
-        return lon_pts, lat_pts
+        # update the coordinates lists
+        result = self._create_result(input)
+        result.output["lons"] = lons
+        result.output["lats"] = lats
+
+        return result
 
     def _geofence_filtering(
         self, geofence: DocGeoFence, geoplaces: List[GeocodedPlace]
@@ -166,6 +165,51 @@ class PointGeocoder(CoordinatesExtractor):
         """
         return (point[0].geo_x, point[0].geo_y)
 
+    def _rank_duplicates(self, geoplaces: List[GeocodedPlace]) -> List[GeocodedPlace]:
+        """
+        rank any duplicate geocoded places based on centroid of all geoplaces
+        """
+
+        do_ranking = any(len(p.results) > 1 for p in geoplaces)
+        if not do_ranking:
+            # no geoplace duplicates found; skip ranking
+            return geoplaces
+        try:
+            # calc the weighted centroid of all geoplace points
+            lons_sum = 0.0
+            lats_sum = 0.0
+            weight_sum = 0.0
+            for p in geoplaces:
+                weight = 1.0 / float(len(p.results))
+                for c in p.results:
+                    lonlat = self._point_to_coordinate(c.coordinates)
+                    lons_sum += weight * lonlat[0]
+                    lats_sum += weight * lonlat[1]
+                    weight_sum += weight
+            centroid = (lons_sum / weight_sum, lats_sum / weight_sum)
+            centroid = Point(centroid)
+
+            # sort duplicate geo-places by ascending distance to the centroid
+            geoplaces_ranked = []
+            for p in geoplaces:
+                if len(p.results) > 1:
+                    coords = []
+                    for c in p.results:
+                        lonlat = self._point_to_coordinate(c.coordinates)
+                        pt = Point(lonlat[0], lonlat[1])
+                        dist = pt.distance(centroid)
+                        coords.append((c, dist))
+                    coords.sort(key=lambda x: x[1])
+                    p.results = [c[0] for c in coords]
+                geoplaces_ranked.append(p)
+        except Exception as e:
+            logger.warning(
+                f"Exception ranking duplicate geoplace results, {repr(e)}; skipping ranking operation"
+            )
+            return geoplaces
+
+        return geoplaces_ranked
+
     def _convert_to_coordinates(
         self, places: List[GeocodedPlace], use_abs: bool = True
     ) -> List[Tuple[Coordinate, Coordinate]]:
@@ -198,60 +242,28 @@ class PointGeocoder(CoordinatesExtractor):
             lat_val = abs(geocoord.geo_y) if use_abs else geocoord.geo_y
 
             lon_pt = Coordinate(
-                "point derived lon",
+                CoordType.GEOCODED_POINT,
                 p.place_name,
                 lon_val,
-                SOURCE_GEOCODE,
+                CoordSource.GEOCODER,
                 False,
                 pixel_alignment=pixel_alignment,
                 confidence=confidence,
-                derivation="geocoded",
             )
             lat_pt = Coordinate(
-                "point derived lat",
+                CoordType.GEOCODED_POINT,
                 p.place_name,
                 lat_val,
-                SOURCE_GEOCODE,
+                CoordSource.GEOCODER,
                 True,
                 pixel_alignment=pixel_alignment,
                 confidence=confidence,
-                derivation="geocoded",
             )
 
             pixels.add(pixel_alignment)
             coord_tuples.append((lon_pt, lat_pt))
 
         return coord_tuples
-
-    def _quantile_filtering(
-        self, coord_tuples: List[Tuple[Coordinate, Coordinate]], points_thres: int
-    ) -> List[Tuple[Coordinate, Coordinate]]:
-        """
-        quantile filtering of lon and lat pairs to remove outliers
-        (similar to box / whisker quantile analysis)
-        """
-        if len(coord_tuples) <= points_thres:
-            return coord_tuples
-
-        lon_arr = np.array([x[0].get_parsed_degree() for x in coord_tuples])
-        lon_25 = np.percentile(lon_arr, 25)  # q1
-        lon_75 = np.percentile(lon_arr, 75)  # q3
-        lon_iqr_thres = (lon_75 - lon_25) * IQR_FACTOR
-
-        lat_arr = np.array([x[1].get_parsed_degree() for x in coord_tuples])
-        lat_25 = np.percentile(lat_arr, 25)  # q1
-        lat_75 = np.percentile(lat_arr, 75)  # q3
-        lat_iqr_thres = (lat_75 - lat_25) * IQR_FACTOR
-
-        coords_filtered = []
-        for c_lon, c_lat in coord_tuples:
-            lon = c_lon.get_parsed_degree()
-            lat = c_lat.get_parsed_degree()
-            if (lon_25 - lon_iqr_thres <= lon <= lon_75 + lon_iqr_thres) and (
-                lat_25 - lat_iqr_thres <= lat <= lat_75 + lat_iqr_thres
-            ):
-                coords_filtered.append((c_lon, c_lat))
-        return coords_filtered
 
     def _confidence_filtering(
         self,

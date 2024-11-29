@@ -9,6 +9,7 @@ from tasks.geo_referencing.entities import (
     GEOFENCE_OUTPUT_KEY,
     Coordinate,
     GeoFenceType,
+    CoordStatus,
 )
 from tasks.metadata_extraction.entities import MetadataExtraction
 from tasks.geo_referencing.entities import (
@@ -43,6 +44,18 @@ def get_distinct_degrees(coords: Dict[Tuple[float, float], Coordinate]) -> int:
     """
     coords_distinct = set(map(lambda x: x[1].get_parsed_degree(), coords.items()))
     return len(coords_distinct)
+
+
+def get_num_keypoints(
+    lons: Dict[Tuple[float, float], Coordinate],
+    lats: Dict[Tuple[float, float], Coordinate],
+) -> int:
+    """
+    get the minimum number of lats and lons with status=OK
+    """
+    num_lats = len(list(filter(lambda c: c._status == CoordStatus.OK, lats.values())))
+    num_lons = len(list(filter(lambda c: c._status == CoordStatus.OK, lons.values())))
+    return min(num_lats, num_lons)
 
 
 def is_coord_from_source(
