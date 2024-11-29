@@ -229,7 +229,7 @@ services:
     environment:
       {%- if azure_openai_api_key %}
       - AZURE_OPENAI_API_KEY={{ azure_openai_api_key }}
-      - AZURE_OPENAI_ENDPOINT= {{ azure_openai_endpoint }}
+      - AZURE_OPENAI_ENDPOINT={{ azure_openai_endpoint }}
       {%- else %}
       - OPENAI_API_KEY={{ openai_api_key }}
       {%- endif %}
