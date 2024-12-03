@@ -166,7 +166,7 @@ class OutlierFilter(Task):
             return (coords, coords_excluded, None)
 
         try:
-            # --- do regression analysis 2D pixel values (x) vs coord degrees (y)
+            # --- do regression analysis, pixel values (x) vs coord degrees (y)
             X = []
             y = []
             for c in coords.values():
@@ -196,7 +196,7 @@ class OutlierFilter(Task):
                 regressor.fit(X, y)
             except Exception as ex_reg:
                 logger.debug(
-                    "Exception during regression calc; re-try without slope value contraint"
+                    "Exception during regression calc; re-trying without slope value constraint"
                 )
                 slope_expected = 0.0
                 regressor.fit(X, y)

@@ -169,7 +169,7 @@ class GeoreferencingPipeline(Pipeline):
             # Creates a geofence based on the country and state geocoded locations
             GeoFencer("country / state geofence"),
             # Extract and analyze map scale info
-            ScaleAnalyzer("scale analyzer", dpi=300),
+            ScaleAnalyzer("scale analyzer", dpi_default=300),
             # Extracts all the possible geo coordinates from the UNFILTERED text
             GeoCoordinatesExtractor("geo coordinates extractor"),
             # Filters out any coordinates that are not in the buffered region of interest (ie. around the outside of the map poly)
