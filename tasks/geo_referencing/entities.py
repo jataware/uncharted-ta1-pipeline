@@ -52,7 +52,7 @@ class MapScale(BaseModel):
     dpi: int
     scale_pixels: float
     km_per_pixel: float
-    degrees_per_pixel: float
+    lonlat_per_pixel: Tuple[float, float]
 
 
 class GroundControlPoint(BaseModel):

@@ -1,5 +1,6 @@
 import logging
 from geopy.distance import distance as geo_distance
+from PIL.Image import Image
 from tasks.common.task import Task, TaskInput, TaskResult
 from tasks.metadata_extraction.entities import (
     MetadataExtraction,
@@ -33,8 +34,8 @@ class ScaleAnalyzer(Task):
     using info from the metadata and geofence tasks
     """
 
-    def __init__(self, task_id: str, dpi: int = DPI_DEFAULT):
-        self._dpi = dpi
+    def __init__(self, task_id: str, dpi_default: int = DPI_DEFAULT):
+        self._dpi_default = dpi_default
         super().__init__(task_id)
 
     def run(self, input: TaskInput) -> TaskResult:
@@ -48,10 +49,14 @@ class ScaleAnalyzer(Task):
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
 
+        # get input raster DPI
+        dpi = self._get_raster_dpi(input.image)
+
         scale_raw = ""
         scale_pixels = 0.0
         km_per_pixel = 0.0
-        deg_per_pixel = 0.0
+        lon_per_km = 0.0
+        lat_per_km = 0.0
         if metadata:
             # normalize the extracted scale
             scale_raw = metadata.scale.lower().strip()
@@ -60,8 +65,8 @@ class ScaleAnalyzer(Task):
                 logger.info(f"Map pixel scale extracted as: 1 to {int(scale_pixels)}")
 
             # convert scale to the expected km / pixel
-            if self._dpi > 0.0:
-                km_per_pixel = scale_pixels * KM_PER_INCH / self._dpi
+            if dpi > 0.0:
+                km_per_pixel = scale_pixels * KM_PER_INCH / dpi
 
                 lon_c = 0.0
                 lat_c = 0.0
@@ -75,15 +80,15 @@ class ScaleAnalyzer(Task):
                         + geofence.geofence.lat_minmax[1]
                     ) / 2
                 # calc expected degrees per pixel
-                deg_per_pixel = self._calc_deg_per_pixel((lon_c, lat_c), km_per_pixel)
+                lon_per_km, lat_per_km = ScaleAnalyzer.calc_deg_per_km((lon_c, lat_c))
 
         # generate the map scale result
         scale_result = MapScale(
             scale_raw=scale_raw,
-            dpi=self._dpi,
+            dpi=dpi,
             scale_pixels=scale_pixels,
             km_per_pixel=km_per_pixel,
-            degrees_per_pixel=deg_per_pixel,
+            lonlat_per_pixel=(lon_per_km * km_per_pixel, lat_per_km * km_per_pixel),
         )
         result = self._create_result(input)
         result.add_output(MAP_SCALE_OUTPUT_KEY, scale_result.model_dump())
@@ -111,11 +116,35 @@ class ScaleAnalyzer(Task):
             return 0.0
         return scale
 
-    def _calc_deg_per_pixel(
-        self, lonlat_pt: Tuple[float, float], km_per_pixel: float
-    ) -> float:
+    def _get_raster_dpi(self, im: Image) -> int:
         """
-        Estimate the degrees-per-pixel resolution for a map given a lon/lat point of interest
+        Parse the input raster's DPI (dots-per-inch) value
+        """
+
+        DPI_MIN = 72
+        try:
+            dpi_xy: Tuple[int, int] = im.info["dpi"]
+            # use the average x,y DPI value, if they are slightly different
+            dpi = int((dpi_xy[0] + dpi_xy[1]) / 2)
+            if dpi < DPI_MIN:
+                logger.info(
+                    f"Input raster DPI is {dpi} which is too low, using default DPI value for scale analysis: {self._dpi_default}"
+                )
+                dpi = self._dpi_default
+            else:
+                logger.info(f"Input raster DPI: {dpi}")
+            return dpi
+        except Exception as ex:
+            logger.warning(
+                f"Exception parsing raster DPI; using default DPI value for scale analysis: {self._dpi_default} - {repr(ex)}"
+            )
+            return self._dpi_default
+
+    @staticmethod
+    def calc_deg_per_km(lonlat_pt: Tuple[float, float]) -> Tuple[float, float]:
+        """
+        Estimate the degrees-per-km resolution for a lon/lat point of interest
+        Returns a tuple: (lon_per_km, lat_per_km)
         """
         try:
             pt_north = geo_distance(kilometers=1).destination(
@@ -124,13 +153,11 @@ class ScaleAnalyzer(Task):
             pt_east = geo_distance(kilometers=1).destination(
                 (lonlat_pt[1], lonlat_pt[0]), bearing=90
             )
-            # degrees per km is avg of lat and lon differences at the pt of interest
-            deg_per_km = (
-                abs(pt_north.latitude - lonlat_pt[1])
-                + abs(pt_east.longitude - lonlat_pt[0])
-            ) / 2
 
-            return km_per_pixel * deg_per_km
+            lon_per_km = abs(pt_east.longitude - lonlat_pt[0])
+            lat_per_km = abs(pt_north.latitude - lonlat_pt[1])
+
+            return (lon_per_km, lat_per_km)
         except Exception as e:
-            logger.warning(f"Exception calculating degrees-per-pixel: {repr(e)}")
-            return 0
+            logger.warning(f"Exception calculating degrees-per-km: {repr(e)}")
+            return (0.0, 0.0)
