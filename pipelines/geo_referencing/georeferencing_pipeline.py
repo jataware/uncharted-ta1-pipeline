@@ -10,7 +10,7 @@ from pipelines.geo_referencing.output import (
 )
 from tasks.common.io import append_to_cache_location
 from tasks.common.pipeline import OutputCreator, Pipeline
-from tasks.common.task import EvaluateHalt, Task, TaskInput
+from tasks.common.task import EvaluateHalt, Task
 from tasks.geo_referencing.coordinates_extractor import (
     GeoCoordinatesExtractor,
 )
@@ -22,6 +22,7 @@ from tasks.geo_referencing.entities import (
     QUERY_POINTS_OUTPUT_KEY,
     SCORING_OUTPUT_KEY,
     SUMMARY_OUTPUT_KEY,
+    CoordSource,
 )
 from tasks.geo_referencing.state_plane_extractor import StatePlaneExtractor
 from tasks.geo_referencing.utm_extractor import UTMCoordinatesExtractor
@@ -33,7 +34,7 @@ from tasks.geo_referencing.filter import (
 from tasks.geo_referencing.geo_fencing import GeoFencer
 from tasks.geo_referencing.scale_analyzer import ScaleAnalyzer
 from tasks.geo_referencing.georeference import GeoReference
-from tasks.geo_referencing.geocode import PointGeocoder, BoxGeocoder
+from tasks.geo_referencing.point_geocoder import PointGeocoder
 from tasks.geo_referencing.ground_control import CreateGroundControlPoints
 from tasks.geo_referencing.inference import InferenceCoordinateExtractor
 from tasks.geo_referencing.roi_extractor import ROIExtractor
@@ -99,7 +100,7 @@ class GeoreferencingPipeline(Pipeline):
         points_geocoder = NominatimGeocoder(
             10,
             geocoding_cache_points,
-            5,
+            4,
             country_code_filename=country_code_filename,
             state_code_filename=state_code_filename,
             geocoded_places_filename=geocoded_places_filename,
@@ -175,7 +176,9 @@ class GeoreferencingPipeline(Pipeline):
             # Filters out any coordinates that are not in the buffered region of interest (ie. around the outside of the map poly)
             ROIFilter("region of interest coord filter"),
             # Test for outliers in each of the X and Y directions independently using linear regression
-            OutlierFilter("lat/lon outlier filter"),
+            OutlierFilter(
+                "lat/lon outlier filter", coord_source_check=[CoordSource.LAT_LON]
+            ),
             # Infer addtional points in a given direction if there are insufficient points in that direction
             InferenceCoordinateExtractor("lat/lon inference"),
             # Extract corner points from the map area
@@ -190,7 +193,10 @@ class GeoreferencingPipeline(Pipeline):
                 state_code_filename,
             ),
             # Test UTM coords for outliers in each of the X and Y directions independently using linear regression
-            OutlierFilter("UTM outlier filter"),
+            OutlierFilter(
+                "UTM outlier filter",
+                coord_source_check=[CoordSource.UTM, CoordSource.STATE_PLANE],
+            ),
             # Filter out UTM or state plane coords if sufficient lat/lon coords are present
             UTMStatePlaneFilter("UTM / state plane coordinate filter"),
             # Infer addtional points in a given direction if there are insufficient points in that direction
@@ -202,19 +208,13 @@ class GeoreferencingPipeline(Pipeline):
                 run_bounds=False,
                 run_points=True,
                 run_centres=True,
-                should_run=self._run_step,
             ),
-            # Generate georeferencing points from the full set of place and population centre geo coordinates
+            # Generate georeferencing keypoints from the place and population centre geo coordinates
             PointGeocoder(
-                "geocoded point transformation",
-                [GeoPlaceType.POINT, GeoPlaceType.POPULATION],
-                geocoder_thresh,
+                "point-based geocoder", [GeoPlaceType.POINT, GeoPlaceType.POPULATION]
             ),
-            # Generate georeferencing points from the extent of the place and population centre geo coordinates
-            BoxGeocoder(
-                "geocoded box transformation",
-                [GeoPlaceType.POINT, GeoPlaceType.POPULATION],
-                geocoder_thresh,
+            OutlierFilter(
+                "geocoder outlier filter", coord_source_check=[CoordSource.GEOCODER]
             ),
             # Finalize coordinate extractions (ie checks for co-linear or ill-conditioned coord spacing)
             FinalizeCoordinates("finalize coordinates"),
@@ -241,29 +241,4 @@ class GeoreferencingPipeline(Pipeline):
         if projected:
             outputs.append(ProjectedMapOutput(PROJECTED_MAP_OUTPUT_KEY))
 
-        super().__init__(
-            "georeferencing_roi_poly_fixed", "Georeferencing", outputs, tasks
-        )
-
-    def _run_step(self, input: TaskInput) -> bool:
-        """
-        Determines whether or not a step should run based on the identified key points
-
-        Args:
-            input (TaskInput): The input to the task
-
-        Returns:
-            bool: True if the step should be run
-        """
-        lats = input.get_data("lats", {})
-        lons = input.get_data("lons", {})
-
-        # TODO -- could filter on Coords with status OK?
-        # lats = list(filter(lambda c: c._status == CoordStatus.OK, lats.values()))
-        # lons = list(filter(lambda c: c._status == CoordStatus.OK, lons.values()))
-
-        lats_distinct = set(map(lambda x: x[1].get_parsed_degree(), lats.items()))
-        lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lons.items()))
-        num_keypoints = min(len(lons_distinct), len(lats_distinct))
-        logger.info(f"running step due to insufficient key points: {num_keypoints < 2}")
-        return num_keypoints < 2
+        super().__init__("georeferencing", "Georeferencing", outputs, tasks)

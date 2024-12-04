@@ -11,6 +11,7 @@ from tasks.geo_referencing.entities import (
     Coordinate,
     CoordType,
     CoordSource,
+    CoordStatus,
 )
 from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
 from tasks.geo_referencing.util import (
@@ -135,12 +136,11 @@ class CoordinatesExtractor(Task):
 
     def _should_run(self, input: CoordinateInput) -> bool:
 
-        # TODO: could check the number of lats and lons with status == OK
-        # lats = list(filter(lambda c: c._status == CoordStatus.OK, lats.values()))
-        # lons = list(filter(lambda c: c._status == CoordStatus.OK, lons.values()))
-
         lats = input.input.get_data("lats", {})
         lons = input.input.get_data("lons", {})
+        lats = list(filter(lambda c: c._status == CoordStatus.OK, lats.values()))
+        lons = list(filter(lambda c: c._status == CoordStatus.OK, lons.values()))
+
         num_keypoints = min(len(lons), len(lats))
         return num_keypoints < 2
 
