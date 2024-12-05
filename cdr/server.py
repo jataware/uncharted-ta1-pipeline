@@ -36,7 +36,7 @@ DEFAULT_CDR_CALLBACK_SECRET = "maps rock"
 # CDR secrets
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 
-APP_PORT = 5001
+DEFAULT_APP_PORT = 5001
 
 LARA_RESULT_QUEUE_NAME = "lara_result_queue"
 
@@ -324,7 +324,7 @@ def cdr_resend_recent_events(start_time: datetime, end_time: Optional[datetime] 
             logger.error(f"response: {response.text}")
 
 
-def cdr_startup(host: str):
+def cdr_startup(host_url: str):
     """
     Initialize the CDR system startup process.
     This function performs the following tasks:
@@ -353,7 +353,7 @@ def cdr_startup(host: str):
                     break
 
     # make it accessible from the outside
-    settings.callback_url = f"{host}/process_event"
+    settings.callback_url = f"{host_url}/process_event"
 
     register_cdr_system()
 
@@ -365,13 +365,19 @@ def cdr_startup(host: str):
         cdr_resend_recent_events(settings.replay_start, settings.replay_end)
 
 
-def start_app():
+def start_app(app_port: int = DEFAULT_APP_PORT, webhook_url: Optional[str] = None):
     # forward ngrok port
-    logger.info("using ngrok to forward ports")
-    listener = ngrok.forward(APP_PORT, authtoken_from_env=True)
-    cdr_startup(listener.url())
+    url = webhook_url
+    if not url:
+        logger.info("using ngrok to forward ports")
+        listener = ngrok.forward(app_port, authtoken_from_env=True)
+        url = listener.url()
+    else:
+        logger.info(f"using provided url {url}")
 
-    app.run(host="0.0.0.0", port=APP_PORT)
+    cdr_startup(url)
+
+    app.run(host="0.0.0.0", port=app_port)
 
 
 def valid_date(s) -> datetime:
@@ -403,6 +409,8 @@ def main():
     parser.add_argument(
         "--cdr_callback_secret", type=str, default=DEFAULT_CDR_CALLBACK_SECRET
     )
+    parser.add_argument("--cdr_callback_url", type=str, default=None)
+    parser.add_argument("--app_port", type=int, default=DEFAULT_APP_PORT)
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--rabbit_port", type=int, default=5672)
     parser.add_argument("--rabbit_vhost", type=str, default="/")
@@ -474,7 +482,7 @@ def main():
 
     # either start the flask app if host mode selected or run the image specified if in process mode
     if p.mode == "host":
-        start_app()
+        start_app(p.app_port, p.cdr_callback_url)
     elif p.mode == "process":
         cdr_startup("https://mock.example")
         if p.input:
