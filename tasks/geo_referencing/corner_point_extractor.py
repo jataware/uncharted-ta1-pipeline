@@ -3,7 +3,7 @@ import logging
 from shapely import LineString, Point, Polygon
 
 from tasks.common.task import Task, TaskInput, TaskResult
-from tasks.geo_referencing.entities import Coordinate
+from tasks.geo_referencing.entities import Coordinate, CoordType
 
 from typing import Dict, Tuple
 
@@ -115,7 +115,7 @@ class CornerPointExtractor(Task):
                             lon_coord.set_pixel_alignment(
                                 (intersection.x, intersection.y)
                             )
-                            lon_coord._is_corner = True
+                            lon_coord._type = CoordType.CORNER
                             lon_pts_out[lon_key_mod] = lon_coord
                             lon_pts_modified.append(i_lon)
 
@@ -123,7 +123,7 @@ class CornerPointExtractor(Task):
                             lat_coord.set_pixel_alignment(
                                 (intersection.x, intersection.y)
                             )
-                            lat_coord._is_corner = True
+                            lat_coord._type = CoordType.CORNER
                             lat_pts_out[lat_key_mod] = lat_coord
                             lat_pts_modified.append(i_lat)
 

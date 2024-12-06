@@ -16,7 +16,11 @@ from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
 from tasks.common.io import ImageFileInputIterator, ImageFileWriter, JSONFileWriter
-from tasks.metadata_extraction.metadata_extraction import LLM, LLM_PROVIDER
+from tasks.metadata_extraction.metadata_extraction import (
+    DEFAULT_GPT_MODEL,
+    DEFAULT_OPENAI_API_VERSION,
+    LLM_PROVIDER,
+)
 from util import logging as logging_util
 
 
@@ -32,7 +36,10 @@ def main():
     parser.add_argument("--model", type=str, default=None)
     parser.add_argument("--cdr_schema", action="store_true")
     parser.add_argument("--debug_images", action="store_true")
-    parser.add_argument("--llm", type=LLM, choices=list(LLM), default=LLM.GPT_4_O)
+    parser.add_argument("--llm", type=str, default=DEFAULT_GPT_MODEL)
+    parser.add_argument(
+        "--llm_api_version", type=str, default=DEFAULT_OPENAI_API_VERSION
+    )
     parser.add_argument(
         "--llm_provider",
         type=LLM_PROVIDER,
@@ -58,6 +65,7 @@ def main():
         p.debug_images,
         p.cdr_schema,
         p.llm,
+        p.llm_api_version,
         p.llm_provider,
         not p.no_gpu,
     )

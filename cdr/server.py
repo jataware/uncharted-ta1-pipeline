@@ -7,6 +7,10 @@ import ngrok
 import os
 import requests
 
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from util.logging import config_logger
+
 from flask import Flask, request, Response
 
 from cdr.chaining_result_subscriber import ChainingResultSubscriber
@@ -16,25 +20,23 @@ from tasks.common.request_client import (
     METADATA_REQUEST_QUEUE,
     POINTS_REQUEST_QUEUE,
     SEGMENTATION_REQUEST_QUEUE,
-    Request,
 )
 
-from schema.mappers.cdr import get_mapper
 from schema.cdr_schemas.events import MapEventPayload
-
-from typing import Any, Dict, List, Optional
-
-from util.logging import config_logger
 
 logger = logging.getLogger("cdr")
 
 app = Flask(__name__)
 
+# Default CDR values
+DEFAULT_CDR_HOST = "https://api.cdr.land"
+DEFAULT_COG_HOST = "https://s3.amazonaws.com/public.cdr.land/cogs"
+DEFAULT_CDR_CALLBACK_SECRET = "maps rock"
+
+# CDR secrets
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
-CDR_HOST = "https://api.cdr.land"
-COG_PATH = "https://s3.amazonaws.com/public.cdr.land/cogs"
-CDR_CALLBACK_SECRET = "maps rock"
-APP_PORT = 5001
+
+DEFAULT_APP_PORT = 5001
 
 LARA_RESULT_QUEUE_NAME = "lara_result_queue"
 
@@ -47,7 +49,7 @@ BLOCKED_CONNECTION_TIMEOUT = 600
 class Settings:
     cdr_api_token: str
     cdr_host: str
-    cogdir: str
+    cog_host: str
     workdir: str
     imagedir: str
     output: str
@@ -56,10 +58,27 @@ class Settings:
     registration_id: Dict[str, str] = {}
     rabbitmq_host: str
     sequence: List[str] = []
+    replay_start: Optional[datetime]
+    replay_end: Optional[datetime]
 
 
 @app.route("/process_event", methods=["POST"])
 def process_cdr_event():
+    """
+    Processes a CDR event received via an HTTP request.
+    The function handles different types of events specified in the
+    `evt["event"]` field. Supported events include "ping" and
+    "map.process". For "map.process" events, it validates the payload
+    and initiates a sequence of tasks by publishing a request to a
+    message queue. Logs are generated for each step of the process,
+    including the start of the event callback, the type of event
+    received, and any exceptions that occur during processing.
+
+    Returns:
+        Response: A Response object with a JSON payload indicating
+        success.
+    """
+
     logger.info("event callback started")
     evt = request.get_json(force=True)
     logger.info(f"event data received {evt['event']}")
@@ -95,8 +114,20 @@ def process_cdr_event():
 
 
 def process_image(image_id: str, request_publisher: LaraRequestPublisher):
+    """
+    Processes an image by its ID and publishes a request to the appropriate queue.
+
+    Args:
+        image_id (str): The ID of the image to be processed.
+        request_publisher (LaraRequestPublisher): An instance of LaraRequestPublisher to
+            publish the request.
+
+    Returns:
+        None
+    """
+
     logger.info(f"processing image with id {image_id}")
-    image_url = f"{settings.cogdir}/{image_id}.cog.tif"
+    image_url = f"{settings.cog_host}/{image_id}.cog.tif"
 
     # push the request onto the queue
     first_task = settings.sequence[0]
@@ -108,6 +139,26 @@ def process_image(image_id: str, request_publisher: LaraRequestPublisher):
 
 
 def register_cdr_system():
+    """
+    Registers the CDR system with the specified settings.
+    This function iterates over the sequence of pipelines defined in the settings
+    and registers each pipeline system with the CDR. The first pipeline is registered
+    for all events, while subsequent pipelines are registered only for the "ping" event.
+    The registration details include the system name, version, callback URL, webhook secret,
+    and events. If the registration request fails, the function logs an error message and
+    exits the program. Upon successful registration, the registration ID is stored in the
+    settings for future reference.
+
+    Raises:
+        SystemExit: If the registration request fails.
+
+    Logs:
+        Info: When a system is being registered and upon successful registration.
+        Error: If the registration request fails.
+
+    Returns:
+        None
+    """
 
     for i, pipeline in enumerate(settings.sequence):
         system_name = ChainingResultSubscriber.PIPELINE_SYSTEM_NAMES[pipeline]
@@ -147,6 +198,18 @@ def register_cdr_system():
 
 
 def get_cdr_registrations() -> List[Dict[str, Any]]:
+    """
+    Fetches the list of existing registrations from the CDR.
+
+    This function sends a GET request to the CDR listing endpoint using an authorization
+    token and retrieves the list of registrations associated with the current user.
+
+    Returns:
+        List[Dict[str, Any]]: A list of dictionaries containing registration details.
+
+    Raises:
+        httpx.HTTPStatusError: If the request to the CDR endpoint fails.
+    """
     logger.info("getting list of existing registrations in CDR")
 
     # query the listing endpoint in CDR
@@ -162,6 +225,16 @@ def get_cdr_registrations() -> List[Dict[str, Any]]:
 
 
 def cdr_unregister(registration_id: str):
+    """
+    Unregister a user from the CDR service.
+    This function sends a DELETE request to the CDR service to unregister a user
+    based on the provided registration ID.
+    Args:
+        registration_id (str): The unique identifier for the user's registration.
+    Raises:
+        httpx.HTTPStatusError: If the request to the CDR service fails.
+    """
+
     headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
     client = httpx.Client(follow_redirects=True)
     client.delete(
@@ -171,6 +244,15 @@ def cdr_unregister(registration_id: str):
 
 
 def cdr_clean_up():
+    """
+    Clean up the CDR by unregistering the system.
+    This function logs the process of unregistering the system identified by
+    `settings.registration_id` from the CDR. It iterates through the pipelines
+    specified in `settings.sequence` and unregisters each one.
+    Logging:
+        Logs the start and completion of the unregistration process for each pipeline.
+    """
+
     logger.info(f"unregistering system {settings.registration_id} with cdr")
     # delete our registered system at CDR on program end
     for pipeline in settings.sequence:
@@ -178,7 +260,85 @@ def cdr_clean_up():
         logger.info(f"system {settings.registration_id} no longer registered with cdr")
 
 
-def cdr_startup(host: str):
+def cdr_resend_recent_events(start_time: datetime, end_time: Optional[datetime] = None):
+    """
+    Resend recent 'map.process' events from the CDR system within a specified
+    time range.
+
+    This function fetches notifications for a specific system and version,
+    filters the events based on the provided start and end times, and resends
+    the filtered notifications.
+
+    Args:
+        start_time (datetime): The start time to filter events.
+        end_time (Optional[datetime], optional): The end time to filter events.
+        Defaults to the current time if not provided.
+    """
+
+    headers = {"Authorization": f"Bearer {settings.cdr_api_token}"}
+
+    first_system = ChainingResultSubscriber.PIPELINE_SYSTEM_NAMES[settings.sequence[0]]
+    first_version = ChainingResultSubscriber.PIPELINE_SYSTEM_VERSIONS[
+        settings.sequence[0]
+    ]
+
+    # fetch the notifications for this system
+    client = httpx.Client(follow_redirects=True)
+    response = client.get(
+        f"{settings.cdr_host}/user/me/notifications/{first_system}?version={first_version}",
+        headers=headers,
+    )
+    # validate the request was successful
+    if response.status_code != 200:
+        logger.error("failed to fetch events from cdr")
+        logger.error(f"response: {response.text}")
+        return []
+    response = json.loads(response.content)
+
+    if not end_time:
+        end_time = datetime.now()
+
+    # get map.process events between start_time and end_time
+    notification_ids: list[str] = [
+        e["id"]
+        for e in response
+        if e["event"]["event"] == "map.process"
+        and start_time
+        <= datetime.strptime(e["event"]["created_date"], "%Y-%m-%dT%H:%M:%S.%f")
+        <= end_time
+    ]
+
+    logger.info(
+        f"resending {len(notification_ids)} events for {first_system} {first_version} between {start_time} and {end_time}"
+    )
+
+    # resend the notifications
+    for id in notification_ids:
+        response = client.put(
+            f"{settings.cdr_host}/user/me/resend/notification/{id}",
+            headers=headers,
+        )
+        # verify the request was successful
+        if response.status_code != 200:
+            logger.error(f"failed to resend {id}")
+            logger.error(f"response: {response.text}")
+
+
+def cdr_startup(host_url: str):
+    """
+    Initialize the CDR system startup process.
+    This function performs the following tasks:
+    1. Checks for existing CDR registrations and unregisters them if they
+       match the current pipeline system names.
+    2. Sets the callback URL to make the system accessible from the outside.
+    3. Registers the CDR system.
+    4. Registers a cleanup function to be called upon program exit.
+    5. Fetches recent events if replay settings are configured.
+
+    Args:
+        host (str): The host URL to be used for the callback URL.
+    """
+
     # check if already registered and delete existing registrations for this name and token combination
     registrations = get_cdr_registrations()
     if len(registrations) > 0:
@@ -193,21 +353,48 @@ def cdr_startup(host: str):
                     break
 
     # make it accessible from the outside
-    settings.callback_url = f"{host}/process_event"
+    settings.callback_url = f"{host_url}/process_event"
 
     register_cdr_system()
 
     # wire up the cleanup of the registration
     atexit.register(cdr_clean_up)
 
+    # fetch recent events
+    if settings.replay_start:
+        cdr_resend_recent_events(settings.replay_start, settings.replay_end)
 
-def start_app():
+
+def start_app(app_port: int = DEFAULT_APP_PORT, webhook_url: Optional[str] = None):
     # forward ngrok port
-    logger.info("using ngrok to forward ports")
-    listener = ngrok.forward(APP_PORT, authtoken_from_env=True)
-    cdr_startup(listener.url())
+    url = webhook_url
+    if not url:
+        logger.info("using ngrok to forward ports")
+        listener = ngrok.forward(app_port, authtoken_from_env=True)
+        url = listener.url()
+    else:
+        logger.info(f"using provided url {url}")
 
-    app.run(host="0.0.0.0", port=APP_PORT)
+    cdr_startup(url)
+
+    app.run(host="0.0.0.0", port=app_port)
+
+
+def valid_date(s) -> datetime:
+    """
+    Validate a date string in the format 'YYYY-MM-DD-HH:MM:SS
+
+    Args:
+        s: The date string to validate.
+
+    Returns:
+        The parsed date.
+    """
+    try:
+        return datetime.strptime(s, "%Y-%m-%d-%H:%M:%S")
+    except ValueError:
+        msg = f"Not a valid date: '{s}'. Expected format: 'YYYY-MM-DD-HH-MM-SS'"
+        raise argparse.ArgumentTypeError(msg)
 
 
 def main():
@@ -217,29 +404,38 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("process", "host"), required=True)
     parser.add_argument("--cog_id", type=str, required=False)
+    parser.add_argument("--cdr_host", type=str, default=DEFAULT_CDR_HOST)
+    parser.add_argument("--cog_host", type=str, default=DEFAULT_COG_HOST)
+    parser.add_argument(
+        "--cdr_callback_secret", type=str, default=DEFAULT_CDR_CALLBACK_SECRET
+    )
+    parser.add_argument("--cdr_callback_url", type=str, default=None)
+    parser.add_argument("--app_port", type=int, default=DEFAULT_APP_PORT)
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--rabbit_port", type=int, default=5672)
     parser.add_argument("--rabbit_vhost", type=str, default="/")
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
     parser.add_argument("--input", type=str, default=None)
-    parser.add_argument("--cdr_host", type=str, default=CDR_HOST)
-    parser.add_argument("--cogdir", type=str, default=COG_PATH)
     parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument(
         "--sequence",
         nargs="*",
         default=ChainingResultSubscriber.DEFAULT_PIPELINE_SEQUENCE,
     )
+    parser.add_argument("--replay_start", type=valid_date, required=False)
+    parser.add_argument("--replay_end", type=valid_date, required=False)
     p = parser.parse_args()
 
     global settings
     settings = Settings()
     settings.cdr_api_token = CDR_API_TOKEN
     settings.cdr_host = p.cdr_host
-    settings.cogdir = p.cogdir
-    settings.callback_secret = CDR_CALLBACK_SECRET
+    settings.cog_host = p.cog_host
+    settings.callback_secret = p.cdr_callback_secret
     settings.sequence = p.sequence
+    settings.replay_start = p.replay_start if hasattr(p, "replay_start") else None
+    settings.replay_end = p.replay_end if hasattr(p, "replay_end") else None
 
     # check parameter consistency: either the mode is process and a cog id is supplied or the mode is host without a cog id
     if p.mode == "process":
@@ -286,7 +482,7 @@ def main():
 
     # either start the flask app if host mode selected or run the image specified if in process mode
     if p.mode == "host":
-        start_app()
+        start_app(p.app_port, p.cdr_callback_url)
     elif p.mode == "process":
         cdr_startup("https://mock.example")
         if p.input:

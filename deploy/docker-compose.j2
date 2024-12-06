@@ -18,7 +18,13 @@ services:
     image: uncharted/lara-cdr:{{ tag }}
     command: [
       "--mode", "host",
-      "--host", "rabbitmq"]
+      "--host", "rabbitmq",
+      {%- if cdr_host %}
+      "--cdr_host", {{ cdr_host }},
+      {%- endif %}
+      {%- if cog_host %}
+      "--cog_host", {{ cog_host }},
+      {%- endif %}]
     ports:
       - 5000:5000
     environment:
@@ -27,6 +33,7 @@ services:
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      - AWS_REGION={{ aws_region }}
       {%- endif %}
     {%- if local %}
     volumes:
@@ -47,9 +54,12 @@ services:
       {%- if local %}
       "--workdir", "/workdir",
       "--imagedir", "/imagedir",
-      {% else %}
+      {%- else %}
       "--workdir", {{ work_dir }},
       "--imagedir", {{ image_dir }},
+      {%- endif %}
+      {%- if cdr_host %}
+      "--cdr_host", {{ cdr_host }},
       {%- endif %}
       "--host", "rabbitmq"]
     environment:
@@ -63,8 +73,10 @@ services:
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     {%- endif %}
+    {%- if writer_replicas %}
     deploy:
       replicas: {{ writer_replicas  }}
+    {%- endif %}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -84,7 +96,9 @@ services:
       {%- endif %}
       "--rabbit_host", "rabbitmq",
       "--model", "pipelines/segmentation_weights",
-      "--result_queue", "lara_result_queue"]
+      "--result_queue", "lara_result_queue",
+      "--llm_provider", {{ llm_provider }}
+      ]
     environment:
       {%- if azure_openai_api_key %}
       - AZURE_OPENAI_API_KEY={{ azure_openai_api_key }}
@@ -96,6 +110,7 @@ services:
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      - AWS_REGION={{ aws_region }}
       {%- endif %}
     volumes:
       - {{ google_application_credentials_dir }}:/credentials
@@ -103,8 +118,10 @@ services:
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
       {%- endif %}
+    {%- if georef_replicas %}
     deploy:
       replicas: {{ georef_replicas  }}
+    {%- endif %}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -131,6 +148,7 @@ services:
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      - AWS_REGION={{ aws_region }}
       {%- endif %}
     volumes:
       - {{ google_application_credentials_dir }}:/credentials
@@ -144,16 +162,18 @@ services:
     networks:
       - lara
     restart:  on-failure
-    {%- if gpu %}
     deploy:
+      {%- if points_replicas %}
       replicas: {{ points_replicas  }}
+      {%- endif %}
+      {%- if gpu %}
       resources:
           reservations:
             devices:
               - driver: nvidia
                 count: all
                 capabilities: [gpu]
-    {%- endif %}
+      {%- endif %}
 
   segmentation:
     image: uncharted/lara-segmentation:{{ tag }}
@@ -173,6 +193,7 @@ services:
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      - AWS_REGION={{ aws_region }}
       {%- endif %}
     volumes:
       - {{ google_application_credentials_dir }}:/credentials
@@ -180,8 +201,10 @@ services:
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     {%- endif %}
+    {%- if segmentation_replicas %}
     deploy:
       replicas: {{ segmentation_replicas  }}
+    {%- endif %}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -201,11 +224,12 @@ services:
       {%- endif %}
       "--rabbit_host", "rabbitmq",
       "--model", "pipelines/segmentation_weights",
-      "--result_queue", "lara_result_queue"]
+      "--result_queue", "lara_result_queue",
+      "--llm_provider", {{ llm_provider }}]
     environment:
       {%- if azure_openai_api_key %}
       - AZURE_OPENAI_API_KEY={{ azure_openai_api_key }}
-      - AZURE_OPENAI_ENDPOINT= {{ azure_openai_endpoint }}
+      - AZURE_OPENAI_ENDPOINT={{ azure_openai_endpoint }}
       {%- else %}
       - OPENAI_API_KEY={{ openai_api_key }}
       {%- endif %}
@@ -213,6 +237,7 @@ services:
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
+      - AWS_REGION={{ aws_region }}
       {%- endif %}
     volumes:
       - {{ google_application_credentials_dir }}:/credentials
@@ -220,8 +245,10 @@ services:
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
     {%- endif %}
+    {%- if metadata_replicas %}
     deploy:
       replicas: {{ metadata_replicas  }}
+    {%- endif %}
     depends_on:
       rabbitmq:
         condition: service_healthy

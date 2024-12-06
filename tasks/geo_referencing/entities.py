@@ -17,12 +17,7 @@ ERROR_SCALE_OUTPUT_KEY = "error_scale"
 KEYPOINTS_OUTPUT_KEY = "keypoints"
 GEOREFERENCING_OUTPUT_KEY = "georeferencing"
 ROI_MAP_OUTPUT_KEY = "map_roi"
-
-SOURCE_LAT_LON = "lat-lon parser"
-SOURCE_STATE_PLANE = "state plane parser"
-SOURCE_UTM = "utm parser"
-SOURCE_GEOCODE = "geocoder"
-SOURCE_INFERENCE = "inference"
+MAP_SCALE_OUTPUT_KEY = "map_scale"
 
 
 class MapROI(BaseModel):
@@ -44,11 +39,20 @@ class GeoFence(BaseModel):
     lat_minmax: List[float]
     lon_minmax: List[float]
     region_type: GeoFenceType
+    lonlat_hemispheres: Tuple[int, int]
 
 
 class DocGeoFence(BaseModel):
     map_id: str
     geofence: GeoFence
+
+
+class MapScale(BaseModel):
+    scale_raw: str
+    dpi: int
+    scale_pixels: float
+    km_per_pixel: float
+    lonlat_per_pixel: Tuple[float, float]
 
 
 class GroundControlPoint(BaseModel):
@@ -68,31 +72,57 @@ class GeoreferenceResult(BaseModel):
     confidence: float
 
 
+class CoordType(str, Enum):
+    KEYPOINT = "keypoint"  # generic geo-coord for x or y direction (lat, lon, UTM, etc)
+    CORNER = "corner"  # map corner point (eg lat/lon pair together)
+    GEOCODED_POINT = "geocoded_point"  # geocoded place (with lat/lon pair together)
+    DERIVED_KEYPOINT = "derived_keypoint"  # estimated keypoint based on other keypoints, map scale, etc.
+
+
+class CoordSource(str, Enum):
+    LAT_LON = "lat_lon_parser"
+    STATE_PLANE = "state_plane_parser"
+    UTM = "utm_parser"
+    GEOCODER = "geocoder"
+    INFERENCE = "inference"
+    ANCHOR = "anchor"
+
+
+class CoordStatus(str, Enum):
+    OK = "ok"
+    OUTSIDE_MAP_ROI = "outside_map_roi"
+    OUTSIDE_GEOFENCE = "outside_geofence"
+    OUTLIER = "outlier"
+
+
 class Coordinate:
-    _type: str = ""
-    _text: str = ""
-    _source: str = ""
-    _parsed_degree: float = -1
-    _is_lat: bool = False
-    _bounds: List[Point] = []
-    _pixel_alignment: Tuple[float, float] = (0, 0)
-    _confidence: float = 0
-    _derivation: str = "parsed"
-    _is_corner: bool = False
+    """
+    Class for storing an extracted or derived geo-coordinate
+    """
+
+    _type: CoordType  # coordinate type
+    _text: str  # raw OCR text associated with the extraction
+    _parsed_degree: float  # parsed coordinate degree
+    _source: CoordSource  # extractor source (provinence)
+    _is_lat: bool  # lat or lon?
+    _bounds: List[Point]  # pixel bounds of extracted coordinate
+    _pixel_alignment: Tuple[float, float]  # centroid pixel
+    _confidence: float  # extraction confidence
+    _status: CoordStatus  # included/excluded status of this extraction
 
     def __init__(
         self,
-        type: str,
+        type: CoordType,
         text: str,
         parsed_degree: float,
-        source: str,
-        is_lat: bool = False,
+        source: CoordSource,
+        is_lat: bool,
         bounds: List[Point] = [],
         pixel_alignment: Optional[Tuple[float, float]] = None,
         x_ranges: Tuple[float, float] = (0, 1),
         font_height: float = 0.0,
-        confidence: float = 0,
-        derivation: str = "parsed",
+        confidence: float = 0.0,
+        status: CoordStatus = CoordStatus.OK,
     ):
         self._type = type
         self._text = text
@@ -101,7 +131,7 @@ class Coordinate:
         self._parsed_degree = parsed_degree
         self._is_lat = is_lat
         self._confidence = confidence
-        self._derivation = derivation
+        self._status = status
 
         if pixel_alignment:
             self._pixel_alignment = pixel_alignment
@@ -116,7 +146,7 @@ class Coordinate:
         """
         return self._pixel_alignment
 
-    def get_type(self) -> str:
+    def get_type(self) -> CoordType:
         return self._type
 
     def get_text(self) -> str:
@@ -134,10 +164,7 @@ class Coordinate:
     def is_lat(self) -> bool:
         return self._is_lat
 
-    def is_corner(self) -> bool:
-        return self._is_corner
-
-    def get_source(self) -> str:
+    def get_source(self) -> CoordSource:
         return self._source
 
     def get_constant_dimension(self) -> float:
@@ -156,9 +183,6 @@ class Coordinate:
                 self._pixel_alignment[1],
             ), self._pixel_alignment[0]
         return (self._parsed_degree, self._pixel_alignment[0]), self._pixel_alignment[1]
-
-    def get_derivation(self) -> str:
-        return self._derivation
 
     def _calculate_pixel_alignment(
         self,

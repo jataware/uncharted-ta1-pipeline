@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 
-from tasks.geo_referencing.entities import Coordinate
+from tasks.geo_referencing.entities import Coordinate, CoordType
 
 from typing import Dict, List, Tuple
 
@@ -31,12 +31,8 @@ class PolyRegression:
     def fit_polynomial_regression(
         self, inputs_pts: List[List[float]], target_outputs: List[float]
     ):
-        # self.polyreg = PolynomialFeatures(degree=order, include_bias=False)
-        # self.polyreg_model = LinearRegression()
         poly_features = self.polyreg.fit_transform(np.array(inputs_pts))
         self.polyreg_model.fit(poly_features, target_outputs)
-
-        # TODO try/catch here?
 
     def predict_pts(self, inputs_pts: List[Tuple[float, float]]) -> List[float]:
         predicted_outputs = self.polyreg_model.predict(
@@ -57,8 +53,7 @@ class GeoProjection:
         self,
         lon_coords: List[Coordinate],
         lat_coords: List[Coordinate],
-        im_size: Tuple[int, int],
-    ):
+    ) -> bool:
         # Use polynomial regression to
         # estimate x-pxl -> longitude and y-pxl -> latitude mapping, independently
         # BUT each mapping may depend on both x,y values for a given lon or lat value, respectively
@@ -68,13 +63,6 @@ class GeoProjection:
         # a sparse number of keypoints)
         lon_results = self._map_coordinates(lon_coords)
         lat_results = self._map_coordinates(lat_coords)
-
-        # get number of corners (only need to iterate over lats or lons, since a corner includes a lat/lon pair)
-        num_corners = sum([1 if x._is_corner else 0 for x in lon_coords])
-        if num_corners < 3:
-            # only do the 'finalize_keypoints' if a few corners found
-            lon_results = self.finalize_keypoints(lon_results, im_size[0], im_size[1])
-            lat_results = self.finalize_keypoints(lat_results, im_size[1], im_size[0])
 
         lon_xy = []
         lon_pts = []
@@ -89,11 +77,17 @@ class GeoProjection:
             lat_xy.append([x, y])
             lat_pts.append(lat)
 
-        # do polynomial regression for x->longitude
-        self.regression_X.fit_polynomial_regression(lon_xy, lon_pts)
+        try:
+            # do polynomial regression for x->longitude
+            self.regression_X.fit_polynomial_regression(lon_xy, lon_pts)
 
-        # do polynomial regression for y->latitude
-        self.regression_Y.fit_polynomial_regression(lat_xy, lat_pts)
+            # do polynomial regression for y->latitude
+            self.regression_Y.fit_polynomial_regression(lat_xy, lat_pts)
+
+        except Exception as e:
+            logger.warning(f"Exception with estmating pxl2geo transform {repr(e)}")
+            return False
+        return True
 
     #
     # predict_xy_pts
@@ -119,67 +113,6 @@ class GeoProjection:
         xy_warped = [(x_w, y_w) for x_w, y_w in zip(x_warped, y_warped)]
 
         return xy_warped
-
-    #
-    # finalize_keypoints
-    #
-    def finalize_keypoints(
-        self, deg_results: Dict[Tuple[float, float], float], i_max: int, j_max: int
-    ) -> Dict[Tuple[float, float], float]:
-        # num of unique degree values
-        num_deg_vals = len(set([x[0] for x in deg_results]))
-
-        if num_deg_vals < 2:
-            return deg_results
-        if num_deg_vals == 2 and len(deg_results) < 3:
-            # lon = (deg, x) y
-            # lat = (deg, y) x
-            # only 2 unique keypoints; not enough to reliably handle rotation in geo-projection,
-            # so assume no rotation/skew of map, and add a 3rd keypoint to help 'anchor'
-            # the polynomial regression fit (prevent erratic mapping behaviour)
-            (deg, pxl_i), pxl_j = list(deg_results.items())[0]  # get 1st keypoint
-            new_j = (
-                0 if pxl_j > j_max / 2 else j_max - 1
-            )  # new j value (far from the others)
-            new_i = pxl_i + 1  # jitter by 1 pixel
-            deg_results[(deg, new_i)] = new_j
-            logger.debug(
-                "Adding an anchor keypoint (assume no skew): deg: {}, i,j: {},{}".format(
-                    deg, new_i, new_j
-                )
-            )
-            return deg_results
-
-        # more than 2 unique keypoints, check if they are are all approx aligned in i-axis
-        j_vals = [x[1] for x in deg_results.items()]
-        j_delta = j_max * 0.05
-        i_delta = i_max * 0.05
-        if max(j_vals) - min(j_vals) < j_delta:
-            # approx aligned along i-axis (< 5% j delta)
-            # so assume "minimal" rotation/skew of map, and add an extra keypoint to help 'anchor'
-            # the polynomial regression fit (prevent erratic mapping behaviour)
-            i_vals = [x[0][1] for x in deg_results.items()]
-            m, b = np.polyfit(
-                i_vals, j_vals, 1
-            )  # esimate rotation (slope) of map wrt i-axis
-
-            (deg, pxl_i), pxl_j = list(deg_results.items())[0]  # get 1st keypoint
-
-            new_j = (
-                0 if pxl_j > j_max / 2 else j_max - 1
-            )  # new j value (far from the others)
-            i_offset = int(m * (pxl_j - new_j))
-            if i_offset == 0:  # or i_offset > i_delta or i_offset < -i_delta:
-                i_offset = 1  # jitter by 1 pixel (at least)
-            new_i = max(min(pxl_i + i_offset, i_max - 1), 0)
-            deg_results[(deg, new_i)] = new_j
-            logger.debug(
-                "Adding an anchor keypoint (minimal skew): deg: {}, i,j: {},{}".format(
-                    deg, new_i, new_j
-                )
-            )
-
-        return deg_results
 
     def _map_coordinates(
         self, coords: list[Coordinate]

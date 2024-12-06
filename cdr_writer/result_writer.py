@@ -8,7 +8,7 @@ from util.logging import config_logger
 logger = logging.getLogger("cdr")
 
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
-CDR_HOST = "https://api.cdr.land"
+DEFAULT_CDR_HOST = "https://api.cdr.land"
 
 REQUEUE_LIMIT = 3
 INACTIVITY_TIMEOUT = 5
@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--rabbit_vhost", type=str, default="/")
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
-    parser.add_argument("--cdr_host", type=str, default=CDR_HOST)
+    parser.add_argument("--cdr_host", type=str, default=DEFAULT_CDR_HOST)
     parser.add_argument("--metrics_url", type=str, default="")
     p = parser.parse_args()
 

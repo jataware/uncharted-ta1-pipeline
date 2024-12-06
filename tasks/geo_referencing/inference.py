@@ -1,178 +1,185 @@
 import logging
-import statistics
-import uuid
-
-from tasks.geo_referencing.coordinates_extractor import (
-    CoordinatesExtractor,
-    CoordinateInput,
-)
+from tasks.common.task import Task, TaskInput, TaskResult
+from shapely import Polygon
 from tasks.geo_referencing.entities import (
-    Coordinate,
-    SOURCE_INFERENCE,
-    MapROI,
+    DocGeoFence,
+    GeoFenceType,
+    GEOFENCE_OUTPUT_KEY,
     ROI_MAP_OUTPUT_KEY,
+    MapROI,
+    Coordinate,
+    CoordSource,
+    CoordType,
 )
-from tasks.geo_referencing.util import ocr_to_coordinates
-
-from typing import Tuple, Dict, List
+from tasks.geo_referencing.util import calc_lonlat_slope_signs
+from tasks.geo_referencing.scale_analyzer import ScaleAnalyzer
+from tasks.common.task import Task, TaskInput, TaskResult
 
 logger = logging.getLogger("inference_extractor")
 
 
-class InferenceCoordinate:
-    pixel: float
-    degree: float
+class InferenceCoordinateExtractor(Task):
+    """
+    Use existing lat/lon extractions and map scale information to infer additional ground control point coords
+    This can help "anchor" the polynomial transform to prevent erratic georef results
+    """
 
-
-class InferenceCoordinateExtractor(CoordinatesExtractor):
     def __init__(self, task_id: str):
         super().__init__(task_id)
 
-    def _should_run(self, input: CoordinateInput) -> bool:
-        # do not infer any coordinates if the clue point is provided
-        clue_point = input.input.get_request_info("clue_point")
-        if clue_point is not None:
-            return False
+    def run(self, input: TaskInput) -> TaskResult:
+        """
+        run the task
+        """
+        # TODO -- could try using the map scale info (km_per_pixel estimate)
+        # to aid coord inference?
 
-        # should only run if there are sufficient coordinates in one direction
-        # and insufficient coordinates in the other direction
-        lats = input.input.get_data("lats", [])
-        lons = input.input.get_data("lons", [])
+        # get the extracted coordinates
+        lon_pts = input.get_data("lons", {})
+        lat_pts = input.get_data("lats", {})
 
-        lats_distinct = set(map(lambda x: x[1].get_parsed_degree(), lats.items()))
-        lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lons.items()))
+        if len(lon_pts) == 0 and len(lat_pts) == 0:
+            # No coords available; skip inference
+            return self._create_result(input)
 
-        min_coord, max_coord = min(len(lats_distinct), len(lons_distinct)), max(
-            len(lats_distinct), len(lons_distinct)
+        # get geofence result
+        geofence: DocGeoFence = input.parse_data(
+            GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
-        return min_coord == 1 and max_coord >= 2
-
-    def _extract_coordinates(
-        self, input: CoordinateInput
-    ) -> Tuple[
-        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
-    ]:
-        # get the coordinates and roi or assume whole image is a map
-        lon_pts = input.input.get_data("lons")
-        lat_pts = input.input.get_data("lats")
-        roi_xy = []
-        if ROI_MAP_OUTPUT_KEY in input.input.data:
-            # get map ROI bounds (without inner/outer buffering)
-            map_roi = MapROI.model_validate(input.input.data[ROI_MAP_OUTPUT_KEY])
-            roi_xy = map_roi.map_bounds
-
-        lons_distinct = set(map(lambda x: x[1].get_parsed_degree(), lon_pts.items()))
-        infer_lon = len(lons_distinct) < 2
-        if infer_lon:
-            logger.info("inferring longitude coordinate from latitudes")
-            lon = list(lon_pts.items())[0]
-            existing_lon = InferenceCoordinate()
-            existing_lon.pixel = lon[1].get_pixel_alignment()[0]
-            existing_lon.degree = lon[1].get_parsed_degree()
-            coordinates = list(map(lambda x: x[1].get_parsed_degree(), lat_pts.items()))
-            pixels = list(map(lambda x: x[1].get_pixel_alignment()[1], lat_pts.items()))
-
-            new_lon = self._infer_coordinates(
-                coordinates,
-                pixels,
-                list(map(lambda x: x[0], roi_xy)),
-                existing_lon,
-                False,
-            )
-            coord_update = lon_pts
-            new_coord = Coordinate(
-                "lon keypoint",
-                "",
-                new_lon.degree,
-                SOURCE_INFERENCE,
-                False,
-                pixel_alignment=(new_lon.pixel, lon[1].get_pixel_alignment()[1]),
-                confidence=0.5,
-            )
-        else:
-            logger.info("inferring latitude coordinate from longitudes")
-            lat = list(lat_pts.items())[0]
-            existing_lat = InferenceCoordinate()
-            existing_lat.pixel = lat[1].get_pixel_alignment()[1]
-            existing_lat.degree = lat[1].get_parsed_degree()
-            coordinates = list(map(lambda x: x[1].get_parsed_degree(), lon_pts.items()))
-            pixels = list(map(lambda x: x[1].get_pixel_alignment()[0], lon_pts.items()))
-
-            new_lat = self._infer_coordinates(
-                coordinates,
-                pixels,
-                list(map(lambda x: x[1], roi_xy)),
-                existing_lat,
-                True,
-            )
-            coord_update = lat_pts
-            new_coord = Coordinate(
-                "lat keypoint",
-                "",
-                new_lat.degree,
-                SOURCE_INFERENCE,
-                True,
-                pixel_alignment=(lat[1].get_pixel_alignment()[0], new_lat.pixel),
-                confidence=0.5,
+        lonlat_slope_signs = (
+            -1,
+            1,
+        )  # (default deg->pixel slope directions are for hemispheres = West, North)
+        if geofence and not geofence.geofence.region_type == GeoFenceType.DEFAULT:
+            lonlat_slope_signs = calc_lonlat_slope_signs(
+                geofence.geofence.lonlat_hemispheres
             )
 
-        coord_update[new_coord.to_deg_result()[0]] = new_coord
-        return (lon_pts, lat_pts)
+        # get map-roi result
+        map_roi = MapROI.model_validate(input.data[ROI_MAP_OUTPUT_KEY])
+        if not map_roi:
+            # No map ROI available; skip inference
+            return self._create_result(input)
+        map_poly = Polygon(map_roi.map_bounds)
 
-    def _get_range(self, range: List[float]) -> float:
-        return max(range) - min(range)
+        # check number of unique lat and lon values
+        num_distinct_lats = len(set([x.get_parsed_degree() for x in lat_pts.values()]))
+        num_distinct_lons = len(set([x.get_parsed_degree() for x in lon_pts.values()]))
 
-    def _get_pixel_degree_ratio(
-        self, degrees_valid: List[float], pixels_valid: List[float]
-    ) -> float:
-        pixel_range = self._get_range(pixels_valid)
-        degrees_range = self._get_range(degrees_valid)
+        try:
+            if num_distinct_lats >= 2 and num_distinct_lons == 1:
+                # infer an additional lon pt (based on lat pxl resolution)
+                logger.info("Inferring longitude coordinate from latitudes")
+                # list of (deg, (x,y))
+                deg_xy_pts = [
+                    (c.get_parsed_degree(), c.get_pixel_alignment())
+                    for c in lat_pts.values()
+                ]
+                # get lat_pts with min/max y-pixel values
+                max_pt = max(deg_xy_pts, key=lambda p: p[1][1])
+                min_pt = min(deg_xy_pts, key=lambda p: p[1][1])
+                # get existing lon pt
+                existing_lon_pt = next(iter(lon_pts.values()))
+                # estimate the lonlat-per-km resolution
+                lonlat_per_km = ScaleAnalyzer.calc_deg_per_km(
+                    (existing_lon_pt.get_parsed_degree(), max_pt[0])
+                )
+                pxl_range = max_pt[1][1] - min_pt[1][1]
+                deg_range = max_pt[0] - min_pt[0]
+                if deg_range != 0 and pxl_range != 0:
+                    # estimate the km-per-pixel
+                    km_per_pxl = abs((deg_range / lonlat_per_km[1]) / pxl_range)
+                    map_pxl_mid = (map_poly.bounds[0] + map_poly.bounds[2]) / 2
+                    # put inferred x pixel value in one of the map corners
+                    new_x_pxl = (
+                        map_poly.bounds[0]
+                        if existing_lon_pt.get_pixel_alignment()[0] > map_pxl_mid
+                        else map_poly.bounds[2]
+                    )
+                    # inferred y-pixel same as the existing lon pt, jittered by 1 pixel
+                    new_y_pxl = max(existing_lon_pt.get_pixel_alignment()[1] - 1, 0)
+                    new_lon = (
+                        lonlat_slope_signs[0]
+                        * km_per_pxl
+                        * lonlat_per_km[0]
+                        * (new_x_pxl - existing_lon_pt.get_pixel_alignment()[0])
+                        + existing_lon_pt.get_parsed_degree()
+                    )
+                    # save inferred lon coordinate
+                    lon_coord = Coordinate(
+                        CoordType.DERIVED_KEYPOINT,
+                        "",
+                        new_lon,
+                        CoordSource.INFERENCE,
+                        False,
+                        pixel_alignment=(
+                            new_x_pxl,
+                            new_y_pxl,
+                        ),
+                        confidence=0.5,
+                    )
+                    lon_pts[lon_coord.to_deg_result()[0]] = lon_coord
 
-        return pixel_range / degrees_range
+            elif num_distinct_lons >= 2 and num_distinct_lats == 1:
+                # infer an additional lat pt (based on lon pxl resolution)
+                logger.info("Inferring latitude coordinate from longitudes")
+                # list of (deg, (x,y))
+                deg_xy_pts = [
+                    (c.get_parsed_degree(), c.get_pixel_alignment())
+                    for c in lon_pts.values()
+                ]
+                # get lon_pts with min/max x-pixel values
+                max_pt = max(deg_xy_pts, key=lambda p: p[1][0])
+                min_pt = min(deg_xy_pts, key=lambda p: p[1][0])
+                # get existing lon pt
+                existing_lat_pt = next(iter(lat_pts.values()))
+                # estimate the lonlat-per-km resolution
+                lonlat_per_km = ScaleAnalyzer.calc_deg_per_km(
+                    (max_pt[0], existing_lat_pt.get_parsed_degree())
+                )
+                pxl_range = max_pt[1][0] - min_pt[1][0]
+                deg_range = max_pt[0] - min_pt[0]
+                if deg_range != 0 and pxl_range != 0:
+                    # estimate the km-per-pixel
+                    km_per_pxl = abs((deg_range / lonlat_per_km[0]) / pxl_range)
+                    map_pxl_mid = (map_poly.bounds[1] + map_poly.bounds[3]) / 2
+                    # put inferred y pixel value in one of the map corners
+                    new_y_pxl = (
+                        map_poly.bounds[1]
+                        if existing_lat_pt.get_pixel_alignment()[1] > map_pxl_mid
+                        else map_poly.bounds[3]
+                    )
+                    # inferred x-pixel same as the existing lat pt, jittered by 1 pixel
+                    new_x_pxl = max(existing_lat_pt.get_pixel_alignment()[0] - 1, 0)
+                    new_lat = (
+                        lonlat_slope_signs[1]
+                        * km_per_pxl
+                        * lonlat_per_km[1]
+                        * (new_y_pxl - existing_lat_pt.get_pixel_alignment()[1])
+                        + existing_lat_pt.get_parsed_degree()
+                    )
+                    # save inferred lat coordinate
+                    lat_coord = Coordinate(
+                        CoordType.DERIVED_KEYPOINT,
+                        "",
+                        new_lat,
+                        CoordSource.INFERENCE,
+                        True,
+                        pixel_alignment=(
+                            new_x_pxl,
+                            new_y_pxl,
+                        ),
+                        confidence=0.5,
+                    )
+                    lat_pts[lat_coord.to_deg_result()[0]] = lat_coord
 
-    def _infer_coordinates(
-        self,
-        degrees_valid: List[float],
-        pixels_valid: List[float],
-        pixels_cross: List[float],
-        known_coordinate: InferenceCoordinate,
-        is_lat: bool,
-    ) -> InferenceCoordinate:
-        # TODO: figure out the multiplier bit using the geofence
-        # get the pixels to degree ratio using the valid direction
-        pixels_to_degrees = abs(
-            self._get_pixel_degree_ratio(degrees_valid, pixels_valid)
-        )
-        pixel_range_cross = self._get_range(pixels_cross)
+        except Exception as e:
+            logger.warning(
+                f"Exception in coord inference; discarding any inferred coords - {repr(e)}"
+            )
 
-        pixels_cross_min = min(pixels_cross)
-        pixels_cross_max = max(pixels_cross)
-        pixels_cross_avg = statistics.mean(pixels_cross)
-
-        # set the inference pixel to 80% of the range in the opposite half of the known coordinate
-        # multiplier needs to be adjusted based on relative position of inferred point assuming north is up
-        #   longitude - right should always be greater than left so increasing pixel should increase degree
-        #   latitude - top should always be greater than bottom
-        new_coordinate = InferenceCoordinate()
-        if known_coordinate.pixel < pixels_cross_avg:
-            new_coordinate.pixel = pixels_cross_max - (0.2 * pixel_range_cross)
-            multiplier = 1
-        else:
-            new_coordinate.pixel = pixels_cross_min + (0.2 * pixel_range_cross)
-            multiplier = -1
-
-        # latitude degree to pixel relationship is inverse of longitude
-        if is_lat:
-            multiplier = multiplier * -1
-
-        infer_pixel_range = abs(new_coordinate.pixel - known_coordinate.pixel)
-
-        new_coordinate.degree = known_coordinate.degree + (
-            (infer_pixel_range / pixels_to_degrees) * multiplier
-        )
-
-        return new_coordinate
-
-    def _derive_hemisphere_multiplier(self, minmax: List[float]) -> int:
-        # use the hemisphere of the majority of the range determined by using the sign of the midpoint
-        return 1 if ((max(minmax) - min(minmax)) / 2) > 0 else -1
+        # update the coordinates lists
+        result = self._create_result(input)
+        result.output["lons"] = lon_pts
+        result.output["lats"] = lat_pts
+        return result

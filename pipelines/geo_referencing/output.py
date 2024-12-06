@@ -23,13 +23,9 @@ from tasks.geo_referencing.entities import (
     LEVERS_OUTPUT_KEY,
     QUERY_POINTS_OUTPUT_KEY,
     RMSE_OUTPUT_KEY,
+    CoordSource,
     GeoreferenceResult,
     GroundControlPoint as LARAGroundControlPoint,
-    SOURCE_GEOCODE,
-    SOURCE_LAT_LON,
-    SOURCE_STATE_PLANE,
-    SOURCE_UTM,
-    SOURCE_INFERENCE,
 )
 from tasks.geo_referencing.util import cps_to_transform, project_image
 
@@ -177,29 +173,29 @@ class SummaryOutput(OutputCreator):
         anchor = ""
 
         if KEYPOINTS_OUTPUT_KEY in pipeline_result.data:
+            # summary diagnostic info - get stats about extraction sources for a given map
             keypoints = pipeline_result.data[KEYPOINTS_OUTPUT_KEY]
-
             lats = keypoints.get("lats", {})
             lons = keypoints.get("lons", {})
 
-            if SOURCE_LAT_LON in lats or SOURCE_LAT_LON in lons:
-                latlon = (
-                    f"{lats.get(SOURCE_LAT_LON, '')};{lons.get(SOURCE_LAT_LON, '')}"
-                )
-            if SOURCE_UTM in lats or SOURCE_UTM in lons:
-                utm = f"{lats.get(SOURCE_UTM, '')};{lons.get(SOURCE_UTM, '')}"
-            if SOURCE_STATE_PLANE in lats or SOURCE_STATE_PLANE in lons:
-                state_plane = f"{lats.get(SOURCE_STATE_PLANE, '')};{lons.get(SOURCE_STATE_PLANE, '')}"
-            if SOURCE_GEOCODE in lats or SOURCE_GEOCODE in lons:
-                geocode = (
-                    f"{lats.get(SOURCE_GEOCODE, '')};{lons.get(SOURCE_GEOCODE, '')}"
-                )
-            if SOURCE_INFERENCE in lats or SOURCE_INFERENCE in lons:
-                infer = (
-                    f"{lats.get(SOURCE_INFERENCE, '')};{lons.get(SOURCE_INFERENCE, '')}"
-                )
-            if "anchor" in lats or "anchor" in lons:
-                anchor = f"{lats.get('anchor', '')};{lons.get('anchor', '')}"
+            if CoordSource.LAT_LON.value in lats or CoordSource.LAT_LON.value in lons:
+                latlon = f"{lats.get(CoordSource.LAT_LON.value, '')};{lons.get(CoordSource.LAT_LON.value, '')}"
+            if CoordSource.UTM.value in lats or CoordSource.UTM.value in lons:
+                utm = f"{lats.get(CoordSource.UTM.value, '')};{lons.get(CoordSource.UTM.value, '')}"
+            if (
+                CoordSource.STATE_PLANE.value in lats
+                or CoordSource.STATE_PLANE.value in lons
+            ):
+                state_plane = f"{lats.get(CoordSource.STATE_PLANE.value, '')};{lons.get(CoordSource.STATE_PLANE.value, '')}"
+            if CoordSource.GEOCODER.value in lats or CoordSource.GEOCODER.value in lons:
+                geocode = f"{lats.get(CoordSource.GEOCODER.value, '')};{lons.get(CoordSource.GEOCODER.value, '')}"
+            if (
+                CoordSource.INFERENCE.value in lats
+                or CoordSource.INFERENCE.value in lons
+            ):
+                infer = f"{lats.get(CoordSource.INFERENCE.value, '')};{lons.get(CoordSource.INFERENCE.value, '')}"
+            if CoordSource.ANCHOR.value in lats or CoordSource.ANCHOR.value in lons:
+                anchor = f"{lats.get(CoordSource.ANCHOR.value, '')};{lons.get(CoordSource.ANCHOR.value, '')}"
 
         res.data = [
             {

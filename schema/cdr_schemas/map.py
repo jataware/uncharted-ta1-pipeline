@@ -5,8 +5,8 @@ class MapProvenance(BaseModel):
     """JSON model for Document Provenance"""
 
     system_name: str = Field(..., description="Name of system storing map")
-    id: str = Field(None, description="The system ID of the map")
-    url: str = Field(None, description="URL of map at system storing map")
+    id: str | None = Field(None, description="The system ID of the map")
+    url: str | None = Field(None, description="URL of map at system storing map")
 
 
 class Map(BaseModel):

@@ -1,4 +1,4 @@
-FROM docker-hub.uncharted.software/python:3.10-slim
+FROM python:3.10-slim
 
 # install git and build tools ffmpeg etc.for opencv
 RUN apt-get update && apt-get install -y git build-essential ffmpeg libsm6 libxext6

@@ -22,9 +22,10 @@ from tasks.geo_referencing.entities import (
     GEOFENCE_OUTPUT_KEY,
     ROI_MAP_OUTPUT_KEY,
 )
+from tasks.geo_referencing.util import get_num_keypoints
 from tasks.text_extraction.entities import TextExtraction
 
-from typing import Callable, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -39,14 +40,12 @@ class Geocoder(Task):
         run_bounds: bool = True,
         run_points: bool = True,
         run_centres: bool = True,
-        should_run: Optional[Callable] = None,
     ):
         super().__init__(task_id)
         self._geocoding_service = geocoding_service
         self._run_bounds = run_bounds
         self._run_points = run_points
         self._run_centres = run_centres
-        self._should_run = should_run
 
     def run(self, input: TaskInput) -> TaskResult:
         metadata: MetadataExtraction = input.parse_data(
@@ -58,8 +57,12 @@ class Geocoder(Task):
         if geocoded_output is None:
             geocoded_output = DocGeocodedPlaces(map_id=input.raster_id, places=[])
 
-        if self._should_run and not self._should_run(input):
-            logging.info("Skipping geocoding task")
+        # get coordinates so far
+        lons = input.get_data("lons", {})
+        lats = input.get_data("lats", {})
+        num_keypoints = get_num_keypoints(lons, lats)
+        if num_keypoints >= 2:
+            logger.info(f"Min number of keypoints = {num_keypoints}; skipping Geocoder")
             return self._create_result(input, geocoded_output)
 
         logger.info(f"running geocoding task with id {self._task_id}")
