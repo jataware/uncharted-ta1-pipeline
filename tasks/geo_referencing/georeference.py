@@ -32,6 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from pyproj import Transformer
 
 
+EXTERNAL_QUERY_POINT_CRS = "EPSG:4269"  # externally supplied query points will be transformed to this CRS (NAD83 for contest data)
 FALLBACK_RANGE_ADJUSTMENT_FACTOR = 0.05  # used to calculate how far from the edge of the fallback range to anchor points
 
 logger = logging.getLogger("geo_referencing")
@@ -80,14 +81,16 @@ class PixelMapping:
 
 
 class GeoReference(Task):
-    _poly_order = 1
 
-    # externally supplied query points will be transformed to this CRS (NAD83 for contest data)
-    EXTERNAL_QUERY_POINT_CRS = "EPSG:4269"
-
-    def __init__(self, task_id: str, poly_order: int = 1):
+    def __init__(
+        self,
+        task_id: str,
+        poly_order: int = 1,
+        external_crs: str = EXTERNAL_QUERY_POINT_CRS,
+    ):
         super().__init__(task_id)
         self._poly_order = poly_order
+        self._external_crs = external_crs
 
     def run(self, input: TaskInput) -> TaskResult:
         """
@@ -103,9 +106,6 @@ class GeoReference(Task):
         Returns:
             TaskResult: The result of the georeferencing task.
         """
-        return self._run_label_georef(input)
-
-    def _run_label_georef(self, input: TaskInput) -> TaskResult:
 
         geofence: DocGeoFence = input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
@@ -262,13 +262,13 @@ class GeoReference(Task):
 
         # perform a datum shift if we're using externally supplied
         # query points (ie. eval scenario where we are passed query points from a file)
-        if source_crs != self.EXTERNAL_QUERY_POINT_CRS and external_query_pts:
+        if source_crs != self._external_crs and external_query_pts:
             logger.info(
-                f"performing datum shift from {source_crs} to {self.EXTERNAL_QUERY_POINT_CRS}"
+                f"performing datum shift from {source_crs} to {self._external_crs}"
             )
             for qp in query_pts:
                 proj = Transformer.from_crs(
-                    source_crs, self.EXTERNAL_QUERY_POINT_CRS, always_xy=True
+                    source_crs, self._external_crs, always_xy=True
                 )
                 x_p, y_p = proj.transform(qp.lonlat[0], qp.lonlat[1])
                 qp.lonlat = (x_p, y_p)
@@ -280,7 +280,7 @@ class GeoReference(Task):
         result.output[RMSE_OUTPUT_KEY] = rmse
         result.output[ERROR_SCALE_OUTPUT_KEY] = scale_error
         result.output[CRS_OUTPUT_KEY] = (
-            self.EXTERNAL_QUERY_POINT_CRS if external_query_pts else source_crs
+            self._external_crs if external_query_pts else source_crs
         )
         result.output[KEYPOINTS_OUTPUT_KEY] = keypoint_stats
         return result
@@ -519,7 +519,7 @@ class GeoReference(Task):
 
         # make sure there is metadata
         if not metadata:
-            return self.EXTERNAL_QUERY_POINT_CRS
+            return self._external_crs
 
         # get the computed CRS from the metadata if it exists
         crs = metadata.crs
