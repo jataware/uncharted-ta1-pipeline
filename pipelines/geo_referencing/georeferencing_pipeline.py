@@ -109,7 +109,6 @@ class GeoreferencingPipeline(Pipeline):
         segmentation_cache = append_to_cache_location(working_dir, "segmentation")
         text_cache = append_to_cache_location(working_dir, "text")
         metadata_cache = append_to_cache_location(working_dir, "metadata")
-        geocoder_thresh = 10
 
         tasks: List[Task] = [
             # Segments the image into map,legend and cross section
