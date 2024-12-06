@@ -1,10 +1,12 @@
 # LARA Stack Deployment
 
+![LARA Architecture](../images/lara_deployment.png)
+
 ## Pre-requisites
 1. A Python 3.10 environment
-1. An activated NGROK account and token (see [https://ngrok.com/docs/getting-started/])
+1. An activated NGROK account and token (see https://ngrok.com/docs/getting-started/)
 1. An OpenAI API key or Azure OpenAI API key and endpoint
-1. A Google Cloud Vision API JSON key *file*
+1. A Google Cloud Vision API JSON key *file* (see https://cloud.google.com/vision/docs/ocr)
 1. A CriticalMAAS CDR API key (contact Jataware)
 1. A writeable S3 bucket, and its associated credentials
 
@@ -31,10 +33,12 @@ The fields that will need to be set are:
 * `cdr_host`: URL of the CDR host
 * `cog_host`: URL of the COG storage server
 * `ngrok_authtoken`: NGROK auth token string
-* `azure_openai_api_key`: Azure OpenAI API key string.
-* `azure_openai_endpoint`: The endpoint of the Azure OpenAI service.
-* `openai_api_key`: OpenAI API key for OpenAI's hosted service (only needed if not using Azure)
-* `google_application_credentials_dir`: A path pointing to the direcotry containing the Google Cloud Vision API JSON key **file**.  **The file must be named `google_application_credentials.json`**.
+* `llm_provider`:  set to `azure` or `openai` based on the desired LLM host - defaults to `openai`
+* `llm`: the model identification string - defaults to `gpt-4o`, valid options are determined by the model provider
+* `azure_openai_api_key`: Azure OpenAI API key string - used when `llm_provider` is set to `azure`
+* `azure_openai_endpoint`: The endpoint of the Azure OpenAI service - used when `llm_provider` is set to `azure`
+* `openai_api_key`: OpenAI API key for OpenAI's hosted service (only needed if not using Azure) - used when `llm_provider` is set to `openai` (default)
+* `google_application_credentials_dir`: A path pointing to the **directory** containing the Google Cloud Vision API JSON key **file**. ⚠️ **NOTE:** This file MUST be named `google_application_credentials.json`.⚠️
 * `tag`: The docker tag of the LARA images to deploy (ie. `latest`)
 * `gpu`: A boolean indicating whether or not the system should attempt to use GPU resources if available.
 
