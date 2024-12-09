@@ -15,6 +15,7 @@ from pipelines.geo_referencing.output import (
     GeoreferencingOutput,
     ProjectedMapOutput,
 )
+from tasks.common.io import validate_s3_config
 from tasks.common.pipeline import (
     BaseModelOutput,
     BytesOutput,
@@ -186,6 +187,9 @@ def start_server():
     parser.add_argument("--project", action="store_true")
     parser.add_argument("--diagnostics", action="store_true")
     p = parser.parse_args()
+
+    # validate any s3 path args up front
+    validate_s3_config("", p.workdir, p.imagedir, "")
 
     outputs: List[OutputCreator] = [GeoreferencingOutput("georeferencing")]
     if p.project:

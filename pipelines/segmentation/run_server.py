@@ -5,6 +5,7 @@ from hashlib import sha1
 from io import BytesIO
 
 from pipelines.segmentation.segmentation_pipeline import SegmentationPipeline
+from tasks.common.io import validate_s3_config
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
 from tasks.common.request_client import (
@@ -102,6 +103,9 @@ if __name__ == "__main__":
     parser.add_argument("--result_queue", type=str, default=SEGMENTATION_RESULT_QUEUE)
     parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
+
+    # validate any s3 path args up front
+    validate_s3_config("", p.workdir, p.imagedir, "")
 
     # init segmenter
     segmentation_pipeline = SegmentationPipeline(

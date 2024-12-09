@@ -14,6 +14,7 @@ from tasks.common.io import (
     BytesIOFileWriter,
     ImageFileInputIterator,
     JSONFileWriter,
+    validate_s3_config,
 )
 from tasks.common.pipeline import (
     BaseModelOutput,
@@ -99,6 +100,9 @@ def main():
     parser.add_argument("--project", action="store_true")
     parser.add_argument("--diagnostics", action="store_true")
     p = parser.parse_args()
+
+    # validate any s3 path args up front
+    validate_s3_config(p.input, p.workdir, "", p.output)
 
     # setup an input stream
     input = ImageFileInputIterator(p.input)

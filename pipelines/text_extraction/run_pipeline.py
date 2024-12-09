@@ -1,6 +1,11 @@
 import argparse
 import logging, os
-from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
+from tasks.common.io import (
+    ImageFileInputIterator,
+    JSONFileWriter,
+    ImageFileWriter,
+    validate_s3_config,
+)
 from tasks.common.pipeline import (
     PipelineInput,
     BaseModelOutput,
@@ -29,6 +34,9 @@ def main():
     parser.add_argument("--debug", action=argparse.BooleanOptionalAction, default=False)
 
     p = parser.parse_args()
+
+    # validate any s3 path args up front
+    validate_s3_config(p.input, p.workdir, "", p.output)
 
     # setup an input stream
     input = ImageFileInputIterator(p.input)
