@@ -215,7 +215,7 @@ def start_server():
         p.project,
         p.diagnostics,
         not p.no_gpu,
-        metrics_url=p.metrics_url,
+        p.metrics_url,
     )
 
     #### start flask server or startup up the message queue

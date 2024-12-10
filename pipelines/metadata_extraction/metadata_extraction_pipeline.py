@@ -74,6 +74,7 @@ class MetadataExtractorPipeline(Pipeline):
                 True,
                 6000,
                 0.5,
+                metrics_url=metrics_url,
             ),
             # filter out the text that is not part of the map or supplemental information
             TextFilter(

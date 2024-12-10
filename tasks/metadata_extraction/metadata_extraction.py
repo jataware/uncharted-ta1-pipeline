@@ -519,7 +519,7 @@ class MetadataExtractor(Task):
 
                 # if the token count is greater than the limit, reduce the max text length
                 # and try again
-                num_tokens = self._count_tokens(input_prompt.to_string(), "cl100k_base")
+                num_tokens = self._count_tokens(input_prompt.to_string())
                 if num_tokens <= self.TOKEN_LIMIT:
                     break
                 max_text_length = max_text_length - self.TEXT_FILTER_DECREMENT
@@ -528,13 +528,8 @@ class MetadataExtractor(Task):
                 )
             logger.info(f"Processing {num_tokens} tokens.")
 
-            if self._metrics_url != "":
-                requests.post(
-                    self._metrics_url + "/counter/total_tokens?step=" + str(num_tokens)
-                )
-                requests.post(
-                    self._metrics_url + "/gauge/tokens?value=" + str(num_tokens)
-                )
+            # publish input token counts to metrics service
+            self._publish_input_metrics(num_tokens)
 
             # generate the response
             if input_prompt is not None:
@@ -543,6 +538,12 @@ class MetadataExtractor(Task):
                 chain = prompt_template | self._chat_model | parser
                 response = chain.invoke({"text_str": "\n".join(text)})
 
+                # publish output token counts to metrics service
+                output_tokens = self._count_tokens(response.json())
+                logger.info(f"Response generated {output_tokens} tokens.")
+
+                self._publish_output_metrics(output_tokens)
+
                 # add placeholders for fields we don't extract
                 response_dict = response.dict()
                 response_dict["quadrangles"] = []
@@ -550,6 +551,7 @@ class MetadataExtractor(Task):
                 response_dict["places"] = []
                 response_dict["map_shape"] = "unknown"
                 response_dict["map_color"] = "unknown"
+
                 return MetadataExtraction(
                     map_id=doc_text_extraction.doc_id, **response_dict
                 )
@@ -809,7 +811,7 @@ class MetadataExtractor(Task):
             filtered.append(e)
         return filtered  # type: ignore
 
-    def _count_tokens(self, input_str: str, encoding_name: str) -> int:
+    def _count_tokens(self, input_str: str, encoding_name="cl100k_base") -> int:
         """
         Counts the number of tokens in the input string using the specified encoding.
 
@@ -824,6 +826,38 @@ class MetadataExtractor(Task):
         encoding = tiktoken.get_encoding(encoding_name)
         num_tokens = len(encoding.encode(input_str))
         return num_tokens
+
+    def _publish_input_metrics(self, num_tokens: int):
+        """
+        Publishes the llm input prompt token metrics for the task.
+
+        Args:
+            num_tokens (int): The number of tokens in the input string.
+
+        """
+        if self._metrics_url != "":
+            requests.post(
+                self._metrics_url + "/counter/total_tokens?step=" + str(num_tokens)
+            )
+            requests.post(self._metrics_url + "/gauge/tokens?value=" + str(num_tokens))
+
+    def _publish_output_metrics(self, num_tokens: int):
+        """
+        Publishes the llm output token metrics for the task.
+
+        Args:
+            num_tokens (int): The number of tokens in the output string.
+
+        """
+        if self._metrics_url != "":
+            requests.post(
+                self._metrics_url
+                + "/counter/total_output_tokens?step="
+                + str(num_tokens)
+            )
+            requests.post(
+                self._metrics_url + "/gauge/output_tokens?value=" + str(num_tokens)
+            )
 
     def _generate_prompt_template(self, parser, template: str) -> ChatPromptTemplate:
         """

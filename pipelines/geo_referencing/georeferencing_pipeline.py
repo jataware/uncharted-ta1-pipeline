@@ -131,6 +131,7 @@ class GeoreferencingPipeline(Pipeline):
                 text_cache,
                 6000,
                 gamma_correction=ocr_gamma_correction,
+                metrics_url=metrics_url,
             ),
             # Defines an allowed region for cooredinates to occupy by buffering
             # the extracted map area polyline by a fixed amount
