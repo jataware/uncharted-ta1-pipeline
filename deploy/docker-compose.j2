@@ -24,10 +24,11 @@ services:
       {%- endif %}
       {%- if cog_host %}
       "--cog_host", {{ cog_host }},
-      {%- endif %}]
+      {%- endif %}
       {%- if cdr_callback_url %}
       "--cdr_callback_url", {{ cdr_callback_url }},
       {%- endif %}
+    ]
     ports:
       - 5000:5000
     environment:
