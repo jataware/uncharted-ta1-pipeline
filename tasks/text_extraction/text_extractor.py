@@ -1,8 +1,8 @@
+import sys
 import numpy as np
 import logging
 from math import ceil
 from typing import Tuple, List, Dict, Any
-from pathlib import Path
 from PIL import Image
 from PIL.Image import Image as PILImage
 import cv2
@@ -15,9 +15,6 @@ from .entities import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from ..common.task import Task, TaskInput, TaskResult
-
-# ENV VARIABLE -- needed for google-vision API
-# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/path/to/google/vision/creds/json/file'
 
 PIXEL_LIM_DEFAULT = 6000  # default max pixel limit for input image (determines amount of image resizing)
 
@@ -58,6 +55,15 @@ class TextExtractor(Task):
                 self._gamma_lut[0, i] = np.clip(
                     pow(i / 255.0, self._gamma_correction) * 255.0, 0, 255
                 )
+
+        # validate the vision api key - hard stop if can't be found
+        try:
+            self._ocr.validate_api_key()
+        except Exception as e:
+            logger.error(
+                f"Google Vision OCR api validation failed with error: {repr(e)}"
+            )
+            sys.exit(1)
 
     def _apply_gamma_correction(self, img: PILImage) -> PILImage:
         """

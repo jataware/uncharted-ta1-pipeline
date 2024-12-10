@@ -1,4 +1,3 @@
-from pathlib import Path
 from flask import Flask, request, Response
 import logging, json
 import argparse
@@ -6,6 +5,7 @@ from hashlib import sha1
 from io import BytesIO
 
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
+from tasks.common.io import validate_s3_config
 from tasks.common.pipeline import PipelineInput, BaseModelOutput, BaseModelListOutput
 from tasks.common import image_io
 from tasks.common.request_client import (
@@ -102,6 +102,9 @@ if __name__ == "__main__":
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--batch_size", type=int, default=20)
     p = parser.parse_args()
+
+    # validate any s3 path args up front
+    validate_s3_config("", p.workdir, p.imagedir, "")
 
     # init point extraction pipeline
     point_extraction_pipeline = PointExtractionPipeline(

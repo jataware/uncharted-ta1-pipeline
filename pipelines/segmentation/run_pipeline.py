@@ -9,7 +9,12 @@ from tasks.common.pipeline import (
     ImageOutput,
 )
 from pipelines.segmentation.segmentation_pipeline import SegmentationPipeline
-from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
+from tasks.common.io import (
+    ImageFileInputIterator,
+    JSONFileWriter,
+    ImageFileWriter,
+    validate_s3_config,
+)
 
 from util import logging as logging_util
 
@@ -29,6 +34,9 @@ def main():
     parser.add_argument("--debug_images", action="store_true")
     parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
+
+    # validate any s3 path args up front
+    validate_s3_config(p.input, p.workdir, "", p.output)
 
     # setup an input stream
     input = ImageFileInputIterator(p.input)

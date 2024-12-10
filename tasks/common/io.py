@@ -3,13 +3,14 @@ import logging
 import os
 import re
 import json
+import sys
 from urllib.parse import urlparse
 from enum import Enum
 from pathlib import Path
 import boto3
 from botocore.config import Config
 from botocore import UNSIGNED
-import httpx
+from botocore.exceptions import ClientError
 from pydantic import BaseModel
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from PIL.Image import Image as PILImage
@@ -20,8 +21,7 @@ from tasks.common.image_io import normalize_image_format
 Image.MAX_IMAGE_PIXELS = 400000000  # to allow PIL to load large images
 
 # regex for matching s3 uris
-S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.\-_]{1,255}/.*$")
-
+S3_URI_MATCHER = re.compile(r"^s3://[a-zA-Z0-9.\-_]{1,255}(/.*)?$")
 logger = logging.getLogger(__name__)
 
 
@@ -411,12 +411,19 @@ def parse_s3_reference(path: str, mode: Mode) -> Tuple[str, str]:
 
 def get_file_source(path: str) -> Mode:
     """Checks if the path is a file, s3 uri, or url"""
-    if S3_URI_MATCHER.match(path):
-        return Mode.S3_URI
-    elif urlparse(path).scheme == "http" or urlparse(path).scheme == "https":
-        return Mode.URL
-    else:
-        return Mode.FILE
+    parsed_url = urlparse(path)
+    scheme = parsed_url.scheme
+
+    if scheme:
+        if S3_URI_MATCHER.match(path):
+            return Mode.S3_URI
+        elif scheme in ["http", "https"]:
+            return Mode.URL
+        else:
+            raise ValueError(
+                f"Invalid URI scheme: '{scheme}' - valid options are 's3', 'http' and 'https'.  For files use a path only."
+            )
+    return Mode.FILE
 
 
 def bucket_exists(uri: str) -> bool:
@@ -450,3 +457,42 @@ def append_to_cache_location(cache_location: str, append_str: str) -> str:
     if cache_location[-1] == "/":
         return cache_location + append_str
     return cache_location + "/" + append_str
+
+
+def validate_s3_config(input: str, workdir: str, imagedir: str, output: str) -> None:
+    """
+    Validates the S3 configuration for the given paths.
+    This function checks if the provided paths (input, workdir, imagedir, output)
+    are valid S3 URIs or URLs and verifies that the corresponding S3 buckets exist
+    and are accessible. If any of the buckets do not exist or are inaccessible,
+    an error is logged and the program exits.
+
+    Args:
+        input (str): The input path to validate.
+        workdir (str): The working directory path to validate.
+        imagedir (str): The image directory path to validate.
+        output (str): The output path to validate.
+    Returns:
+        None
+    """
+
+    for name, path in {
+        "input": input,
+        "workdir": workdir,
+        "imagedir": imagedir,
+        "output": output,
+    }.items():
+        if path:
+            try:
+                source = get_file_source(path)
+                if source == Mode.S3_URI or source == Mode.URL:
+                    # specifically check for bucket existence -
+                    if not bucket_exists(path):
+                        logger.error(
+                            f"Error validating S3 {name} path {path} - bucket does not exist or you do not have access to it."
+                        )
+                        sys.exit(1)
+            except Exception as e:
+                # cover any exceptions that case
+                logger.error(f"Error validating S3 {name} path {path}: {e}")
+                sys.exit(1)

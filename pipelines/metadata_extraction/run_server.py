@@ -9,6 +9,7 @@ from io import BytesIO
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
+from tasks.common.io import validate_s3_config
 from tasks.common.request_client import (
     OutputType,
     RequestClient,
@@ -128,6 +129,9 @@ if __name__ == "__main__":
     parser.add_argument("--result_queue", type=str, default=METADATA_RESULT_QUEUE)
     parser.add_argument("--no_gpu", action="store_true")
     p = parser.parse_args()
+
+    # validate any s3 path args up front
+    validate_s3_config("", p.workdir, p.imagedir, "")
 
     # init segmenter
     metadata_extraction = MetadataExtractorPipeline(

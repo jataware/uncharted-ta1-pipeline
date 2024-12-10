@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import logging
 import re
 from enum import Enum
+import sys
 import cv2
 import numpy as np
 from PIL.Image import Image as PILImage
@@ -334,6 +335,15 @@ class MetadataExtractor(Task):
         self._include_place_bounds = include_place_bounds
         self._should_run = should_run
         self._metrics_url = metrics_url
+
+        # validate llm connection parameters
+        try:
+            self._chat_model.invoke([SystemMessage(content="validate my API key")])
+        except Exception as e:
+            logger.error(
+                f"LLM api validation for {self._model} from {provider} failed with error: {repr(e)}."
+            )
+            sys.exit(1)
 
         logger.info(f"Using model: {self._model} from provider {provider.value}")
 
