@@ -3,6 +3,7 @@ import json
 import logging
 import os
 from threading import Thread
+import threading
 from time import sleep
 import requests
 import time
@@ -152,6 +153,8 @@ class RequestClient:
         self._image_cache = ImageCache(imagedir)
         self._image_cache._init_cache()
 
+        self._stop_event = threading.Event()
+
     def _run_request_queue(self) -> None:
         """
         Continuously runs the request queue, connecting to the request service and consuming messages.
@@ -164,7 +167,7 @@ class RequestClient:
             AMQPConnectionError: If there is an error with the AMQP connection.
         """
 
-        while True:
+        while not self._stop_event.is_set():
             try:
                 self._connect_to_request()
                 logger.info(f"servicing request queue {self._request_queue}")
@@ -198,8 +201,23 @@ class RequestClient:
                 sleep(5)
 
     def start_request_queue(self) -> None:
-        """Start the request queue."""
+        """
+        Starts the request queue by clearing the stop event and starting a new thread
+        that runs the request queue.
+        This method clears the internal stop event to ensure the request queue is
+        active and then starts a new thread that executes the `_run_request_queue`
+        method.
+        """
+        self._stop_event.clear()
         Thread(target=self._run_request_queue).start()
+
+    def stop_request_queue(self) -> None:
+        """
+        Stops the request queue by setting the stop event.
+        This method sets the internal stop event to stop the request queue.
+        """
+        logger.info("Stopping request queue thread")
+        self._stop_event.set()
 
     def _connect_to_request(self) -> None:
         """
@@ -277,6 +295,7 @@ class RequestClient:
 
     def start_result_queue(self) -> None:
         """Start the result publishing thread."""
+        self._stop_event.clear()
         Thread(target=self._run_result_queue).start()
 
     def _run_result_queue(self) -> None:
@@ -284,7 +303,7 @@ class RequestClient:
         Main loop to service the result queue. process_data_events is set to block for a maximum
         of 1 second before returning to ensure that heartbeats etc. are processed.
         """
-        while True:
+        while not self._stop_event.is_set():
             try:
                 if self._result_connection is None or self._result_connection.is_closed:
                     logger.info(f"connecting to result queue {self._result_queue}")

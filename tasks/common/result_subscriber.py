@@ -68,12 +68,31 @@ class LaraResultSubscriber(ABC):
         self._vhost = vhost
         self._uid = uid
         self._pwd = pwd
+        self._stop_event = threading.Event()
 
     def start_lara_result_queue(self):
+        """
+        Starts a new thread to run the Lara result queue.
+        This method clears the stop event and initiates a new thread that
+        targets the _run_lara_result_queue method with the result queue
+        and host as arguments. The new thread is started immediately.
+        Returns:
+            None
+        """
+        self._stop_event.clear()
         threading.Thread(
             target=self._run_lara_result_queue,
             args=(self._result_queue, self._host),
         ).start()
+
+    def stop_lara_result_queue(self):
+        """
+        Stops the LARA result queue by setting the stop event.
+        This method sets the internal stop event, which signals the
+        LARA result queue to stop processing further results.
+        """
+        logger.info("stopping result queue thread")
+        self._stop_event.set()
 
     def _create_channel(self, host: str, queue: str) -> Channel:
         """
@@ -159,7 +178,7 @@ class LaraResultSubscriber(ABC):
             result_queue (str): The name of the result queue to listen to.
             host (str, optional): The hostname of the message broker. Defaults to "localhost".
         """
-        while True:
+        while not self._stop_event.is_set():
             result_channel: Optional[Channel] = None
             try:
                 logger.info(
@@ -171,7 +190,7 @@ class LaraResultSubscriber(ABC):
 
                 # start consuming the results - will timeout after 5 seconds of inactivity
                 # allowing things like heartbeats to be processed
-                while True:
+                while not self._stop_event.is_set():
                     for method_frame, properties, body in result_channel.consume(
                         result_queue, inactivity_timeout=self.INACTIVITY_TIMEOUT
                     ):
@@ -193,3 +212,5 @@ class LaraResultSubscriber(ABC):
                     logger.info("closing result connection")
                     result_channel.connection.close()
                 sleep(5)
+
+        logger.info("result queue thread stopped")
