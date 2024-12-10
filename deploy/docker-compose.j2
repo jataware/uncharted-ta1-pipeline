@@ -24,12 +24,18 @@ services:
       {%- endif %}
       {%- if cog_host %}
       "--cog_host", {{ cog_host }},
-      {%- endif %}]
+      {%- endif %}
+      {%- if cdr_callback_url %}
+      "--cdr_callback_url", {{ cdr_callback_url }},
+      {%- endif %}
+    ]
     ports:
       - 5000:5000
     environment:
       - CDR_API_TOKEN={{ cdr_api_token }}
+      {%- if ngrok_authtoken %}
       - NGROK_AUTHTOKEN={{ ngrok_authtoken }}
+      {%- endif %}
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
