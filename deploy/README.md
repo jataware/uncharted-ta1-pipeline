@@ -32,7 +32,8 @@ The fields that will need to be set are:
 * `cdr_api_token`: A CDR API token string provided by Jataware
 * `cdr_host`: URL of the CDR host
 * `cog_host`: URL of the COG storage server
-* `ngrok_authtoken`: NGROK auth token string
+* `ngrok_authtoken`: NGROK auth token string - used when NGROK will provide the CDR webhook URL.
+* `cdr_callback_url`: The URL to use for CDR webhook access - should be the `cdr` container URL, and be reachable from the CDR itself.  Not used if an NGROK auth token is supplied.
 * `llm_provider`:  set to `azure` or `openai` based on the desired LLM host - defaults to `openai`
 * `llm`: the model identification string - defaults to `gpt-4o`, valid options are determined by the model provider
 * `azure_openai_api_key`: Azure OpenAI API key string - used when `llm_provider` is set to `azure`
