@@ -28,7 +28,10 @@ import rasterio.io as rioi
 from pyproj import Transformer
 
 from PIL.Image import Image as PILImage
+from PIL import ImageDraw, ImageFont
 import logging
+
+logger = logging.getLogger(__name__)
 
 
 def sign(number: float) -> int:
@@ -307,3 +310,57 @@ def project_image(
         # Log the exception
         logging.exception(f"An error occurred: {e}", exc_info=True)
         return io.BytesIO()
+
+
+def draw_gcps(image: PILImage, gcps: List[LARAGroundControlPoint]) -> PILImage:
+    """
+    Draws coloured squares on an image highlight GCP (or query point) locations on a map.
+    """
+
+    try:
+        img = image.copy()
+        try:
+            # create a drawing object to overlay bounding boxes
+            draw = ImageDraw.Draw(img, mode="RGBA")
+        except Exception as ex_draw:
+            # try converting mode to RGBA
+            img = img.convert("RGB")
+            draw = ImageDraw.Draw(img, mode="RGBA")
+
+        gcp_box_len = 150
+        font_size = 24
+        box_colour = "red"
+        box_fill_colour = (128, 0, 128, 128)
+        box_line_width = 6
+        # TODO -- could viz each GCP confidence via the box's alpha channel
+
+        font = ImageFont.load_default(font_size)
+        img_w, img_h = img.size
+        for gcp in gcps:
+            xy = (gcp.pixel_x, gcp.pixel_y)
+
+            x1 = max(int(xy[0] - gcp_box_len / 2), 0)
+            y1 = max(int(xy[1] - gcp_box_len / 2), 0)
+            x2 = min(x1 + gcp_box_len, img_w - 1)
+            y2 = min(y1 + gcp_box_len, img_h - 1)
+            box_coords = (x1, y1, x2, y2)
+
+            draw.rectangle(
+                box_coords,
+                outline=box_colour,
+                fill=box_fill_colour,
+                width=box_line_width,
+            )
+            coord_text = f"lon:{gcp.longitude:.2f}, lat:{gcp.latitude:.2f}"
+            draw.text(
+                (x1, y1 - font_size * 1.5),
+                coord_text,
+                fill="darkmagenta",
+                font=font,
+                font_size=font_size,
+            )
+        return img
+
+    except Exception as ex:
+        logger.warning(f"Exception drawing GCPs; skipping -- {repr(ex)}")
+        return image

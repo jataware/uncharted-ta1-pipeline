@@ -27,7 +27,7 @@ from tasks.geo_referencing.entities import (
     GeoreferenceResult,
     GroundControlPoint as LARAGroundControlPoint,
 )
-from tasks.geo_referencing.util import cps_to_transform, project_image
+from tasks.geo_referencing.util import cps_to_transform, project_image, draw_gcps
 
 logger = logging.getLogger(__name__)
 
@@ -333,7 +333,8 @@ class ProjectedMapOutput(OutputCreator):
 
     DEFAULT_OUTPUT_CRS = "EPSG:3857"
 
-    def __init__(self, id: str):
+    def __init__(self, id: str, draw_gcps: bool = False):
+        self._draw_gcps = draw_gcps
         super().__init__(id)
 
     def create_output(self, pipeline_result: PipelineResult) -> Output:
@@ -373,10 +374,14 @@ class ProjectedMapOutput(OutputCreator):
         if pipeline_result.image is None:
             raise ValueError("No image found in pipeline result - cannot project")
 
+        image = pipeline_result.image
+        if self._draw_gcps:
+            image = draw_gcps(image, gcps)
+
         # project the image using the tansformation matrix - results are returned
         # as a geotiff in memory (pillow doesn't support geotiffs)
         projected_map = project_image(
-            pipeline_result.image, transform, ProjectedMapOutput.DEFAULT_OUTPUT_CRS
+            image, transform, ProjectedMapOutput.DEFAULT_OUTPUT_CRS
         )
 
         return BytesOutput(
