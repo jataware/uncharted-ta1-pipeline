@@ -4,7 +4,6 @@ import threading
 from time import sleep
 from typing import List, Optional
 
-from cv2 import log
 from pika.adapters.blocking_connection import BlockingChannel as Channel
 from pika import BlockingConnection, ConnectionParameters, PlainCredentials
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
