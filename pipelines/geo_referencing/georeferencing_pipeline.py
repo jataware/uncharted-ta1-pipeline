@@ -238,6 +238,8 @@ class GeoreferencingPipeline(Pipeline):
             )
         # create the projected map output if requested
         if projected:
-            outputs.append(ProjectedMapOutput(PROJECTED_MAP_OUTPUT_KEY))
+            outputs.append(
+                ProjectedMapOutput(PROJECTED_MAP_OUTPUT_KEY, draw_gcps=False)
+            )
 
         super().__init__("georeferencing", "Georeferencing", outputs, tasks)
