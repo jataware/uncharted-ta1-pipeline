@@ -1,5 +1,8 @@
 import argparse
 import atexit
+import io
+import sys
+import threading
 import httpx
 import json
 import logging
@@ -374,7 +377,6 @@ def start_app(app_port: int = DEFAULT_APP_PORT, webhook_url: Optional[str] = Non
         url = listener.url()
     else:
         logger.info(f"using provided url {url}")
-
     cdr_startup(url)
 
     app.run(host="0.0.0.0", port=app_port)
@@ -395,6 +397,23 @@ def valid_date(s) -> datetime:
     except ValueError:
         msg = f"Not a valid date: '{s}'. Expected format: 'YYYY-MM-DD-HH-MM-SS'"
         raise argparse.ArgumentTypeError(msg)
+
+
+def validate_urls(cdr_host: str, cog_host: str):
+    """
+    Validate the CDR and COG host URLs.
+
+    Args:
+        cdr_host (str): The CDR host URL.
+        cog_host (str): The COG host URL.
+
+    Raises:
+        ValueError: If the CDR or COG host URLs are invalid.
+    """
+    if not cdr_host.startswith("http"):
+        raise ValueError("CDR host URL must start with http or https")
+    if not cog_host.startswith("http"):
+        raise ValueError("COG host URL must start with http or https")
 
 
 def main():
@@ -482,7 +501,14 @@ def main():
 
     # either start the flask app if host mode selected or run the image specified if in process mode
     if p.mode == "host":
-        start_app(p.app_port, p.cdr_callback_url)
+        try:
+            start_app(p.app_port, p.cdr_callback_url)
+        except Exception as e:
+            # list the threads that are still running
+            logger.error(f"error starting app: {e}")
+            result_subscriber.stop_lara_result_queue()
+            request_publisher.stop_lara_request_queue()
+            sys.exit(1)
     elif p.mode == "process":
         cdr_startup("https://mock.example")
         if p.input:

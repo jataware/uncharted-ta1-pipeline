@@ -103,7 +103,9 @@ class ScaleAnalyzer(Task):
         try:
             if not scale_raw.startswith("1:"):
                 return scale
-            scale = float(scale_raw[2:])
+            # extract scale denominator, remove puncuation and convert to float
+            scale_str = scale_raw[2:].replace(" ", "").replace(",", "")
+            scale = float(scale_str)
             if scale < PIXEL_SCALE_MIN or scale > PIXEL_SCALE_MAX:
                 logger.warning(
                     f"Extracted scale is: {scale_raw}; which is outside the valid range so disregarding"

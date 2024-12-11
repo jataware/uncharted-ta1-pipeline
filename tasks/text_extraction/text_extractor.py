@@ -1,11 +1,12 @@
+import sys
 import numpy as np
 import logging
 from math import ceil
 from typing import Tuple, List, Dict, Any
-from pathlib import Path
 from PIL import Image
 from PIL.Image import Image as PILImage
 import cv2
+import requests
 from .ocr.google_vision_ocr import GoogleVisionOCR
 from .entities import (
     DocTextExtraction,
@@ -15,9 +16,6 @@ from .entities import (
     TEXT_EXTRACTION_OUTPUT_KEY,
 )
 from ..common.task import Task, TaskInput, TaskResult
-
-# ENV VARIABLE -- needed for google-vision API
-# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/path/to/google/vision/creds/json/file'
 
 PIXEL_LIM_DEFAULT = 6000  # default max pixel limit for input image (determines amount of image resizing)
 
@@ -41,6 +39,7 @@ class TextExtractor(Task):
         document_ocr: bool = False,
         gamma_correction: float = GAMMA_CORR_DEFAULT,
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
+        metrics_url: str = "",
     ):
         super().__init__(task_id, cache_location)
         self._ocr = GoogleVisionOCR()
@@ -49,6 +48,7 @@ class TextExtractor(Task):
         self._document_ocr = document_ocr
         self._gamma_correction = gamma_correction
         self._output_key = output_key
+        self._metrics_url = metrics_url
 
         # init gamma correction look up table
         self._gamma_lut = np.empty((1, 256), np.uint8)
@@ -58,6 +58,15 @@ class TextExtractor(Task):
                 self._gamma_lut[0, i] = np.clip(
                     pow(i / 255.0, self._gamma_correction) * 255.0, 0, 255
                 )
+
+        # validate the vision api key - hard stop if can't be found
+        try:
+            self._ocr.validate_api_key()
+        except Exception as e:
+            logger.error(
+                f"Google Vision OCR api validation failed with error: {repr(e)}"
+            )
+            sys.exit(1)
 
     def _apply_gamma_correction(self, img: PILImage) -> PILImage:
         """
@@ -82,18 +91,59 @@ class TextExtractor(Task):
         return Image.fromarray(im_gamma)
 
     def _extract_text(self, im: PILImage) -> List[Dict[str, Any]]:
+        """
+        Extract text from an image using Google Vision OCR.
+        Args:
+            im (PILImage): The input image from which text needs to be extracted.
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing the extracted text and related information.
+        """
+
         img_gv = GoogleVisionOCR.pil_to_vision_image(im)
 
         # ----- do GoogleVision OCR
         ocr_texts = []
         if self._document_ocr:
             ocr_texts = self._ocr.detect_document_text(img_gv)
+            self._publish_image_ocr_metrics()
         else:
             ocr_texts = self._ocr.detect_text(img_gv)
             if self._to_blocks:
                 ocr_texts = self._ocr.text_to_blocks(ocr_texts)
-
+                self._publish_doc_ocr_metrics()
         return ocr_texts
+
+    def _publish_image_ocr_metrics(self, num_calls=1):
+        """
+        Publishes Vision image OCR  metrics to the specified metrics URL.
+        Args:
+            num_calls (int, optional): The number of OCR calls to report. Defaults to 1.
+        Sends:
+            - A POST request to update the total number of OCR calls.
+            - A POST request to update the current number of OCR calls.
+        """
+        if self._metrics_url != "":
+            requests.post(
+                f"{self._metrics_url}/counter/total_image_ocr_calls?step={num_calls}"
+            )
+            requests.post(
+                f"{self._metrics_url}/gauge/image_ocr_calls?value={num_calls}"
+            )
+
+    def _publish_doc_ocr_metrics(self, num_calls=1):
+        """
+        Publishes Vision document OCR metrics to the specified metrics URL.
+        Args:
+            num_calls (int, optional): The number of OCR calls to report. Defaults to 1.
+        Sends:
+            - A POST request to update the total number of OCR calls.
+            - A POST request to update the current number of OCR calls.
+        """
+        if self._metrics_url != "":
+            requests.post(
+                f"{self._metrics_url}/counter/total_doc_ocr_calls?step={num_calls}"
+            )
+            requests.post(f"{self._metrics_url}/gauge/doc_ocr_calls?value={num_calls}")
 
     def run(self, input: TaskInput) -> TaskResult:
         raise NotImplementedError
@@ -113,6 +163,7 @@ class ResizeTextExtractor(TextExtractor):
         pixel_lim: int = PIXEL_LIM_DEFAULT,
         gamma_correction: float = GAMMA_CORR_DEFAULT,
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
+        metrics_url: str = "",
     ):
         super().__init__(
             task_id,
@@ -121,6 +172,7 @@ class ResizeTextExtractor(TextExtractor):
             document_ocr,
             gamma_correction,
             output_key,
+            metrics_url,
         )
         self._pixel_lim = pixel_lim
         self._model_id += f"_resize-{pixel_lim}"
@@ -207,12 +259,14 @@ class TileTextExtractor(TextExtractor):
         split_lim: int = PIXEL_LIM_DEFAULT,
         gamma_correction: float = GAMMA_CORR_DEFAULT,
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
+        metrics_url: str = "",
     ):
         super().__init__(
             task_id,
             cache_location,
             gamma_correction=gamma_correction,
             output_key=output_key,
+            metrics_url=metrics_url,
         )
         self.split_lim = split_lim
         self._model_id += f"_tile-{split_lim}"

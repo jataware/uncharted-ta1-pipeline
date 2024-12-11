@@ -44,6 +44,7 @@ class TextExtractionPipeline(Pipeline):
         pixel_limit=6000,
         gamma_corr=1.0,
         debug_images=False,
+        metrics_url: str = "",
     ):
         if tile:
             tasks = [
@@ -52,6 +53,7 @@ class TextExtractionPipeline(Pipeline):
                     append_to_cache_location(cache_location, "text"),
                     pixel_limit,
                     gamma_corr,
+                    metrics_url=metrics_url,
                 )
             ]
         else:
@@ -63,6 +65,7 @@ class TextExtractionPipeline(Pipeline):
                     True,
                     pixel_limit,
                     gamma_corr,
+                    metrics_url=metrics_url,
                 )
             ]
 

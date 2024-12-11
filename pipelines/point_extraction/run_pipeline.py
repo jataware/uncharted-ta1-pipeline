@@ -10,7 +10,12 @@ from tasks.common.pipeline import (
     ImageDictOutput,
 )
 from pipelines.point_extraction.point_extraction_pipeline import PointExtractionPipeline
-from tasks.common.io import ImageFileInputIterator, JSONFileWriter, ImageFileWriter
+from tasks.common.io import (
+    ImageFileInputIterator,
+    JSONFileWriter,
+    ImageFileWriter,
+    validate_s3_config,
+)
 from tasks.point_extraction.legend_item_utils import (
     parse_legend_annotations,
     parse_legend_point_hints,
@@ -40,6 +45,9 @@ def main():
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--batch_size", type=int, default=20)
     p = parser.parse_args()
+
+    # validate any s3 path args up front
+    validate_s3_config(p.input, p.workdir, "", p.output)
 
     # setup an input stream
     input = ImageFileInputIterator(p.input)

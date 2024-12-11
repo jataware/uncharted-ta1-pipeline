@@ -66,6 +66,7 @@ class PointExtractionPipeline(Pipeline):
         include_bitmasks_output=False,
         gpu=True,
         batch_size=20,
+        metrics_url="",
     ):
         # extract text from image, segmentation to only keep the map area,
         # tile, extract points, untile, predict direction
@@ -103,6 +104,7 @@ class PointExtractionPipeline(Pipeline):
                     "tile_text",
                     append_to_cache_location(cache_location, "text"),
                     gamma_correction=0.5,
+                    metrics_url=metrics_url,
                 ),
                 LegendPreprocessor("legend_preprocessor", "", fetch_legend_items),
                 Tiler("tiling"),

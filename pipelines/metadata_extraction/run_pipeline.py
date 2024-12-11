@@ -15,7 +15,12 @@ from tasks.common.pipeline import (
 from pipelines.metadata_extraction.metadata_extraction_pipeline import (
     MetadataExtractorPipeline,
 )
-from tasks.common.io import ImageFileInputIterator, ImageFileWriter, JSONFileWriter
+from tasks.common.io import (
+    ImageFileInputIterator,
+    ImageFileWriter,
+    JSONFileWriter,
+    validate_s3_config,
+)
 from tasks.metadata_extraction.metadata_extraction import (
     DEFAULT_GPT_MODEL,
     DEFAULT_OPENAI_API_VERSION,
@@ -50,6 +55,9 @@ def main():
     p = parser.parse_args()
 
     logger.info(f"Args: {p}")
+
+    # validate any s3 path args up front
+    validate_s3_config(str(p.input), p.workdir, "", p.output)
 
     # setup an input stream
     input = ImageFileInputIterator(str(p.input))

@@ -1,16 +1,21 @@
 import logging
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 from tasks.common.task import Task, TaskInput, TaskResult
 from shapely import Polygon
 from tasks.geo_referencing.entities import (
     ROI_MAP_OUTPUT_KEY,
+    GEOFENCE_OUTPUT_KEY,
+    MAP_SCALE_OUTPUT_KEY,
     MapROI,
     Coordinate,
     CoordSource,
     CoordType,
+    DocGeoFence,
+    MapScale,
 )
-from tasks.geo_referencing.util import get_distinct_degrees
+from tasks.geo_referencing.scale_analyzer import ScaleAnalyzer, KM_PER_INCH
+from tasks.geo_referencing.util import get_distinct_degrees, calc_lonlat_slope_signs
 from tasks.common.task import Task, TaskInput, TaskResult
 
 logger = logging.getLogger("finalize_coordinates")
@@ -35,10 +40,6 @@ class FinalizeCoordinates(Task):
         # get the extracted coordinates
         lon_pts = input.get_data("lons", {})
         lat_pts = input.get_data("lats", {})
-
-        if len(lon_pts) == 0 and len(lat_pts) == 0:
-            # No coords available; skip this task
-            return self._create_result(input)
 
         # get number of corners (only need to iterate over lats or lons, since a corner includes a lat/lon pair)
         num_corners = sum(
@@ -67,6 +68,19 @@ class FinalizeCoordinates(Task):
         except Exception as e:
             logger.warning(
                 f"Exception with finalizing coordinates; discarding any inferred coords - {repr(e)}"
+            )
+
+        if min(get_distinct_degrees(lon_pts), get_distinct_degrees(lat_pts)) < 2:
+            # still not enough lat/lon keypoints, estimate some "fallback" anchor keypoints...
+            logger.info("Estimating additional fallback anchor keypoints")
+            geofence: DocGeoFence = input.parse_data(
+                GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
+            )
+            map_scale: MapScale = input.parse_data(
+                MAP_SCALE_OUTPUT_KEY, MapScale.model_validate
+            )
+            lon_pts, lat_pts = self._create_fallback_coords(
+                lon_pts, lat_pts, map_poly, geofence, map_scale
             )
 
         # update the coordinates lists
@@ -216,5 +230,219 @@ class FinalizeCoordinates(Task):
             confidence=0.5,
         )
         coords[(deg_pt, new_i)] = new_coord
+
+        return coords
+
+    def _create_fallback_coords(
+        self,
+        lons: Dict[Tuple[float, float], Coordinate],
+        lats: Dict[Tuple[float, float], Coordinate],
+        map_poly: Polygon,
+        geofence: Optional[DocGeoFence],
+        map_scale: Optional[MapScale],
+    ) -> Tuple[
+        Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
+    ]:
+        """
+        Estimate some "fallback" anchor lat and lon keypoints, based on the map scale, map ROI and the geofence
+        """
+
+        if not geofence:
+            # no geofence available, unable to create fallback coords
+            return lons, lats
+
+        try:
+            # get lon-lat centerpoint of the geofence
+            geofence_lonlat_center = (
+                (geofence.geofence.lon_minmax[0] + geofence.geofence.lon_minmax[1]) / 2,
+                (geofence.geofence.lat_minmax[0] + geofence.geofence.lat_minmax[1]) / 2,
+            )
+
+            # estimate the degrees-per-pixel resolution
+            lonlat_per_pixel = self._get_lonlat_per_pixel(
+                lons, lats, geofence_lonlat_center, map_scale
+            )
+            lonlat_slope_signs = calc_lonlat_slope_signs(
+                geofence.geofence.lonlat_hemispheres
+            )
+
+            # create fallback anchor coords, as needed
+            lons = self._create_anchor_keypoints(
+                lons,
+                geofence_lonlat_center[0],
+                lonlat_per_pixel[0] * lonlat_slope_signs[0],
+                map_poly,
+                is_lat=False,
+            )
+            lats = self._create_anchor_keypoints(
+                lats,
+                geofence_lonlat_center[1],
+                lonlat_per_pixel[1] * lonlat_slope_signs[1],
+                map_poly,
+                is_lat=True,
+            )
+
+        except Exception as ex:
+            logger.warning(
+                f"Exception creating fallback coords! Discarding any inferred anchor keypoints - {repr(ex)}"
+            )
+
+        return lons, lats
+
+    def _get_lonlat_per_pixel(
+        self,
+        lons: Dict[Tuple[float, float], Coordinate],
+        lats: Dict[Tuple[float, float], Coordinate],
+        geofence_lonlat_center: Tuple[float, float],
+        map_scale: Optional[MapScale],
+    ) -> Tuple[float, float]:
+        """
+        Estimate the degrees-per-pixel resolution
+        """
+
+        lon_pt = (
+            next(iter(lons.values())).get_parsed_degree()
+            if len(lons) > 0
+            else geofence_lonlat_center[0]
+        )
+        lat_pt = (
+            next(iter(lats.values())).get_parsed_degree()
+            if len(lats) > 0
+            else geofence_lonlat_center[1]
+        )
+        lonlat_per_km = ScaleAnalyzer.calc_deg_per_km((lon_pt, lat_pt))
+
+        if get_distinct_degrees(lons) > 1:
+            # estimate from extracted lon keypoints
+            deg_xy_pts = [
+                (c.get_parsed_degree(), c.get_pixel_alignment()) for c in lons.values()
+            ]
+            # get lon_pts with min/max x-pixel values
+            max_pt = max(deg_xy_pts, key=lambda p: p[1][0])
+            min_pt = min(deg_xy_pts, key=lambda p: p[1][0])
+            pxl_range = max_pt[1][0] - min_pt[1][0]
+            deg_range = max_pt[0] - min_pt[0]
+            if deg_range != 0 and pxl_range != 0:
+                # estimate the km-per-pixel
+                km_per_pxl = abs((deg_range / lonlat_per_km[0]) / pxl_range)
+                return (
+                    lonlat_per_km[0] * km_per_pxl,
+                    lonlat_per_km[1] * km_per_pxl,
+                )
+
+        if get_distinct_degrees(lats) > 1:
+            # estimate from extracted lat keypoints
+            deg_xy_pts = [
+                (c.get_parsed_degree(), c.get_pixel_alignment()) for c in lats.values()
+            ]
+            # get lat_pts with min/max y-pixel values
+            max_pt = max(deg_xy_pts, key=lambda p: p[1][1])
+            min_pt = min(deg_xy_pts, key=lambda p: p[1][1])
+            pxl_range = max_pt[1][1] - min_pt[1][1]
+            deg_range = max_pt[0] - min_pt[0]
+            if deg_range != 0 and pxl_range != 0:
+                # estimate the km-per-pixel
+                km_per_pxl = abs((deg_range / lonlat_per_km[1]) / pxl_range)
+                return (
+                    lonlat_per_km[0] * km_per_pxl,
+                    lonlat_per_km[1] * km_per_pxl,
+                )
+
+        # estimate from ScaleAnalyzer info, or use fallback DPI and scale values
+        dpi = 300
+        scale_pixels = 100000
+        lonlat_per_pixel = (0.0, 0.0)
+        if map_scale:
+            dpi = map_scale.dpi
+            if map_scale.scale_pixels != 0:
+                scale_pixels = map_scale.scale_pixels
+                lonlat_per_pixel = map_scale.lonlat_per_pixel
+        if lonlat_per_pixel[0] == 0:
+            km_per_pixel = scale_pixels * KM_PER_INCH / dpi
+            lonlat_per_pixel = (
+                lonlat_per_km[0] * km_per_pixel,
+                lonlat_per_km[1] * km_per_pixel,
+            )
+        return lonlat_per_pixel
+
+    def _create_anchor_keypoints(
+        self,
+        coords: Dict[Tuple[float, float], Coordinate],
+        geofence_center_deg: float,
+        deg_per_pixel: float,
+        map_poly: Polygon,
+        is_lat: bool,
+        force_deg_abs: bool = True,
+    ) -> Dict[Tuple[float, float], Coordinate]:
+        """
+        Create fallback anchor keypoints, as needed
+        (note, pixel coords are jittered by 1 pixel to help with polynomial geo-transform conditioning)
+        """
+        if get_distinct_degrees(coords) > 1:
+            # no anchor keypoints needed
+            return coords
+
+        p_idx = 1 if is_lat else 0
+        deg_anchor_pt = (
+            abs(geofence_center_deg) if force_deg_abs else geofence_center_deg
+        )
+        xy_anchor_pt = (map_poly.centroid.x, map_poly.centroid.y)
+        if len(coords) > 0:
+            c = next(iter(coords.values()))
+            deg_anchor_pt = c.get_parsed_degree()
+            xy_anchor_pt = c.get_pixel_alignment()
+
+        # --- top-left of map ROI
+        xy = (map_poly.bounds[0], map_poly.bounds[1])
+        deg = deg_per_pixel * (xy[p_idx] - xy_anchor_pt[p_idx]) + deg_anchor_pt
+        c = Coordinate(
+            CoordType.DERIVED_KEYPOINT,
+            f"fallback {deg}",
+            deg,
+            CoordSource.ANCHOR,
+            is_lat,
+            pixel_alignment=xy,
+            confidence=0.0,
+        )
+        coords[(deg, xy[p_idx])] = c
+        # --- top-right of map ROI (jitter y by 1 pixel)
+        xy = (map_poly.bounds[2], map_poly.bounds[1] + 1)
+        deg = deg_per_pixel * (xy[p_idx] - xy_anchor_pt[p_idx]) + deg_anchor_pt
+        c = Coordinate(
+            CoordType.DERIVED_KEYPOINT,
+            f"fallback {deg}",
+            deg,
+            CoordSource.ANCHOR,
+            is_lat,
+            pixel_alignment=xy,
+            confidence=0.0,
+        )
+        coords[(deg, xy[p_idx])] = c
+        # --- bottem-right of map ROI
+        xy = (map_poly.bounds[2] - 1, map_poly.bounds[3])
+        deg = deg_per_pixel * (xy[p_idx] - xy_anchor_pt[p_idx]) + deg_anchor_pt
+        c = Coordinate(
+            CoordType.DERIVED_KEYPOINT,
+            f"fallback {deg}",
+            deg,
+            CoordSource.ANCHOR,
+            is_lat,
+            pixel_alignment=xy,
+            confidence=0.0,
+        )
+        coords[(deg, xy[p_idx])] = c
+        # --- bottem-left of map ROI (jitter x by 1 pixel)
+        xy = (map_poly.bounds[0] + 1, map_poly.bounds[3] - 1)
+        deg = deg_per_pixel * (xy[p_idx] - xy_anchor_pt[p_idx]) + deg_anchor_pt
+        c = Coordinate(
+            CoordType.DERIVED_KEYPOINT,
+            f"fallback {deg}",
+            deg,
+            CoordSource.ANCHOR,
+            is_lat,
+            pixel_alignment=xy,
+            confidence=0.0,
+        )
+        coords[(deg, xy[p_idx])] = c
 
         return coords

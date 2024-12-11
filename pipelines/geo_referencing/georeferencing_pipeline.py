@@ -109,7 +109,6 @@ class GeoreferencingPipeline(Pipeline):
         segmentation_cache = append_to_cache_location(working_dir, "segmentation")
         text_cache = append_to_cache_location(working_dir, "text")
         metadata_cache = append_to_cache_location(working_dir, "metadata")
-        geocoder_thresh = 10
 
         tasks: List[Task] = [
             # Segments the image into map,legend and cross section
@@ -131,6 +130,7 @@ class GeoreferencingPipeline(Pipeline):
                 text_cache,
                 6000,
                 gamma_correction=ocr_gamma_correction,
+                metrics_url=metrics_url,
             ),
             # Defines an allowed region for cooredinates to occupy by buffering
             # the extracted map area polyline by a fixed amount
@@ -239,6 +239,8 @@ class GeoreferencingPipeline(Pipeline):
             )
         # create the projected map output if requested
         if projected:
-            outputs.append(ProjectedMapOutput(PROJECTED_MAP_OUTPUT_KEY))
+            outputs.append(
+                ProjectedMapOutput(PROJECTED_MAP_OUTPUT_KEY, draw_gcps=False)
+            )
 
         super().__init__("georeferencing", "Georeferencing", outputs, tasks)

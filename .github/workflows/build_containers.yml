@@ -11,8 +11,8 @@ env:
   SEGMENTATION_MODEL_NAME: layoutlmv3_20240925
   SEGMENTATION_MODEL: ${{ github.workspace }}/models/segmentation/layoutlmv3_20240925
 
-  POINTS_MODEL_NAME: lara_yolo9_20241108_best.pt
-  POINTS_MODEL: ${{ github.workspace }}/models/points/lara_yolo9_20241108_best.pt
+  POINTS_MODEL_NAME: lara_yolo9_20241204_best.pt
+  POINTS_MODEL: ${{ github.workspace }}/models/points/lara_yolo9_20241204_best.pt
 
 jobs:
   build:

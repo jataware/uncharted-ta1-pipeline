@@ -40,6 +40,7 @@ class LaraRequestPublisher:
         self._uid = uid
         self._pwd = pwd
         self._request_queues = request_queues
+        self._stop_event = threading.Event()
 
     def start_lara_request_queue(self):
         """
@@ -51,9 +52,20 @@ class LaraRequestPublisher:
         Returns:
             None
         """
+        self._stop_event.clear()
         threading.Thread(
             target=self._run_request_queue,
         ).start()
+
+    def stop_lara_request_queue(self):
+        """
+        Stops the LARA request queue by setting the stop event.
+
+        Returns:
+            None
+        """
+        logger.info("Stopping request queue thread")
+        self._stop_event.set()
 
     def publish_lara_request(self, req: Request, request_queue: str):
         """
@@ -127,7 +139,7 @@ class LaraRequestPublisher:
         of 1 second before returning to ensure that heartbeats etc. are processed.
         """
         self._request_connection: Optional[BlockingConnection] = None
-        while True:
+        while self._stop_event.is_set() is False:
             try:
                 if (
                     self._request_connection is None
@@ -151,3 +163,5 @@ class LaraRequestPublisher:
                 ):
                     self._request_connection.close()
                 sleep(5)
+
+        logger.info("request queue thread stopped")

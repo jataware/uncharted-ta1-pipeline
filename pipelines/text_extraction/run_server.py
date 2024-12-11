@@ -1,4 +1,5 @@
 import argparse
+from attr import validate
 from flask import Flask, request, Response
 import logging, json
 from hashlib import sha1
@@ -6,6 +7,7 @@ from hashlib import sha1
 from io import BytesIO
 from tasks.common import image_io
 
+from tasks.common.io import validate_s3_config
 from tasks.common.request_client import (
     TEXT_REQUEST_QUEUE,
     TEXT_RESULT_QUEUE,
@@ -97,8 +99,11 @@ if __name__ == "__main__":
     parser.add_argument("--result_queue", type=str, default=TEXT_RESULT_QUEUE)
     p = parser.parse_args()
 
+    # validate s3 path args up front
+    validate_s3_config("", p.workdir, p.imagedir, "")
+
     pipeline = TextExtractionPipeline(
-        p.workdir, p.tile, p.pixel_limit, p.gamma_corr, p.debug
+        p.workdir, p.tile, p.pixel_limit, p.gamma_corr, p.debug, p.metrics_url
     )
 
     result_key = (

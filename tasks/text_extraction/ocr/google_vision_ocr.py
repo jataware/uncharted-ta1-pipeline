@@ -57,6 +57,11 @@ class GoogleVisionOCR:
 
         return text_extractions
 
+    def validate_api_key(self) -> None:
+        # Make a simple API call to validate the credentials
+        client = ImageAnnotatorClient()
+        client.batch_annotate_images(requests=[])
+
     def _build_text_block(
         self, text_block: str, text_block_next: str, texts_subset: List[Dict[str, Any]]
     ) -> Tuple[Optional[BoundingPoly], int]:
