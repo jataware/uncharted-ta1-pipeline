@@ -30,7 +30,7 @@ services:
       {%- endif %}
     ]
     ports:
-      - 5000:5000
+      - 5001:5001
     environment:
       - CDR_API_TOKEN={{ cdr_api_token }}
       {%- if ngrok_authtoken %}
