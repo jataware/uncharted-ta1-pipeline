@@ -103,7 +103,7 @@ if __name__ == "__main__":
     validate_s3_config("", p.workdir, p.imagedir, "")
 
     pipeline = TextExtractionPipeline(
-        p.workdir, p.tile, p.pixel_limit, p.gamma_corr, p.debug
+        p.workdir, p.tile, p.pixel_limit, p.gamma_corr, p.debug, p.metrics_url
     )
 
     result_key = (

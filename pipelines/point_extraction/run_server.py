@@ -114,6 +114,7 @@ if __name__ == "__main__":
         fetch_legend_items=p.fetch_legend_items,
         gpu=not p.no_gpu,
         batch_size=p.batch_size,
+        metrics_url=p.metrics_url,
     )
 
     result_key = (

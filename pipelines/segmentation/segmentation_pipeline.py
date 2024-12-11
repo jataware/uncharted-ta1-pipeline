@@ -40,6 +40,7 @@ class SegmentationPipeline(Pipeline):
         cdr_schema=False,
         confidence_thres=0.25,
         gpu=True,
+        metrics_url: str = "",
     ):
         """
         Initializes the pipeline.
@@ -57,6 +58,7 @@ class SegmentationPipeline(Pipeline):
                 True,
                 6000,
                 0.5,
+                metrics_url=metrics_url,
             ),
             DetectronSegmenter(
                 "segmenter",
