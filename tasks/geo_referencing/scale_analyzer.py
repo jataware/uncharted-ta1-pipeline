@@ -125,7 +125,7 @@ class ScaleAnalyzer(Task):
 
         DPI_MIN = 72
         try:
-            dpi_xy: Tuple[int, int] = im.info["dpi"]
+            dpi_xy: Tuple[int, int] = im.info.get("dpi", [0, 0])
             # use the average x,y DPI value, if they are slightly different
             dpi = int((dpi_xy[0] + dpi_xy[1]) / 2)
             if dpi < DPI_MIN:
