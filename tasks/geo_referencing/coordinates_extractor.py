@@ -166,6 +166,13 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         return lon_pts, lat_pts
 
     def _parse_groups(self, groups: List[str]) -> Optional[ParsedDegree]:
+        """
+        Convert a regex DMS groups match into numerical degrees-minutes-seconds format
+        """
+
+        # normalize groups with None or whitespace
+        groups = [g.strip() if g is not None else "" for g in groups]
+
         parsed = ParsedDegree()
         try:
             deg = RE_NONNUMERIC.sub("", groups[0])
@@ -189,6 +196,16 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 seconds = 0.0
         except:
             seconds = 0.0
+
+        # extra check to remove noisy DMS extractions of numbers of the form "12 34" without puncuation,
+        # (unless minutes are quarterly increments)
+        if (
+            seconds == 0
+            and not (groups[1] or groups[2])
+            and not groups[4]
+            and groups[3] not in ["00", "15", "30", "45"]
+        ):
+            return None
 
         parsed.degree = deg
         parsed.minutes = minutes
