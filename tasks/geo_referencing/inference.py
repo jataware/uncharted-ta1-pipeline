@@ -11,7 +11,7 @@ from tasks.geo_referencing.entities import (
     CoordSource,
     CoordType,
 )
-from tasks.geo_referencing.util import calc_lonlat_slope_signs
+from tasks.geo_referencing.util import calc_lonlat_slope_signs, add_coordinate_to_dict
 from tasks.geo_referencing.scale_analyzer import ScaleAnalyzer
 from tasks.common.task import Task, TaskInput, TaskResult
 
@@ -118,7 +118,7 @@ class InferenceCoordinateExtractor(Task):
                         ),
                         confidence=0.5,
                     )
-                    lon_pts[lon_coord.to_deg_result()[0]] = lon_coord
+                    lon_pts = add_coordinate_to_dict(lon_coord, lon_pts)
 
             elif num_distinct_lons >= 2 and num_distinct_lats == 1:
                 # infer an additional lat pt (based on lon pxl resolution)
@@ -171,7 +171,7 @@ class InferenceCoordinateExtractor(Task):
                         ),
                         confidence=0.5,
                     )
-                    lat_pts[lat_coord.to_deg_result()[0]] = lat_coord
+                    lat_pts = add_coordinate_to_dict(lat_coord, lat_pts)
 
         except Exception as e:
             logger.warning(

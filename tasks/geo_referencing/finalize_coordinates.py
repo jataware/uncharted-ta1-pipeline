@@ -15,7 +15,11 @@ from tasks.geo_referencing.entities import (
     MapScale,
 )
 from tasks.geo_referencing.scale_analyzer import ScaleAnalyzer, KM_PER_INCH
-from tasks.geo_referencing.util import get_distinct_degrees, calc_lonlat_slope_signs
+from tasks.geo_referencing.util import (
+    get_distinct_degrees,
+    calc_lonlat_slope_signs,
+    add_coordinate_to_dict,
+)
 from tasks.common.task import Task, TaskInput, TaskResult
 
 logger = logging.getLogger("finalize_coordinates")
@@ -167,7 +171,7 @@ class FinalizeCoordinates(Task):
                 pixel_alignment=new_xy,
                 confidence=0.5,
             )
-            coords[(deg_pt, new_i)] = new_coord
+            coords = add_coordinate_to_dict(new_coord, coords)
 
         return coords
 
@@ -229,7 +233,7 @@ class FinalizeCoordinates(Task):
             pixel_alignment=new_xy,
             confidence=0.5,
         )
-        coords[(deg_pt, new_i)] = new_coord
+        coords = add_coordinate_to_dict(new_coord, coords)
 
         return coords
 
@@ -404,7 +408,7 @@ class FinalizeCoordinates(Task):
             pixel_alignment=xy,
             confidence=0.0,
         )
-        coords[(deg, xy[p_idx])] = c
+        coords = add_coordinate_to_dict(c, coords)
         # --- top-right of map ROI (jitter y by 1 pixel)
         xy = (map_poly.bounds[2], map_poly.bounds[1] + 1)
         deg = deg_per_pixel * (xy[p_idx] - xy_anchor_pt[p_idx]) + deg_anchor_pt
@@ -417,7 +421,7 @@ class FinalizeCoordinates(Task):
             pixel_alignment=xy,
             confidence=0.0,
         )
-        coords[(deg, xy[p_idx])] = c
+        coords = add_coordinate_to_dict(c, coords)
         # --- bottem-right of map ROI
         xy = (map_poly.bounds[2] - 1, map_poly.bounds[3])
         deg = deg_per_pixel * (xy[p_idx] - xy_anchor_pt[p_idx]) + deg_anchor_pt
@@ -430,7 +434,7 @@ class FinalizeCoordinates(Task):
             pixel_alignment=xy,
             confidence=0.0,
         )
-        coords[(deg, xy[p_idx])] = c
+        coords = add_coordinate_to_dict(c, coords)
         # --- bottem-left of map ROI (jitter x by 1 pixel)
         xy = (map_poly.bounds[0] + 1, map_poly.bounds[3] - 1)
         deg = deg_per_pixel * (xy[p_idx] - xy_anchor_pt[p_idx]) + deg_anchor_pt
@@ -443,6 +447,6 @@ class FinalizeCoordinates(Task):
             pixel_alignment=xy,
             confidence=0.0,
         )
-        coords[(deg, xy[p_idx])] = c
+        coords = add_coordinate_to_dict(c, coords)
 
         return coords

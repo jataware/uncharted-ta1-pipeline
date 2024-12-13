@@ -11,7 +11,7 @@ from tasks.geo_referencing.entities import (
     CoordSource,
     GEOFENCE_OUTPUT_KEY,
 )
-from tasks.geo_referencing.util import get_num_keypoints
+from tasks.geo_referencing.util import get_num_keypoints, add_coordinate_to_dict
 from tasks.metadata_extraction.entities import (
     DocGeocodedPlaces,
     GeocodedPlace,
@@ -99,8 +99,8 @@ class PointGeocoder(Task):
             f"Number of final lat/lon coords found from point geocoding: {len(coord_tuples)}"
         )
         for lon_coord, lat_coord in coord_tuples:
-            lons[lon_coord.to_deg_result()[0]] = lon_coord
-            lats[lat_coord.to_deg_result()[0]] = lat_coord
+            lons = add_coordinate_to_dict(lon_coord, lons)
+            lats = add_coordinate_to_dict(lat_coord, lats)
 
         # update the coordinates lists
         result = self._create_result(input)
