@@ -1,6 +1,7 @@
 import copy
 import csv
 import logging
+from math import e
 import re
 import stateplane
 import statistics
@@ -137,6 +138,17 @@ class StatePlaneExtractor(CoordinatesExtractor):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
+        if (
+            not self._code_lookup
+            or not self._fips_lookup
+            or not self._zones
+            or not self._state_codes
+        ):
+            logger.warning(
+                "State plane lookup tables not loaded - skipping state plane processing"
+            )
+            return ({}, {})
+
         geofence_raw: DocGeoFence = input.input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
@@ -298,7 +310,8 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 # use the fips code to lookup the epsg with the fips code being at least 4 characters
                 fips: str = z["info"]["FIPSZONE"]
                 fips = fips.rjust(4, "0")
-                return self._fips_lookup[fips]
+                if fips in self._fips_lookup:
+                    return self._fips_lookup[fips]
 
         # no zone info available, possibly a territory or different country
         return ""
