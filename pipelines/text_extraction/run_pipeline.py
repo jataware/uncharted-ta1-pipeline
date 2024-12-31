@@ -51,7 +51,11 @@ def main():
 
     for doc_id, image in input:
         # run the model
-        results = pipeline.run(PipelineInput(raster_id=doc_id, image=image))
+        try:
+            results = pipeline.run(PipelineInput(raster_id=doc_id, image=image))
+        except Exception as e:
+            logger.exception(e)
+            continue
 
         # write the results out to the file system or s3 bucket
         for output_type, output_data in results.items():

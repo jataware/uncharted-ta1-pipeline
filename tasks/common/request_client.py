@@ -445,7 +445,6 @@ class RequestClient:
                     json=gauge_labels,
                 )
         except Exception as e:
-            logger.exception(e)
             if self._metrics_url != "":
                 requests.post(
                     self._metrics_url
@@ -460,6 +459,8 @@ class RequestClient:
                     + "_working?value=0",
                     json=gauge_labels,
                 )
+            # re-raise the exception so we can handle it at the queue level
+            raise e
 
     def _create_pipeline_input(
         self, request: Request, image: PILImage

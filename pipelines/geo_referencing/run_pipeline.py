@@ -177,7 +177,12 @@ def run_pipeline(parsed, input_data: ImageFileInputIterator):
         input = create_input(raster_id, image, query_path)
 
         logger.info(f"running pipeline {pipeline.id}")
-        output = pipeline.run(input)
+        try:
+            output = pipeline.run(input)
+        except Exception as e:
+            logger.exception(e)
+            continue
+
         logger.info(f"done pipeline {pipeline.id}\n\n")
 
         # store the baseline georeferencing results
