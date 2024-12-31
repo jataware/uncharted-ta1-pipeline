@@ -122,7 +122,9 @@ class WriteResultSubscriber(LaraResultSubscriber):
                 )
 
         except Exception as e:
-            logger.exception(f"Error processing lara result: {e}")
+            logger.exception(e)
+            if self._metrics_url != "":
+                requests.post(self._metrics_url + "/counter/writer_errored?step=1")
 
         logger.info("result processing finished")
 
