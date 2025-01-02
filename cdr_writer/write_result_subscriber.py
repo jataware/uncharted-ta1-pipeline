@@ -91,7 +91,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             body_decoded = json.loads(body.decode())
             result = RequestResult.model_validate(body_decoded)
             logger.info(
-                f"processing result for request {result.id} of type {result.output_type}"
+                f"processing result for request {result.id} for {result.image_id} of type {result.output_type}"
             )
 
             # add metric of job starting
