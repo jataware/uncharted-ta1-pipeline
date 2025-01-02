@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lara-map-metadata-extraction"
-version = "0.1.0"
+version = "1.0.0"
 description = "LARA map metadata extraction pipeline and server"
 readme = "README.md"
 dependencies = ["flask", "lara-tasks", "mypy-boto3-s3"]
