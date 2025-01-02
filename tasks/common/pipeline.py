@@ -168,10 +168,10 @@ class Pipeline:
                     return self._produce_empty_outputs()
                 pipeline_result = self._merge_result(pipeline_result, task_result)
             except Exception as e:
-                logger.exception(
+                logger.error(
                     f"error pipeline at step {t.get_task_id()} ({task_input.task_index}) for raster {input.raster_id}",
-                    exc_info=True,
                 )
+                raise e
 
         return self._produce_output(pipeline_result)
 
