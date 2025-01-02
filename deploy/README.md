@@ -74,7 +74,7 @@ Once running, the system will respond to maps by being added to the CDR by execu
 
 ## Deployment Recommendations
 
-The system has been tested on an AWS `m7g.2xlarge node` (32GB RAM, 8x vCPU, NO GPU), which results in processing times of 2-3 minutes per individual map.  A node with 16GB of RAM was tested, but larger maps failed to process due to out-of-memory errors.
+The system has been tested on an AWS `m6i.2xlarge node` (32GB RAM, 8x vCPU, NO GPU), which results in processing times of 2-3 minutes per individual map.  A node with 16GB of RAM was tested, but larger maps failed to process due to out-of-memory errors.
 
 The S3 bucket used for the `workdir` and `imagedir` storage should have an expiry period set (24 hrs. recommended).  The data stored during processing is not needed after results are written to the CDR, but the application **does not** clean up these files itself.
 
