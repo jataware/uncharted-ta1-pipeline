@@ -112,14 +112,24 @@ services:
       {%- else %}
       - OPENAI_API_KEY={{ openai_api_key }}
       {%- endif %}
+      {%- if google_application_credentials_dir %}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_application_credentials.json
+      {%- else %}
+      - AZURE_CLIENT_ID={{ azure_client_id }}
+      - AZURE_CLIENT_SECRET={{ azure_client_secret }}
+      - AZURE_TENANT_ID={{ azure_tenant_id }}
+      - GOOGLE_AUDIENCE={{ google_audience }}
+      - AZURE_AUDIENCE={{ azure_audience }}
+      {%- endif %}
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
       - AWS_REGION={{ aws_region }}
       {%- endif %}
     volumes:
+      {%- if google_application_credentials_dir %}
       - {{ google_application_credentials_dir }}:/credentials
+      {%- endif %}
       {%- if local %}
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
@@ -150,14 +160,24 @@ services:
       "--model_segmenter", "pipelines/segmentation_weights",
       "--result_queue", "lara_result_queue"]
     environment:
+      {%- if google_application_credentials_dir %}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_application_credentials.json
+      {%- else %}
+      - AZURE_CLIENT_ID={{ azure_client_id }}
+      - AZURE_CLIENT_SECRET={{ azure_client_secret }}
+      - AZURE_TENANT_ID={{ azure_tenant_id }}
+      - GOOGLE_AUDIENCE={{ google_audience }}
+      - AZURE_AUDIENCE={{ azure_audience }}
+      {%- endif %}
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
       - AWS_REGION={{ aws_region }}
       {%- endif %}
     volumes:
+      {%- if google_application_credentials_dir %}
       - {{ google_application_credentials_dir }}:/credentials
+      {%- endif %}
     {%- if local %}
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
@@ -195,14 +215,24 @@ services:
       "--model", "pipelines/segmentation_weights",
       "--result_queue", "lara_result_queue"]
     environment:
+      {%- if google_application_credentials_dir %}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_application_credentials.json
+      {%- else %}
+      - AZURE_CLIENT_ID={{ azure_client_id }}
+      - AZURE_CLIENT_SECRET={{ azure_client_secret }}
+      - AZURE_TENANT_ID={{ azure_tenant_id }}
+      - GOOGLE_AUDIENCE={{ google_audience }}
+      - AZURE_AUDIENCE={{ azure_audience }}
+      {%- endif %}
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
       - AWS_REGION={{ aws_region }}
       {%- endif %}
     volumes:
+    {%- if google_application_credentials_dir %}
       - {{ google_application_credentials_dir }}:/credentials
+    {%- endif %}
     {%- if local %}
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
@@ -239,14 +269,24 @@ services:
       {%- else %}
       - OPENAI_API_KEY={{ openai_api_key }}
       {%- endif %}
+      {%- if google_application_credentials_dir %}
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/google_application_credentials.json
+      {%- else %}
+      - AZURE_CLIENT_ID={{ azure_client_id }}
+      - AZURE_CLIENT_SECRET={{ azure_client_secret }}
+      - AZURE_TENANT_ID={{ azure_tenant_id }}
+      - GOOGLE_AUDIENCE={{ google_audience }}
+      - AZURE_AUDIENCE={{ azure_audience }}
+      {%- endif %}
       {%- if not local %}
       - AWS_ACCESS_KEY_ID={{ aws_access_key_id }}
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
       - AWS_REGION={{ aws_region }}
       {%- endif %}
     volumes:
+    {%- if google_application_credentials_dir %}
       - {{ google_application_credentials_dir }}:/credentials
+    {%- endif %}
     {%- if local %}
       - {{ work_dir }}:/workdir
       - {{ image_dir }}:/imagedir
