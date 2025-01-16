@@ -129,7 +129,9 @@ services:
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
       - AWS_REGION={{ aws_region }}
       {%- endif %}
+    {%- if google_application_credentials_dir or local%}  
     volumes:
+    {%- endif %}
       {%- if google_application_credentials_dir %}
       - {{ google_application_credentials_dir }}:/credentials
       {%- endif %}
@@ -181,7 +183,9 @@ services:
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
       - AWS_REGION={{ aws_region }}
       {%- endif %}
+    {%- if google_application_credentials_dir or local%}  
     volumes:
+    {%- endif %}
       {%- if google_application_credentials_dir %}
       - {{ google_application_credentials_dir }}:/credentials
       {%- endif %}
@@ -240,7 +244,9 @@ services:
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
       - AWS_REGION={{ aws_region }}
       {%- endif %}
+    {%- if google_application_credentials_dir or local%}  
     volumes:
+    {%- endif %}
     {%- if google_application_credentials_dir %}
       - {{ google_application_credentials_dir }}:/credentials
     {%- endif %}
@@ -298,7 +304,9 @@ services:
       - AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}
       - AWS_REGION={{ aws_region }}
       {%- endif %}
+    {%- if google_application_credentials_dir or local%}  
     volumes:
+    {%- endif %}
     {%- if google_application_credentials_dir %}
       - {{ google_application_credentials_dir }}:/credentials
     {%- endif %}
