@@ -28,6 +28,7 @@ from tasks.geo_referencing.util import (
     get_bounds_bounding_box,
     is_in_range,
     get_min_max_count,
+    add_coordinate_to_dict,
 )
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -454,8 +455,7 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                     x_ranges=x_ranges,
                     confidence=0 if utm_zone[2] == UTM_ZONE_DEFAULT else 0.75,
                 )
-                x_pixel, y_pixel = coord.get_pixel_alignment()
-                lat_results[(parsed_degree, y_pixel)] = coord
+                lat_results = add_coordinate_to_dict(coord, lat_results)
 
             else:
                 logger.debug(
@@ -489,7 +489,6 @@ class UTMCoordinatesExtractor(CoordinatesExtractor):
                 x_ranges=x_ranges,
                 confidence=0 if utm_zone[2] == UTM_ZONE_DEFAULT else 0.75,
             )
-            x_pixel, y_pixel = coord.get_pixel_alignment()
-            lon_results[(parsed_degree, x_pixel)] = coord
+            lon_results = add_coordinate_to_dict(coord, lon_results)
 
         return (lon_results, lat_results)

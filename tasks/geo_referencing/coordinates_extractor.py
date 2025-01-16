@@ -17,6 +17,7 @@ from tasks.geo_referencing.geo_coordinates import split_lon_lat_degrees
 from tasks.geo_referencing.util import (
     get_bounds_bounding_box,
     get_input_geofence,
+    add_coordinate_to_dict,
 )
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -166,6 +167,13 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
         return lon_pts, lat_pts
 
     def _parse_groups(self, groups: List[str]) -> Optional[ParsedDegree]:
+        """
+        Convert a regex DMS groups match into numerical degrees-minutes-seconds format
+        """
+
+        # normalize groups with None or whitespace
+        groups = [g.strip() if g is not None else "" for g in groups]
+
         parsed = ParsedDegree()
         try:
             deg = RE_NONNUMERIC.sub("", groups[0])
@@ -189,6 +197,16 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                 seconds = 0.0
         except:
             seconds = 0.0
+
+        # extra check to remove noisy DMS extractions of numbers of the form "12 34" without puncuation,
+        # (unless minutes are quarterly increments)
+        if (
+            seconds == 0
+            and not (groups[1] or groups[2])
+            and not groups[4]
+            and groups[3] not in ["00", "15", "30", "45"]
+        ):
+            return None
 
         parsed.degree = deg
         parsed.minutes = minutes
@@ -312,7 +330,6 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
             )
 
         # ---- finalize lat/lon results
-        coord_results = []
         coord_lat_results = {}
         coord_lon_results = {}
         # ---- Check degress-minutes-seconds extractions...
@@ -363,10 +380,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         x_ranges=x_ranges,
                         confidence=0.95,
                     )
-                    coord_results.append(coord)
-                    x_pixel, y_pixel = coord.get_pixel_alignment()
                     # pixel->latitude mapping depends mostly on y-pixel (but also x-pixel values, due to possible map rotation/projection)
-                    coord_lat_results[(deg_decimal, y_pixel)] = coord
+                    coord_lat_results = add_coordinate_to_dict(coord, coord_lat_results)
                 else:
                     logger.debug(
                         "Excluding candidate latitude point: {} with lat minmax {}".format(
@@ -392,10 +407,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         x_ranges=x_ranges,
                         confidence=0.95,
                     )
-                    coord_results.append(coord)
-                    x_pixel, y_pixel = coord.get_pixel_alignment()
                     # pixel->longitude mapping depends mostly on x-pixel (but also y-pixel values, due to possible map rotation/projection)
-                    coord_lon_results[(deg_decimal, x_pixel)] = coord
+                    coord_lon_results = add_coordinate_to_dict(coord, coord_lon_results)
                 else:
                     logger.debug(
                         "Excluding candidate longitude point: {}".format(deg_decimal)
@@ -440,10 +453,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         x_ranges=x_ranges,
                         confidence=0.9,
                     )
-                    coord_results.append(coord)
-                    x_pixel, y_pixel = coord.get_pixel_alignment()
                     # pixel->latitude mapping depends mostly on y-pixel (but also x-pixel values, due to possible map rotation/projection)
-                    coord_lat_results[(deg_decimal, y_pixel)] = coord
+                    coord_lat_results = add_coordinate_to_dict(coord, coord_lat_results)
                 else:
                     logger.debug(
                         "Excluding candidate latitude point: {}".format(deg_decimal)
@@ -467,10 +478,8 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         x_ranges=x_ranges,
                         confidence=0.9,
                     )
-                    coord_results.append(coord)
-                    x_pixel, y_pixel = coord.get_pixel_alignment()
                     # pixel->longitude mapping depends mostly on x-pixel (but also y-pixel values, due to possible map rotation/projection)
-                    coord_lon_results[(deg_decimal, x_pixel)] = coord
+                    coord_lon_results = add_coordinate_to_dict(coord, coord_lon_results)
                 else:
                     logger.debug(
                         "Excluding candidate longitude point: {}".format(deg_decimal)
@@ -552,9 +561,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         font_height=font_height,
                         confidence=0.8,
                     )
-                    coord_results.append(coord)
-                    x_pixel, y_pixel = coord.get_pixel_alignment()
-                    coord_lat_results[(deg_decimal, y_pixel)] = coord
+                    coord_lat_results = add_coordinate_to_dict(coord, coord_lat_results)
                 else:
                     logger.debug(
                         "Excluding candidate latitude point: {}".format(deg_decimal)
@@ -579,9 +586,7 @@ class GeoCoordinatesExtractor(CoordinatesExtractor):
                         font_height=font_height,
                         confidence=0.8,
                     )
-                    coord_results.append(coord)
-                    x_pixel, y_pixel = coord.get_pixel_alignment()
-                    coord_lon_results[(deg_decimal, x_pixel)] = coord
+                    coord_lon_results = add_coordinate_to_dict(coord, coord_lon_results)
                 else:
                     logger.debug(
                         "Excluding candidate longitude point: {}".format(deg_decimal)

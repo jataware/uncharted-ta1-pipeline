@@ -488,85 +488,77 @@ class MetadataExtractor(Task):
             Optional[MetadataExtraction]: The extracted metadata
         """
 
-        try:
-            logger.info(
-                f"Processing doc text extractions from '{doc_text_extraction.doc_id}'"
-            )
+        logger.info(
+            f"Processing doc text extractions from '{doc_text_extraction.doc_id}'"
+        )
 
-            max_text_length = self.MAX_TEXT_FILTER_LENGTH
-            num_tokens = 0
+        max_text_length = self.MAX_TEXT_FILTER_LENGTH
+        num_tokens = 0
 
-            input_prompt: Optional[PromptValue] = None
-            text = []
+        input_prompt: Optional[PromptValue] = None
+        text = []
 
-            # setup the output structure
-            parser = PydanticOutputParser(pydantic_object=MetdataLLM)
+        # setup the output structure
+        parser = PydanticOutputParser(pydantic_object=MetdataLLM)
 
-            # setup the prompt template
-            prompt_template = self._generate_prompt_template(
-                parser, self.TEXT_EXTRACT_TEMPLATE
-            )
+        # setup the prompt template
+        prompt_template = self._generate_prompt_template(
+            parser, self.TEXT_EXTRACT_TEMPLATE
+        )
 
-            while max_text_length > self.MIN_TEXT_FILTER_LENGTH:
-                # extract text from OCR output using rule-based filtering
-                text = self._extract_text(doc_text_extraction, max_text_length)
-                input_prompt = prompt_template.format_prompt(text_str="\n".join(text))
-                if input_prompt is None:
-                    logger.warning(
-                        f"Skipping extraction '{doc_text_extraction.doc_id}' - prompt generation failed"
-                    )
-                    return self._create_empty_extraction(doc_text_extraction.doc_id)
-
-                # if the token count is greater than the limit, reduce the max text length
-                # and try again
-                num_tokens = self._count_tokens(input_prompt.to_string())
-                if num_tokens <= self.TOKEN_LIMIT:
-                    break
-                max_text_length = max_text_length - self.TEXT_FILTER_DECREMENT
-                logger.debug(
-                    f"Token count after filtering exceeds limit - reducing max text length to {max_text_length}"
+        while max_text_length > self.MIN_TEXT_FILTER_LENGTH:
+            # extract text from OCR output using rule-based filtering
+            text = self._extract_text(doc_text_extraction, max_text_length)
+            input_prompt = prompt_template.format_prompt(text_str="\n".join(text))
+            if input_prompt is None:
+                logger.warning(
+                    f"Skipping extraction '{doc_text_extraction.doc_id}' - prompt generation failed"
                 )
-            logger.info(f"Processing {num_tokens} tokens.")
+                return self._create_empty_extraction(doc_text_extraction.doc_id)
 
-            # publish input token counts to metrics service
-            self._publish_input_metrics(num_tokens)
-
-            # generate the response
-            if input_prompt is not None:
-                logger.debug("Prompt string:\n")
-                logger.debug(input_prompt.to_string())
-                chain = prompt_template | self._chat_model | parser
-                response = chain.invoke({"text_str": "\n".join(text)})
-
-                # publish output token counts to metrics service
-                output_tokens = self._count_tokens(response.json())
-                logger.info(f"Response generated {output_tokens} tokens.")
-
-                self._publish_output_metrics(output_tokens)
-
-                # add placeholders for fields we don't extract
-                response_dict = response.dict()
-                response_dict["quadrangles"] = []
-                response_dict["population_centres"] = []
-                response_dict["places"] = []
-                response_dict["map_shape"] = "unknown"
-                response_dict["map_color"] = "unknown"
-
-                return MetadataExtraction(
-                    map_id=doc_text_extraction.doc_id, **response_dict
-                )
-
-            logger.warning(
-                f"Skipping extraction '{doc_text_extraction.doc_id}' - input token count {num_tokens} is greater than limit {self.TOKEN_LIMIT}"
+            # if the token count is greater than the limit, reduce the max text length
+            # and try again
+            num_tokens = self._count_tokens(input_prompt.to_string())
+            if num_tokens <= self.TOKEN_LIMIT:
+                break
+            max_text_length = max_text_length - self.TEXT_FILTER_DECREMENT
+            logger.debug(
+                f"Token count after filtering exceeds limit - reducing max text length to {max_text_length}"
             )
-            return self._create_empty_extraction(doc_text_extraction.doc_id)
+        logger.info(f"Processing {num_tokens} tokens.")
 
-        except Exception as e:
-            logger.error(
-                f"Skipping extraction '{doc_text_extraction.doc_id}' - unexpected error during processing",
-                exc_info=True,
+        # publish input token counts to metrics service
+        self._publish_input_metrics(num_tokens)
+
+        # generate the response
+        if input_prompt is not None:
+            logger.debug("Prompt string:\n")
+            logger.debug(input_prompt.to_string())
+            chain = prompt_template | self._chat_model | parser
+            response = chain.invoke({"text_str": "\n".join(text)})
+
+            # publish output token counts to metrics service
+            output_tokens = self._count_tokens(response.json())
+            logger.info(f"Response generated {output_tokens} tokens.")
+
+            self._publish_output_metrics(output_tokens)
+
+            # add placeholders for fields we don't extract
+            response_dict = response.dict()
+            response_dict["quadrangles"] = []
+            response_dict["population_centres"] = []
+            response_dict["places"] = []
+            response_dict["map_shape"] = "unknown"
+            response_dict["map_color"] = "unknown"
+
+            return MetadataExtraction(
+                map_id=doc_text_extraction.doc_id, **response_dict
             )
-            return self._create_empty_extraction(doc_text_extraction.doc_id)
+
+        logger.warning(
+            f"Skipping extraction '{doc_text_extraction.doc_id}' - input token count {num_tokens} is greater than limit {self.TOKEN_LIMIT}"
+        )
+        return self._create_empty_extraction(doc_text_extraction.doc_id)
 
     def _roi_filtering(
         self, text_extractions: List[TextExtraction], map_roi: Optional[MapROI]

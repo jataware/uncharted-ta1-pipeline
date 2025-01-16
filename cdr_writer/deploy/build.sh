@@ -7,6 +7,7 @@ cp ../pyproject.toml cdr_writer
 cp -r ../../schema .
 cp -r ../../tasks .
 cp -r ../../util .
+cp -r ../../certs .
 
 # run the build with the platform argument if provided, otherwise build for the host architecture
 platform=${1:-}
@@ -22,3 +23,4 @@ rm -rf cdr_writer
 rm -rf schema
 rm -rf tasks
 rm -rf util
+rm -rf certs

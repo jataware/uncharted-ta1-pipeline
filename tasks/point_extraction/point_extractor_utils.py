@@ -1,6 +1,7 @@
 import cv2
 import re
 import logging
+import math
 import numpy as np
 from PIL import Image
 
@@ -396,3 +397,20 @@ def convert_preds_to_bitmasks(
         bitmasks[pt_label] = Image.fromarray(im_binary.astype(np.uint8))
 
     return bitmasks
+
+
+def distance(ax, ay, bx, by):
+    """
+    finds the straight-line distance between two points
+    """
+    return math.sqrt((by - ay) ** 2 + (bx - ax) ** 2)
+
+
+def rotated_about(ax, ay, bx, by, angle):
+    """
+    rotates point `A` about point `B` by `angle` radians clockwise.
+    from https://stackoverflow.com/questions/34747946/rotating-a-square-in-pil
+    """
+    radius = distance(ax, ay, bx, by)
+    angle += math.atan2(ay - by, ax - bx)
+    return (round(bx + radius * math.cos(angle)), round(by + radius * math.sin(angle)))

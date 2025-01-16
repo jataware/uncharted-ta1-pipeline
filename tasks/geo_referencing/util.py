@@ -73,6 +73,29 @@ def is_coord_from_source(
     return False
 
 
+def add_coordinate_to_dict(
+    coord: Coordinate,
+    coord_dict: Dict[Tuple[float, float], Coordinate],
+    avoid_collisions=True,
+) -> Dict[Tuple[float, float], Coordinate]:
+    """
+    Add a Coordinate to the Tuple->Coordinate dictionary format
+    pixel locations may be jittered slightly to avoid collisions
+    """
+    # TODO Coordinate Dictionaries should be re-factored to just use a List instead?
+    xy = coord.get_pixel_alignment()
+    deg = coord.get_parsed_degree()
+    idx = 1 if coord.is_lat() else 0
+    key = (deg, xy[idx])
+    if avoid_collisions and key in coord_dict:
+        # jitter pixel coord by 1 to avoid collision
+        xy = (xy[0], xy[1] + 1) if coord.is_lat() else (xy[0] + 1, xy[1])
+        coord._pixel_alignment = xy
+        key = (deg, xy[idx])
+    coord_dict[key] = coord
+    return coord_dict
+
+
 def calc_lonlat_slope_signs(lonlat_hemispheres: Tuple[int, int]):
     """
     Calculates the expected slope direction for degrees-to-pixels

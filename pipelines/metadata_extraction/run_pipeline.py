@@ -81,7 +81,11 @@ def main():
     # run the extraction pipeline
     for doc_id, image in input:
         image_input = PipelineInput(image=image, raster_id=doc_id)
-        results = pipeline.run(image_input)
+        try:
+            results = pipeline.run(image_input)
+        except Exception as e:
+            logger.exception(e)
+            continue
 
         # write the results out to the file system or s3 bucket
         for output_type, output_data in results.items():

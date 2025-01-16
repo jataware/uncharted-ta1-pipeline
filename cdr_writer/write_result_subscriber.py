@@ -91,7 +91,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             body_decoded = json.loads(body.decode())
             result = RequestResult.model_validate(body_decoded)
             logger.info(
-                f"processing result for request {result.id} of type {result.output_type}"
+                f"processing result for request {result.id} for {result.image_id} of type {result.output_type}"
             )
 
             # add metric of job starting
@@ -122,7 +122,9 @@ class WriteResultSubscriber(LaraResultSubscriber):
                 )
 
         except Exception as e:
-            logger.exception(f"Error processing lara result: {e}")
+            logger.exception(e)
+            if self._metrics_url != "":
+                requests.post(self._metrics_url + "/counter/writer_errored?step=1")
 
         logger.info("result processing finished")
 

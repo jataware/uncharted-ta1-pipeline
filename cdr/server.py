@@ -9,6 +9,7 @@ import logging
 import ngrok
 import os
 import requests
+import secrets
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -58,6 +59,7 @@ class Settings:
     output: str
     callback_secret: str
     callback_url: str
+    callback_token: str
     registration_id: Dict[str, str] = {}
     rabbitmq_host: str
     sequence: List[str] = []
@@ -85,6 +87,12 @@ def process_cdr_event():
     logger.info("event callback started")
     evt = request.get_json(force=True)
     logger.info(f"event data received {evt['event']}")
+
+    # Check the token in the header
+    auth_token = request.headers.get("Authorization")
+    if auth_token != f"Bearer {settings.callback_token}":
+        logger.error(f"Invalid callback token {auth_token}")
+        return Response("Unauthorized", status=401)
 
     map_event: Optional[MapEventPayload] = None
     try:
@@ -177,9 +185,8 @@ def register_cdr_system():
             "version": system_version,
             "callback_url": settings.callback_url,
             "webhook_secret": settings.callback_secret,
-            # Leave blank if callback url has no auth requirement
-            # "auth_header": "",
-            # "auth_token": "",
+            "auth_header": "Authorization",
+            "auth_token": f"Bearer {settings.callback_token}",
             "events": events,
         }
 
@@ -429,6 +436,7 @@ def main():
         "--cdr_callback_secret", type=str, default=DEFAULT_CDR_CALLBACK_SECRET
     )
     parser.add_argument("--cdr_callback_url", type=str, default=None)
+    parser.add_argument("--cdr_callback_token", type=str, default=None)
     parser.add_argument("--app_port", type=int, default=DEFAULT_APP_PORT)
     parser.add_argument("--host", type=str, default="localhost")
     parser.add_argument("--rabbit_port", type=int, default=5672)
@@ -452,6 +460,7 @@ def main():
     settings.cdr_host = p.cdr_host
     settings.cog_host = p.cog_host
     settings.callback_secret = p.cdr_callback_secret
+    settings.callback_token = p.cdr_callback_token or secrets.token_urlsafe(32)
     settings.sequence = p.sequence
     settings.replay_start = p.replay_start if hasattr(p, "replay_start") else None
     settings.replay_end = p.replay_end if hasattr(p, "replay_end") else None

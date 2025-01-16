@@ -1,6 +1,7 @@
 import copy
 import csv
 import logging
+from math import e
 import re
 import stateplane
 import statistics
@@ -36,6 +37,7 @@ from tasks.geo_referencing.util import (
     get_bounds_bounding_box,
     is_in_range,
     get_min_max_count,
+    add_coordinate_to_dict,
 )
 from util.json import read_json_file
 from typing import Any, Dict, List, Optional, Tuple
@@ -136,6 +138,17 @@ class StatePlaneExtractor(CoordinatesExtractor):
     ) -> Tuple[
         Dict[Tuple[float, float], Coordinate], Dict[Tuple[float, float], Coordinate]
     ]:
+        if (
+            not self._code_lookup
+            or not self._fips_lookup
+            or not self._zones
+            or not self._state_codes
+        ):
+            logger.warning(
+                "State plane lookup tables not loaded - skipping state plane processing"
+            )
+            return ({}, {})
+
         geofence_raw: DocGeoFence = input.input.parse_data(
             GEOFENCE_OUTPUT_KEY, DocGeoFence.model_validate
         )
@@ -297,7 +310,8 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 # use the fips code to lookup the epsg with the fips code being at least 4 characters
                 fips: str = z["info"]["FIPSZONE"]
                 fips = fips.rjust(4, "0")
-                return self._fips_lookup[fips]
+                if fips in self._fips_lookup:
+                    return self._fips_lookup[fips]
 
         # no zone info available, possibly a territory or different country
         return ""
@@ -533,8 +547,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                     x_ranges=x_ranges,
                     confidence=0.75,
                 )
-                x_pixel, y_pixel = coord.get_pixel_alignment()
-                lat_results[(parsed_degree, y_pixel)] = coord
+                lat_results = add_coordinate_to_dict(coord, lat_results)
 
             else:
                 logger.debug("Excluding candidate northing point: {}".format(n))
@@ -561,8 +574,7 @@ class StatePlaneExtractor(CoordinatesExtractor):
                 x_ranges=x_ranges,
                 confidence=0.75,
             )
-            x_pixel, y_pixel = coord.get_pixel_alignment()
-            lon_results[(parsed_degree, x_pixel)] = coord
+            lon_results = add_coordinate_to_dict(coord, lon_results)
 
         return (lon_results, lat_results)
 

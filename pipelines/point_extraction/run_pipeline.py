@@ -2,8 +2,9 @@ import argparse
 import json
 import logging
 import os
-
+from PIL.Image import Image as PILImage
 from tasks.common.pipeline import (
+    ImageOutput,
     EmptyOutput,
     PipelineInput,
     BaseModelOutput,
@@ -42,6 +43,7 @@ def main():
     parser.add_argument("--fetch_legend_items", action="store_true")
     parser.add_argument("--legend_items_dir", type=str, default="")
     parser.add_argument("--legend_hints_dir", type=str, default="")
+    parser.add_argument("--debug_images", action="store_true")
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--batch_size", type=int, default=20)
     p = parser.parse_args()
@@ -66,6 +68,7 @@ def main():
         include_bitmasks_output=p.bitmasks,
         gpu=not p.no_gpu,
         batch_size=p.batch_size,
+        debug_images=p.debug_images,
     )
 
     # run the extraction pipeline
@@ -129,7 +132,11 @@ def main():
                     'Points pipeline is configured to create CMA contest bitmasks without using legend annotations! Setting "legend_hints_dir" or "legend_items_dir" param is recommended.'
                 )
 
-        results = pipeline.run(image_input)
+        try:
+            results = pipeline.run(image_input)
+        except Exception as e:
+            logger.exception(e)
+            continue
 
         # write the results out to the file system or s3 bucket
         for output_type, output_data in results.items():
@@ -147,6 +154,11 @@ def main():
                         bitmasks_out_dir, f"{doc_id}_{pt_label}.tif"
                     )
                     image_writer.process(raster_path, pil_im)
+            elif isinstance(output_data, ImageOutput):
+                # write out the image
+                path = os.path.join(p.output, f"{doc_id}_point_extraction.png")
+                assert isinstance(output_data.data, PILImage)
+                image_writer.process(path, output_data.data)
             elif isinstance(output_data, EmptyOutput):
                 logger.info(f"Empty {output_type} output for {doc_id}")
             else:

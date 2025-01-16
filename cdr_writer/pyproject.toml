@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lara-cdr-writer"
-version = "0.1.0"
+version = "1.0.0"
 description = "LARA CDR writer"
 readme = "README.md"
 dependencies = ["jsons", "lara-tasks", "mypy-boto3-s3", "pyproj"]

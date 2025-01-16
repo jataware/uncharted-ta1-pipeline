@@ -9,6 +9,7 @@ from pathlib import Path
 
 from schema.cdr_schemas.cdr_responses.features import PointExtractionResponse
 from tasks.point_extraction.label_map import YOLO_TO_CDR_LABEL
+from tasks.point_extraction.point_extractor_utils import rotated_about
 
 # -------------
 # Plot Point Extraction location and orientation bboxes on an image
@@ -87,19 +88,6 @@ def parse_cdr_features(data: list):
 
         pt_labels.append(pt_label)
     return pt_labels
-
-
-# finds the straight-line distance between two points
-def distance(ax, ay, bx, by):
-    return math.sqrt((by - ay) ** 2 + (bx - ax) ** 2)
-
-
-# from https://stackoverflow.com/questions/34747946/rotating-a-square-in-pil
-# rotates point `A` about point `B` by `angle` radians clockwise.
-def rotated_about(ax, ay, bx, by, angle):
-    radius = distance(ax, ay, bx, by)
-    angle += math.atan2(ay - by, ax - bx)
-    return (round(bx + radius * math.cos(angle)), round(by + radius * math.sin(angle)))
 
 
 def run(input_dir: str, json_pred_dir: str, cdr_json_pred_dir: str):

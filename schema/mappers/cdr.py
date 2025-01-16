@@ -45,7 +45,7 @@ from typing import Dict, List
 logger = logging.getLogger("mapper")
 
 MODEL_NAME = "uncharted-lara"
-MODEL_VERSION = "0.0.4"
+MODEL_VERSION = "1.0.0"
 
 
 class CDRMapper:
