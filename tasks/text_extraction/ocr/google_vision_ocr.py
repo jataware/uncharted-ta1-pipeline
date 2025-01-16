@@ -18,19 +18,21 @@ class GoogleVisionOCR:
     Extracts text from an image using Google Vision's OCR API
     """
 
-    def __init__(self, cloud_authenticate=False):
+    def __init__(self, ocr_cloud_auth=False):
         """
         Initializes the GoogleVisionOCR class.
 
         Args:
-            cloud_authenticate (bool): If True, authenticate using cloud credentials and initialize
+            ocr_cloud_auth (bool): If True, authenticate using cloud credentials and initialize
                                        the Vision API client with cloud authentication. If False,
                                        initialize the Vision API client with default credentials.
         """
-        if cloud_authenticate:
+        if ocr_cloud_auth:
+            logger.info("Authenticating with cloud credentials")
             cloud_authenticator = CloudAuthenticator()
             self._client = cloud_authenticator.get_vision_client()
         else:
+            logger.info("Authenticating with default credentials")
             self._client = ImageAnnotatorClient()
 
     def validate_api_key(self) -> None:
