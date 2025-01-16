@@ -9,6 +9,11 @@ import glob
 import fiona
 from collections import defaultdict
 
+"""
+Script to prepare points extraction ground truth results for the 18-month self-evaluation
+Input data is assumed to follow the directory structure in the 18-month eval data.tar.gz package from Mitre
+See README.md for more info
+"""
 
 # ---- ENV variables to edit
 INPUT_MAPS_DIR = "<local/path/to/georeferencing/eval/geotiffs>"
