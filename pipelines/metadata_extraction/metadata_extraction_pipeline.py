@@ -51,6 +51,7 @@ class MetadataExtractorPipeline(Pipeline):
         provider=LLM_PROVIDER.OPENAI,
         gpu=True,
         metrics_url: str = "",
+        ocr_cloud_auth=False,
     ):
         # extract text from image, filter out the legend and map areas, and then extract metadata using an LLM
         tasks = [
@@ -75,6 +76,7 @@ class MetadataExtractorPipeline(Pipeline):
                 6000,
                 0.5,
                 metrics_url=metrics_url,
+                ocr_cloud_auth=ocr_cloud_auth,
             ),
             # filter out the text that is not part of the map or supplemental information
             TextFilter(

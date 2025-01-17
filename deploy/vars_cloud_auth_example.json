@@ -1,4 +1,6 @@
 {
+    "tag": "latest",
+    "cdr": true,
     "work_dir": "s3://example_bucket/workdir",
     "image_dir": "s3://example_bucket/images",
     "aws_access_key_id": "AKIAIOSFODNN7EXAMPLE",
@@ -6,11 +8,14 @@
     "aws_region": "us-west-2",
     "cdr_api_token": "1234567890abcdef1234567890abcdef",
     "cdr_host": "https://example.com/cdr",
+    "cdr_callback_url": "https://lara_cdr:5000",
     "cog_host": "https://s3.amazonaws.com/example/cogs",
     "azure_openai_api_key": "1234567890abcdef1234567890abcdef",
     "azure_openai_endpoint": "https://azure/endpoint",
-    "google_application_credentials_dir": "~/lara/credentials",
-    "tag": "latest",
-    "cdr": true,
-    "llm_provider": "azure"
+    "llm_provider": "azure",
+    "azure_client_id": "1234567890abcdef1234567890abcdef",
+    "azure_client_secret": "1234567890abcdef1234567890abcdef",
+    "azure_tenant_id": "1234567890abcdef1234567890abcdef",
+    "google_audience": "https://google_audience_example.com",
+    "azure_audience": "https://azure_audience_example.com" 
 }

@@ -45,6 +45,7 @@ class TextExtractionPipeline(Pipeline):
         gamma_corr=1.0,
         debug_images=False,
         metrics_url: str = "",
+        ocr_cloud_auth=False,
     ):
         if tile:
             tasks = [
@@ -54,6 +55,7 @@ class TextExtractionPipeline(Pipeline):
                     pixel_limit,
                     gamma_corr,
                     metrics_url=metrics_url,
+                    ocr_cloud_auth=ocr_cloud_auth,
                 )
             ]
         else:
@@ -66,6 +68,7 @@ class TextExtractionPipeline(Pipeline):
                     pixel_limit,
                     gamma_corr,
                     metrics_url=metrics_url,
+                    ocr_cloud_auth=ocr_cloud_auth,
                 )
             ]
 

@@ -186,6 +186,7 @@ def start_server():
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--project", action="store_true")
     parser.add_argument("--diagnostics", action="store_true")
+    parser.add_argument("--ocr_cloud_auth", action="store_true")
     p = parser.parse_args()
 
     # validate any s3 path args up front
@@ -216,6 +217,7 @@ def start_server():
         p.diagnostics,
         not p.no_gpu,
         p.metrics_url,
+        p.ocr_cloud_auth,
     )
 
     #### start flask server or startup up the message queue

@@ -97,13 +97,20 @@ if __name__ == "__main__":
     parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument("--request_queue", type=str, default=TEXT_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=TEXT_RESULT_QUEUE)
+    parser.add_argument("--ocr_cloud_auth", action="store_true")
     p = parser.parse_args()
 
     # validate s3 path args up front
     validate_s3_config("", p.workdir, p.imagedir, "")
 
     pipeline = TextExtractionPipeline(
-        p.workdir, p.tile, p.pixel_limit, p.gamma_corr, p.debug, p.metrics_url
+        p.workdir,
+        p.tile,
+        p.pixel_limit,
+        p.gamma_corr,
+        p.debug,
+        p.metrics_url,
+        p.ocr_cloud_auth,
     )
 
     result_key = (
