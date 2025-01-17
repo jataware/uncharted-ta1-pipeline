@@ -329,7 +329,7 @@ class ImageFileReader:
         try:
             client.head_object(Bucket=bucket, Key=key)
         except client.exceptions.ClientError as e:
-            error_code = int(e.response["Error"]["Code"])
+            error_code = int(e.response["Error"]["Code"])  # type: ignore
             if error_code == 404:
                 return None
 
@@ -446,7 +446,7 @@ def bucket_exists(uri: str) -> bool:
     except client.exceptions.NoSuchBucket:
         return False
     except client.exceptions.ClientError as e:
-        error_code = int(e.response["Error"]["Code"])
+        error_code = int(e.response["Error"]["Code"])  # type: ignore
         if error_code == 404 or error_code == 403:
             return False
         raise

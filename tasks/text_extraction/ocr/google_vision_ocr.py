@@ -8,14 +8,44 @@ import io, copy, logging
 from typing import List, Dict, Any, Optional, Tuple
 from shapely.geometry import Polygon
 from shapely import MultiPolygon, unary_union, concave_hull
+from tasks.text_extraction.ocr.cloud_authenticator import CloudAuthenticator
 
 logger = logging.getLogger(__name__)
 
 
 class GoogleVisionOCR:
     """
-    Extract text from an image using Google Vision's OCR API
+    Extracts text from an image using Google Vision's OCR API
     """
+
+    def __init__(self, ocr_cloud_auth=False):
+        """
+        Initializes the GoogleVisionOCR class.
+
+        Args:
+            ocr_cloud_auth (bool): If True, authenticate using cloud credentials and initialize
+                                       the Vision API client with cloud authentication. If False,
+                                       initialize the Vision API client with default credentials.
+        """
+        if ocr_cloud_auth:
+            logger.info("Authenticating with cloud credentials")
+            cloud_authenticator = CloudAuthenticator()
+            self._client = cloud_authenticator.get_vision_client()
+        else:
+            logger.info("Authenticating with default credentials")
+            self._client = ImageAnnotatorClient()
+
+    def validate_api_key(self) -> None:
+        """
+        Validates the API key for the Google Vision OCR client.
+        This method checks if the API key is valid by attempting to make a batch
+        annotation request with an empty list of requests. If the API key is invalid,
+        an exception will be raised.
+        Raises:
+            google.api_core.exceptions.GoogleAPIError: If the API key is invalid or
+            there is an issue with the request.
+        """
+        self._client.batch_annotate_images(requests=[])
 
     def detect_text(self, vision_img: VisionImage) -> List[Dict[str, Any]]:
         """
@@ -30,8 +60,7 @@ class GoogleVisionOCR:
         # (from https://cloud.google.com/vision/docs/ocr#vision_text_detection-python)
         # TODO -- Note: extraction 'score' always seems to be 0.0 ??
 
-        client = ImageAnnotatorClient()
-        response = client.text_detection(image=vision_img)  # type: ignore
+        response = self._client.text_detection(image=vision_img)  # type: ignore
 
         text_extractions: List[Dict[str, Any]] = []
         if response.text_annotations:
@@ -56,11 +85,6 @@ class GoogleVisionOCR:
             )
 
         return text_extractions
-
-    def validate_api_key(self) -> None:
-        # Make a simple API call to validate the credentials
-        client = ImageAnnotatorClient()
-        client.batch_annotate_images(requests=[])
 
     def _build_text_block(
         self, text_block: str, text_block_next: str, texts_subset: List[Dict[str, Any]]
@@ -152,9 +176,7 @@ class GoogleVisionOCR:
         """
         Runs google vision OCR on the image and returns the text annotations as a dictionary
         """
-
-        client = ImageAnnotatorClient()
-        response = client.document_text_detection(image=vision_img)  # type: ignore
+        response = self._client.document_text_detection(image=vision_img)  # type: ignore
 
         text_extractions = []
         if response.full_text_annotation:

@@ -128,6 +128,7 @@ if __name__ == "__main__":
     parser.add_argument("--request_queue", type=str, default=METADATA_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=METADATA_RESULT_QUEUE)
     parser.add_argument("--no_gpu", action="store_true")
+    parser.add_argument("--ocr_cloud_auth", action="store_true")
     p = parser.parse_args()
 
     # validate any s3 path args up front
@@ -143,6 +144,7 @@ if __name__ == "__main__":
         provider=p.llm_provider,
         gpu=not p.no_gpu,
         metrics_url=p.metrics_url,
+        ocr_cloud_auth=p.ocr_cloud_auth,
     )
 
     metadata_result_key = (
