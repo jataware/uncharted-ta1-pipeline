@@ -40,24 +40,16 @@ class TextExtractor(Task):
         gamma_correction: float = GAMMA_CORR_DEFAULT,
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
         metrics_url: str = "",
+        ocr_cloud_auth=False,
     ):
         super().__init__(task_id, cache_location)
-        self._ocr = GoogleVisionOCR()
+        self._ocr = GoogleVisionOCR(ocr_cloud_auth=ocr_cloud_auth)
         self._model_id = "google-cloud-vision"
         self._to_blocks = to_blocks
         self._document_ocr = document_ocr
         self._gamma_correction = gamma_correction
         self._output_key = output_key
         self._metrics_url = metrics_url
-
-        # init gamma correction look up table
-        self._gamma_lut = np.empty((1, 256), np.uint8)
-        if self._gamma_correction != 1.0:
-            # from https://docs.opencv.org/4.x/d3/dc1/tutorial_basic_linear_transform.html
-            for i in range(256):
-                self._gamma_lut[0, i] = np.clip(
-                    pow(i / 255.0, self._gamma_correction) * 255.0, 0, 255
-                )
 
         # validate the vision api key - hard stop if can't be found
         try:
@@ -67,6 +59,15 @@ class TextExtractor(Task):
                 f"Google Vision OCR api validation failed with error: {repr(e)}"
             )
             sys.exit(1)
+
+        # init gamma correction look up table
+        self._gamma_lut = np.empty((1, 256), np.uint8)
+        if self._gamma_correction != 1.0:
+            # from https://docs.opencv.org/4.x/d3/dc1/tutorial_basic_linear_transform.html
+            for i in range(256):
+                self._gamma_lut[0, i] = np.clip(
+                    pow(i / 255.0, self._gamma_correction) * 255.0, 0, 255
+                )
 
     def _apply_gamma_correction(self, img: PILImage) -> PILImage:
         """
@@ -164,6 +165,7 @@ class ResizeTextExtractor(TextExtractor):
         gamma_correction: float = GAMMA_CORR_DEFAULT,
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
         metrics_url: str = "",
+        ocr_cloud_auth=False,
     ):
         super().__init__(
             task_id,
@@ -173,6 +175,7 @@ class ResizeTextExtractor(TextExtractor):
             gamma_correction,
             output_key,
             metrics_url,
+            ocr_cloud_auth,
         )
         self._pixel_lim = pixel_lim
         self._model_id += f"_resize-{pixel_lim}"
@@ -260,6 +263,7 @@ class TileTextExtractor(TextExtractor):
         gamma_correction: float = GAMMA_CORR_DEFAULT,
         output_key: str = TEXT_EXTRACTION_OUTPUT_KEY,
         metrics_url: str = "",
+        ocr_cloud_auth=False,
     ):
         super().__init__(
             task_id,
@@ -267,6 +271,7 @@ class TileTextExtractor(TextExtractor):
             gamma_correction=gamma_correction,
             output_key=output_key,
             metrics_url=metrics_url,
+            ocr_cloud_auth=ocr_cloud_auth,
         )
         self.split_lim = split_lim
         self._model_id += f"_tile-{split_lim}"

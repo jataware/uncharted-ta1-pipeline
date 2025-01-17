@@ -77,6 +77,7 @@ class GeoreferencingPipeline(Pipeline):
         diagnostics: bool,
         gpu_enabled: bool,
         metrics_url: str = "",
+        ocr_cloud_auth=False,
     ):
         geocoding_cache_bounds = append_to_cache_location(
             working_dir, "geocoding_cache_bounds.json"
@@ -131,6 +132,7 @@ class GeoreferencingPipeline(Pipeline):
                 6000,
                 gamma_correction=ocr_gamma_correction,
                 metrics_url=metrics_url,
+                ocr_cloud_auth=ocr_cloud_auth,
             ),
             # Defines an allowed region for cooredinates to occupy by buffering
             # the extracted map area polyline by a fixed amount
