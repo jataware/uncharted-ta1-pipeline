@@ -122,10 +122,9 @@ class WriteResultSubscriber(LaraResultSubscriber):
                 )
 
         except Exception as e:
-            logger.exception(e)
             if self._metrics_url != "":
                 requests.post(self._metrics_url + "/counter/writer_errored?step=1")
-
+            raise e  # re-raise the exception so that the message is nacked at the calling level
         logger.info("result processing finished")
 
     def _write_cdr_result(
@@ -265,6 +264,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             logger.exception(
                 f"error when attempting to submit georeferencing results: {e}"
             )
+            raise e
 
     def _project_georeference(
         self,
@@ -329,6 +329,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             )
         except Exception as e:
             logger.exception(f"error when attempting to submit feature results: {e}")
+            raise e
 
     def _push_segmentation(self, result: RequestResult):
         """
@@ -357,7 +358,6 @@ class WriteResultSubscriber(LaraResultSubscriber):
             logger.exception(
                 f"mapping segmentation to CDR schema failed for {result.image_id}: {e}",
             )
-            return
 
         assert cdr_result is not None
         self._push_features(result, cdr_result)
