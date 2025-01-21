@@ -122,10 +122,9 @@ class WriteResultSubscriber(LaraResultSubscriber):
                 )
 
         except Exception as e:
-            logger.exception(e)
             if self._metrics_url != "":
                 requests.post(self._metrics_url + "/counter/writer_errored?step=1")
-
+            raise e  # re-raise the exception so that the message is nacked at the calling level
         logger.info("result processing finished")
 
     def _write_cdr_result(
