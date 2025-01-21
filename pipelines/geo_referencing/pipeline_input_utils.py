@@ -64,8 +64,8 @@ def parse_query_file(
                 if len(rec) < 3:
                     continue
                 raster_id = rec[0]
-                x = int(rec[x_idx])
-                y = int(rec[y_idx])
+                x = int(float(rec[x_idx]))
+                y = int(float(rec[y_idx]))
                 if image_size is not None:
                     # sanity check that query points are not > image dimensions!
                     if x > image_size[0] or y > image_size[1]:

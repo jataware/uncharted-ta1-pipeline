@@ -9,23 +9,25 @@ See more info on pipeline tasks here: [../../tasks/README.md](../../tasks/README
 ### Extracted Symbols
 
 #### Object Detection Model
-The YOLO object detection model has been trained to extract common geologic point symbols as follows:
-* Inclined Bedding (aka strike/dip)
-* Vertical Bedding
-* Horizontal Bedding
-* Overturned Bedding
-* Inclined Foliation
-* Inclined Foliation (Igneous)
-* Vertical Foliation
-* Vertical Joint
-* Sink Hole
-* Lineation
-* Drill Hole
-* Gravel Borrow Pit
-* Mine Shaft
-* Prospect
-* Mine Tunnel
-* Mine Quarry
+The YOLO object detection model has been trained to extract up to 16 common geologic point symbols as follows:
+| Point Feature    | Model Ontology Label |
+| -------- | ------- |
+| Inclined Bedding (aka strike/dip) | inclined_bedding |
+| Vertical Bedding | vertical_bedding |
+| Horizontal Bedding | horizontal_bedding |
+| Overturned Bedding | overturned_bedding |
+| Inclined Foliation (Metamorphic) | inclined_foliation_metamorphic |
+| Inclined Foliation (Igneous) | inclined_foliation_igneous |
+| Vertical Foliation | vertical_foliation |
+| Vertical Joint | vertical_joint |
+| Sink Hole | sink_hole |
+| Lineation | lineation |
+| Drill Hole | drill_hole |
+| Gravel Borrow Pit | pit |
+| Mine Shaft | mine_shaft |
+| Prospect | prospect |
+| Mine Tunnel | mine_tunnel |
+| Mine Quarry | quarry |
 
 #### One-Shot Model
 The One-shot CV algorithm can be used to extract any "leftover" less common point symbols that may be present. This algorithm requires legend swatches to be available as a template (either via human-in-the-loop annotation or some other manner)
