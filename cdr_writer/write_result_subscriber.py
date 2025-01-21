@@ -265,6 +265,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             logger.exception(
                 f"error when attempting to submit georeferencing results: {e}"
             )
+            raise e
 
     def _project_georeference(
         self,
@@ -329,6 +330,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             )
         except Exception as e:
             logger.exception(f"error when attempting to submit feature results: {e}")
+            raise e
 
     def _push_segmentation(self, result: RequestResult):
         """
