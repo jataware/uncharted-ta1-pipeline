@@ -359,7 +359,6 @@ class WriteResultSubscriber(LaraResultSubscriber):
             logger.exception(
                 f"mapping segmentation to CDR schema failed for {result.image_id}: {e}",
             )
-            return
 
         assert cdr_result is not None
         self._push_features(result, cdr_result)
