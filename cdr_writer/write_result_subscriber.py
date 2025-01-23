@@ -260,6 +260,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             logger.info(
                 f"result for request {result.id} sent to CDR with response {resp.status_code}: {resp.content}"
             )
+            resp.raise_for_status()
         except Exception as e:
             logger.exception(
                 f"error when attempting to submit georeferencing results: {e}"
@@ -327,6 +328,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             logger.info(
                 f"result for request {result.id} sent to CDR with response {resp.status_code}: {resp.content}"
             )
+            resp.raise_for_status()
         except Exception as e:
             logger.exception(f"error when attempting to submit feature results: {e}")
             raise e
