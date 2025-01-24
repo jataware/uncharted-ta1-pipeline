@@ -325,10 +325,14 @@ class PointsMapper(CDRMapper):
                         map_pt_label.x2,
                         map_pt_label.y2,
                     ],
-                    dip=round(map_pt_label.dip) if map_pt_label.dip else None,
+                    dip=(
+                        round(map_pt_label.dip)
+                        if map_pt_label.dip is not None
+                        else None
+                    ),
                     dip_direction=(
                         round(map_pt_label.direction)
-                        if map_pt_label.direction
+                        if map_pt_label.direction is not None
                         else None
                     ),
                 )
