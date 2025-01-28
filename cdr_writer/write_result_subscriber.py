@@ -17,7 +17,7 @@ from schema.cdr_schemas.metadata import CogMetaData
 from schema.mappers.cdr import GeoreferenceMapper, get_mapper
 from tasks.common.image_cache import ImageCache
 from tasks.common.io import BytesIOFileWriter, ImageFileReader, JSONFileWriter
-from tasks.common.request_client import OutputType, RequestResult
+from tasks.common.request_client import REQUEUE_LIMIT, OutputType, RequestResult
 from tasks.common.result_subscriber import LaraResultSubscriber
 from tasks.geo_referencing.entities import (
     GeoreferenceResult as LARAGeoreferenceResult,
@@ -46,6 +46,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
         uid="",
         pwd="",
         metrics_url="",
+        requeue_limit=REQUEUE_LIMIT,
     ):
         super().__init__(
             result_queue,
@@ -56,6 +57,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             vhost=vhost,
             uid=uid,
             pwd=pwd,
+            requeue_limit=requeue_limit,
         )
         self._metrics_url = metrics_url
         self._output = output

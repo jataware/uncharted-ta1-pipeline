@@ -105,6 +105,7 @@ class RequestClient:
         metrics_type="",
         heartbeat=900,
         blocked_connection_timeout=600,
+        requeue_limit=REQUEUE_LIMIT,
     ) -> None:
         """
         Initializes the RequestClient.
@@ -124,6 +125,7 @@ class RequestClient:
             metrics_type (str, optional): The type of metrics. Defaults to "".
             heartbeat (int, optional): The heartbeat interval in seconds. Defaults to 900.
             blocked_connection_timeout (int, optional): The timeout for blocked connections in seconds. Defaults to 600.
+            requeue_limit (int, optional): The limit for requeueing messages. Defaults to REQUEUE_LIMIT.
         Returns:
             None
         """
@@ -138,6 +140,7 @@ class RequestClient:
         self._metrics_type = metrics_type
         self._request_queue = request_queue
         self._result_queue = result_queue
+        self._requeue_limit = requeue_limit
         self._output_key = output_key
         self._output_type = output_type
         self._heartbeat = heartbeat
@@ -223,7 +226,9 @@ class RequestClient:
         """
         Setup the connection, channel and queue to service incoming requests.
         """
-        logger.info("connecting to request queue")
+        logger.info(
+            f"connecting to request queue {self._request_queue} with {self._requeue_limit} requeue limit"
+        )
         if self._uid != "":
             credentials = pika.PlainCredentials(self._uid, self._pwd)
             self._request_connection = pika.BlockingConnection(
@@ -249,7 +254,10 @@ class RequestClient:
         self._input_channel.queue_declare(
             queue=self._request_queue,
             durable=True,
-            arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
+            arguments={
+                "x-delivery-limit": self._requeue_limit,
+                "x-queue-type": "quorum",
+            },
         )
         self._input_channel.basic_qos(prefetch_count=1)
 
@@ -281,7 +289,9 @@ class RequestClient:
         """
         Setup the connection, channel and queue to service outgoing results.
         """
-        logger.info("connecting to result queue")
+        logger.info(
+            f"connecting to result queue {self._result_queue} with {self._requeue_limit} requeue limit"
+        )
         connectionParameters = self._get_connection_parameters()
         self._result_connection = pika.BlockingConnection(connectionParameters)
 
@@ -290,7 +300,10 @@ class RequestClient:
             self._output_channel.queue_declare(
                 queue=self._result_queue,
                 durable=True,
-                arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
+                arguments={
+                    "x-delivery-limit": self._requeue_limit,
+                    "x-queue-type": "quorum",
+                },
             )
 
     def start_result_queue(self) -> None:
@@ -306,7 +319,6 @@ class RequestClient:
         while not self._stop_event.is_set():
             try:
                 if self._result_connection is None or self._result_connection.is_closed:
-                    logger.info(f"connecting to result queue {self._result_queue}")
                     self._connect_to_result()
 
                 if self._result_connection is not None:
