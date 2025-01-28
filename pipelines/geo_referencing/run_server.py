@@ -25,6 +25,7 @@ from tasks.common.pipeline import (
 from tasks.common.request_client import (
     GEO_REFERENCE_REQUEST_QUEUE,
     GEO_REFERENCE_RESULT_QUEUE,
+    REQUEUE_LIMIT,
     RequestClient,
     OutputType,
 )
@@ -139,6 +140,7 @@ def start_server():
     parser.add_argument("--rabbit_uid", type=str, default="")
     parser.add_argument("--rabbit_pwd", type=str, default="")
     parser.add_argument("--metrics_url", type=str, default="")
+    parser.add_argument("--requeue_limit", type=int, default=REQUEUE_LIMIT)
     parser.add_argument(
         "--request_queue", type=str, default=GEO_REFERENCE_REQUEST_QUEUE
     )
@@ -241,6 +243,7 @@ def start_server():
             pwd=p.rabbit_pwd,
             metrics_url=p.metrics_url,
             metrics_type="georef",
+            requeue_limit=p.requeue_limit,
         )
         client.start_request_queue()
         client.start_result_queue()
