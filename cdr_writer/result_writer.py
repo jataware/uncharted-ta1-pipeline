@@ -10,7 +10,7 @@ logger = logging.getLogger("cdr")
 CDR_API_TOKEN = os.environ["CDR_API_TOKEN"]
 DEFAULT_CDR_HOST = "https://api.cdr.land"
 
-REQUEUE_LIMIT = -1  # requeue forever by default
+REQUEUE_LIMIT = 3
 INACTIVITY_TIMEOUT = 5
 HEARTBEAT_INTERVAL = 900
 BLOCKED_CONNECTION_TIMEOUT = 600
