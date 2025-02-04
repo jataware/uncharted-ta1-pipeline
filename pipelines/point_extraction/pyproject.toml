@@ -7,7 +7,7 @@ name = "lara-point-extraction"
 version = "1.0.0"
 description = "LARA point extraction pipeline and server"
 readme = "README.md"
-dependencies = ["flask", "mypy-boto3-s3", "lara-tasks[point]"]
+dependencies = ["flask", "mypy-boto3-s3", "lara-tasks[point,segmentation]"]
 
 [tool.setuptools.packages]
 find = {}

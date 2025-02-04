@@ -58,7 +58,6 @@ langchain-core==0.3.33
 langchain-openai==0.3.3
 langchain-text-splitters==0.3.5
 langsmith==0.3.5
--e git+ssh://git@github.com/uncharted-lara/lara-models.git@51d1a1ddf60751425be0d53dc35b454f22646883#egg=lara_cdr&subdirectory=cdr
 -e git+ssh://git@github.com/uncharted-lara/lara-models.git@51d1a1ddf60751425be0d53dc35b454f22646883#egg=lara_cdr_writer&subdirectory=cdr_writer
 -e git+ssh://git@github.com/uncharted-lara/lara-models.git@51d1a1ddf60751425be0d53dc35b454f22646883#egg=lara_tasks&subdirectory=tasks
 lazy_loader==0.4
