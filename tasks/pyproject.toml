@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lara-tasks"
-version = "0.1.0"
+version = "1.0.0"
 description = "LARA pipeline tasks"
 readme = "README.md"
 dependencies = [
@@ -16,7 +16,7 @@ dependencies = [
     "google-auth",
     "msal",
     "grpcio",
-    "boto3",
+    "boto3==1.35.99", # https://github.com/boto/boto3/issues/4398
     "boto3-stubs[s3]",
     "pillow",
     "geopy",

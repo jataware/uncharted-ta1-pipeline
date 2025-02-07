@@ -26,7 +26,7 @@ from scipy import ndimage
 logger = logging.getLogger(__name__)
 
 RE_NONNUMERIC = re.compile(r"[^0-9]")  # matches non-numeric chars
-CODE_VER = "0.0.2"
+CODE_VER = "0.0.3"
 
 FOREGND_COLOR_LAB = [0, 128, 128]  # template default foregnd color (in LAB space)
 
@@ -67,7 +67,7 @@ class PointOrientationExtractor(Task):
     # ---- task config per point class
     POINT_CONFIGS = {
         str(POINT_CLASS.STRIKE_AND_DIP): PointOrientationConfig(
-            point_class=str(POINT_CLASS.STRIKE_AND_DIP), mirroring_correction=True
+            point_class=str(POINT_CLASS.STRIKE_AND_DIP)
         ),
         str(POINT_CLASS.OVERTURNED_BEDDING): PointOrientationConfig(
             point_class=str(POINT_CLASS.OVERTURNED_BEDDING), mirroring_correction=True
@@ -78,11 +78,10 @@ class PointOrientationExtractor(Task):
             rotate_max=180,
         ),
         str(POINT_CLASS.INCLINED_FOLIATION): PointOrientationConfig(
-            point_class=str(POINT_CLASS.INCLINED_FOLIATION), mirroring_correction=True
+            point_class=str(POINT_CLASS.INCLINED_FOLIATION)
         ),
         str(POINT_CLASS.INCLINED_FOLIATION_IGNEOUS): PointOrientationConfig(
-            point_class=str(POINT_CLASS.INCLINED_FOLIATION_IGNEOUS),
-            mirroring_correction=True,
+            point_class=str(POINT_CLASS.INCLINED_FOLIATION_IGNEOUS)
         ),
         str(POINT_CLASS.VERTICAL_FOLIATION): PointOrientationConfig(
             point_class=str(POINT_CLASS.VERTICAL_FOLIATION),
@@ -99,7 +98,7 @@ class PointOrientationExtractor(Task):
             dip_number_extraction=False,
         ),
         str(POINT_CLASS.LINEATION): PointOrientationConfig(
-            point_class=str(POINT_CLASS.LINEATION), mirroring_correction=False
+            point_class=str(POINT_CLASS.LINEATION), mirroring_correction=True
         ),
     }
 

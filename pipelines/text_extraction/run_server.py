@@ -9,6 +9,7 @@ from tasks.common import image_io
 
 from tasks.common.io import validate_s3_config
 from tasks.common.request_client import (
+    REQUEUE_LIMIT,
     TEXT_REQUEST_QUEUE,
     TEXT_RESULT_QUEUE,
     RequestClient,
@@ -98,6 +99,7 @@ if __name__ == "__main__":
     parser.add_argument("--request_queue", type=str, default=TEXT_REQUEST_QUEUE)
     parser.add_argument("--result_queue", type=str, default=TEXT_RESULT_QUEUE)
     parser.add_argument("--ocr_cloud_auth", action="store_true")
+    parser.add_argument("--requeue_limit", type=int, default=REQUEUE_LIMIT)
     p = parser.parse_args()
 
     # validate s3 path args up front
@@ -141,6 +143,7 @@ if __name__ == "__main__":
             pwd=p.rabbit_pwd,
             metrics_url=p.metrics_url,
             metrics_type="text",
+            requeue_limit=p.requeue_limit,
         )
         client.start_request_queue()
         client.start_result_queue()

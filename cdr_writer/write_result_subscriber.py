@@ -17,7 +17,7 @@ from schema.cdr_schemas.metadata import CogMetaData
 from schema.mappers.cdr import GeoreferenceMapper, get_mapper
 from tasks.common.image_cache import ImageCache
 from tasks.common.io import BytesIOFileWriter, ImageFileReader, JSONFileWriter
-from tasks.common.request_client import OutputType, RequestResult
+from tasks.common.request_client import REQUEUE_LIMIT, OutputType, RequestResult
 from tasks.common.result_subscriber import LaraResultSubscriber
 from tasks.geo_referencing.entities import (
     GeoreferenceResult as LARAGeoreferenceResult,
@@ -46,6 +46,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
         uid="",
         pwd="",
         metrics_url="",
+        requeue_limit=REQUEUE_LIMIT,
     ):
         super().__init__(
             result_queue,
@@ -56,6 +57,7 @@ class WriteResultSubscriber(LaraResultSubscriber):
             vhost=vhost,
             uid=uid,
             pwd=pwd,
+            requeue_limit=requeue_limit,
         )
         self._metrics_url = metrics_url
         self._output = output
@@ -122,10 +124,9 @@ class WriteResultSubscriber(LaraResultSubscriber):
                 )
 
         except Exception as e:
-            logger.exception(e)
             if self._metrics_url != "":
                 requests.post(self._metrics_url + "/counter/writer_errored?step=1")
-
+            raise e  # re-raise the exception so that the message is nacked at the calling level
         logger.info("result processing finished")
 
     def _write_cdr_result(
@@ -261,10 +262,12 @@ class WriteResultSubscriber(LaraResultSubscriber):
             logger.info(
                 f"result for request {result.id} sent to CDR with response {resp.status_code}: {resp.content}"
             )
+            resp.raise_for_status()
         except Exception as e:
             logger.exception(
                 f"error when attempting to submit georeferencing results: {e}"
             )
+            raise e
 
     def _project_georeference(
         self,
@@ -327,8 +330,10 @@ class WriteResultSubscriber(LaraResultSubscriber):
             logger.info(
                 f"result for request {result.id} sent to CDR with response {resp.status_code}: {resp.content}"
             )
+            resp.raise_for_status()
         except Exception as e:
             logger.exception(f"error when attempting to submit feature results: {e}")
+            raise e
 
     def _push_segmentation(self, result: RequestResult):
         """
@@ -357,7 +362,6 @@ class WriteResultSubscriber(LaraResultSubscriber):
             logger.exception(
                 f"mapping segmentation to CDR schema failed for {result.image_id}: {e}",
             )
-            return
 
         assert cdr_result is not None
         self._push_features(result, cdr_result)

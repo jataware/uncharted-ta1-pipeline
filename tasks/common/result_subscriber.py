@@ -52,6 +52,7 @@ class LaraResultSubscriber(ABC):
         result_queue: str,
         cdr_host: str,
         cdr_token: str,
+        requeue_limit: int = REQUEUE_LIMIT,
         host="localhost",
         port=5672,
         vhost="/",
@@ -69,6 +70,7 @@ class LaraResultSubscriber(ABC):
         self._uid = uid
         self._pwd = pwd
         self._stop_event = threading.Event()
+        self._requeue_limit = requeue_limit
 
     def start_lara_result_queue(self):
         """
@@ -94,7 +96,9 @@ class LaraResultSubscriber(ABC):
         logger.info("stopping result queue thread")
         self._stop_event.set()
 
-    def _create_channel(self, host: str, queue: str) -> Channel:
+    def _create_channel(
+        self, host: str, queue: str, requeue_limit=REQUEUE_LIMIT
+    ) -> Channel:
         """
         Creates a blocking connection and channel on the given host and declares the given queue.
 
@@ -130,7 +134,10 @@ class LaraResultSubscriber(ABC):
         channel.queue_declare(
             queue=queue,
             durable=True,
-            arguments={"x-delivery-limit": REQUEUE_LIMIT, "x-queue-type": "quorum"},
+            arguments={
+                "x-delivery-limit": self._requeue_limit,
+                "x-queue-type": "quorum",
+            },
         )
         return channel
 
@@ -182,7 +189,7 @@ class LaraResultSubscriber(ABC):
             result_channel: Optional[Channel] = None
             try:
                 logger.info(
-                    f"starting the listener on the result queue ({host}:{result_queue})"
+                    f"starting the listener on the result queue ({host}:{result_queue}) with requeue limit {self._requeue_limit}"
                 )
                 # setup the result queue
                 result_channel = self._create_channel(host, result_queue)
