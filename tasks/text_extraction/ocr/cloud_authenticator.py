@@ -40,29 +40,30 @@ class CloudAuthenticator:
 
     def get_entra_id_token(self):
         """
-        Obtain an access token from Entra ID using MSAL
+        Obtain an access token from Entra ID using MSAL without using cache.
         """
         authority = f"https://login.microsoftonline.com/{self.tenant_id}"
         app = msal.ConfidentialClientApplication(
-            self.client_id, authority=authority, client_credential=self.client_secret
+            self.client_id,
+            authority=authority,
+            client_credential=self.client_secret
         )
-
         # Use /.default scope
         scopes = [f"{self.azure_audience}/.default"]
-
-        result = app.acquire_token_silent(scopes, account=None)
-        if not result:
-            result = app.acquire_token_for_client(scopes=scopes)
-
-        if not result:
-            raise ValueError("Token acquisition failed - no result")
-
+        # Always fetch a new token (no caching)
+        result = app.acquire_token_for_client(scopes=scopes)
         if "access_token" in result:
-            return result["access_token"]
+            token = result["access_token"]
+            expires_in = result.get("expires_in", "Unknown")
+            issued_at = result.get("ext_expires_in", "Unknown")  # Some APIs provide this value
+    
+            # Print debug info
+            print(f"New Token Acquired: {token[-10:]}...")  # Print last 10 chars for security
+            print(f"Token Expires In: {expires_in} seconds")
+    
+            return token
         else:
-            raise ValueError(
-                f"Token acquisition failed: {result.get('error_description')}"
-            )
+            raise ValueError(f"Token acquisition failed: {result.get('error_description')}")
 
     def exchange_for_google_token(self, entra_token):
         """
