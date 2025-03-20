@@ -1,10 +1,11 @@
-import os
+import logging, os
 
 import msal
 import requests
 from google.oauth2.credentials import Credentials
 from google.cloud.vision import ImageAnnotatorClient
 
+logger = logging.getLogger(__name__)
 
 # Provided USGS
 class CloudAuthenticator:
@@ -57,9 +58,8 @@ class CloudAuthenticator:
             expires_in = result.get("expires_in", "Unknown")
             issued_at = result.get("ext_expires_in", "Unknown")  # Some APIs provide this value
     
-            # Print debug info
-            print(f"New Token Acquired: {token[-10:]}...")  # Print last 10 chars for security
-            print(f"Token Expires In: {expires_in} seconds")
+            logger.debug(f"New Token Acquired: {token[-10:]}...")  # Print last 10 chars for security
+            logger.debug(f"Token Expires In: {expires_in} seconds")
     
             return token
         else:
