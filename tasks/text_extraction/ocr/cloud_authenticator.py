@@ -52,6 +52,8 @@ class CloudAuthenticator:
         scopes = [f"{self.azure_audience}/.default"]
         # Always fetch a new token (no caching)
         result = app.acquire_token_for_client(scopes=scopes)
+        if not result:
+            raise ValueError("Token acquisition failed")
         if "access_token" in result:
             token = result["access_token"]
             expires_in = result.get("expires_in", "Unknown")
