@@ -68,8 +68,8 @@ class ROIExtractor(Task):
         h = input.image.height
         outer_coords = list(
             map(
-                lambda x: self._limit_polygon(x, (0, 0), (w, h)),
-                poly_outer.exterior.coords,
+                lambda x: self._limit_polygon((x[0], x[1]), (0, 0), (w, h)),
+                list(poly_outer.exterior.coords),
             )
         )
 
