@@ -77,9 +77,6 @@ def health():
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger("text_extractor app")
-    logging_util.config_logger(logger)
-    logger.info("*** Starting Text Extractor App ***")
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
@@ -100,7 +97,12 @@ if __name__ == "__main__":
     parser.add_argument("--result_queue", type=str, default=TEXT_RESULT_QUEUE)
     parser.add_argument("--ocr_cloud_auth", action="store_true")
     parser.add_argument("--requeue_limit", type=int, default=REQUEUE_LIMIT)
+    parser.add_argument("--log_level", default="INFO")
     p = parser.parse_args()
+
+    logger = logging.getLogger("text_extractor app")
+    logging_util.config_logger(logger, p.log_level)
+    logger.info("*** Starting Text Extractor App ***")
 
     # validate s3 path args up front
     validate_s3_config("", p.workdir, p.imagedir, "")

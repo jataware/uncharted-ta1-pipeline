@@ -425,7 +425,6 @@ def validate_urls(cdr_host: str, cog_host: str):
 
 def main():
     # default log settings
-    config_logger(logger)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("process", "host"), required=True)
@@ -452,7 +451,10 @@ def main():
     )
     parser.add_argument("--replay_start", type=valid_date, required=False)
     parser.add_argument("--replay_end", type=valid_date, required=False)
+    parser.add_argument("--log_level", default="INFO")
     p = parser.parse_args()
+
+    config_logger(logger, p.log_level)
 
     global settings
     settings = Settings()

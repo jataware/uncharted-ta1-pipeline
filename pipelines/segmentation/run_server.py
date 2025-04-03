@@ -1,3 +1,5 @@
+from multiprocessing.util import LOGGER_NAME
+from re import DEBUG
 from flask import Flask, request, Response
 import logging, json
 import argparse
@@ -80,11 +82,6 @@ def health():
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger("segmenter app")
-    logging_util.config_logger(logger)
-
-    logger.info("*** Starting Legend and Map Segmenter App ***")
-
     # parse command line args
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
@@ -105,7 +102,12 @@ if __name__ == "__main__":
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--ocr_cloud_auth", action="store_true")
     parser.add_argument("--requeue_limit", type=str, default=REQUEUE_LIMIT)
+    parser.add_argument("--log_level", default="INFO")
     p = parser.parse_args()
+
+    logger = logging.getLogger("segmenter app")
+    logging_util.config_logger(logger, p.log_level)
+    logger.info("*** Starting Legend and Map Segmenter App ***")
 
     # validate any s3 path args up front
     validate_s3_config("", p.workdir, p.imagedir, "")

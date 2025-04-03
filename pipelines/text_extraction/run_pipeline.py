@@ -17,8 +17,6 @@ from util import logging as logging_util
 
 
 def main():
-    logger = logging.getLogger("text_extraction_pipeline")
-    logging_util.config_logger(logger)
 
     # parse command line args
     parser = argparse.ArgumentParser()
@@ -32,8 +30,12 @@ def main():
     parser.add_argument("--pixel_limit", type=int, default=6000)
     parser.add_argument("--gamma_corr", type=float, default=1.0)
     parser.add_argument("--debug", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--log_level", default="INFO")
 
     p = parser.parse_args()
+
+    logger = logging.getLogger("text_extraction_pipeline")
+    logging_util.config_logger(logger, p.log_level)
 
     # validate any s3 path args up front
     validate_s3_config(p.input, p.workdir, "", p.output)

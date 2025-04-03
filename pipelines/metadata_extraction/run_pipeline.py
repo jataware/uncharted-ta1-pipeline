@@ -31,7 +31,6 @@ from util import logging as logging_util
 
 def main():
     logger = logging.getLogger("metadata_pipeline")
-    logging_util.config_logger(logger)
 
     # parse command line args
     parser = argparse.ArgumentParser()
@@ -52,7 +51,10 @@ def main():
         default=LLM_PROVIDER.OPENAI,
     )
     parser.add_argument("--no_gpu", action="store_true")
+    parser.add_argument("--log_level", default="INFO")
     p = parser.parse_args()
+
+    logging_util.config_logger(logger, p.log_level)
 
     logger.info(f"Args: {p}")
 
