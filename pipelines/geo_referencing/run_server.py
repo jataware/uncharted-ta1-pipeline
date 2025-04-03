@@ -48,6 +48,8 @@ app = Flask(__name__)
 
 georef_pipeline: GeoreferencingPipeline
 
+logger = logging.getLogger("georef app")
+
 
 def create_input(
     raster_id: str, image: PILImage, geofence_region: str = "world"
@@ -122,10 +124,6 @@ def health():
 
 
 def start_server():
-    logger = logging.getLogger("georef app")
-    logging_util.config_logger(logger)
-
-    logger.info("*** Starting geo referencing app ***")
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, default="tmp/lara/workdir")
@@ -189,7 +187,11 @@ def start_server():
     parser.add_argument("--project", action="store_true")
     parser.add_argument("--diagnostics", action="store_true")
     parser.add_argument("--ocr_cloud_auth", action="store_true")
+    parser.add_argument("--log_level", default="INFO")
     p = parser.parse_args()
+
+    logging_util.config_logger(logger, p.log_level)
+    logger.info("*** Starting geo referencing app ***")
 
     # validate any s3 path args up front
     validate_s3_config("", p.workdir, p.imagedir, "")

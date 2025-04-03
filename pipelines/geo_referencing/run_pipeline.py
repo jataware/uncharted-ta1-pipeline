@@ -44,7 +44,6 @@ Image.MAX_IMAGE_PIXELS = 400000000
 GEOCODE_CACHE = "temp/geocode/"
 
 logger = logging.getLogger("georeferencing_pipeline")
-logging_util.config_logger(logger)
 
 
 def main():
@@ -99,7 +98,10 @@ def main():
     parser.add_argument("--no_gpu", action="store_true")
     parser.add_argument("--project", action="store_true")
     parser.add_argument("--diagnostics", action="store_true")
+    parser.add_argument("--log_level", default="INFO")
     p = parser.parse_args()
+
+    logging_util.config_logger(logger, p.log_level)
 
     # validate any s3 path args up front
     validate_s3_config(p.input, p.workdir, "", p.output)
@@ -135,8 +137,6 @@ def create_input(
 
 
 def run_pipeline(parsed, input_data: ImageFileInputIterator):
-    assert logger is not None
-
     pipeline = GeoreferencingPipeline(
         parsed.workdir,
         parsed.model,

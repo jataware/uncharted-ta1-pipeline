@@ -17,9 +17,6 @@ BLOCKED_CONNECTION_TIMEOUT = 600
 
 
 def main():
-    # default log settings
-    config_logger(logger)
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--workdir", type=str, required=True)
     parser.add_argument("--imagedir", type=str, required=True)
@@ -33,7 +30,11 @@ def main():
     parser.add_argument("--cdr_host", type=str, default=DEFAULT_CDR_HOST)
     parser.add_argument("--metrics_url", type=str, default="")
     parser.add_argument("--result_queue", type=int, default=REQUEUE_LIMIT)
+    parser.add_argument("--log_level", default="INFO")
     p = parser.parse_args()
+
+    # default log settings
+    config_logger(logger, p.log_level)
 
     result_subscriber = WriteResultSubscriber(
         WRITE_REQUEST_QUEUE,

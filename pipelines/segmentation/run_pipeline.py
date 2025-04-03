@@ -20,8 +20,6 @@ from util import logging as logging_util
 
 
 def main():
-    logger = logging.getLogger("segmentation_pipeline")
-    logging_util.config_logger(logger)
 
     # parse command line args
     parser = argparse.ArgumentParser()
@@ -33,7 +31,11 @@ def main():
     parser.add_argument("--cdr_schema", action="store_true")
     parser.add_argument("--debug_images", action="store_true")
     parser.add_argument("--no_gpu", action="store_true")
+    parser.add_argument("--log_level", default="INFO")
     p = parser.parse_args()
+
+    logger = logging.getLogger("segmentation_pipeline")
+    logging_util.config_logger(logger, p.log_level)
 
     # validate any s3 path args up front
     validate_s3_config(p.input, p.workdir, "", p.output)

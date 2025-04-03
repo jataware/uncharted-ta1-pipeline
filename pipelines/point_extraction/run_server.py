@@ -77,10 +77,6 @@ def health():
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger("point extraction app")
-    logging_util.config_logger(logger)
-
-    logger.info("*** Starting Point Extraction App ***")
 
     # parse command line args
     parser = argparse.ArgumentParser()
@@ -104,7 +100,12 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=20)
     parser.add_argument("--ocr_cloud_auth", action="store_true")
     parser.add_argument("--requeue_limit", type=int, default=REQUEUE_LIMIT)
+    parser.add_argument("--log_level", default="INFO")
     p = parser.parse_args()
+
+    logger = logging.getLogger("point extraction app")
+    logger.info("*** Starting Point Extraction App ***")
+    logging_util.config_logger(logger, p.log_level)
 
     # validate any s3 path args up front
     validate_s3_config("", p.workdir, p.imagedir, "")

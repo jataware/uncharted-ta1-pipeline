@@ -1,4 +1,3 @@
-from cgitb import text
 from tasks.metadata_extraction.text_filter import TextFilter
 from tasks.common.task import TaskInput
 from tasks.text_extraction.entities import DocTextExtraction, TEXT_EXTRACTION_OUTPUT_KEY
