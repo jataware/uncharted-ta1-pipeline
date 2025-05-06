@@ -54,7 +54,6 @@ class GoogleVisionOCR:
             there is an issue with the request.
         """
         if self.ocr_cloud_auth and (datetime.now() - self.auth_timestamp).seconds > 3600:
-            logger.info("Re-authenticating with cloud credentials")
             self.authenticate_cloud()
         self._client.batch_annotate_images(requests=[])
 
@@ -69,7 +68,6 @@ class GoogleVisionOCR:
             List of text extractions -- {"text": <extracted text>, "bounding_poly": <google BoundingPoly object>, "confidence": <extraction confidence>}
         """
         if self.ocr_cloud_auth and (datetime.now() - self.auth_timestamp).seconds > 3600:
-            logger.info("Re-authenticating with cloud credentials")
             self.authenticate_cloud()
         
         # (from https://cloud.google.com/vision/docs/ocr#vision_text_detection-python)
@@ -191,7 +189,6 @@ class GoogleVisionOCR:
         Runs google vision OCR on the image and returns the text annotations as a dictionary
         """
         if self.ocr_cloud_auth and (datetime.now() - self.auth_timestamp).seconds > 3600:
-            logger.info("Re-authenticating with cloud credentials")
             self.authenticate_cloud()
         response = self._client.document_text_detection(image=vision_img)  # type: ignore
 
