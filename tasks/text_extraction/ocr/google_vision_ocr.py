@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from shapely.geometry import Polygon
 from shapely import MultiPolygon, unary_union, concave_hull
 from tasks.text_extraction.ocr.cloud_authenticator import CloudAuthenticator
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +29,19 @@ class GoogleVisionOCR:
                                        initialize the Vision API client with default credentials.
         """
         if ocr_cloud_auth:
-            logger.info("Authenticating with cloud credentials")
-            cloud_authenticator = CloudAuthenticator()
-            self._client = cloud_authenticator.get_vision_client()
+            self.authenticate_cloud()
+            self.ocr_cloud_auth = True
         else:
             logger.info("Authenticating with default credentials")
             self._client = ImageAnnotatorClient()
+    
+    def authenticate_cloud(self) -> None:
+        """
+        Authenticates the Google Vision API client using credentials from EntraID.
+        """
+        logger.info("Authenticating with cloud credentials")
+        self.auth_timestamp = datetime.now()
+        self._client = CloudAuthenticator().get_vision_client()
 
     def validate_api_key(self) -> None:
         """
@@ -45,6 +53,9 @@ class GoogleVisionOCR:
             google.api_core.exceptions.GoogleAPIError: If the API key is invalid or
             there is an issue with the request.
         """
+        if self.ocr_cloud_auth and (datetime.now() - self.auth_timestamp).seconds > 3600:
+            logger.info("Re-authenticating with cloud credentials")
+            self.authenticate_cloud()
         self._client.batch_annotate_images(requests=[])
 
     def detect_text(self, vision_img: VisionImage) -> List[Dict[str, Any]]:
@@ -57,9 +68,12 @@ class GoogleVisionOCR:
         Returns:
             List of text extractions -- {"text": <extracted text>, "bounding_poly": <google BoundingPoly object>, "confidence": <extraction confidence>}
         """
+        if self.ocr_cloud_auth and (datetime.now() - self.auth_timestamp).seconds > 3600:
+            logger.info("Re-authenticating with cloud credentials")
+            self.authenticate_cloud()
+        
         # (from https://cloud.google.com/vision/docs/ocr#vision_text_detection-python)
         # TODO -- Note: extraction 'score' always seems to be 0.0 ??
-
         response = self._client.text_detection(image=vision_img)  # type: ignore
 
         text_extractions: List[Dict[str, Any]] = []
@@ -176,6 +190,9 @@ class GoogleVisionOCR:
         """
         Runs google vision OCR on the image and returns the text annotations as a dictionary
         """
+        if self.ocr_cloud_auth and (datetime.now() - self.auth_timestamp).seconds > 3600:
+            logger.info("Re-authenticating with cloud credentials")
+            self.authenticate_cloud()
         response = self._client.document_text_detection(image=vision_img)  # type: ignore
 
         text_extractions = []
