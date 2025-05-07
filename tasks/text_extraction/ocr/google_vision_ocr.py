@@ -34,7 +34,7 @@ class GoogleVisionOCR:
         else:
             logger.info("Authenticating with default credentials")
             self._client = ImageAnnotatorClient()
-    
+
     def authenticate_cloud(self) -> None:
         """
         Authenticates the Google Vision API client using credentials from EntraID.
@@ -53,7 +53,10 @@ class GoogleVisionOCR:
             google.api_core.exceptions.GoogleAPIError: If the API key is invalid or
             there is an issue with the request.
         """
-        if self.ocr_cloud_auth and (datetime.now() - self.auth_timestamp).seconds > 3600:
+        if (
+            self.ocr_cloud_auth
+            and (datetime.now() - self.auth_timestamp).seconds > 3600
+        ):
             self.authenticate_cloud()
         self._client.batch_annotate_images(requests=[])
 
@@ -67,9 +70,12 @@ class GoogleVisionOCR:
         Returns:
             List of text extractions -- {"text": <extracted text>, "bounding_poly": <google BoundingPoly object>, "confidence": <extraction confidence>}
         """
-        if self.ocr_cloud_auth and (datetime.now() - self.auth_timestamp).seconds > 3600:
+        if (
+            self.ocr_cloud_auth
+            and (datetime.now() - self.auth_timestamp).seconds > 3600
+        ):
             self.authenticate_cloud()
-        
+
         # (from https://cloud.google.com/vision/docs/ocr#vision_text_detection-python)
         # TODO -- Note: extraction 'score' always seems to be 0.0 ??
         response = self._client.text_detection(image=vision_img)  # type: ignore
@@ -188,7 +194,10 @@ class GoogleVisionOCR:
         """
         Runs google vision OCR on the image and returns the text annotations as a dictionary
         """
-        if self.ocr_cloud_auth and (datetime.now() - self.auth_timestamp).seconds > 3600:
+        if (
+            self.ocr_cloud_auth
+            and (datetime.now() - self.auth_timestamp).seconds > 3600
+        ):
             self.authenticate_cloud()
         response = self._client.document_text_detection(image=vision_img)  # type: ignore
 
