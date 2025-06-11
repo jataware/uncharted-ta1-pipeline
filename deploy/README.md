@@ -156,3 +156,68 @@ Each service generates status logs specific to their processing, with the ID of 
 ### RabbitMQ
 
 The LARA stack uses RabbitMQ for queueing and managing processing tasks, with each map processing service, and the CDR writer having their own mesage queues.  The admin console is available on port 15672, and can be useful for tracking the progress of map processing, especially when larger numbers of jobs are being queued.  As configured, jobs will initially appear in the `segmentation_request_queue`, and move through `metadata_request_queue`, `point_request_queue`, `georef_request_queue`.  Each service's output will be added to the `write_request` queue when map processing is complete.
+
+
+### Jataware deploy manually for demos
+
+## Manual Deployment Instructions
+
+This app was deployed manually to a server provisioned with Terraform. Here's a summary of the setup process:
+
+### 1. Provision Server
+- Use Terraform to spin up the server see nylon-deployment repo
+- SSH into the instance after provisioning.
+
+### 2. Install Dependencies
+
+```bash
+sudo apt update
+sudo apt install -y unzip python3-pip
+pip3 install jinja2-cli
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+git clone https://github.com/jataware/uncharted-ta1-pipeline.git
+cd uncharted-ta1/deploy
+
+```
+### Configure Google Credentials
+Manually copy your service account JSON file to the server.
+
+Place it in the following location:
+```
+uncharted-ta1-pipeline/deploy/lara/google_application_credentials.json
+```
+Update the env variables.
+The deploy_vars should kinda look like this for Jataware deployment
+```
+Deploy_vars.json example
+{
+    "work_dir": "s3://common.polymer.rocks/uncharted-cache/work_dir",
+    "image_dir": "s3://common.polymer.rocks/uncharted-cache/image_dir",
+    "aws_access_key_id": "aws_access",
+    "aws_secret_access_key": "aws_secret",
+    "aws_region": "us-east-1",
+    "cdr_api_token": "polymer_token",
+    "cdr_host": "https://api.cdr.land",
+    "cog_host": "https://s3.amazonaws.com/public.cdr.land/cogs",
+    "google_application_credentials_dir": "/home/ubuntu/uncharted-ta1-main/deploy/lara",
+    "tag": "latest",
+    "cdr": true,
+    "llm_provider": "openai",
+    "openai_api_key": "open_ai_key",
+    "cdr_callback_url": "https://uncharted-pipeline.polymer.rocks"
+}
+
+```
+You can create that file running these commands.
+```
+jinja2 --format json --outfile docker-compose.yml docker-compose.j2 deploy_vars.json
+jinja2 --format json --outfile run_cdr.sh run_cdr.j2 deploy_vars.json
+chmod +x run_cdr.sh
+```
+
+## Launch the app
+```
+docker compose pull
+docker compose up -d
+```
